@@ -209,10 +209,8 @@ fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *Creature)
 pub fn bullet_react(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet) bool {
   for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
-      const self_drawable = gs.drawables.find(self_id).?;
       const self_transform = gs.transforms.find(self_id).?;
-      const pos = self_transform.pos;
-      _ = Prototypes.spawnAnimation(gs, pos, self_drawable.offset, SimpleAnim.PlaSparks);
+      _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.PlaSparks);
       return false;
     }
   }
@@ -235,7 +233,7 @@ pub fn creature_react(gs: *GameSession, self_id: EntityId, self_creature: *Creat
               _ = Prototypes.spawnCorpse(gs, self_transform.pos);
               return false;
             } else {
-              _ = Prototypes.spawnAnimation(gs, self_transform.pos, Vec2.init(0, 0), SimpleAnim.Explosion);
+              _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.Explosion);
               return false;
             }
           }

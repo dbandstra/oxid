@@ -6,6 +6,11 @@ const EntityId = @import("game.zig").EntityId;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
+// convenience function
+pub fn phys_in_wall(phys: *C.PhysObject, pos: Math.Vec2) bool {
+  return LEVEL.box_in_wall(pos, phys.mins, phys.maxs, phys.ignore_pits);
+}
+
 pub fn phys_object_frame(gs: *GameSession, self_id: EntityId, self_phys: *C.PhysObject) bool {
   const self_transform = gs.transforms.find(self_id).?;
 
@@ -20,7 +25,7 @@ pub fn phys_object_frame(gs: *GameSession, self_id: EntityId, self_phys: *C.Phys
       if (pushdir != self_phys.facing) {
         const new_dir_vec = Math.get_dir_vec(pushdir);
         const new_pos = Math.Vec2.add(self_transform.pos, new_dir_vec);
-        if (!LEVEL.box_in_wall(new_pos, self_phys.dims, self_phys.ignore_pits)) {
+        if (!phys_in_wall(self_phys, new_pos)) {
           dir_vec = new_dir_vec;
           self_phys.facing = pushdir;
           self_transform.pos = new_pos;
@@ -31,7 +36,7 @@ pub fn phys_object_frame(gs: *GameSession, self_id: EntityId, self_phys: *C.Phys
 
     const newpos = Math.Vec2.add(self_transform.pos, dir_vec);
 
-    if (LEVEL.box_in_wall(newpos, self_phys.dims, self_phys.ignore_pits)) {
+    if (phys_in_wall(self_phys, newpos)) {
       _ = Prototypes.spawnEventCollide(gs, self_id, EntityId{ .id = 0 });
       return true;
     } else {
@@ -57,8 +62,8 @@ pub fn phys_object_frame(gs: *GameSession, self_id: EntityId, self_phys: *C.Phys
         const other_transform = gs.transforms.find(other.entity_id).?;
 
         if (boxes_overlap(
-          self_transform.pos, self_phys.dims,
-          other_transform.pos, other_phys.dims,
+          self_transform.pos, self_phys.mins, self_phys.maxs,
+          other_transform.pos, other_phys.mins, other_phys.maxs,
         )) {
           _ = Prototypes.spawnEventCollide(gs, self_id, other.entity_id);
           _ = Prototypes.spawnEventCollide(gs, other.entity_id, self_id);

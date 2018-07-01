@@ -2,15 +2,18 @@ const assert = @import("std").debug.assert;
 
 const Vec2 = @import("math.zig").Vec2;
 
-pub fn boxes_overlap(apos: Vec2, adims: Vec2, bpos: Vec2, bdims: Vec2) bool {
-  assert(adims.x > 0 and adims.y > 0);
-  assert(bdims.x > 0 and bdims.y > 0);
+pub fn boxes_overlap(
+  apos: Vec2, amins: Vec2, amaxs: Vec2,
+  bpos: Vec2, bmins: Vec2, bmaxs: Vec2,
+) bool {
+  assert(amins.x < amaxs.x and amins.y < amaxs.y);
+  assert(bmins.x < bmaxs.x and bmins.y < bmaxs.y);
 
   return
-    apos.x + adims.x > bpos.x and
-    bpos.x + bdims.x > apos.x and
-    apos.y + adims.y > bpos.y and
-    bpos.y + bdims.y > apos.y;
+    apos.x + amaxs.x >= bpos.x + bmins.x and
+    bpos.x + bmaxs.x >= apos.x + amins.x and
+    apos.y + amaxs.y >= bpos.y + bmins.y and
+    bpos.y + bmaxs.y >= apos.y + amins.y;
 }
 
 test "boxes_overlap" {

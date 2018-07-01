@@ -4,6 +4,7 @@ const get_dir_vec = @import("math.zig").get_dir_vec;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
+const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const Constants = @import("game_constants.zig");
 const components = @import("game_components.zig");
@@ -43,7 +44,8 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.NonSolid,
-    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
+    .mins = Vec2.init(0, 0),
+    .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -54,7 +56,6 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Soldier,
-    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexPlayer,
   });
 
@@ -79,7 +80,6 @@ pub fn spawnCorpse(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.SoldierCorpse,
-    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexCorpse,
   });
 
@@ -95,7 +95,8 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Enemy,
-    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
+    .mins = Vec2.init(0, 0),
+    .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -106,7 +107,6 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Monster,
-    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -131,7 +131,8 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Enemy,
-    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
+    .mins = Vec2.init(0, 0),
+    .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -142,7 +143,6 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Squid,
-    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -167,7 +167,6 @@ pub fn spawnSpawningMonster(gs: *GameSession, pos: Vec2, monsterType: SpawningMo
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.MonsterSpawn,
-    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -186,9 +185,14 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
     .pos = pos,
   });
 
+  const bullet_size = 4 * GRIDSIZE_PIXELS;
+  const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
+  const max = min + bullet_size - 1;
+
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Bullet,
-    .dims = Vec2 { .x = GRIDSIZE_SUBPIXELS/4, .y = GRIDSIZE_SUBPIXELS/4 },
+    .mins = Vec2.init(min, min),
+    .maxs = Vec2.init(max, max),
     .facing = facing,
     .speed = Constants.BulletSpeed,
     .push_dir = null,
@@ -199,7 +203,6 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Bullet,
-    .offset = Vec2.init(6, 6),
     .z_index = Constants.ZIndexBullet,
   });
 
@@ -208,7 +211,7 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
   return entity_id;
 }
 
-pub fn spawnAnimation(gs: *GameSession, pos: Vec2, ofs: Vec2, simple_anim: SimpleAnim) EntityId {
+pub fn spawnAnimation(gs: *GameSession, pos: Vec2, simple_anim: SimpleAnim) EntityId {
   const entity_id = gs.spawn();
 
   gs.transforms.create(entity_id, Transform{
@@ -217,7 +220,6 @@ pub fn spawnAnimation(gs: *GameSession, pos: Vec2, ofs: Vec2, simple_anim: Simpl
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Animation,
-    .offset = ofs,
     .z_index = Constants.ZIndexBullet, // FIXME
   });
 

@@ -63,17 +63,11 @@ pub fn game_draw(g: *GameState) void {
 }
 
 fn bullet_draw(g: *GameState, entity_id: EntityId) void {
-  const drawable = g.session.drawables.find(entity_id).?;
   const phys = g.session.phys_objects.find(entity_id).?;
   const transform = g.session.transforms.find(entity_id).?;
 
-  // graphic is 16x16, actual bullet is 4x4
-  const pos = Vec2.init(
-    transform.pos.x - drawable.offset.x * SUBPIXELS,
-    transform.pos.y - drawable.offset.y * SUBPIXELS,
-  );
   const t = get_dir_transform(phys.facing);
-  draw_block(g, pos, g.graphics.texture(Graphic.PlaBullet).handle, t);
+  draw_block(g, transform.pos, g.graphics.texture(Graphic.PlaBullet).handle, t);
 }
 
 fn soldier_draw(g: *GameState, entity_id: EntityId) void {
@@ -181,20 +175,15 @@ fn monster_spawn_draw(g: *GameState, entity_id: EntityId) void {
 
 pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
   const animation = g.session.animations.find(entity_id).?;
-  const drawable = g.session.drawables.find(entity_id).?;
   const transform = g.session.transforms.find(entity_id).?;
 
   const animcfg = getSimpleAnim(animation.simple_anim);
 
   std.debug.assert(animation.frame_index < animcfg.frames.len);
 
-  const pos = Vec2.init(
-    transform.pos.x - drawable.offset.x * SUBPIXELS,
-    transform.pos.y - drawable.offset.y * SUBPIXELS,
-  );
   const graphic = animcfg.frames[animation.frame_index];
   const tex = g.graphics.texture(graphic).handle;
-  draw_block(g, pos, tex, Transform.Identity);
+  draw_block(g, transform.pos, tex, Transform.Identity);
 }
 
 pub fn draw_map(g: *GameState) void {

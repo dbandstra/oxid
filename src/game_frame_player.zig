@@ -2,9 +2,10 @@ const std = @import("std");
 const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const Constants = @import("game_constants.zig");
-const LEVEL = @import("game_level.zig").LEVEL;
+const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
+const phys_in_wall = @import("game_frame_phys.zig").phys_in_wall;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
@@ -15,9 +16,12 @@ pub fn player_frame(gs: *GameSession, entity_id: EntityId, self_player: *C.Playe
   player_move(gs, entity_id, self_player);
 
   if (gs.shoot) {
-    // player is 16x16, bullet is 4x4
-    const bullet_ofs = Math.Vec2.init(6 * Math.SUBPIXELS, 6 * Math.SUBPIXELS);
-    _ = Prototypes.spawnBullet(gs, entity_id, Math.Vec2.add(self_transform.pos, bullet_ofs), self_phys.facing);
+    // spawn the bullet one quarter of a grid cell in front of the player
+    const pos = self_transform.pos;
+    const dir_vec = Math.get_dir_vec(self_phys.facing);
+    const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+    const bullet_pos = Math.Vec2.add(pos, ofs);
+    _ = Prototypes.spawnBullet(gs, entity_id, bullet_pos, self_phys.facing);
     gs.shoot = false;
   }
 
@@ -56,10 +60,10 @@ fn player_move(gs: *GameSession, entity_id: EntityId, self_player: *C.Player) vo
       const secondary_dir = if (ymove < 0) Math.Direction.Up else Math.Direction.Down;
 
       // prefer to move horizontally (arbitrary, but i had to pick something)
-      if (!LEVEL.box_in_wall(Math.Vec2.add(pos, Math.get_dir_vec(dir)), self_phys.dims, self_phys.ignore_pits)) {
+      if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.get_dir_vec(dir)))) {
         self_phys.facing = dir;
         self_phys.speed = self_creature.walk_speed;
-      } else if (!LEVEL.box_in_wall(Math.Vec2.add(pos, Math.get_dir_vec(secondary_dir)), self_phys.dims, self_phys.ignore_pits)) {
+      } else if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.get_dir_vec(secondary_dir)))) {
         self_phys.facing = secondary_dir;
         self_phys.speed = self_creature.walk_speed;
       }
@@ -75,7 +79,7 @@ fn player_move(gs: *GameSession, entity_id: EntityId, self_player: *C.Player) vo
 fn try_push(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysObject) void {
   const pos1 = Math.Vec2.add(pos, Math.get_dir_vec(dir));
 
-  if (!LEVEL.box_in_wall(pos1, self_phys.dims, self_phys.ignore_pits)) {
+  if (!phys_in_wall(self_phys, pos1)) {
     // no need to push, this direction works
     self_phys.facing = dir;
     self_phys.speed = speed;
@@ -87,21 +91,21 @@ fn try_push(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysO
   var i: i32 = 1;
   while (i < Constants.PlayerSlipThreshold) : (i += 1) {
     if (dir == Math.Direction.Left or dir == Math.Direction.Right) {
-      if (!LEVEL.box_in_wall(Math.Vec2.init(pos1.x, pos1.y - i), self_phys.dims, self_phys.ignore_pits)) {
+      if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y - i))) {
         slip_dir = Math.Direction.Up;
         break;
       }
-      if (!LEVEL.box_in_wall(Math.Vec2.init(pos1.x, pos1.y + i), self_phys.dims, self_phys.ignore_pits)) {
+      if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y + i))) {
         slip_dir = Math.Direction.Down;
         break;
       }
     }
     if (dir == Math.Direction.Up or dir == Math.Direction.Down) {
-      if (!LEVEL.box_in_wall(Math.Vec2.init(pos1.x - i, pos1.y), self_phys.dims, self_phys.ignore_pits)) {
+      if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x - i, pos1.y))) {
         slip_dir = Math.Direction.Left;
         break;
       }
-      if (!LEVEL.box_in_wall(Math.Vec2.init(pos1.x + i, pos1.y), self_phys.dims, self_phys.ignore_pits)) {
+      if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x + i, pos1.y))) {
         slip_dir = Math.Direction.Right;
         break;
       }

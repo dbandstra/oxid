@@ -57,18 +57,13 @@ pub fn Level(comptime w: usize, comptime h: usize) type {
         (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
     }
 
-    pub fn box_in_wall(self: *const Self, pos: Vec2, dims: Vec2, ignore_pits: bool) bool {
-      assert(dims.x > 0 and dims.y > 0);
+    pub fn box_in_wall(self: *const Self, pos: Vec2, mins: Vec2, maxs: Vec2, ignore_pits: bool) bool {
+      assert(mins.x < maxs.x and mins.y < maxs.y);
 
-      const x0 = pos.x;
-      const y0 = pos.y;
-      const x1 = pos.x + dims.x;
-      const y1 = pos.y + dims.y;
-
-      const gx0 = @divFloor(x0, GRIDSIZE_SUBPIXELS);
-      const gy0 = @divFloor(y0, GRIDSIZE_SUBPIXELS);
-      const gx1 = @divFloor(x1 - 1, GRIDSIZE_SUBPIXELS);
-      const gy1 = @divFloor(y1 - 1, GRIDSIZE_SUBPIXELS);
+      const gx0 = @divFloor(pos.x + mins.x, GRIDSIZE_SUBPIXELS);
+      const gy0 = @divFloor(pos.y + mins.y, GRIDSIZE_SUBPIXELS);
+      const gx1 = @divFloor(pos.x + maxs.x, GRIDSIZE_SUBPIXELS);
+      const gy1 = @divFloor(pos.y + maxs.y, GRIDSIZE_SUBPIXELS);
 
       var gy: i32 = gy0;
       while (gy <= gy1) : (gy += 1) {

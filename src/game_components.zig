@@ -21,7 +21,6 @@ pub const Drawable = struct {
   };
 
   drawType: Type,
-  offset: Vec2,
   z_index: u32,
 };
 
@@ -62,9 +61,11 @@ pub const PhysObject = struct {
   // currently a pretty crappy system.
   physType: Type,
 
-  // `dims`: dimensions of bounding box. origin is at the top-left
-  // TODO - replace with separate mins/maxs? (useful for bullet)
-  dims: Vec2,
+  // `mins` and `maxs`: extents of bounding box, relative to transform
+  // position. these are both inclusive, so the dimensions of the box will be
+  // (maxs - mins + 1).
+  mins: Vec2,
+  maxs: Vec2,
 
   // `facing`: direction of movement (meaningless if `speed` is 0)
   facing: Direction,

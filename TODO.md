@@ -14,6 +14,7 @@ CODE:
 - refactor so main.zig is just SDL stuff. opengl stuff (that could be reused if we swap SDL for something else) is somewhere else
 - do the old state/new state page flipping thing for deterministic game code (think functions can only read old state of other entities)
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
+- get tests passing again
 
 IDEAS:
 - enemy with a shield that deflects your bullets back at you
