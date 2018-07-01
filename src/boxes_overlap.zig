@@ -14,22 +14,22 @@ pub fn boxes_overlap(apos: Vec2, adims: Vec2, bpos: Vec2, bdims: Vec2) bool {
 }
 
 test "boxes_overlap" {
-  const dims = Vec2{ .x = 16, .y = 16 };
+  const dims = Vec2.init(16, 16);
 
   assert(!boxes_overlap(
-    Vec2{ .x = 0, .y = 0 }, dims,
-    Vec2{ .x = 16, .y = 0 }, dims,
+    Vec2.init(0, 0), dims,
+    Vec2.init(16, 0), dims,
   ));
   assert(boxes_overlap(
-    Vec2{ .x = 0, .y = 0 }, dims,
-    Vec2{ .x = 15, .y = 0 }, dims,
+    Vec2.init(0, 0), dims,
+    Vec2.init(15, 0), dims,
   ));
   assert(!boxes_overlap(
-    Vec2{ .x = 0, .y = 0 }, dims,
-    Vec2{ .x = -16, .y = 0 }, dims,
+    Vec2.init(0, 0), dims,
+    Vec2.init(-16, 0), dims,
   ));
   assert(boxes_overlap(
-    Vec2{ .x = 0, .y = 0 }, dims,
-    Vec2{ .x = -15, .y = 0 }, dims,
+    Vec2.init(0, 0), dims,
+    Vec2.init(-15, 0), dims,
   ));
 }

@@ -43,7 +43,7 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.NonSolid,
-    .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
+    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -54,7 +54,7 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Soldier,
-    .offset = Vec2{ .x = 0, .y = 0 },
+    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexPlayer,
   });
 
@@ -79,7 +79,7 @@ pub fn spawnCorpse(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.SoldierCorpse,
-    .offset = Vec2{ .x = 0, .y = 0 },
+    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexCorpse,
   });
 
@@ -95,7 +95,7 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Enemy,
-    .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
+    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -106,7 +106,7 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Monster,
-    .offset = Vec2{ .x = 0, .y = 0 },
+    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -131,7 +131,7 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Enemy,
-    .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
+    .dims = Vec2.init(GRIDSIZE_SUBPIXELS, GRIDSIZE_SUBPIXELS),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
@@ -142,7 +142,7 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Squid,
-    .offset = Vec2{ .x = 0, .y = 0 },
+    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -167,7 +167,7 @@ pub fn spawnSpawningMonster(gs: *GameSession, pos: Vec2, monsterType: SpawningMo
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.MonsterSpawn,
-    .offset = Vec2{ .x = 0, .y = 0 },
+    .offset = Vec2.init(0, 0),
     .z_index = Constants.ZIndexEnemy,
   });
 
@@ -199,7 +199,7 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
 
   gs.drawables.create(entity_id, Drawable{
     .drawType = Drawable.Type.Bullet,
-    .offset = Vec2{ .x = 6, .y = 6 },
+    .offset = Vec2.init(6, 6),
     .z_index = Constants.ZIndexBullet,
   });
 

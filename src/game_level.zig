@@ -74,7 +74,7 @@ pub fn Level(comptime w: usize, comptime h: usize) type {
       while (gy <= gy1) : (gy += 1) {
         var gx: i32 = gx0;
         while (gx <= gx1) : (gx += 1) {
-          if (self.get_gridvalue(Vec2{ .x = gx, .y = gy })) |value| {
+          if (self.get_gridvalue(Vec2.init(gx, gy))) |value| {
             const tt = get_terrain_type(value);
             if (tt == TerrainType.Wall or (!ignore_pits and tt == TerrainType.Pit)) {
               return true;

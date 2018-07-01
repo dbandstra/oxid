@@ -235,7 +235,7 @@ pub fn creature_react(gs: *GameSession, self_id: EntityId, self_creature: *Creat
               _ = Prototypes.spawnCorpse(gs, self_transform.pos);
               return false;
             } else {
-              _ = Prototypes.spawnAnimation(gs, self_transform.pos, Vec2{ .x = 0, .y = 0 }, SimpleAnim.Explosion);
+              _ = Prototypes.spawnAnimation(gs, self_transform.pos, Vec2.init(0, 0), SimpleAnim.Explosion);
               return false;
             }
           }

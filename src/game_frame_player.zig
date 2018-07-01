@@ -16,10 +16,7 @@ pub fn player_frame(gs: *GameSession, entity_id: EntityId, self_player: *C.Playe
 
   if (gs.shoot) {
     // player is 16x16, bullet is 4x4
-    const bullet_ofs = Math.Vec2{
-      .x = 6 * Math.SUBPIXELS,
-      .y = 6 * Math.SUBPIXELS,
-    };
+    const bullet_ofs = Math.Vec2.init(6 * Math.SUBPIXELS, 6 * Math.SUBPIXELS);
     _ = Prototypes.spawnBullet(gs, entity_id, Math.Vec2.add(self_transform.pos, bullet_ofs), self_phys.facing);
     gs.shoot = false;
   }

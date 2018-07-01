@@ -36,9 +36,9 @@ pub const Vec2 = struct {
 
 pub fn get_dir_vec(direction: Direction) Vec2 {
   return switch (direction) {
-    Direction.Up => Vec2{ .x = 0, .y = -1 },
-    Direction.Down => Vec2{ .x = 0, .y = 1 },
-    Direction.Left => Vec2{ .x = -1, .y = 0 },
-    Direction.Right => Vec2{ .x = 1, .y = 0 },
+    Direction.Up => Vec2.init(0, -1),
+    Direction.Down => Vec2.init(0, 1),
+    Direction.Left => Vec2.init(-1, 0),
+    Direction.Right => Vec2.init(1, 0),
   };
 }

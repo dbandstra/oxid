@@ -16,10 +16,10 @@ pub fn game_init(gs: *GameSession) void {
 }
 
 pub fn game_spawn_player(gs: *GameSession) void {
-  _ = Prototypes.spawnPlayer(gs, Vec2{
-    .x = 9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
-    .y = 5 * GRIDSIZE_SUBPIXELS,
-  });
+  _ = Prototypes.spawnPlayer(gs, Vec2.init(
+    9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
+    5 * GRIDSIZE_SUBPIXELS,
+  ));
 }
 
 pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: SpawningMonster.Type) void {

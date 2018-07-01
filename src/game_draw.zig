@@ -68,10 +68,10 @@ fn bullet_draw(g: *GameState, entity_id: EntityId) void {
   const transform = g.session.transforms.find(entity_id).?;
 
   // graphic is 16x16, actual bullet is 4x4
-  const pos = Vec2{
-    .x = transform.pos.x - drawable.offset.x * SUBPIXELS,
-    .y = transform.pos.y - drawable.offset.y * SUBPIXELS,
-  };
+  const pos = Vec2.init(
+    transform.pos.x - drawable.offset.x * SUBPIXELS,
+    transform.pos.y - drawable.offset.y * SUBPIXELS,
+  );
   const t = get_dir_transform(phys.facing);
   draw_block(g, pos, g.graphics.texture(Graphic.PlaBullet).handle, t);
 }
@@ -188,10 +188,10 @@ pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
 
   std.debug.assert(animation.frame_index < animcfg.frames.len);
 
-  const pos = Vec2{
-    .x = transform.pos.x - drawable.offset.x * SUBPIXELS,
-    .y = transform.pos.y - drawable.offset.y * SUBPIXELS,
-  };
+  const pos = Vec2.init(
+    transform.pos.x - drawable.offset.x * SUBPIXELS,
+    transform.pos.y - drawable.offset.y * SUBPIXELS,
+  );
   const graphic = animcfg.frames[animation.frame_index];
   const tex = g.graphics.texture(graphic).handle;
   draw_block(g, pos, tex, Transform.Identity);
@@ -202,7 +202,7 @@ pub fn draw_map(g: *GameState) void {
   while (y < LEVEL.h) : (y += 1) {
     var x: u31 = 0;
     while (x < LEVEL.w) : (x += 1) {
-      const gridpos = Vec2{ .x = x, .y = y };
+      const gridpos = Vec2.init(x, y);
       if (switch (LEVEL.get_gridvalue(gridpos).?) {
         0x00 => g.graphics.texture(Graphic.Floor).handle,
         0x80 => g.graphics.texture(Graphic.Wall).handle,
