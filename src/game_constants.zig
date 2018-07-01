@@ -1,4 +1,4 @@
-const u31 = @IntType(false, 31);
+const u31 = @import("types.zig").u31;
 
 // limits
 
@@ -6,6 +6,10 @@ pub const MaxRemovalsPerFrame: usize = 1000;
 pub const MaxComponentsPerType: usize = 1000; // FIXME - different for each type
 
 // game
+
+// if you push into a wall but there is corner within this distance, move
+// around the corner.
+pub const PlayerSlipThreshold = 12*16; // FIXME - use screen space
 
 pub const PlayerRespawnTime: u32 = 120; // 2 seconds
 

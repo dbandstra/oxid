@@ -1,5 +1,6 @@
 const Direction = @import("math.zig").Direction;
 const Vec2 = @import("math.zig").Vec2;
+const get_dir_vec = @import("math.zig").get_dir_vec;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
@@ -45,8 +46,10 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
     .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
     .facing = Direction.Right,
     .speed = 0,
+    .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
     .damages = false,
+    .ignore_pits = false,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -95,8 +98,10 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
     .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
     .facing = Direction.Right,
     .speed = 0,
+    .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
     .damages = true,
+    .ignore_pits = false,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -129,8 +134,10 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
     .dims = Vec2{ .x = GRIDSIZE_SUBPIXELS, .y = GRIDSIZE_SUBPIXELS },
     .facing = Direction.Right,
     .speed = 0,
+    .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
     .damages = true,
+    .ignore_pits = false,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -184,8 +191,10 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
     .dims = Vec2 { .x = GRIDSIZE_SUBPIXELS/4, .y = GRIDSIZE_SUBPIXELS/4 },
     .facing = facing,
     .speed = Constants.BulletSpeed,
+    .push_dir = null,
     .owner_id = owner_id,
     .damages = true,
+    .ignore_pits = true,
   });
 
   gs.drawables.create(entity_id, Drawable{

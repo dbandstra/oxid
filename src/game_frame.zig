@@ -1,4 +1,5 @@
 const std = @import("std");
+const u31 = @import("types.zig").u31;
 const SUBPIXELS = @import("math.zig").SUBPIXELS;
 const Direction = @import("math.zig").Direction;
 const Vec2 = @import("math.zig").Vec2;
@@ -27,6 +28,10 @@ const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
 const Prototypes = @import("game_prototypes.zig");
 const monster_frame = @import("game_frame_monster.zig").monster_frame;
+const monster_react = @import("game_frame_monster.zig").monster_react;
+const phys_object_frame = @import("game_frame_phys.zig").phys_object_frame;
+const player_frame = @import("game_frame_player.zig").player_frame;
+const player_react = @import("game_frame_player.zig").player_react;
 
 fn RunFrame(
   comptime T: type,
@@ -57,6 +62,8 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(PhysObject, gs, &gs.phys_objects, phys_object_frame);
   RunFrame(Bullet, gs, &gs.bullets, bullet_react);
   RunFrame(Creature, gs, &gs.creatures, creature_react);
+  RunFrame(Player, gs, &gs.players, player_react);
+  RunFrame(Monster, gs, &gs.monsters, monster_react);
   RunFrame(GameController, gs, &gs.game_controllers, game_controller_react);
 
   RunFrame(EventCollide, gs, &gs.event_collides, null);
@@ -182,124 +189,6 @@ fn animation_frame(gs: *GameSession, self_id: EntityId, self: *Animation) bool {
     if (self.frame_index >= animcfg.frames.len) {
       return false;
     }
-  }
-
-  return true;
-}
-
-fn phys_object_frame(gs: *GameSession, self_id: EntityId, self_phys: *PhysObject) bool {
-  const self_transform = gs.transforms.find(self_id).?;
-
-  const dir = get_dir_vec(self_phys.facing);
-
-  // hit walls
-  var i: i32 = 0;
-  while (i < self_phys.speed) : (i += 1) {
-    const newpos = Vec2.add(self_transform.pos, dir);
-
-    if (LEVEL.box_in_wall(newpos, self_phys.dims, true)) {
-      _ = Prototypes.spawnEventCollide(gs, self_id, EntityId{ .id = 0 });
-      return true;
-    } else {
-      self_transform.pos = newpos;
-    }
-  }
-
-  // hit other physics objects
-  // FIXME - this prioritizes earlier entities in the list!
-  for (gs.phys_objects.objects[0..gs.phys_objects.count]) |*other| {
-    if (other.is_active and
-        other.entity_id.id != self_id.id and
-        other.entity_id.id != self_phys.owner_id.id and
-        other.data.owner_id.id != self_id.id) {
-      const other_phys = &other.data;
-
-      if (switch (self_phys.physType) {
-        PhysObject.Type.NonSolid => false,
-        PhysObject.Type.Player => false,
-        PhysObject.Type.Enemy => other_phys.physType == PhysObject.Type.Player,
-        PhysObject.Type.Bullet => other_phys.physType == PhysObject.Type.Enemy,
-      }) {
-        const other_transform = gs.transforms.find(other.entity_id).?;
-
-        if (boxes_overlap(
-          self_transform.pos, self_phys.dims,
-          other_transform.pos, other_phys.dims,
-        )) {
-          _ = Prototypes.spawnEventCollide(gs, self_id, other.entity_id);
-          _ = Prototypes.spawnEventCollide(gs, other.entity_id, self_id);
-          return true;
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
-fn player_frame(gs: *GameSession, entity_id: EntityId, player: *Player) bool {
-  const creature = gs.creatures.find(entity_id).?;
-  const phys = gs.phys_objects.find(entity_id).?;
-  const transform = gs.transforms.find(entity_id).?;
-
-  var xmove: i32 = 0;
-  var ymove: i32 = 0;
-
-  if (gs.in_right) {
-    xmove += 1;
-  }
-  if (gs.in_left) {
-    xmove -= 1;
-  }
-  if (gs.in_down) {
-    ymove += 1;
-  }
-  if (gs.in_up) {
-    ymove -= 1;
-  }
-
-  var i: @IntType(false, 31) = 0;
-  while (i < creature.walk_speed) : (i += 1) {
-    const x = transform.pos.x;
-    const y = transform.pos.y;
-
-    // if you are holding both horizontal and vertical keys, prefer to move on
-    // the axis you are not facing along.
-    // for example, if you are facing right, holding right and up, prefer to go
-    // up.
-    if (xmove != 0 and (ymove == 0 or phys.facing == Direction.Up or phys.facing == Direction.Down)) {
-      if (!LEVEL.box_in_wall(Vec2{ .x = x + xmove, .y = y }, phys.dims, false)) {
-        transform.pos.x += xmove;
-        phys.facing = if (xmove > 0) Direction.Right else Direction.Left;
-      } else if (ymove != 0 and !LEVEL.box_in_wall(Vec2{ .x = x, .y = y + ymove }, phys.dims, false)) {
-        transform.pos.y += ymove;
-        phys.facing = if (ymove > 0) Direction.Down else Direction.Up;
-      } else {
-        break;
-      }
-    } else if (ymove != 0) {
-      if (!LEVEL.box_in_wall(Vec2{ .x = x, .y = y + ymove }, phys.dims, false)) {
-        transform.pos.y += ymove;
-        phys.facing = if (ymove > 0) Direction.Down else Direction.Up;
-      } else if (xmove != 0 and !LEVEL.box_in_wall(Vec2{ .x = x + xmove, .y = y}, phys.dims, false)) {
-        transform.pos.x += xmove;
-        phys.facing = if (xmove > 0) Direction.Right else Direction.Left;
-      } else {
-        break;
-      }
-    } else {
-      break;
-    }
-  }
-
-  if (gs.shoot) {
-    // player is 16x16, bullet is 4x4
-    const bullet_ofs = Vec2{
-      .x = 6 * SUBPIXELS,
-      .y = 6 * SUBPIXELS,
-    };
-    _ = Prototypes.spawnBullet(gs, entity_id, Vec2.add(transform.pos, bullet_ofs), phys.facing);
-    gs.shoot = false;
   }
 
   return true;

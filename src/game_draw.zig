@@ -1,6 +1,7 @@
 const std = @import("std");
 const sort = std.sort.sort;
 const c = @import("c.zig");
+const u31 = @import("types.zig").u31;
 const GameState = @import("main.zig").GameState;
 const Transform = @import("main.zig").Transform;
 const fillRect = @import("main.zig").fillRect;
@@ -197,9 +198,9 @@ pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
 }
 
 pub fn draw_map(g: *GameState) void {
-  var y: @IntType(false, 31) = 0;
+  var y: u31 = 0;
   while (y < LEVEL.h) : (y += 1) {
-    var x: @IntType(false, 31) = 0;
+    var x: u31 = 0;
     while (x < LEVEL.w) : (x += 1) {
       const gridpos = Vec2{ .x = x, .y = y };
       if (switch (LEVEL.get_gridvalue(gridpos).?) {

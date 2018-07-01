@@ -12,6 +12,13 @@ pub const Vec2 = struct {
   x: i32,
   y: i32,
 
+  pub fn init(x: i32, y: i32) Vec2 {
+    return Vec2{
+      .x = x,
+      .y = y,
+    };
+  }
+
   pub fn add(a: *const Vec2, b: *const Vec2) Vec2 {
     return Vec2{
       .x = a.x + b.x,
