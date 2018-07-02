@@ -17,6 +17,7 @@ const SpawningMonster = components.SpawningMonster;
 const Transform = components.Transform;
 const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
+const EventTakeDamage = components.EventTakeDamage;
 
 pub const InputEvent = enum {
   Left,
@@ -113,6 +114,8 @@ pub const GameSession = struct {
   removals: [Constants.MaxRemovalsPerFrame]EntityId,
   num_removals: usize,
 
+  god_mode: bool,
+
   animations: ComponentList(Animation),
   bullets: ComponentList(Bullet),
   creatures: ComponentList(Creature),
@@ -125,6 +128,7 @@ pub const GameSession = struct {
   transforms: ComponentList(Transform),
   event_collides: ComponentList(EventCollide),
   event_player_dieds: ComponentList(EventPlayerDied),
+  event_take_damages: ComponentList(EventTakeDamage),
 
   in_left: bool,
   in_right: bool,
@@ -152,6 +156,7 @@ pub const GameSession = struct {
       .next_entity_id = 1,
       .removals = undefined,
       .num_removals = 0,
+      .god_mode = false,
       .animations = ComponentList(Animation).init(),
       .bullets = ComponentList(Bullet).init(),
       .creatures = ComponentList(Creature).init(),
@@ -164,6 +169,7 @@ pub const GameSession = struct {
       .transforms = ComponentList(Transform).init(),
       .event_collides = ComponentList(EventCollide).init(),
       .event_player_dieds = ComponentList(EventPlayerDied).init(),
+      .event_take_damages = ComponentList(EventTakeDamage).init(),
       .in_up = false,
       .in_down = false,
       .in_left = false,
@@ -204,6 +210,7 @@ pub const GameSession = struct {
       self.transforms.destroy(entity_id);
       self.event_collides.destroy(entity_id);
       self.event_player_dieds.destroy(entity_id);
+      self.event_take_damages.destroy(entity_id);
     }
     self.num_removals = 0;
   }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const Vec2 = @import("math.zig").Vec2;
+const Math = @import("math.zig");
 const Constants = @import("game_constants.zig");
 const GameSession = @import("game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
@@ -12,11 +12,10 @@ pub fn game_init(gs: *GameSession) void {
   _ = Prototypes.spawnGameController(gs);
 
   game_spawn_player(gs);
-  // game_spawn_more(gs);
 }
 
 pub fn game_spawn_player(gs: *GameSession) void {
-  _ = Prototypes.spawnPlayer(gs, Vec2.init(
+  _ = Prototypes.spawnPlayer(gs, Math.Vec2.init(
     9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
     5 * GRIDSIZE_SUBPIXELS,
   ));
@@ -24,16 +23,16 @@ pub fn game_spawn_player(gs: *GameSession) void {
 
 pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: SpawningMonster.Type) void {
   std.debug.assert(count <= 100);
-  var spawn_locs: [100]Vec2 = undefined;
+  var spawn_locs: [100]Math.Vec2 = undefined;
   pick_spawn_locations(gs, spawn_locs[0..count]);
   for (spawn_locs[0..count]) |loc| {
-    _ = Prototypes.spawnSpawningMonster(gs, Vec2.scale(loc, GRIDSIZE_SUBPIXELS), monsterType);
+    _ = Prototypes.spawnSpawningMonster(gs, Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS), monsterType);
   }
 }
 
 // fill given slice with random grid positions, none of which is in a wall and
 // none of which are in the same place
-fn pick_spawn_locations(gs: *GameSession, out_gridlocs: []Vec2) void {
+fn pick_spawn_locations(gs: *GameSession, out_gridlocs: []Math.Vec2) void {
   var i: usize = 0;
 
   while (i < out_gridlocs.len) : (i += 1) {

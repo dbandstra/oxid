@@ -26,12 +26,13 @@ const Player = components.Player;
 const SpawningMonster = components.SpawningMonster;
 const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
+const EventTakeDamage = components.EventTakeDamage;
 const Prototypes = @import("game_prototypes.zig");
+const physics_frame = @import("game_physics.zig").physics_frame;
 const monster_frame = @import("game_frame_monster.zig").monster_frame;
-const monster_react = @import("game_frame_monster.zig").monster_react;
-const phys_object_frame = @import("game_frame_phys.zig").phys_object_frame;
+const monster_collide = @import("game_frame_monster.zig").monster_collide;
 const player_frame = @import("game_frame_player.zig").player_frame;
-const player_react = @import("game_frame_player.zig").player_react;
+const player_collide = @import("game_frame_player.zig").player_collide;
 
 fn RunFrame(
   comptime T: type,
@@ -59,15 +60,25 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(Player, gs, &gs.players, player_frame);
   RunFrame(Monster, gs, &gs.monsters, monster_frame);
   RunFrame(Creature, gs, &gs.creatures, creature_frame);
-  RunFrame(PhysObject, gs, &gs.phys_objects, phys_object_frame);
-  RunFrame(Bullet, gs, &gs.bullets, bullet_react);
-  RunFrame(Creature, gs, &gs.creatures, creature_react);
-  RunFrame(Player, gs, &gs.players, player_react);
-  RunFrame(Monster, gs, &gs.monsters, monster_react);
+
+  physics_frame(gs);
+
+  // bullets react to event_collide, spawn event_take_damage
+  RunFrame(Bullet, gs, &gs.bullets, bullet_collide);
+  // monsters react to event_collide, damage others
+  RunFrame(Monster, gs, &gs.monsters, monster_collide);
+  // players react to event_collide, damage self
+  RunFrame(Player, gs, &gs.players, player_collide);
+
+  // creatures react to event_take_damage, die
+  RunFrame(Creature, gs, &gs.creatures, creature_take_damage);
+
+  // game controller reacts to 'player died' event
   RunFrame(GameController, gs, &gs.game_controllers, game_controller_react);
 
   RunFrame(EventCollide, gs, &gs.event_collides, null);
   RunFrame(EventPlayerDied, gs, &gs.event_player_dieds, null);
+  RunFrame(EventTakeDamage, gs, &gs.event_take_damages, null);
 
   gs.purge_removed();
   gs.frameindex +%= 1;
@@ -197,46 +208,49 @@ fn animation_frame(gs: *GameSession, self_id: EntityId, self: *Animation) bool {
 fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *Creature) bool {
   if (self_creature.invulnerability_timer > 0) {
     self_creature.invulnerability_timer -= 1;
-    if (self_creature.invulnerability_timer == 0) {
-      const self_phys = gs.phys_objects.find(self_id).?;
-
-      self_phys.physType = self_creature.defaultPhysType;
-    }
   }
   return true;
 }
 
-pub fn bullet_react(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet) bool {
+pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet) bool {
   for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       const self_transform = gs.transforms.find(self_id).?;
       _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.PlaSparks);
+      if (object.data.other_id.id != 0) {
+        const amount: u32 = 1;
+        _ = Prototypes.spawnEventTakeDamage(gs, object.data.other_id, amount);
+      }
       return false;
     }
   }
   return true;
 }
 
-pub fn creature_react(gs: *GameSession, self_id: EntityId, self_creature: *Creature) bool {
-  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: *Creature) bool {
+  if (self_creature.invulnerability_timer > 0) {
+    return true;
+  }
+  for (gs.event_take_damages.objects[0..gs.event_collides.count]) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
-      if (object.data.other_id.id != 0) {
-        const other = gs.phys_objects.find(object.data.other_id).?;
-        if (other.damages) {
-          if (self_creature.hit_points > 1) {
-            self_creature.hit_points -= 1;
-          } else if (self_creature.hit_points == 1) {
-            self_creature.hit_points = 0;
-            const self_transform = gs.transforms.find(self_id).?;
-            if (gs.players.find(self_id)) |_| {
-              _ = Prototypes.spawnEventPlayerDied(gs);
-              _ = Prototypes.spawnCorpse(gs, self_transform.pos);
-              return false;
-            } else {
-              _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.Explosion);
-              return false;
-            }
-          }
+      if (gs.players.find(self_id)) |_| {
+        if (gs.god_mode) {
+          continue;
+        }
+      }
+      const amount = object.data.amount;
+      if (self_creature.hit_points > amount) {
+        self_creature.hit_points -= amount;
+      } else if (self_creature.hit_points > 0) {
+        self_creature.hit_points = 0;
+        const self_transform = gs.transforms.find(self_id).?;
+        if (gs.players.find(self_id)) |_| {
+          _ = Prototypes.spawnEventPlayerDied(gs);
+          _ = Prototypes.spawnCorpse(gs, self_transform.pos);
+          return false;
+        } else {
+          _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.Explosion);
+          return false;
         }
       }
     }

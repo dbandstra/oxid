@@ -45,31 +45,41 @@ pub const ShaderProgram = struct {
 
     pub fn uniform_location(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
         const id = c.glGetUniformLocation(sp.program_id, name);
-        if (id == -1) {
-            _ = c.printf(c"invalid uniform: %s\n", name);
-            os.abort();
-        }
+        // if (id == -1) {
+        //     _ = c.printf(c"invalid uniform: %s\n", name);
+        //     os.abort();
+        // }
         return id;
     }
 
     pub fn set_uniform_int(sp: *const ShaderProgram, uniform_id: c.GLint, value: c_int) void {
-        c.glUniform1i(uniform_id, value);
+        if (uniform_id != -1) {
+            c.glUniform1i(uniform_id, value);
+        }
     }
 
     pub fn set_uniform_float(sp: *const ShaderProgram, uniform_id: c.GLint, value: f32) void {
-        c.glUniform1f(uniform_id, value);
+        if (uniform_id != -1) {
+            c.glUniform1f(uniform_id, value);
+        }
     }
 
     pub fn set_uniform_vec3(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const math3d.Vec3) void {
-        c.glUniform3fv(uniform_id, 1, value.data[0..].ptr);
+        if (uniform_id != -1) {
+            c.glUniform3fv(uniform_id, 1, value.data[0..].ptr);
+        }
     }
 
     pub fn set_uniform_vec4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Vec4) void {
-        c.glUniform4fv(uniform_id, 1, value.data[0..].ptr);
+        if (uniform_id != -1) {
+            c.glUniform4fv(uniform_id, 1, value.data[0..].ptr);
+        }
     }
 
     pub fn set_uniform_mat4x4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Mat4x4) void {
-        c.glUniformMatrix4fv(uniform_id, 1, c.GL_FALSE, value.data[0][0..].ptr);
+        if (uniform_id != -1) {
+            c.glUniformMatrix4fv(uniform_id, 1, c.GL_FALSE, value.data[0][0..].ptr);
+        }
     }
 
     pub fn destroy(sp: *ShaderProgram) void {

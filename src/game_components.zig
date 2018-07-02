@@ -26,7 +26,6 @@ pub const Drawable = struct {
 
 pub const Creature = struct {
   invulnerability_timer: u32,
-  defaultPhysType: PhysObject.Type,
   hit_points: u32,
   walk_speed: u31,
 };
@@ -53,8 +52,7 @@ pub const PhysObject = struct {
   pub const Type = enum{
     NonSolid,
     Bullet,
-    Player,
-    Enemy,
+    Creature,
   };
 
   // `physType`: determines whether the object collides with other objects.
@@ -87,10 +85,19 @@ pub const PhysObject = struct {
   // will lose one hit point
   // TODO - remove this. it should be possible to implement it more generically
   // (in the Bullet component)
-  damages: bool,
+  // damages: bool,
 
   // `ignore_pits`: if true, this object can travel over pits
   ignore_pits: bool,
+
+  // internal fields used by physics step
+  internal: PhysObjectInternal,
+};
+
+pub const PhysObjectInternal = struct {
+  move_mins: Vec2,
+  move_maxs: Vec2,
+  group_index: usize,
 };
 
 pub const Player = struct {
@@ -118,4 +125,9 @@ pub const EventCollide = struct {
 
 pub const EventPlayerDied = struct {
   unused: bool, // remove once #1178 is fixed
+};
+
+pub const EventTakeDamage = struct {
+  self_id: EntityId,
+  amount: u32,
 };

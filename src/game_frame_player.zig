@@ -5,7 +5,7 @@ const Constants = @import("game_constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
-const phys_in_wall = @import("game_frame_phys.zig").phys_in_wall;
+const phys_in_wall = @import("game_physics.zig").phys_in_wall;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
@@ -28,7 +28,19 @@ pub fn player_frame(gs: *GameSession, entity_id: EntityId, self_player: *C.Playe
   return true;
 }
 
-pub fn player_react(gs: *GameSession, entity_id: EntityId, self_player: *C.Player) bool {
+// if player touches a monster, damage self
+pub fn player_collide(gs: *GameSession, self_id: EntityId, self_player: *C.Player) bool {
+  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+    if (object.is_active and object.data.self_id.id == self_id.id) {
+      if (object.data.other_id.id != 0) {
+        if (gs.monsters.find(object.data.other_id)) |_| {
+          const amount: u32 = 1;
+          _ = Prototypes.spawnEventTakeDamage(gs, self_id, amount);
+        }
+      }
+    }
+  }
+
   return true;
 }
 

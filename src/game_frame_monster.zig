@@ -4,6 +4,7 @@ const LEVEL = @import("game_level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
 const EntityId = @import("game.zig").EntityId;
 const C = @import("game_components.zig");
+const Prototypes = @import("game_prototypes.zig");
 
 pub fn monster_frame(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) bool {
   const self_creature = gs.creatures.find(self_id).?;
@@ -25,21 +26,31 @@ pub fn monster_frame(gs: *GameSession, self_id: EntityId, self_monster: *C.Monst
   return true;
 }
 
-pub fn monster_react(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) bool {
+pub fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) bool {
   const self_creature = gs.creatures.find(self_id).?;
   const self_phys = gs.phys_objects.find(self_id).?;
 
   var hit_wall = false;
+  var hit_creature = false;
 
   for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       if (object.data.other_id.id == 0) {
         hit_wall = true;
+      } else {
+        if (gs.creatures.find(object.data.other_id)) |other_creature| {
+          hit_creature = true;
+          if (gs.monsters.find(object.data.other_id) == null) {
+            // if it's a non-monster creature, inflict damage on it
+            const amount: u32 = 1;
+            _ = Prototypes.spawnEventTakeDamage(gs, object.data.other_id, amount);
+          }
+        }
       }
     }
   }
 
-  if (hit_wall) {
+  if (hit_wall or hit_creature) {
     // change direction
     const r = gs.getRand().scalar(bool);
     self_phys.facing = switch(self_phys.facing) {

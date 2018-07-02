@@ -20,6 +20,7 @@ const SpawningMonster = components.SpawningMonster;
 const Transform = components.Transform;
 const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
+const EventTakeDamage = components.EventTakeDamage;
 
 pub fn spawnGameController(gs: *GameSession) EntityId {
   const entity_id = gs.spawn();
@@ -43,15 +44,15 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
   });
 
   gs.phys_objects.create(entity_id, PhysObject{
-    .physType = PhysObject.Type.NonSolid,
+    .physType = PhysObject.Type.Creature,
     .mins = Vec2.init(0, 0),
     .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
-    .damages = false,
     .ignore_pits = false,
+    .internal = undefined,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -62,7 +63,6 @@ pub fn spawnPlayer(gs: *GameSession, pos: Vec2) EntityId {
   gs.creatures.create(entity_id, Creature{
     .invulnerability_timer = Constants.InvulnerabilityTime,
     .hit_points = 1,
-    .defaultPhysType = PhysObject.Type.Player,
     .walk_speed = Constants.PlayerWalkSpeed,
   });
 
@@ -94,15 +94,15 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
   });
 
   gs.phys_objects.create(entity_id, PhysObject{
-    .physType = PhysObject.Type.Enemy,
+    .physType = PhysObject.Type.Creature,
     .mins = Vec2.init(0, 0),
     .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
-    .damages = true,
     .ignore_pits = false,
+    .internal = undefined,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -113,7 +113,6 @@ pub fn spawnSpider(gs: *GameSession, pos: Vec2) EntityId {
   gs.creatures.create(entity_id, Creature{
     .invulnerability_timer = 0,
     .hit_points = Constants.SpiderHitPoints,
-    .defaultPhysType = PhysObject.Type.Enemy,
     .walk_speed = Constants.SpiderWalkSpeed,
   });
 
@@ -130,15 +129,15 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
   });
 
   gs.phys_objects.create(entity_id, PhysObject{
-    .physType = PhysObject.Type.Enemy,
+    .physType = PhysObject.Type.Creature,
     .mins = Vec2.init(0, 0),
     .maxs = Vec2.init(GRIDSIZE_SUBPIXELS - 1, GRIDSIZE_SUBPIXELS - 1),
     .facing = Direction.Right,
     .speed = 0,
     .push_dir = null,
     .owner_id = EntityId{ .id = 0 },
-    .damages = true,
     .ignore_pits = false,
+    .internal = undefined,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -149,7 +148,6 @@ pub fn spawnSquid(gs: *GameSession, pos: Vec2) EntityId {
   gs.creatures.create(entity_id, Creature{
     .invulnerability_timer = 0,
     .hit_points = Constants.SquidHitPoints,
-    .defaultPhysType = PhysObject.Type.Enemy,
     .walk_speed = Constants.SquidWalkSpeed,
   });
 
@@ -197,8 +195,8 @@ pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Vec2, facing: Dire
     .speed = Constants.BulletSpeed,
     .push_dir = null,
     .owner_id = owner_id,
-    .damages = true,
     .ignore_pits = true,
+    .internal = undefined,
   });
 
   gs.drawables.create(entity_id, Drawable{
@@ -238,6 +236,17 @@ pub fn spawnEventCollide(gs: *GameSession, self_id: EntityId, other_id: EntityId
   gs.event_collides.create(entity_id, EventCollide{
     .self_id = self_id,
     .other_id = other_id,
+  });
+
+  return entity_id;
+}
+
+pub fn spawnEventTakeDamage(gs: *GameSession, self_id: EntityId, amount: u32) EntityId {
+  const entity_id = gs.spawn();
+
+  gs.event_take_damages.create(entity_id, EventTakeDamage{
+    .self_id = self_id,
+    .amount = amount,
   });
 
   return entity_id;

@@ -51,6 +51,7 @@ pub const GameState = struct {
   projection: Mat4x4,
   graphics: Graphics,
   session: GameSession,
+  render_move_boxes: bool,
 };
 pub var game_state: GameState = undefined;
 
@@ -129,6 +130,7 @@ pub fn main() !void {
   _ = c.SDL_GL_MakeCurrent(window, glcontext);
 
   const g = &game_state;
+  g.render_move_boxes = false;
   g.session = GameSession.init();
   game_init(&g.session);
 
@@ -194,6 +196,13 @@ pub fn main() !void {
             },
             c.SDLK_RETURN => {
               game_spawn_monsters(&g.session, 8, SpawningMonster.Type.Spider);
+            },
+            c.SDLK_F2 => {
+              g.render_move_boxes = !g.render_move_boxes;
+            },
+            c.SDLK_F3 => {
+              g.session.god_mode = !g.session.god_mode;
+              std.debug.warn("god mode {}\n", if (g.session.god_mode) "enabled" else "disabled");
             },
             c.SDLK_UP => game_input(&g.session, InputEvent.Up, true),
             c.SDLK_DOWN => game_input(&g.session, InputEvent.Down, true),
@@ -281,4 +290,25 @@ pub fn fillRect(g: *GameState, texid: c.GLuint, x: f32, y: f32, w: f32, h: f32, 
   const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
   const mvp = g.projection.mult(model);
   fillRectMvp(g, texid, mvp, transform);
+}
+
+pub fn drawBox(g: *GameState, x: f32, y: f32, w: f32, h: f32, R: f32, G: f32, B: f32) void {
+  const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
+  const mvp = g.projection.mult(model);
+
+  const color = vec4(R, G, B, 1);
+
+  g.shaders.primitive.bind();
+  g.shaders.primitive.set_uniform_vec4(g.shaders.primitive_uniform_color, &color);
+  g.shaders.primitive.set_uniform_mat4x4(g.shaders.primitive_uniform_mvp, mvp);
+
+  if (g.shaders.primitive_attrib_position >= 0) { // ?
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_vertex_buffer);
+    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.primitive_attrib_position));
+    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.primitive_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
+  }
+
+  c.glPolygonMode(c.GL_FRONT, c.GL_LINE);
+  c.glDrawArrays(c.GL_QUAD_STRIP, 0, 4);
+  c.glPolygonMode(c.GL_FRONT, c.GL_FILL);
 }

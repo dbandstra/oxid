@@ -4,6 +4,7 @@ const c = @import("c.zig");
 const u31 = @import("types.zig").u31;
 const GameState = @import("main.zig").GameState;
 const Transform = @import("main.zig").Transform;
+const drawBox = @import("main.zig").drawBox;
 const fillRect = @import("main.zig").fillRect;
 const Direction = @import("math.zig").Direction;
 const SUBPIXELS = @import("math.zig").SUBPIXELS;
@@ -58,6 +59,19 @@ pub fn game_draw(g: *GameState) void {
       Drawable.Type.Squid => squid_draw(g, object.entity_id),
       Drawable.Type.Bullet => bullet_draw(g, object.entity_id),
       Drawable.Type.Animation => animation_draw(g, object.entity_id),
+    }
+  }
+
+  if (g.render_move_boxes) {
+    for (g.session.phys_objects.objects[0..g.session.phys_objects.count]) |*object| {
+      if (!object.is_active) {
+        continue;
+      }
+      const int = object.data.internal;
+      const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
+      const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
+      const B = @intCast(u8, 64 + ((int.group_index * 10031) % 192));
+      draw_box(g, int.move_mins, int.move_maxs, R, G, B);
     }
   }
 }
@@ -217,10 +231,25 @@ pub fn get_dir_transform(direction: Direction) Transform {
   };
 }
 
-pub fn draw_block(g: *GameState, pos: *const Vec2, tex: c.GLuint, transform: Transform) void {
+pub fn draw_block(g: *GameState, pos: Vec2, tex: c.GLuint, transform: Transform) void {
   const x = @intToFloat(f32, @divFloor(pos.x, SUBPIXELS)); // TODO - round
   const y = @intToFloat(f32, @divFloor(pos.y, SUBPIXELS)); // TODO - round
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
   fillRect(g, tex, x, y, w, h, transform);
+}
+
+pub fn draw_box(g: *GameState, absmin: Vec2, absmax: Vec2, R: u8, G: u8, B: u8) void {
+  const x0 = @intToFloat(f32, @divFloor(absmin.x, SUBPIXELS));
+  const y0 = @intToFloat(f32, @divFloor(absmin.y, SUBPIXELS));
+  const x1 = @intToFloat(f32, @divFloor(absmax.x + 1, SUBPIXELS));
+  const y1 = @intToFloat(f32, @divFloor(absmax.y + 1, SUBPIXELS));
+  const w = x1 - x0;
+  const h = y1 - y0;
+  drawBox(
+    g, x0, y0, w, h,
+    @intToFloat(f32, R) / 255.0,
+    @intToFloat(f32, G) / 255.0,
+    @intToFloat(f32, B) / 255.0,
+  );
 }
