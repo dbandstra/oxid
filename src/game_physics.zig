@@ -136,9 +136,8 @@ pub fn physics_frame(gs: *GameSession) void {
       continue;
     }
     var member: ?*MoveGroupMember = move_group.head;
-    while (member) |m| {
+    while (member) |m| : (member = m.next) {
       m.phys.internal.group_index = i;
-      member = m.next;
     }
   }
 
@@ -151,7 +150,7 @@ pub fn physics_frame(gs: *GameSession) void {
     // TODO - could i find the least common multiple?
     var speed_product: u31 = 0;
     var member: ?*MoveGroupMember = move_group.head;
-    while (member) |m| {
+    while (member) |m| : (member = m.next) {
       if (m.phys.speed > 0) {
         if (speed_product != 0) {
           speed_product *= @intCast(u31, m.phys.speed);
@@ -159,18 +158,16 @@ pub fn physics_frame(gs: *GameSession) void {
           speed_product = @intCast(u31, m.phys.speed);
         }
       }
-      member = m.next;
     }
 
     // calculate step amount for each group member
     member = move_group.head;
-    while (member) |m| {
+    while (member) |m| : (member = m.next) {
       if (m.phys.speed > 0) {
         m.step = speed_product / @intCast(u31, m.phys.speed);
       } else {
         m.step = 0;
       }
-      member = m.next;
     }
 
     // members take turns moving forward one subpixel
@@ -184,7 +181,7 @@ pub fn physics_frame(gs: *GameSession) void {
       // bah... nevermind. there are bigger problems than this
       var lowest: ?*MoveGroupMember = null;
       member = move_group.head;
-      while (member) |m| {
+      while (member) |m| : (member = m.next) {
         if (m.phys.speed != 0 and m.progress < speed_product) {
           if (lowest) |l| {
             if (m.progress < l.progress) {
@@ -194,7 +191,6 @@ pub fn physics_frame(gs: *GameSession) void {
             lowest = m;
           }
         }
-        member = m.next;
       }
 
       if (lowest) |m| {
@@ -222,7 +218,7 @@ pub fn physics_frame(gs: *GameSession) void {
         }
 
         var other: ?*MoveGroupMember = move_group.head;
-        while (other) |o| {
+        while (other) |o| : (other = o.next) {
           if (o != m and
               o.entity_id.id != m.phys.owner_id.id and
               o.phys.owner_id.id != m.entity_id.id and
@@ -236,7 +232,6 @@ pub fn physics_frame(gs: *GameSession) void {
               hit_something = true;
             }
           }
-          other = o.next;
         }
 
         if (!hit_something) {
@@ -261,7 +256,7 @@ fn merge_move_groups(dest: *MoveGroup, src: *MoveGroup) void {
   var member: ?*MoveGroupMember = undefined;
   member = dest.head; while (member) |m| { old_dest_count += 1; member = m.next; }
   member = src.head; while (member) |m| { old_src_count += 1; member = m.next; }
-  
+
   var last_member = dest.head;
   while (last_member.next) |next| {
     last_member = next;
@@ -277,11 +272,10 @@ fn merge_move_groups(dest: *MoveGroup, src: *MoveGroup) void {
 
 fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
   var member: ?*MoveGroupMember = move_group.head;
-  while (member) |m| {
+  while (member) |m| : (member = m.next) {
     if (abs_boxes_overlap(phys.internal.move_mins, phys.internal.move_maxs, m.phys.internal.move_mins, m.phys.internal.move_maxs)) {
       return true;
     }
-    member = m.next;
   }
   return false;
 }

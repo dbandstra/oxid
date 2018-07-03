@@ -13,6 +13,7 @@ I've also been interested in game programming for a long time. I chose to clone 
 ## How to play
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
 * Install [Zig](https://ziglang.org/download/) (get it from master, version 0.2.0 is too old)
+* Depending on your version of Git, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
 * `zig build play`
 
 ## Notes
