@@ -31,8 +31,8 @@ const Prototypes = @import("game_prototypes.zig");
 const physics_frame = @import("game_physics.zig").physics_frame;
 const monster_frame = @import("game_frame_monster.zig").monster_frame;
 const monster_collide = @import("game_frame_monster.zig").monster_collide;
-const player_frame = @import("game_frame_player.zig").player_frame;
-const player_collide = @import("game_frame_player.zig").player_collide;
+const PlayerMovementSystem = @import("game_frame_player.zig").PlayerMovementSystem;
+const PlayerTouchResponseSystem = @import("game_frame_player.zig").PlayerTouchResponseSystem;
 
 fn RunFrame(
   comptime T: type,
@@ -57,7 +57,7 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(GameController, gs, &gs.game_controllers, game_controller_frame);
   RunFrame(SpawningMonster, gs, &gs.spawning_monsters, spawning_monster_frame);
   RunFrame(Animation, gs, &gs.animations, animation_frame);
-  RunFrame(Player, gs, &gs.players, player_frame);
+  PlayerMovementSystem.run(gs);
   RunFrame(Monster, gs, &gs.monsters, monster_frame);
   RunFrame(Creature, gs, &gs.creatures, creature_frame);
 
@@ -68,7 +68,7 @@ pub fn game_frame(gs: *GameSession) void {
   // monsters react to event_collide, damage others
   RunFrame(Monster, gs, &gs.monsters, monster_collide);
   // players react to event_collide, damage self
-  RunFrame(Player, gs, &gs.players, player_collide);
+  PlayerTouchResponseSystem.run(gs);
 
   // creatures react to event_take_damage, die
   RunFrame(Creature, gs, &gs.creatures, creature_take_damage);
