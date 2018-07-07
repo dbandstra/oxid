@@ -49,8 +49,13 @@ pub const PlayerMovementSystem = struct{
       const dir_vec = Math.Direction.normal(self.phys.facing);
       const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
       const bullet_pos = Math.Vec2.add(pos, ofs);
-      _ = Prototypes.spawnBullet(gs, self_id, bullet_pos, self.phys.facing);
-      gs.shoot = false;
+      _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+        .owner_id = self_id,
+        .pos = bullet_pos,
+        .facing = self.phys.facing,
+        .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
+      });
+      gs.shoot = false; // FIXME
     }
   }
 
@@ -155,7 +160,10 @@ pub const PlayerTouchResponseSystem = struct{
         if (object.data.other_id.id != 0) {
           if (gs.monsters.find(object.data.other_id)) |_| {
             const amount: u32 = 1;
-            _ = Prototypes.spawnEventTakeDamage(gs, self_id, amount);
+            _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+              .self_id = self_id,
+              .amount = amount,
+            });
           }
         }
       }

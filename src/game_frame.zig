@@ -29,7 +29,7 @@ const EventPlayerDied = components.EventPlayerDied;
 const EventTakeDamage = components.EventTakeDamage;
 const Prototypes = @import("game_prototypes.zig");
 const physics_frame = @import("game_physics.zig").physics_frame;
-const monster_frame = @import("game_frame_monster.zig").monster_frame;
+const MonsterMovementSystem = @import("game_frame_monster.zig").MonsterMovementSystem;
 const monster_collide = @import("game_frame_monster.zig").monster_collide;
 const PlayerMovementSystem = @import("game_frame_player.zig").PlayerMovementSystem;
 const PlayerTouchResponseSystem = @import("game_frame_player.zig").PlayerTouchResponseSystem;
@@ -58,7 +58,7 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(SpawningMonster, gs, &gs.spawning_monsters, spawning_monster_frame);
   RunFrame(Animation, gs, &gs.animations, animation_frame);
   PlayerMovementSystem.run(gs);
-  RunFrame(Monster, gs, &gs.monsters, monster_frame);
+  MonsterMovementSystem.run(gs);
   RunFrame(Creature, gs, &gs.creatures, creature_frame);
 
   physics_frame(gs);
@@ -179,10 +179,14 @@ fn spawning_monster_frame(gs: *GameSession, self_id: EntityId, self: *SpawningMo
     const self_transform = gs.transforms.find(self_id).?;
     switch (self.monsterType) {
       SpawningMonster.Type.Spider => {
-        _ = Prototypes.spawnSpider(gs, self_transform.pos);
+        _ = Prototypes.Spider.spawn(gs, Prototypes.Spider.Params{
+          .pos = self_transform.pos,
+        });
       },
       SpawningMonster.Type.Squid => {
-        _ = Prototypes.spawnSquid(gs, self_transform.pos);
+        _ = Prototypes.Squid.spawn(gs, Prototypes.Squid.Params{
+          .pos = self_transform.pos,
+        });
       },
     }    
     return false;
@@ -216,10 +220,15 @@ pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet)
   for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       const self_transform = gs.transforms.find(self_id).?;
-      _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.PlaSparks);
+      _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
+        .pos = self_transform.pos,
+        .simple_anim = SimpleAnim.PlaSparks,
+      });
       if (object.data.other_id.id != 0) {
-        const amount: u32 = 1;
-        _ = Prototypes.spawnEventTakeDamage(gs, object.data.other_id, amount);
+        _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+          .self_id = object.data.other_id,
+          .amount = 1,
+        });
       }
       return false;
     }
@@ -245,11 +254,16 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
         self_creature.hit_points = 0;
         const self_transform = gs.transforms.find(self_id).?;
         if (gs.players.find(self_id)) |_| {
-          _ = Prototypes.spawnEventPlayerDied(gs);
-          _ = Prototypes.spawnCorpse(gs, self_transform.pos);
+          _ = Prototypes.EventPlayerDied.spawn(gs);
+          _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
+            .pos = self_transform.pos,
+          });
           return false;
         } else {
-          _ = Prototypes.spawnAnimation(gs, self_transform.pos, SimpleAnim.Explosion);
+          _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
+            .pos = self_transform.pos,
+            .simple_anim = SimpleAnim.Explosion,
+          });
           return false;
         }
       }

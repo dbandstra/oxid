@@ -208,7 +208,10 @@ pub fn physics_frame(gs: *GameSession) void {
         var hit_something = false;
 
         if (phys_in_wall(m.phys, new_pos)) {
-          _ = Prototypes.spawnEventCollide(gs, m.entity_id, EntityId{ .id = 0 });
+          _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+            .self_id = m.entity_id,
+            .other_id = EntityId{ .id = 0 },
+          });
           hit_something = true;
         }
 
@@ -223,7 +226,10 @@ pub fn physics_frame(gs: *GameSession) void {
               new_pos, m.phys.entity_bbox,
               other_transform.pos, o.phys.entity_bbox,
             )) {
-              _ = Prototypes.spawnEventCollide(gs, m.entity_id, o.entity_id);
+              _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+                .self_id = m.entity_id,
+                .other_id = o.entity_id,
+              });
               hit_something = true;
             }
           }

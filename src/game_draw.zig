@@ -55,7 +55,8 @@ pub fn game_draw(g: *GameState) void {
       Drawable.Type.Monster => monster_draw(g, object.entity_id),
       Drawable.Type.MonsterSpawn => monster_spawn_draw(g, object.entity_id),
       Drawable.Type.Squid => squid_draw(g, object.entity_id),
-      Drawable.Type.Bullet => bullet_draw(g, object.entity_id),
+      Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
+      Drawable.Type.MonsterBullet => bullet_draw(g, object.entity_id, Graphic.MonBullet),
       Drawable.Type.Animation => animation_draw(g, object.entity_id),
     }
   }
@@ -74,12 +75,12 @@ pub fn game_draw(g: *GameState) void {
   }
 }
 
-fn bullet_draw(g: *GameState, entity_id: EntityId) void {
+fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
   const phys = g.session.phys_objects.find(entity_id).?;
   const transform = g.session.transforms.find(entity_id).?;
 
   const t = get_dir_transform(phys.facing);
-  draw_block(g, transform.pos, g.graphics.texture(Graphic.PlaBullet).handle, t);
+  draw_block(g, transform.pos, g.graphics.texture(graphic).handle, t);
 }
 
 fn soldier_draw(g: *GameState, entity_id: EntityId) void {

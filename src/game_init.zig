@@ -9,16 +9,18 @@ const SpawningMonster = @import("game_components.zig").SpawningMonster;
 const Prototypes = @import("game_prototypes.zig");
 
 pub fn game_init(gs: *GameSession) void {
-  _ = Prototypes.spawnGameController(gs);
+  _ = Prototypes.GameController.spawn(gs);
 
   game_spawn_player(gs);
 }
 
 pub fn game_spawn_player(gs: *GameSession) void {
-  _ = Prototypes.spawnPlayer(gs, Math.Vec2.init(
-    9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
-    5 * GRIDSIZE_SUBPIXELS,
-  ));
+  _ = Prototypes.Player.spawn(gs, Prototypes.Player.Params{
+    .pos = Math.Vec2.init(
+      9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
+      5 * GRIDSIZE_SUBPIXELS,
+    ),
+  });
 }
 
 pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: SpawningMonster.Type) void {
@@ -26,7 +28,10 @@ pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: Spawning
   var spawn_locs: [100]Math.Vec2 = undefined;
   pick_spawn_locations(gs, spawn_locs[0..count]);
   for (spawn_locs[0..count]) |loc| {
-    _ = Prototypes.spawnSpawningMonster(gs, Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS), monsterType);
+    _ = Prototypes.SpawningMonster.spawn(gs, Prototypes.SpawningMonster.Params{
+      .pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
+      .monsterType = monsterType,
+    });
   }
 }
 

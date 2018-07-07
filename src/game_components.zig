@@ -10,7 +10,8 @@ pub const Bullet = struct {
 
 pub const Drawable = struct {
   pub const Type = enum{
-    Bullet,
+    PlayerBullet,
+    MonsterBullet,
     Soldier,
     SoldierCorpse,
     Monster,
@@ -30,7 +31,7 @@ pub const Creature = struct {
 };
 
 pub const Monster = struct {
-  unused: bool, // remove once #1178 is fixed
+  next_shoot_timer: u32,
 };
 
 pub const GameController = struct {
