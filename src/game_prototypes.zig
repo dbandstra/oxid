@@ -1,4 +1,4 @@
-const Direction = @import("math.zig").Direction;
+const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const EntityId = @import("game.zig").EntityId;
@@ -21,23 +21,22 @@ const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
 const EventTakeDamage = components.EventTakeDamage;
 
-// some values that are the same for the player and monsters
-// they will have 75% diameter for entity-vs-entity collision
-const graphic_diam = GRIDSIZE_SUBPIXELS;
-const world_diam = GRIDSIZE_SUBPIXELS;
-const world_min = graphic_diam / 2 - world_diam / 2;
-const world_max = graphic_diam / 2 + world_diam / 2 - 1;
-const entity_diam = GRIDSIZE_SUBPIXELS * 3 / 4;
-const entity_min = graphic_diam / 2 - entity_diam / 2;
-const entity_max = graphic_diam / 2 + entity_diam / 2 - 1;
-const world_bbox = Math.BoundingBox{
-  .mins = Math.Vec2.init(world_min, world_min),
-  .maxs = Math.Vec2.init(world_max, world_max),
-};
-const entity_bbox = Math.BoundingBox{
-  .mins = Math.Vec2.init(entity_min, entity_min),
-  .maxs = Math.Vec2.init(entity_max, entity_max),
-};
+fn make_bbox(diameter: u31) Math.BoundingBox {
+  const graphic_diameter = GRIDSIZE_SUBPIXELS;
+  const min = graphic_diameter / 2 - diameter / 2;
+  const max = graphic_diameter / 2 + diameter / 2 - 1;
+  return Math.BoundingBox{
+    .mins = Math.Vec2.init(min, min),
+    .maxs = Math.Vec2.init(max, max),
+  };
+}
+
+// all entities are full size for colliding with the level
+const world_bbox = make_bbox(GRIDSIZE_SUBPIXELS);
+// player's ent-vs-ent bbox is 50% size
+const player_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
+// monster's ent-vs-ent bbox is 75% size
+const monster_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
 
 pub fn spawnGameController(gs: *GameSession) EntityId {
   const entity_id = gs.spawn();
@@ -63,7 +62,7 @@ pub fn spawnPlayer(gs: *GameSession, pos: Math.Vec2) EntityId {
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Creature,
     .world_bbox = world_bbox,
-    .entity_bbox = entity_bbox,
+    .entity_bbox = player_entity_bbox,
     .facing = Math.Direction.E,
     .speed = 0,
     .push_dir = null,
@@ -113,7 +112,7 @@ pub fn spawnSpider(gs: *GameSession, pos: Math.Vec2) EntityId {
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Creature,
     .world_bbox = world_bbox,
-    .entity_bbox = entity_bbox,
+    .entity_bbox = monster_entity_bbox,
     .facing = Math.Direction.E,
     .speed = 0,
     .push_dir = null,
@@ -148,7 +147,7 @@ pub fn spawnSquid(gs: *GameSession, pos: Math.Vec2) EntityId {
   gs.phys_objects.create(entity_id, PhysObject{
     .physType = PhysObject.Type.Creature,
     .world_bbox = world_bbox,
-    .entity_bbox = entity_bbox,
+    .entity_bbox = monster_entity_bbox,
     .facing = Math.Direction.E,
     .speed = 0,
     .push_dir = null,
@@ -193,7 +192,7 @@ pub fn spawnSpawningMonster(gs: *GameSession, pos: Math.Vec2, monsterType: Spawn
   return entity_id;
 }
 
-pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Math.Vec2, facing: Direction) EntityId {
+pub fn spawnBullet(gs: *GameSession, owner_id: EntityId, pos: Math.Vec2, facing: Math.Direction) EntityId {
   const entity_id = gs.spawn();
 
   gs.transforms.create(entity_id, Transform{
