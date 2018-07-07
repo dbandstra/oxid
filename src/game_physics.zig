@@ -12,7 +12,7 @@ const Prototypes = @import("game_prototypes.zig");
 
 // convenience function
 pub fn phys_in_wall(phys: *C.PhysObject, pos: Math.Vec2) bool {
-  return LEVEL.box_in_wall(pos, phys.mins, phys.maxs, phys.ignore_pits);
+  return LEVEL.box_in_wall(pos, phys.world_bbox, phys.ignore_pits);
 }
 
 const MoveGroupMember = struct{
@@ -39,33 +39,28 @@ pub fn physics_frame(gs: *GameSession) void {
     }
     const phys = &object.data;
     const transform = gs.transforms.find(object.entity_id).?;
-    phys.internal.move_mins = Math.Vec2.add(transform.pos, phys.mins);
-    phys.internal.move_maxs = Math.Vec2.add(transform.pos, phys.maxs);
+    phys.internal.move_bbox.mins = Math.Vec2.add(transform.pos, phys.entity_bbox.mins);
+    phys.internal.move_bbox.maxs = Math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
     if (phys.speed != 0) {
       switch (phys.facing) {
-        Math.Direction.Left => phys.internal.move_mins.x -= phys.speed,
-        Math.Direction.Right => phys.internal.move_maxs.x += phys.speed,
-        Math.Direction.Up => phys.internal.move_mins.y -= phys.speed,
-        Math.Direction.Down => phys.internal.move_maxs.y += phys.speed,
+        Math.Direction.Left => phys.internal.move_bbox.mins.x -= phys.speed,
+        Math.Direction.Right => phys.internal.move_bbox.maxs.x += phys.speed,
+        Math.Direction.Up => phys.internal.move_bbox.mins.y -= phys.speed,
+        Math.Direction.Down => phys.internal.move_bbox.maxs.y += phys.speed,
       }
       // push_dir represents the possibility of changing direction in mid-move,
       // so factor that into the move box as well
       if (phys.push_dir) |push_dir| {
         if (push_dir != phys.facing) {
           switch (push_dir) {
-            Math.Direction.Left => phys.internal.move_mins.x -= phys.speed,
-            Math.Direction.Right => phys.internal.move_maxs.x += phys.speed,
-            Math.Direction.Up => phys.internal.move_mins.y -= phys.speed,
-            Math.Direction.Down => phys.internal.move_maxs.y += phys.speed,
+            Math.Direction.Left => phys.internal.move_bbox.mins.x -= phys.speed,
+            Math.Direction.Right => phys.internal.move_bbox.maxs.x += phys.speed,
+            Math.Direction.Up => phys.internal.move_bbox.mins.y -= phys.speed,
+            Math.Direction.Down => phys.internal.move_bbox.maxs.y += phys.speed,
           }
         }
       }
     }
-
-        // phys.internal.move_mins.x -= 32;
-        // phys.internal.move_maxs.x += 32;
-        // phys.internal.move_mins.y -= 32;
-        // phys.internal.move_maxs.y += 32;
   }
 
   // TODO - some broadphase thing to avoid all global O(n2) checks?
@@ -225,8 +220,8 @@ pub fn physics_frame(gs: *GameSession) void {
               could_objects_collide(m.phys, o.phys)) {
             const other_transform = gs.transforms.find(o.entity_id).?;
             if (boxes_overlap(
-              new_pos, m.phys.mins, m.phys.maxs,
-              other_transform.pos, o.phys.mins, o.phys.maxs,
+              new_pos, m.phys.entity_bbox,
+              other_transform.pos, o.phys.entity_bbox,
             )) {
               _ = Prototypes.spawnEventCollide(gs, m.entity_id, o.entity_id);
               hit_something = true;
@@ -273,7 +268,7 @@ fn merge_move_groups(dest: *MoveGroup, src: *MoveGroup) void {
 fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
   var member: ?*MoveGroupMember = move_group.head;
   while (member) |m| : (member = m.next) {
-    if (abs_boxes_overlap(phys.internal.move_mins, phys.internal.move_maxs, m.phys.internal.move_mins, m.phys.internal.move_maxs)) {
+    if (abs_boxes_overlap(phys.internal.move_bbox, m.phys.internal.move_bbox)) {
       return true;
     }
   }
@@ -307,8 +302,8 @@ fn assert_no_overlaps(gs: *GameSession) void {
           other.data.owner_id.id != self.entity_id.id) {
         const other_transform = gs.transforms.find(other.entity_id).?;
         if (boxes_overlap(
-          self_transform.pos, self.data.mins, self.data.maxs,
-          other_transform.pos, other.data.mins, other.data.maxs,
+          self_transform.pos, self.data.entity_bbox,
+          other_transform.pos, other.data.entity_bbox,
         )) {
           std.debug.warn("who is this joker\n");
         }

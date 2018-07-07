@@ -1,6 +1,5 @@
 const u31 = @import("types.zig").u31;
-const Direction = @import("math.zig").Direction;
-const Vec2 = @import("math.zig").Vec2;
+const Math = @import("math.zig");
 const Velocity = @import("math.zig").Velocity;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const EntityId = @import("game.zig").EntityId;
@@ -59,14 +58,17 @@ pub const PhysObject = struct {
   // currently a pretty crappy system.
   physType: Type,
 
-  // `mins` and `maxs`: extents of bounding box, relative to transform
-  // position. these are both inclusive, so the dimensions of the box will be
-  // (maxs - mins + 1).
-  mins: Vec2,
-  maxs: Vec2,
+  // bounding boxes are relative to transform position. the dimensions of the
+  // box will be (maxs - mins + 1).
+  // `world_bbox`: the bbox used to collide with the level.
+  world_bbox: Math.BoundingBox,
+  
+  // `entity_bbox`: the bbox used to collide with other entities. this may be a
+  // bit smaller than the world bbox
+  entity_bbox: Math.BoundingBox,
 
   // `facing`: direction of movement (meaningless if `speed` is 0)
-  facing: Direction,
+  facing: Math.Direction,
 
   // `speed`: velocity along the `facing` direction (diagonal motion is not
   // supported). this is measured in subpixels per tick
@@ -75,7 +77,7 @@ pub const PhysObject = struct {
 
   // `push_dir`: if set, the object will try to redirect to go this way if
   // there is no obstruction.
-  push_dir: ?Direction,
+  push_dir: ?Math.Direction,
 
   // `owner_id`: collision will be skipped between an object and its owner.
   // e.g. a bullet is owned by the person who shot it
@@ -95,8 +97,7 @@ pub const PhysObject = struct {
 };
 
 pub const PhysObjectInternal = struct {
-  move_mins: Vec2,
-  move_maxs: Vec2,
+  move_bbox: Math.BoundingBox,
   group_index: usize,
 };
 
@@ -115,7 +116,7 @@ pub const SpawningMonster = struct {
 };
 
 pub const Transform = struct {
-  pos: Vec2,
+  pos: Math.Vec2,
 };
 
 pub const EventCollide = struct {

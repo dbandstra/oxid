@@ -1,12 +1,12 @@
 GAMEPLAY:
 - monsters can run into bullets without dying (if you shoot across a monster's path, the monster will hit it and stop moving until the bullet has flown past)
 - you can't face a pit if there is no space
-- collision detection vs enemies should be more forgiving (player vs enemy and enemy vs enemy)
 - player should only be able to have two bullets at a time
 - some enemies should shoot
 - pausing
 
 CODE:
+- rename directions to east/south/west/north
 - per-component type limits
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - choose_slot shouldn't crash! it should return errors

@@ -38,6 +38,18 @@ pub const Vec2 = struct {
   }
 };
 
+pub const BoundingBox = struct {
+  mins: Vec2,
+  maxs: Vec2,
+
+  pub fn move(bbox: BoundingBox, vec: Vec2) BoundingBox {
+    return BoundingBox{
+      .mins = Vec2.add(bbox.mins, vec),
+      .maxs = Vec2.add(bbox.maxs, vec),
+    };
+  }
+};
+
 pub fn get_dir_vec(direction: Direction) Vec2 {
   return switch (direction) {
     Direction.Up => Vec2.init(0, -1),

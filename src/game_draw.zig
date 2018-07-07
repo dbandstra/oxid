@@ -71,7 +71,7 @@ pub fn game_draw(g: *GameState) void {
       const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
       const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
       const B = @intCast(u8, 64 + ((int.group_index * 10031) % 192));
-      draw_box(g, int.move_mins, int.move_maxs, R, G, B);
+      draw_box(g, int.move_bbox.mins, int.move_bbox.maxs, R, G, B);
     }
   }
 }
