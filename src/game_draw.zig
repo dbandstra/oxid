@@ -88,7 +88,7 @@ fn soldier_draw(g: *GameState, entity_id: EntityId) void {
   const transform = g.session.transforms.find(entity_id).?;
 
   if (creature.invulnerability_timer > 0) {
-    if (((g.session.frameindex >> 2) & 1) == 0) {
+    if ((g.session.frameindex & 1) == 0) {
       return;
     }
   }
