@@ -18,7 +18,7 @@ pub fn player_frame(gs: *GameSession, entity_id: EntityId, self_player: *C.Playe
   if (gs.shoot) {
     // spawn the bullet one quarter of a grid cell in front of the player
     const pos = self_transform.pos;
-    const dir_vec = Math.get_dir_vec(self_phys.facing);
+    const dir_vec = Math.Direction.normal(self_phys.facing);
     const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
     const bullet_pos = Math.Vec2.add(pos, ofs);
     _ = Prototypes.spawnBullet(gs, entity_id, bullet_pos, self_phys.facing);
@@ -62,34 +62,34 @@ fn player_move(gs: *GameSession, entity_id: EntityId, self_player: *C.Player) vo
   const pos = self_transform.pos;
 
   if (xmove != 0) {
-    const dir = if (xmove < 0) Math.Direction.Left else Math.Direction.Right;
+    const dir = if (xmove < 0) Math.Direction.W else Math.Direction.E;
 
     if (ymove == 0) {
-      // only moving left/right. try to slip around corners
+      // only moving along x axis. try to slip around corners
       try_push(pos, dir, self_creature.walk_speed, self_phys);
     } else {
       // trying to move diagonally.
-      const secondary_dir = if (ymove < 0) Math.Direction.Up else Math.Direction.Down;
+      const secondary_dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
-      // prefer to move horizontally (arbitrary, but i had to pick something)
-      if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.get_dir_vec(dir)))) {
+      // prefer to move on the x axis (arbitrary, but i had to pick something)
+      if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.Direction.normal(dir)))) {
         self_phys.facing = dir;
         self_phys.speed = self_creature.walk_speed;
-      } else if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.get_dir_vec(secondary_dir)))) {
+      } else if (!phys_in_wall(self_phys, Math.Vec2.add(pos, Math.Direction.normal(secondary_dir)))) {
         self_phys.facing = secondary_dir;
         self_phys.speed = self_creature.walk_speed;
       }
     }
   } else if (ymove != 0) {
-    // only moving up/right. try to slip around corners
-    const dir = if (ymove < 0) Math.Direction.Up else Math.Direction.Down;
+    // only moving along y axis. try to slip around corners
+    const dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
     try_push(pos, dir, self_creature.walk_speed, self_phys);
   }
 }
 
 fn try_push(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysObject) void {
-  const pos1 = Math.Vec2.add(pos, Math.get_dir_vec(dir));
+  const pos1 = Math.Vec2.add(pos, Math.Direction.normal(dir));
 
   if (!phys_in_wall(self_phys, pos1)) {
     // no need to push, this direction works
@@ -102,23 +102,23 @@ fn try_push(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysO
 
   var i: i32 = 1;
   while (i < Constants.PlayerSlipThreshold) : (i += 1) {
-    if (dir == Math.Direction.Left or dir == Math.Direction.Right) {
+    if (dir == Math.Direction.W or dir == Math.Direction.E) {
       if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y - i))) {
-        slip_dir = Math.Direction.Up;
+        slip_dir = Math.Direction.N;
         break;
       }
       if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y + i))) {
-        slip_dir = Math.Direction.Down;
+        slip_dir = Math.Direction.S;
         break;
       }
     }
-    if (dir == Math.Direction.Up or dir == Math.Direction.Down) {
+    if (dir == Math.Direction.N or dir == Math.Direction.S) {
       if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x - i, pos1.y))) {
-        slip_dir = Math.Direction.Left;
+        slip_dir = Math.Direction.W;
         break;
       }
       if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x + i, pos1.y))) {
-        slip_dir = Math.Direction.Right;
+        slip_dir = Math.Direction.E;
         break;
       }
     }

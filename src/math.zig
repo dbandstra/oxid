@@ -2,10 +2,46 @@
 pub const SUBPIXELS = 16;
 
 pub const Direction = enum {
-  Left,
-  Right,
-  Up,
-  Down,
+  N,
+  E,
+  S,
+  W,
+
+  pub fn normal(direction: Direction) Vec2 {
+    return switch (direction) {
+      Direction.N => Vec2.init(0, -1),
+      Direction.E => Vec2.init(1, 0),
+      Direction.S => Vec2.init(0, 1),
+      Direction.W => Vec2.init(-1, 0),
+    };
+  }
+
+  pub fn invert(direction: Direction) Direction {
+    return switch (direction) {
+      Direction.N => Direction.S,
+      Direction.E => Direction.W,
+      Direction.S => Direction.N,
+      Direction.W => Direction.E,
+    };
+  }
+
+  pub fn rotate_cw(direction: Direction) Direction {
+    return switch (direction) {
+      Direction.N => Direction.E,
+      Direction.E => Direction.S,
+      Direction.S => Direction.W,
+      Direction.W => Direction.N,
+    };
+  }
+
+  pub fn rotate_ccw(direction: Direction) Direction {
+    return switch (direction) {
+      Direction.N => Direction.W,
+      Direction.E => Direction.N,
+      Direction.S => Direction.E,
+      Direction.W => Direction.S,
+    };
+  }
 };
 
 pub const Vec2 = struct {
@@ -49,39 +85,3 @@ pub const BoundingBox = struct {
     };
   }
 };
-
-pub fn get_dir_vec(direction: Direction) Vec2 {
-  return switch (direction) {
-    Direction.Up => Vec2.init(0, -1),
-    Direction.Down => Vec2.init(0, 1),
-    Direction.Left => Vec2.init(-1, 0),
-    Direction.Right => Vec2.init(1, 0),
-  };
-}
-
-pub fn reverse_direction(direction: Direction) Direction {
-  return switch (direction) {
-    Direction.Up => Direction.Down,
-    Direction.Down => Direction.Up,
-    Direction.Left => Direction.Right,
-    Direction.Right => Direction.Left,
-  };
-}
-
-pub fn rotate_cw(direction: Direction) Direction {
-  return switch (direction) {
-    Direction.Up => Direction.Right,
-    Direction.Down => Direction.Left,
-    Direction.Left => Direction.Up,
-    Direction.Right => Direction.Down,
-  };
-}
-
-pub fn rotate_ccw(direction: Direction) Direction {
-  return switch (direction) {
-    Direction.Up => Direction.Left,
-    Direction.Down => Direction.Right,
-    Direction.Left => Direction.Down,
-    Direction.Right => Direction.Up,
-  };
-}

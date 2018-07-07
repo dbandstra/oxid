@@ -26,11 +26,11 @@ pub fn monster_frame(gs: *GameSession, self_id: EntityId, self_monster: *C.Monst
 
   // look ahead for corners
   const pos = self_transform.pos;
-  const fwd = Math.get_dir_vec(self_phys.facing);
-  const left = Math.rotate_ccw(self_phys.facing);
-  const right = Math.rotate_cw(self_phys.facing);
-  const left_normal = Math.get_dir_vec(left);
-  const right_normal = Math.get_dir_vec(right);
+  const fwd = Math.Direction.normal(self_phys.facing);
+  const left = Math.Direction.rotate_ccw(self_phys.facing);
+  const right = Math.Direction.rotate_cw(self_phys.facing);
+  const left_normal = Math.Direction.normal(left);
+  const right_normal = Math.Direction.normal(right);
 
   var i: u31 = 0;
   while (i < speed) : (i += 1) {
@@ -92,16 +92,16 @@ pub fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Mon
 
   if (hit_creature) {
     // reverse direction
-    self_phys.facing = Math.reverse_direction(self_phys.facing);
+    self_phys.facing = Math.Direction.invert(self_phys.facing);
   } else if (hit_wall) {
     // change direction
     const pos = self_transform.pos;
 
-    const left = Math.rotate_ccw(self_phys.facing);
-    const right = Math.rotate_cw(self_phys.facing);
+    const left = Math.Direction.rotate_ccw(self_phys.facing);
+    const right = Math.Direction.rotate_cw(self_phys.facing);
 
-    const left_normal = Math.get_dir_vec(left);
-    const right_normal = Math.get_dir_vec(right);
+    const left_normal = Math.Direction.normal(left);
+    const right_normal = Math.Direction.normal(right);
 
     const can_go_left = !phys_in_wall(self_phys, Math.Vec2.add(pos, left_normal));
     const can_go_right = !phys_in_wall(self_phys, Math.Vec2.add(pos, right_normal));
@@ -117,7 +117,7 @@ pub fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Mon
     } else if (can_go_right) {
       self_phys.facing = right;
     } else {
-      self_phys.facing = Math.reverse_direction(self_phys.facing);
+      self_phys.facing = Math.Direction.invert(self_phys.facing);
     }
   }
 

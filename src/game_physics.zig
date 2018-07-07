@@ -43,20 +43,20 @@ pub fn physics_frame(gs: *GameSession) void {
     phys.internal.move_bbox.maxs = Math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
     if (phys.speed != 0) {
       switch (phys.facing) {
-        Math.Direction.Left => phys.internal.move_bbox.mins.x -= phys.speed,
-        Math.Direction.Right => phys.internal.move_bbox.maxs.x += phys.speed,
-        Math.Direction.Up => phys.internal.move_bbox.mins.y -= phys.speed,
-        Math.Direction.Down => phys.internal.move_bbox.maxs.y += phys.speed,
+        Math.Direction.W => phys.internal.move_bbox.mins.x -= phys.speed,
+        Math.Direction.E => phys.internal.move_bbox.maxs.x += phys.speed,
+        Math.Direction.N => phys.internal.move_bbox.mins.y -= phys.speed,
+        Math.Direction.S => phys.internal.move_bbox.maxs.y += phys.speed,
       }
       // push_dir represents the possibility of changing direction in mid-move,
       // so factor that into the move box as well
       if (phys.push_dir) |push_dir| {
         if (push_dir != phys.facing) {
           switch (push_dir) {
-            Math.Direction.Left => phys.internal.move_bbox.mins.x -= phys.speed,
-            Math.Direction.Right => phys.internal.move_bbox.maxs.x += phys.speed,
-            Math.Direction.Up => phys.internal.move_bbox.mins.y -= phys.speed,
-            Math.Direction.Down => phys.internal.move_bbox.maxs.y += phys.speed,
+            Math.Direction.W => phys.internal.move_bbox.mins.x -= phys.speed,
+            Math.Direction.E => phys.internal.move_bbox.maxs.x += phys.speed,
+            Math.Direction.N => phys.internal.move_bbox.mins.y -= phys.speed,
+            Math.Direction.S => phys.internal.move_bbox.maxs.y += phys.speed,
           }
         }
       }
@@ -191,13 +191,13 @@ pub fn physics_frame(gs: *GameSession) void {
       if (lowest) |m| {
         // try to move this guy one subpixel
         const transform = gs.transforms.find(m.entity_id).?;
-        var new_pos = Math.Vec2.add(transform.pos, Math.get_dir_vec(m.phys.facing));
+        var new_pos = Math.Vec2.add(transform.pos, Math.Direction.normal(m.phys.facing));
 
         // if push_dir differs from velocity direction, and we can move in that
         // direction, redirect velocity to go in that direction
         if (m.phys.push_dir) |push_dir| {
           if (push_dir != m.phys.facing) {
-            const new_pos2 = Math.Vec2.add(transform.pos, Math.get_dir_vec(push_dir));
+            const new_pos2 = Math.Vec2.add(transform.pos, Math.Direction.normal(push_dir));
             if (!phys_in_wall(m.phys, new_pos2)) {
               m.phys.facing = push_dir;
               new_pos = new_pos2;

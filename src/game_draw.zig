@@ -6,9 +6,7 @@ const GameState = @import("main.zig").GameState;
 const Transform = @import("main.zig").Transform;
 const drawBox = @import("main.zig").drawBox;
 const fillRect = @import("main.zig").fillRect;
-const Direction = @import("math.zig").Direction;
-const SUBPIXELS = @import("math.zig").SUBPIXELS;
-const Vec2 = @import("math.zig").Vec2;
+const Math = @import("math.zig");
 const Graphic = @import("graphics.zig").Graphic;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const EntityId = @import("game.zig").EntityId;
@@ -71,7 +69,7 @@ pub fn game_draw(g: *GameState) void {
       const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
       const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
       const B = @intCast(u8, 64 + ((int.group_index * 10031) % 192));
-      draw_box(g, int.move_bbox.mins, int.move_bbox.maxs, R, G, B);
+      draw_box(g, int.move_bbox, R, G, B);
     }
   }
 }
@@ -96,10 +94,10 @@ fn soldier_draw(g: *GameState, entity_id: EntityId) void {
   }
 
   const xpos = switch (phys.facing) {
-    Direction.Left, Direction.Right => transform.pos.x,
-    Direction.Up, Direction.Down => transform.pos.y,
+    Math.Direction.W, Math.Direction.E => transform.pos.x,
+    Math.Direction.N, Math.Direction.S => transform.pos.y,
   };
-  const sxpos = @divFloor(xpos, SUBPIXELS);
+  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
   var player_tex: c.GLuint = undefined;
   // animate legs every 4 screen pixels
@@ -130,10 +128,10 @@ fn monster_draw(g: *GameState, entity_id: EntityId) void {
   }
 
   const xpos = switch (phys.facing) {
-    Direction.Left, Direction.Right => transform.pos.x,
-    Direction.Up, Direction.Down => transform.pos.y,
+    Math.Direction.W, Math.Direction.E => transform.pos.x,
+    Math.Direction.N, Math.Direction.S => transform.pos.y,
   };
-  const sxpos = @divFloor(xpos, SUBPIXELS);
+  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
   var player_tex: c.GLuint = undefined;
   // animate legs every 4 screen pixels
@@ -158,10 +156,10 @@ fn squid_draw(g: *GameState, entity_id: EntityId) void {
   }
 
   const xpos = switch (phys.facing) {
-    Direction.Left, Direction.Right => transform.pos.x,
-    Direction.Up, Direction.Down => transform.pos.y,
+    Math.Direction.W, Math.Direction.E => transform.pos.x,
+    Math.Direction.N, Math.Direction.S => transform.pos.y,
   };
-  const sxpos = @divFloor(xpos, SUBPIXELS);
+  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
   var player_tex: c.GLuint = undefined;
   // animate legs every 4 screen pixels
@@ -205,7 +203,7 @@ pub fn draw_map(g: *GameState) void {
   while (y < LEVEL.h) : (y += 1) {
     var x: u31 = 0;
     while (x < LEVEL.w) : (x += 1) {
-      const gridpos = Vec2.init(x, y);
+      const gridpos = Math.Vec2.init(x, y);
       if (switch (LEVEL.get_gridvalue(gridpos).?) {
         0x00 => g.graphics.texture(Graphic.Floor).handle,
         0x80 => g.graphics.texture(Graphic.Wall).handle,
@@ -214,7 +212,7 @@ pub fn draw_map(g: *GameState) void {
         else => null,
       }) |tex| {
         const size = GRIDSIZE_SUBPIXELS;
-        draw_block(g, Vec2.scale(gridpos, size), tex, Transform.Identity);
+        draw_block(g, Math.Vec2.scale(gridpos, size), tex, Transform.Identity);
       }
     }
   }
@@ -222,28 +220,28 @@ pub fn draw_map(g: *GameState) void {
 
 ///////////////////////////////////////////////////////////
 
-pub fn get_dir_transform(direction: Direction) Transform {
+pub fn get_dir_transform(direction: Math.Direction) Transform {
   return switch (direction) {
-    Direction.Left => Transform.FlipHorizontal,
-    Direction.Right => Transform.Identity,
-    Direction.Up => Transform.RotateCounterClockwise,
-    Direction.Down => Transform.RotateClockwise,
+    Math.Direction.N => Transform.RotateCounterClockwise,
+    Math.Direction.E => Transform.Identity,
+    Math.Direction.S => Transform.RotateClockwise,
+    Math.Direction.W => Transform.FlipHorizontal,
   };
 }
 
-pub fn draw_block(g: *GameState, pos: Vec2, tex: c.GLuint, transform: Transform) void {
-  const x = @intToFloat(f32, @divFloor(pos.x, SUBPIXELS)); // TODO - round
-  const y = @intToFloat(f32, @divFloor(pos.y, SUBPIXELS)); // TODO - round
+pub fn draw_block(g: *GameState, pos: Math.Vec2, tex: c.GLuint, transform: Transform) void {
+  const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
+  const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS));
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
   fillRect(g, tex, x, y, w, h, transform);
 }
 
-pub fn draw_box(g: *GameState, absmin: Vec2, absmax: Vec2, R: u8, G: u8, B: u8) void {
-  const x0 = @intToFloat(f32, @divFloor(absmin.x, SUBPIXELS));
-  const y0 = @intToFloat(f32, @divFloor(absmin.y, SUBPIXELS));
-  const x1 = @intToFloat(f32, @divFloor(absmax.x + 1, SUBPIXELS));
-  const y1 = @intToFloat(f32, @divFloor(absmax.y + 1, SUBPIXELS));
+pub fn draw_box(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void {
+  const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
+  const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS));
+  const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, Math.SUBPIXELS));
+  const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS));
   const w = x1 - x0;
   const h = y1 - y0;
   drawBox(
