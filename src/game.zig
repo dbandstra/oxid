@@ -178,6 +178,12 @@ pub const GameSession = struct {
     };
   }
 
+  pub fn getGameController(self: *GameSession) *GameController {
+    var object = self.game_controllers.objects[0];
+    std.debug.assert(object.is_active == true);
+    return &object.data;
+  }
+
   pub fn getRand(self: *GameSession) *std.rand.Random {
     return &self.prng.random;
   }

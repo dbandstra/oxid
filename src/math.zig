@@ -19,18 +19,22 @@ pub const Vec2 = struct {
     };
   }
 
-  pub fn add(a: *const Vec2, b: *const Vec2) Vec2 {
+  pub fn add(a: Vec2, b: Vec2) Vec2 {
     return Vec2{
       .x = a.x + b.x,
       .y = a.y + b.y,
     };
   }
 
-  pub fn scale(a: *const Vec2, f: i32) Vec2 {
+  pub fn scale(a: Vec2, f: i32) Vec2 {
     return Vec2{
       .x = a.x * f,
       .y = a.y * f,
     };
+  }
+
+  pub fn equals(a: Vec2, b: Vec2) bool {
+    return a.x == b.x and a.y == b.y;
   }
 };
 
@@ -40,5 +44,32 @@ pub fn get_dir_vec(direction: Direction) Vec2 {
     Direction.Down => Vec2.init(0, 1),
     Direction.Left => Vec2.init(-1, 0),
     Direction.Right => Vec2.init(1, 0),
+  };
+}
+
+pub fn reverse_direction(direction: Direction) Direction {
+  return switch (direction) {
+    Direction.Up => Direction.Down,
+    Direction.Down => Direction.Up,
+    Direction.Left => Direction.Right,
+    Direction.Right => Direction.Left,
+  };
+}
+
+pub fn rotate_cw(direction: Direction) Direction {
+  return switch (direction) {
+    Direction.Up => Direction.Right,
+    Direction.Down => Direction.Left,
+    Direction.Left => Direction.Up,
+    Direction.Right => Direction.Down,
+  };
+}
+
+pub fn rotate_ccw(direction: Direction) Direction {
+  return switch (direction) {
+    Direction.Up => Direction.Left,
+    Direction.Down => Direction.Right,
+    Direction.Left => Direction.Down,
+    Direction.Right => Direction.Up,
   };
 }
