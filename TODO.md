@@ -1,6 +1,5 @@
 GAMEPLAY:
 - you can't face a pit if there is no space
-- pausing
 
 CODE:
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)

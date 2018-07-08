@@ -52,6 +52,8 @@ pub const GameState = struct {
   graphics: Graphics,
   session: GameSession,
   render_move_boxes: bool,
+  paused: bool,
+  fast_forward: bool,
 };
 pub var game_state: GameState = undefined;
 
@@ -131,6 +133,8 @@ pub fn main() !void {
 
   const g = &game_state;
   g.render_move_boxes = false;
+  g.paused = false;
+  g.fast_forward = false;
   g.session = GameSession.init();
   game_init(&g.session);
 
@@ -209,6 +213,12 @@ pub fn main() !void {
             c.SDLK_LEFT => game_input(&g.session, InputEvent.Left, true),
             c.SDLK_RIGHT => game_input(&g.session, InputEvent.Right, true),
             c.SDLK_SPACE => game_input(&g.session, InputEvent.Shoot, true),
+            c.SDLK_TAB => {
+              g.paused = !g.paused;
+            },
+            c.SDLK_BACKQUOTE => {
+              g.fast_forward = true;
+            },
             else => {},
           }
         },
@@ -219,6 +229,9 @@ pub fn main() !void {
             c.SDLK_LEFT => game_input(&g.session, InputEvent.Left, false),
             c.SDLK_RIGHT => game_input(&g.session, InputEvent.Right, false),
             c.SDLK_SPACE => game_input(&g.session, InputEvent.Shoot, false),
+            c.SDLK_BACKQUOTE => {
+              g.fast_forward = false;
+            },
             else => {},
           }
         },
@@ -229,7 +242,13 @@ pub fn main() !void {
       }
     }
 
-    game_frame(&g.session);
+    if (!g.paused) {
+      const n = if (g.fast_forward) u32(4) else u32(1);
+      var i: u32 = 0;
+      while (i < n) : (i += 1) {
+        game_frame(&g.session);
+      }
+    }
 
     g.projection = mat4x4_ortho(0.0, @intToFloat(f32, GAME_W), @intToFloat(f32, GAME_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
