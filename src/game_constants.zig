@@ -24,6 +24,7 @@ pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 pub const PlayerBulletSpeed: u31 = 48;
 pub const MonsterBulletSpeed: u31 = 32;
 
+pub const PlayerMaxBullets: usize = 2;
 pub const PlayerWalkSpeed: u31 = 20;
 
 pub const ZIndexSparks: u32 = 120;

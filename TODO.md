@@ -1,6 +1,5 @@
 GAMEPLAY:
 - you can't face a pit if there is no space
-- player should only be able to have two bullets at a time
 - pausing
 
 CODE:

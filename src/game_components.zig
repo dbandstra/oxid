@@ -2,6 +2,7 @@ const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const Velocity = @import("math.zig").Velocity;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
+const Constants = @import("game_constants.zig");
 const EntityId = @import("game.zig").EntityId;
 
 pub const Bullet = struct {
@@ -98,6 +99,7 @@ pub const PhysObjectInternal = struct {
 
 pub const Player = struct {
   trigger_released: bool,
+  bullets: [Constants.PlayerMaxBullets]?EntityId,
 };
 
 pub const SpawningMonster = struct {

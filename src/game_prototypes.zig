@@ -79,6 +79,7 @@ pub const Player = struct{
 
     gs.players.create(entity_id, C.Player{
       .trigger_released = true,
+      .bullets = []?EntityId{null} ** Constants.PlayerMaxBullets,
     });
 
     return entity_id;

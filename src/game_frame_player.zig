@@ -45,18 +45,32 @@ pub const PlayerMovementSystem = struct{
   fn player_shoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
     if (gs.in_shoot) {
       if (self.player.trigger_released) {
-        // spawn the bullet one quarter of a grid cell in front of the player
-        const pos = self.transform.pos;
-        const dir_vec = Math.Direction.normal(self.phys.facing);
-        const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
-        const bullet_pos = Math.Vec2.add(pos, ofs);
-        _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
-          .owner_id = self_id,
-          .pos = bullet_pos,
-          .facing = self.phys.facing,
-          .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
-        });
-        self.player.trigger_released = false;
+        // the player can only have a certain amount of bullets in play at a
+        // time.
+        // look for a bullet slot that is either null (never been used) or a
+        // non-existent entity (old bullet is gone)
+        if (for (self.player.bullets) |*slot| {
+          if (slot.*) |bullet_id| {
+            if (gs.bullets.find(bullet_id) == null) {
+              break slot;
+            }
+          } else {
+            break slot;
+          }
+        } else null) |slot| {
+          // spawn the bullet one quarter of a grid cell in front of the player
+          const pos = self.transform.pos;
+          const dir_vec = Math.Direction.normal(self.phys.facing);
+          const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+          const bullet_pos = Math.Vec2.add(pos, ofs);
+          slot.* = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+            .owner_id = self_id,
+            .pos = bullet_pos,
+            .facing = self.phys.facing,
+            .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
+          });
+          self.player.trigger_released = false;
+        }
       }
     } else {
       self.player.trigger_released = true;
