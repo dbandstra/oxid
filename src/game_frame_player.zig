@@ -21,7 +21,7 @@ pub const PlayerMovementSystem = struct{
   pub fn run(gs: *GameSession) void {
     // can i make this outer loop not tied to a hard coded component?
     // it should use reflection and choose the best one?
-    for (gs.players.objects[0..gs.players.count]) |*object| {
+    for (gs.players.objects) |*object| {
       if (!object.is_active) {
         continue;
       }

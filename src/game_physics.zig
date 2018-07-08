@@ -33,7 +33,7 @@ var move_groups: [Constants.MaxComponentsPerType]MoveGroup = undefined;
 
 pub fn physics_frame(gs: *GameSession) void {
   // calculate move bboxes
-  for (gs.phys_objects.objects[0..gs.phys_objects.count]) |*object| {
+  for (gs.phys_objects.objects) |*object| {
     if (!object.is_active) {
       continue;
     }
@@ -67,7 +67,7 @@ pub fn physics_frame(gs: *GameSession) void {
 
   // group intersecting moves
   var num_move_groups: usize = 0;
-  for (gs.phys_objects.objects[0..gs.phys_objects.count]) |*object, i| {
+  for (gs.phys_objects.objects) |*object, i| {
     if (!object.is_active) {
       continue;
     }
@@ -270,7 +270,7 @@ fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
 }
 
 fn find_collision_event(gs: *GameSession, self_id: EntityId, other_id: EntityId) ?*C.EventCollide {
-  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+  for (gs.event_collides.objects) |*object| {
     if (object.is_active) {
       const event_collide = &object.data;
       if (event_collide.self_id.id == self_id.id and event_collide.other_id.id == other_id.id) {
@@ -324,12 +324,12 @@ fn could_objects_collide(a: *C.PhysObject, b: *C.PhysObject) bool {
 }
 
 fn assert_no_overlaps(gs: *GameSession) void {
-  for (gs.phys_objects.objects[0..gs.phys_objects.count]) |*self| {
+  for (gs.phys_objects.objects) |*self| {
     if (!self.is_active) {
       continue;
     }
     const self_transform = gs.transforms.find(self.entity_id).?;
-    for (gs.phys_objects.objects[0..gs.phys_objects.count]) |*other| {
+    for (gs.phys_objects.objects) |*other| {
       if (!other.is_active) {
         continue;
       }

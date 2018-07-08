@@ -32,7 +32,7 @@ pub fn game_draw(g: *GameState) void {
   // sort drawables
   var sortarray: [Constants.MaxComponentsPerType]SortItem = undefined;
   var num_drawables: usize = 0;
-  for (g.session.drawables.objects[0..g.session.drawables.count]) |*object, i| {
+  for (g.session.drawables.objects) |*object, i| {
     if (object.is_active) {
       sortarray[num_drawables] = SortItem{
         .component_index = i,
@@ -62,7 +62,7 @@ pub fn game_draw(g: *GameState) void {
   }
 
   if (g.render_move_boxes) {
-    for (g.session.phys_objects.objects[0..g.session.phys_objects.count]) |*object| {
+    for (g.session.phys_objects.objects) |*object| {
       if (!object.is_active) {
         continue;
       }

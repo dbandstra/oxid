@@ -20,7 +20,7 @@ pub const MonsterMovementSystem = struct{
   pub fn run(gs: *GameSession) void {
     // can i make this outer loop not tied to a hard coded component?
     // it should use reflection and choose the best one?
-    for (gs.monsters.objects[0..gs.monsters.count]) |*object| {
+    for (gs.monsters.objects) |*object| {
       if (!object.is_active) {
         continue;
       }
@@ -114,7 +114,7 @@ pub const MonsterMovementSystem = struct{
 
 pub const MonsterTouchResponseSystem = struct{
   pub fn run(gs: *GameSession) void {
-    for (gs.monsters.objects[0..gs.monsters.count]) |*object| {
+    for (gs.monsters.objects) |*object| {
       if (!object.is_active) {
         continue;
       }
@@ -130,7 +130,7 @@ pub const MonsterTouchResponseSystem = struct{
     var hit_wall = false;
     var hit_creature = false;
 
-    for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+    for (gs.event_collides.objects) |*object| {
       if (!object.is_active) {
         continue;
       }

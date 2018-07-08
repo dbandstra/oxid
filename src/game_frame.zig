@@ -39,7 +39,7 @@ fn RunFrame(
   list: *ComponentList(T),
   func: ?fn(*GameSession, EntityId, *T)bool,
 ) void {
-  for (list.objects[0..list.count]) |*object| {
+  for (list.objects) |*object| {
     if (object.is_active) {
       if (func) |f| {
         if (!f(gs, object.entity_id, &object.data)) {
@@ -85,12 +85,12 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   if (self.next_wave_timer == 0) {
     // are all monsters dead
     var num_monsters: u32 = 0;
-    for (gs.spawning_monsters.objects[0..gs.spawning_monsters.count]) |object| {
+    for (gs.spawning_monsters.objects) |object| {
       if (object.is_active) {
         num_monsters += 1;
       }
     }
-    for (gs.monsters.objects[0..gs.monsters.count]) |object| {
+    for (gs.monsters.objects) |object| {
       if (object.is_active) {
         num_monsters += 1;
       }
@@ -162,7 +162,7 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
 }
 
 fn game_controller_react(gs: *GameSession, self_id: EntityId, self: *GameController) bool {
-  for (gs.event_player_dieds.objects[0..gs.event_player_dieds.count]) |object| {
+  for (gs.event_player_dieds.objects) |object| {
     if (object.is_active) {
       self.respawn_timer = Constants.PlayerRespawnTime;
     }
@@ -214,7 +214,7 @@ fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *Creature)
 }
 
 pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet) bool {
-  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+  for (gs.event_collides.objects) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       const self_transform = gs.transforms.find(self_id).?;
       _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
@@ -238,7 +238,7 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
   if (self_creature.invulnerability_timer > 0) {
     return true;
   }
-  for (gs.event_take_damages.objects[0..gs.event_collides.count]) |*object| {
+  for (gs.event_take_damages.objects) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       if (gs.players.find(self_id)) |_| {
         if (gs.god_mode) {

@@ -40,15 +40,20 @@ pub fn ComponentObject(comptime T: type) type {
 }
 
 pub fn ComponentList(comptime T: type) type {
+  // FIXME (see below)
+  var empty: [0]ComponentObject(T) = undefined;
+
   return struct {
     const Self = this;
 
-    objects: [Constants.MaxComponentsPerType]ComponentObject(T),
+    objects_array: [Constants.MaxComponentsPerType]ComponentObject(T),
+    objects: []ComponentObject(T),
     count: usize,
 
     pub fn init() Self {
       return Self{
-        .objects = undefined,
+        .objects_array = undefined,
+        .objects = empty[0..0], // FIXME - any better way i can initialize this?
         .count = 0,
       };
     }
@@ -57,7 +62,7 @@ pub fn ComponentList(comptime T: type) type {
     // (ok for non crucial entities. crucial ones should still crash)
     pub fn create(self: *Self, entity_id: EntityId, data: *const T) void {
       const i = choose_slot(self).?; // can crash
-      var object = &self.objects[i];
+      var object = &self.objects_array[i];
       object.is_active = true;
       object.data = data.*;
       object.entity_id = entity_id;
@@ -66,21 +71,21 @@ pub fn ComponentList(comptime T: type) type {
     fn choose_slot(self: *Self) ?usize {
       var i: usize = 0;
       while (i < self.count) : (i += 1) {
-        if (!self.objects[i].is_active) {
+        if (!self.objects_array[i].is_active) {
           return i;
         }
       }
       if (self.count < Constants.MaxComponentsPerType) {
         i = self.count;
         self.count += 1;
+        self.objects = self.objects_array[0..self.count];
         return i;
       }
       return null;
     }
 
-
     pub fn find_object(self: *Self, entity_id: EntityId) ?*ComponentObject(T) {
-      for (self.objects[0..self.count]) |*object| {
+      for (self.objects) |*object| {
         if (object.is_active and object.entity_id.id == entity_id.id) {
           return object;
         }
