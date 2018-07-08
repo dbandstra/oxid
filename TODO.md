@@ -2,7 +2,6 @@ GAMEPLAY:
 - monsters can run into bullets without dying (if you shoot across a monster's path, the monster will hit it and stop moving until the bullet has flown past)
 - you can't face a pit if there is no space
 - player should only be able to have two bullets at a time
-- some enemies should shoot
 - pausing
 
 CODE:

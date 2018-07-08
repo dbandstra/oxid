@@ -30,7 +30,7 @@ const EventTakeDamage = components.EventTakeDamage;
 const Prototypes = @import("game_prototypes.zig");
 const physics_frame = @import("game_physics.zig").physics_frame;
 const MonsterMovementSystem = @import("game_frame_monster.zig").MonsterMovementSystem;
-const monster_collide = @import("game_frame_monster.zig").monster_collide;
+const MonsterTouchResponseSystem = @import("game_frame_monster.zig").MonsterTouchResponseSystem;
 const PlayerMovementSystem = @import("game_frame_player.zig").PlayerMovementSystem;
 const PlayerTouchResponseSystem = @import("game_frame_player.zig").PlayerTouchResponseSystem;
 
@@ -66,7 +66,7 @@ pub fn game_frame(gs: *GameSession) void {
   // bullets react to event_collide, spawn event_take_damage
   RunFrame(Bullet, gs, &gs.bullets, bullet_collide);
   // monsters react to event_collide, damage others
-  RunFrame(Monster, gs, &gs.monsters, monster_collide);
+  MonsterTouchResponseSystem.run(gs);
   // players react to event_collide, damage self
   PlayerTouchResponseSystem.run(gs);
 

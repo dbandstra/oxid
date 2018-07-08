@@ -112,64 +112,72 @@ pub const MonsterMovementSystem = struct{
   }
 };
 
-pub fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) bool {
-  const self_creature = gs.creatures.find(self_id).?;
-  const self_phys = gs.phys_objects.find(self_id).?;
-  const self_transform = gs.transforms.find(self_id).?;
+pub const MonsterTouchResponseSystem = struct{
+  pub fn run(gs: *GameSession) void {
+    for (gs.monsters.objects[0..gs.monsters.count]) |*object| {
+      if (!object.is_active) {
+        continue;
+      }
+      monster_collide(gs, object.entity_id, &object.data);
+    }
+  }
 
-  var hit_wall = false;
-  var hit_creature = false;
+  fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) void {
+    const self_creature = gs.creatures.find(self_id).?;
+    const self_phys = gs.phys_objects.find(self_id).?;
+    const self_transform = gs.transforms.find(self_id).?;
 
-  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
-    if (object.is_active and object.data.self_id.id == self_id.id) {
-      if (object.data.other_id.id == 0) {
-        hit_wall = true;
-      } else {
-        if (gs.creatures.find(object.data.other_id)) |other_creature| {
-          hit_creature = true;
-          if (gs.monsters.find(object.data.other_id) == null) {
-            // if it's a non-monster creature, inflict damage on it
-            const amount: u32 = 1;
-            _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
-              .self_id = object.data.other_id,
-              .amount = amount,
-            });
+    var hit_wall = false;
+    var hit_creature = false;
+
+    for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+      if (object.is_active and object.data.self_id.id == self_id.id) {
+        if (object.data.other_id.id == 0) {
+          hit_wall = true;
+        } else {
+          if (gs.creatures.find(object.data.other_id)) |other_creature| {
+            hit_creature = true;
+            if (gs.monsters.find(object.data.other_id) == null) {
+              // if it's a non-monster creature, inflict damage on it
+              _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+                .self_id = object.data.other_id,
+                .amount = 1,
+              });
+            }
           }
         }
       }
     }
-  }
 
-  if (hit_creature) {
-    // reverse direction
-    self_phys.facing = Math.Direction.invert(self_phys.facing);
-  } else if (hit_wall) {
-    // change direction
-    const pos = self_transform.pos;
-
-    const left = Math.Direction.rotate_ccw(self_phys.facing);
-    const right = Math.Direction.rotate_cw(self_phys.facing);
-
-    const left_normal = Math.Direction.normal(left);
-    const right_normal = Math.Direction.normal(right);
-
-    const can_go_left = !phys_in_wall(self_phys, Math.Vec2.add(pos, left_normal));
-    const can_go_right = !phys_in_wall(self_phys, Math.Vec2.add(pos, right_normal));
-
-    if (can_go_left and can_go_right) {
-      if (gs.getRand().scalar(bool)) {
-        self_phys.facing = left;
-      } else {
-        self_phys.facing = right;
-      }
-    } else if (can_go_left) {
-      self_phys.facing = left;
-    } else if (can_go_right) {
-      self_phys.facing = right;
-    } else {
+    if (hit_creature) {
+      // reverse direction
       self_phys.facing = Math.Direction.invert(self_phys.facing);
+    } else if (hit_wall) {
+      // change direction
+      const pos = self_transform.pos;
+
+      const left = Math.Direction.rotate_ccw(self_phys.facing);
+      const right = Math.Direction.rotate_cw(self_phys.facing);
+
+      const left_normal = Math.Direction.normal(left);
+      const right_normal = Math.Direction.normal(right);
+
+      const can_go_left = !phys_in_wall(self_phys, Math.Vec2.add(pos, left_normal));
+      const can_go_right = !phys_in_wall(self_phys, Math.Vec2.add(pos, right_normal));
+
+      if (can_go_left and can_go_right) {
+        if (gs.getRand().scalar(bool)) {
+          self_phys.facing = left;
+        } else {
+          self_phys.facing = right;
+        }
+      } else if (can_go_left) {
+        self_phys.facing = left;
+      } else if (can_go_right) {
+        self_phys.facing = right;
+      } else {
+        self_phys.facing = Math.Direction.invert(self_phys.facing);
+      }
     }
   }
-
-  return true;
-}
+};
