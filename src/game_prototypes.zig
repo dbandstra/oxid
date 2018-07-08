@@ -76,7 +76,9 @@ pub const Player = struct{
       .walk_speed = Constants.PlayerWalkSpeed,
     });
 
-    gs.players.create(entity_id, C.Player{.unused=true});
+    gs.players.create(entity_id, C.Player{
+      .trigger_released = true,
+    });
 
     return entity_id;
   }

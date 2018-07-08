@@ -43,19 +43,23 @@ pub const PlayerMovementSystem = struct{
   }
 
   fn player_shoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
-    if (gs.shoot) {
-      // spawn the bullet one quarter of a grid cell in front of the player
-      const pos = self.transform.pos;
-      const dir_vec = Math.Direction.normal(self.phys.facing);
-      const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
-      const bullet_pos = Math.Vec2.add(pos, ofs);
-      _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
-        .owner_id = self_id,
-        .pos = bullet_pos,
-        .facing = self.phys.facing,
-        .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
-      });
-      gs.shoot = false; // FIXME
+    if (gs.in_shoot) {
+      if (self.player.trigger_released) {
+        // spawn the bullet one quarter of a grid cell in front of the player
+        const pos = self.transform.pos;
+        const dir_vec = Math.Direction.normal(self.phys.facing);
+        const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+        const bullet_pos = Math.Vec2.add(pos, ofs);
+        _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+          .owner_id = self_id,
+          .pos = bullet_pos,
+          .facing = self.phys.facing,
+          .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
+        });
+        self.player.trigger_released = false;
+      }
+    } else {
+      self.player.trigger_released = true;
     }
   }
 

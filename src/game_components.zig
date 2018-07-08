@@ -103,7 +103,7 @@ pub const PhysObjectInternal = struct {
 };
 
 pub const Player = struct {
-  unused: bool, // remove once #1178 is fixed
+  trigger_released: bool,
 };
 
 pub const SpawningMonster = struct {

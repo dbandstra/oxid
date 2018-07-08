@@ -134,7 +134,7 @@ pub const GameSession = struct {
   in_right: bool,
   in_up: bool,
   in_down: bool,
-  shoot: bool,
+  in_shoot: bool,
 
   pub fn init() GameSession {
     // fn getRandomSeed() !u32 {
@@ -174,7 +174,7 @@ pub const GameSession = struct {
       .in_down = false,
       .in_left = false,
       .in_right = false,
-      .shoot = false,
+      .in_shoot = false,
     };
   }
 
@@ -237,12 +237,7 @@ pub fn game_input(gs: *GameSession, event: InputEvent, down: bool) void {
       gs.in_down = down;
     },
     InputEvent.Shoot => {
-      if (down) {
-        // FIXME - move this flag to player entity.
-        // right now, if you die, sometimes you shoot when you respawn,
-        // because of this flag
-        gs.shoot = true;
-      }
+      gs.in_shoot = down;
     },
   }
 }
