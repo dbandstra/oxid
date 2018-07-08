@@ -19,11 +19,10 @@ pub const SpiderWalkSpeed: u31 = 8;
 pub const SquidHitPoints: u32 = 5;
 pub const SquidWalkSpeed: u31 = 6;
 
-// pub const EnemiesPerSpawn: usize = 8;
-
 pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 
-pub const BulletSpeed: i32 = 48;
+pub const PlayerBulletSpeed: u31 = 48;
+pub const MonsterBulletSpeed: u31 = 32;
 
 pub const PlayerWalkSpeed: u31 = 20;
 

@@ -251,7 +251,10 @@ pub const Bullet = struct{
         .maxs = Math.Vec2.init(max, max),
       },
       .facing = params.facing,
-      .speed = Constants.BulletSpeed,
+      .speed = switch (params.bullet_type) {
+        BulletType.MonsterBullet => Constants.MonsterBulletSpeed,
+        BulletType.PlayerBullet => Constants.PlayerBulletSpeed,
+      },
       .push_dir = null,
       .owner_id = params.owner_id,
       .ignore_pits = true,
