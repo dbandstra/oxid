@@ -54,7 +54,6 @@ pub const Player = struct{
     });
 
     gs.phys_objects.create(entity_id, C.PhysObject{
-      .physType = C.PhysObject.Type.Creature,
       .world_bbox = world_bbox,
       .entity_bbox = player_entity_bbox,
       .facing = Math.Direction.E,
@@ -62,6 +61,8 @@ pub const Player = struct{
       .push_dir = null,
       .owner_id = EntityId{ .id = 0 },
       .ignore_pits = false,
+      .flags = 0,
+      .ignore_flags = 0,
       .internal = undefined,
     });
 
@@ -118,7 +119,6 @@ pub const Spider = struct{
     });
 
     gs.phys_objects.create(entity_id, C.PhysObject{
-      .physType = C.PhysObject.Type.Creature,
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -126,6 +126,8 @@ pub const Spider = struct{
       .push_dir = null,
       .owner_id = EntityId{ .id = 0 },
       .ignore_pits = false,
+      .flags = C.PhysObject.FLAG_MONSTER,
+      .ignore_flags = 0,
       .internal = undefined,
     });
 
@@ -161,7 +163,6 @@ pub const Squid = struct{
     });
 
     gs.phys_objects.create(entity_id, C.PhysObject{
-      .physType = C.PhysObject.Type.Creature,
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -169,6 +170,8 @@ pub const Squid = struct{
       .push_dir = null,
       .owner_id = EntityId{ .id = 0 },
       .ignore_pits = false,
+      .flags = C.PhysObject.FLAG_MONSTER,
+      .ignore_flags = 0,
       .internal = undefined,
     });
 
@@ -243,7 +246,6 @@ pub const Bullet = struct{
     const max = min + bullet_size - 1;
 
     gs.phys_objects.create(entity_id, C.PhysObject{
-      .physType = C.PhysObject.Type.Bullet,
       .world_bbox = Math.BoundingBox{
         .mins = Math.Vec2.init(min, min),
         .maxs = Math.Vec2.init(max, max),
@@ -260,6 +262,11 @@ pub const Bullet = struct{
       .push_dir = null,
       .owner_id = params.owner_id,
       .ignore_pits = true,
+      .flags = C.PhysObject.FLAG_BULLET,
+      .ignore_flags = C.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
+        BulletType.MonsterBullet => C.PhysObject.FLAG_MONSTER,
+        BulletType.PlayerBullet => 0,
+      },
       .internal = undefined,
     });
 

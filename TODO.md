@@ -1,7 +1,6 @@
 GAMEPLAY:
 - you can't face a pit if there is no space
 - player should only be able to have two bullets at a time
-- monster bullets should not damage other monsters
 - pausing
 
 CODE:
@@ -17,7 +16,6 @@ CODE:
 - get tests passing again
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
 - do something to avoid spawning monsters inside other monsters (or just make it possible to move out of something you're stuck in)
-- pretty sure i've seen monsters touch bullets and turn around. bullets should either be illusory (like quake "solid_trigger"), or have two-way damage behaviour like the monsters do with players
 
 IDEAS:
 - enemy with a shield that deflects your bullets back at you

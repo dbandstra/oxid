@@ -49,15 +49,8 @@ pub const Animation = struct {
 };
 
 pub const PhysObject = struct {
-  pub const Type = enum{
-    NonSolid,
-    Bullet,
-    Creature,
-  };
-
-  // `physType`: determines whether the object collides with other objects.
-  // currently a pretty crappy system.
-  physType: Type,
+  pub const FLAG_BULLET: u32 = 1;
+  pub const FLAG_MONSTER: u32 = 2;
 
   // bounding boxes are relative to transform position. the dimensions of the
   // box will be (maxs - mins + 1).
@@ -84,14 +77,15 @@ pub const PhysObject = struct {
   // e.g. a bullet is owned by the person who shot it
   owner_id: EntityId,
 
-  // `damages`: if true, and this object collides with a Creature, the Creature
-  // will lose one hit point
-  // TODO - remove this. it should be possible to implement it more generically
-  // (in the Bullet component)
-  // damages: bool,
-
   // `ignore_pits`: if true, this object can travel over pits
   ignore_pits: bool,
+
+  // `flags` used with reference to `ignore_flags` (see below)
+  flags: u32,
+
+  // `ignore_flags`: skip collision with (i.e., pass through) entities who have
+  // any of these flags set in `flags`
+  ignore_flags: u32,
 
   // internal fields used by physics step
   internal: PhysObjectInternal,

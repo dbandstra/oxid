@@ -218,10 +218,7 @@ pub fn physics_frame(gs: *GameSession) void {
 
         var other: ?*MoveGroupMember = move_group.head;
         while (other) |o| : (other = o.next) {
-          if (o != m and
-              o.entity_id.id != m.phys.owner_id.id and
-              o.phys.owner_id.id != m.entity_id.id and
-              could_objects_collide(m.phys, o.phys)) {
+          if (could_objects_collide(m.entity_id, m.phys, o.entity_id, o.phys)) {
             const other_transform = gs.transforms.find(o.entity_id).?;
             if (boxes_overlap(
               new_pos, m.phys.entity_bbox,
@@ -311,16 +308,29 @@ fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
   return false;
 }
 
-fn could_objects_collide(a: *C.PhysObject, b: *C.PhysObject) bool {
-  return switch (a.physType) {
-    C.PhysObject.Type.NonSolid =>
-      false,
-    C.PhysObject.Type.Creature =>
-      b.physType == C.PhysObject.Type.Creature or
-      b.physType == C.PhysObject.Type.Bullet,
-    C.PhysObject.Type.Bullet =>
-      b.physType == C.PhysObject.Type.Creature,
-  };
+// a and b params in this function should be commutative
+fn could_objects_collide(
+  a_id: EntityId,
+  a_phys: *C.PhysObject,
+  b_id: EntityId,
+  b_phys: *C.PhysObject,
+) bool {
+  if (a_id.id == b_id.id) {
+    return false;
+  }
+  if (a_id.id == b_phys.owner_id.id) {
+    return false;
+  }
+  if (a_phys.owner_id.id == b_id.id) {
+    return false;
+  }
+  if ((a_phys.flags & b_phys.ignore_flags) != 0) {
+    return false;
+  }
+  if ((a_phys.ignore_flags & b_phys.flags) != 0) {
+    return false;
+  }
+  return true;
 }
 
 fn assert_no_overlaps(gs: *GameSession) void {
@@ -333,9 +343,7 @@ fn assert_no_overlaps(gs: *GameSession) void {
       if (!other.is_active) {
         continue;
       }
-      if (self != other and
-          other.entity_id.id != self.data.owner_id.id and
-          other.data.owner_id.id != self.entity_id.id) {
+      if (could_objects_collide(self.entity_id, &self.data, other.entity_id, &other.data)) {
         const other_transform = gs.transforms.find(other.entity_id).?;
         if (boxes_overlap(
           self_transform.pos, self.data.entity_bbox,
