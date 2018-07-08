@@ -223,6 +223,7 @@ pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet)
       _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
         .pos = self_transform.pos,
         .simple_anim = SimpleAnim.PlaSparks,
+        .z_index = Constants.ZIndexSparks,
       });
       if (object.data.other_id.id != 0) {
         _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
@@ -263,6 +264,7 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
           _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
             .pos = self_transform.pos,
             .simple_anim = SimpleAnim.Explosion,
+            .z_index = Constants.ZIndexExplosion,
           });
           return false;
         }

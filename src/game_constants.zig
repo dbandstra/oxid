@@ -27,8 +27,9 @@ pub const BulletSpeed: i32 = 48;
 
 pub const PlayerWalkSpeed: u31 = 20;
 
-// TODO - bullet sparks should be above player and enemy
+pub const ZIndexSparks: u32 = 120;
 pub const ZIndexPlayer: u32 = 100;
+pub const ZIndexExplosion: u32 = 81;
 pub const ZIndexEnemy: u32 = 80;
 pub const ZIndexBullet: u32 = 50;
 pub const ZIndexCorpse: u32 = 20;

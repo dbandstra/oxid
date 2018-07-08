@@ -278,6 +278,7 @@ pub const Animation = struct{
   pub const Params = struct{
     pos: Math.Vec2,
     simple_anim: SimpleAnim,
+    z_index: u32,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
@@ -289,7 +290,7 @@ pub const Animation = struct{
 
     gs.drawables.create(entity_id, C.Drawable{
       .drawType = C.Drawable.Type.Animation,
-      .z_index = Constants.ZIndexBullet, // FIXME
+      .z_index = params.z_index,
     });
 
     gs.animations.create(entity_id, C.Animation{
