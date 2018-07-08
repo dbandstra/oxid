@@ -131,16 +131,22 @@ pub const MonsterTouchResponseSystem = struct{
     var hit_creature = false;
 
     for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
-      if (object.is_active and object.data.self_id.id == self_id.id) {
-        if (object.data.other_id.id == 0) {
+      if (!object.is_active) {
+        continue;
+      }
+      const event_collide = &object.data;
+      if (event_collide.self_id.id == self_id.id) {
+        if (event_collide.other_id.id == 0) {
           hit_wall = true;
         } else {
-          if (gs.creatures.find(object.data.other_id)) |other_creature| {
-            hit_creature = true;
-            if (gs.monsters.find(object.data.other_id) == null) {
+          if (gs.creatures.find(event_collide.other_id)) |other_creature| {
+            if (event_collide.propelled) {
+              hit_creature = true;
+            }
+            if (gs.monsters.find(event_collide.other_id) == null) {
               // if it's a non-monster creature, inflict damage on it
               _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
-                .self_id = object.data.other_id,
+                .self_id = event_collide.other_id,
                 .amount = 1,
               });
             }

@@ -123,6 +123,11 @@ pub const Transform = struct {
 pub const EventCollide = struct {
   self_id: EntityId,
   other_id: EntityId, // 0 = wall
+
+  // `propelled`: if true, `self` ran into `other` (or they both ran into each
+  // other). if false, `other` ran into `self` while `self` was either
+  // motionless or moving in another direction.
+  propelled: bool,
 };
 
 pub const EventPlayerDied = struct {

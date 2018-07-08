@@ -146,31 +146,3 @@ pub const PlayerMovementSystem = struct{
     }
   }
 };
-
-pub const PlayerTouchResponseSystem = struct{
-  pub fn run(gs: *GameSession) void {
-    for (gs.players.objects[0..gs.players.count]) |*object| {
-      if (!object.is_active) {
-        continue;
-      }
-      player_collide(gs, object.entity_id, &object.data);
-    }
-  }
-
-  // if player touches a monster, damage self
-  fn player_collide(gs: *GameSession, self_id: EntityId, self_player: *C.Player) void {
-    for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
-      if (object.is_active and object.data.self_id.id == self_id.id) {
-        if (object.data.other_id.id != 0) {
-          if (gs.monsters.find(object.data.other_id)) |_| {
-            const amount: u32 = 1;
-            _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
-              .self_id = self_id,
-              .amount = amount,
-            });
-          }
-        }
-      }
-    }
-  }
-};

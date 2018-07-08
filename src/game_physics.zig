@@ -211,6 +211,7 @@ pub fn physics_frame(gs: *GameSession) void {
           _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
             .self_id = m.entity_id,
             .other_id = EntityId{ .id = 0 },
+            .propelled = true,
           });
           hit_something = true;
         }
@@ -226,10 +227,7 @@ pub fn physics_frame(gs: *GameSession) void {
               new_pos, m.phys.entity_bbox,
               other_transform.pos, o.phys.entity_bbox,
             )) {
-              _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
-                .self_id = m.entity_id,
-                .other_id = o.entity_id,
-              });
+              collide(gs, m.entity_id, o.entity_id);
               hit_something = true;
             }
           }
@@ -249,6 +247,38 @@ pub fn physics_frame(gs: *GameSession) void {
   }
 
   assert_no_overlaps(gs);
+}
+
+fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
+  if (find_collision_event(gs, self_id, other_id)) |event_collide| {
+    event_collide.propelled = true;
+  } else {
+    _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+      .self_id = self_id,
+      .other_id = other_id,
+      .propelled = true,
+    });
+  }
+
+  if (find_collision_event(gs, other_id, self_id) == null) {
+    _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+      .self_id = other_id,
+      .other_id = self_id,
+      .propelled = false,
+    });
+  }
+}
+
+fn find_collision_event(gs: *GameSession, self_id: EntityId, other_id: EntityId) ?*C.EventCollide {
+  for (gs.event_collides.objects[0..gs.event_collides.count]) |*object| {
+    if (object.is_active) {
+      const event_collide = &object.data;
+      if (event_collide.self_id.id == self_id.id and event_collide.other_id.id == other_id.id) {
+        return event_collide;
+      }
+    }
+  }
+  return null;
 }
 
 fn merge_move_groups(dest: *MoveGroup, src: *MoveGroup) void {

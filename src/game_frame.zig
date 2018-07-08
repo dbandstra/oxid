@@ -32,7 +32,6 @@ const physics_frame = @import("game_physics.zig").physics_frame;
 const MonsterMovementSystem = @import("game_frame_monster.zig").MonsterMovementSystem;
 const MonsterTouchResponseSystem = @import("game_frame_monster.zig").MonsterTouchResponseSystem;
 const PlayerMovementSystem = @import("game_frame_player.zig").PlayerMovementSystem;
-const PlayerTouchResponseSystem = @import("game_frame_player.zig").PlayerTouchResponseSystem;
 
 fn RunFrame(
   comptime T: type,
@@ -67,8 +66,6 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(Bullet, gs, &gs.bullets, bullet_collide);
   // monsters react to event_collide, damage others
   MonsterTouchResponseSystem.run(gs);
-  // players react to event_collide, damage self
-  PlayerTouchResponseSystem.run(gs);
 
   // creatures react to event_take_damage, die
   RunFrame(Creature, gs, &gs.creatures, creature_take_damage);

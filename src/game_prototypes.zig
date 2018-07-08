@@ -312,6 +312,7 @@ pub const EventCollide = struct{
   pub const Params = struct{
     self_id: EntityId,
     other_id: EntityId,
+    propelled: bool,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
@@ -320,6 +321,7 @@ pub const EventCollide = struct{
     gs.event_collides.create(entity_id, C.EventCollide{
       .self_id = params.self_id,
       .other_id = params.other_id,
+      .propelled = params.propelled,
     });
 
     return entity_id;
