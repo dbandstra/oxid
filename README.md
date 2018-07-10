@@ -5,10 +5,7 @@ This is more or less a clone of [Verminian Trap](http://locomalito.com/verminian
 
 The project is very early in development, but it's playable. No screenshots yet.
 
-## Why?
-My primary motivation is to experiment with, battle-test, and possibly contribute to the [Zig](https://ziglang.org) programming language.
-
-I've also been interested in game programming for a long time. I chose to clone an existing, simple game in order to prevent the scope creep that killed all of my previous game projects over the years. If I "complete" this project, I might work on a spinoff with more original features.
+Oxid is written in the [Zig](https://ziglang.org) programming language.
 
 ## How to play
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
