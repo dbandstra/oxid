@@ -40,9 +40,6 @@ pub fn ComponentObject(comptime T: type) type {
 }
 
 pub fn ComponentList(comptime T: type) type {
-  // FIXME (see below)
-  var empty: [0]ComponentObject(T) = undefined;
-
   return struct {
     const Self = this;
 
@@ -53,7 +50,7 @@ pub fn ComponentList(comptime T: type) type {
     pub fn init() Self {
       return Self{
         .objects_array = undefined,
-        .objects = empty[0..0], // FIXME - any better way i can initialize this?
+        .objects = ([*]ComponentObject(T))(undefined)[0..0],
         .count = 0,
       };
     }

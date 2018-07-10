@@ -20,3 +20,4 @@ IDEAS:
 - exploding enemy
 - enemy that multiples (like mantra)
 - flying enemy that can move over pits
+- enemy that usually wanders, but occasionally chases, and increases speed when chasing (rushes at player)

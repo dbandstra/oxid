@@ -144,6 +144,10 @@ pub const Spider = struct{
     });
 
     gs.monsters.create(entity_id, C.Monster{
+      .personality = switch (gs.getRand().range(u32, 0, 2)) {
+        0 => C.Monster.Personality.Chase,
+        else => C.Monster.Personality.Wander,
+      },
       .next_shoot_timer = 100,
     });
 
@@ -188,6 +192,10 @@ pub const Squid = struct{
     });
 
     gs.monsters.create(entity_id, C.Monster{
+      .personality = switch (gs.getRand().range(u32, 0, 2)) {
+        0 => C.Monster.Personality.Chase,
+        else => C.Monster.Personality.Wander,
+      },
       .next_shoot_timer = 100,
     });
 

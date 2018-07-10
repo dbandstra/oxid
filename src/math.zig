@@ -72,6 +72,14 @@ pub const Vec2 = struct {
   pub fn equals(a: Vec2, b: Vec2) bool {
     return a.x == b.x and a.y == b.y;
   }
+
+  pub fn manhattan_distance(a: Vec2, b: Vec2) u32 {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const adx = if (dx > 0) @intCast(u32, dx) else @intCast(u32, -dx);
+    const ady = if (dy > 0) @intCast(u32, dy) else @intCast(u32, -dy);
+    return adx + ady;
+  }
 };
 
 pub const BoundingBox = struct {

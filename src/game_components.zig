@@ -32,6 +32,12 @@ pub const Creature = struct {
 };
 
 pub const Monster = struct {
+  const Personality = enum{
+    Chase,
+    Wander,
+  };
+
+  personality: Personality,
   next_shoot_timer: u32,
 };
 
