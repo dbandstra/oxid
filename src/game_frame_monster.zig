@@ -1,5 +1,6 @@
 const std = @import("std");
 const u31 = @import("types.zig").u31;
+const lessThanField = @import("util.zig").lessThanField;
 const Math = @import("math.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
@@ -197,10 +198,6 @@ pub const MonsterMovementSystem = struct{
 const Choice = struct{
   direction: Math.Direction,
   score: u32, // lower is better
-
-  fn lessThan(lhs: *const Choice, rhs: *const Choice) bool {
-    return lhs.score < rhs.score;
-  }
 };
 
 const Choices = struct{
@@ -225,7 +222,7 @@ const Choices = struct{
   pub fn choose(self: *Choices) ?Math.Direction {
     if (self.num_choices > 0) {
       // TODO - use random if there is a tie.
-      std.sort.sort(Choice, self.choices[0..self.num_choices], Choice.lessThan);
+      std.sort.sort(Choice, self.choices[0..self.num_choices], lessThanField(Choice, "score"));
       return self.choices[0].direction;
     } else {
       return null;

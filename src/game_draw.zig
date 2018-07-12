@@ -2,6 +2,7 @@ const std = @import("std");
 const sort = std.sort.sort;
 const c = @import("c.zig");
 const u31 = @import("types.zig").u31;
+const lessThanField = @import("util.zig").lessThanField;
 const GameState = @import("main.zig").GameState;
 const Transform = @import("main.zig").Transform;
 const drawBox = @import("main.zig").drawBox;
@@ -22,10 +23,6 @@ const Player = components.Player;
 const SortItem = struct {
   component_index: usize,
   z_index: u32,
-
-  fn lessThan(lhs: *const SortItem, rhs: *const SortItem) bool {
-    return lhs.z_index < rhs.z_index;
-  }
 };
 
 pub fn game_draw(g: *GameState) void {
@@ -42,7 +39,8 @@ pub fn game_draw(g: *GameState) void {
     }
   }
   var sortslice = sortarray[0..num_drawables];
-  sort(SortItem, sortslice, SortItem.lessThan);
+  // sort(SortItem, sortslice, SortItem.lessThan);
+  sort(SortItem, sortslice, lessThanField(SortItem, "z_index"));
 
   // actually draw
   draw_map(g);
