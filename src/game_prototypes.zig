@@ -133,7 +133,7 @@ pub const Spider = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Monster,
+      .drawType = C.Drawable.Type.Spider,
       .z_index = Constants.ZIndexEnemy,
     });
 

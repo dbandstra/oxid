@@ -15,8 +15,8 @@ pub const Drawable = struct {
     MonsterBullet,
     Soldier,
     SoldierCorpse,
-    Monster,
     MonsterSpawn,
+    Spider,
     Squid,
     Animation,
   };

@@ -3,7 +3,6 @@ GAMEPLAY:
 
 CODE:
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
-- clean up game_draw.zig, there's a lot of duplicated code
 - per-component type limits
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - choose_slot shouldn't crash! it should return errors

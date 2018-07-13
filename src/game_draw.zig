@@ -1,5 +1,4 @@
 const std = @import("std");
-const sort = std.sort.sort;
 const c = @import("c.zig");
 const u31 = @import("types.zig").u31;
 const lessThanField = @import("util.zig").lessThanField;
@@ -39,8 +38,7 @@ pub fn game_draw(g: *GameState) void {
     }
   }
   var sortslice = sortarray[0..num_drawables];
-  // sort(SortItem, sortslice, SortItem.lessThan);
-  sort(SortItem, sortslice, lessThanField(SortItem, "z_index"));
+  std.sort.sort(SortItem, sortslice, lessThanField(SortItem, "z_index"));
 
   // actually draw
   draw_map(g);
@@ -50,7 +48,7 @@ pub fn game_draw(g: *GameState) void {
     switch (object.data.drawType) {
       Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
       Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
-      Drawable.Type.Monster => monster_draw(g, object.entity_id),
+      Drawable.Type.Spider => spider_draw(g, object.entity_id),
       Drawable.Type.MonsterSpawn => monster_spawn_draw(g, object.entity_id),
       Drawable.Type.Squid => squid_draw(g, object.entity_id),
       Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
@@ -73,128 +71,99 @@ pub fn game_draw(g: *GameState) void {
   }
 }
 
-fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
-  const phys = g.session.phys_objects.find(entity_id).?;
-  const transform = g.session.transforms.find(entity_id).?;
+// helper
+fn alternation(comptime T: type, variable: T, half_period: T) bool {
+  return @mod(@divFloor(variable, half_period * 2), half_period) == 0;
+}
 
-  const t = get_dir_transform(phys.facing);
-  draw_block(g, transform.pos, g.graphics.texture(graphic).handle, t);
+// helper
+const DrawCreature = struct{
+  const Params = struct{
+    entity_id: EntityId,
+    graphic1: Graphic,
+    graphic2: Graphic,
+  };
+
+  fn run(g: *GameState, params: Params) void {
+    const entity_id = params.entity_id;
+
+    if (g.session.creatures.find(entity_id)) |creature| {
+    if (g.session.phys_objects.find(entity_id)) |phys| {
+    if (g.session.transforms.find(entity_id)) |transform| {
+      if (creature.invulnerability_timer > 0) {
+        if (alternation(u8, g.session.frameindex, 2)) {
+          return;
+        }
+      }
+
+      const xpos = switch (phys.facing) {
+        Math.Direction.W, Math.Direction.E => transform.pos.x,
+        Math.Direction.N, Math.Direction.S => transform.pos.y,
+      };
+      const sxpos = @divFloor(xpos, Math.SUBPIXELS);
+
+      // animate legs every 4 screen pixels
+      const graphic = if (alternation(i32, sxpos, 2)) params.graphic1 else params.graphic2;
+
+      draw_block(g, transform.pos, graphic, get_dir_transform(phys.facing));
+    }
+  }}}
+};
+
+fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
+  if (g.session.phys_objects.find(entity_id)) |phys| {
+  if (g.session.transforms.find(entity_id)) |transform| {
+    draw_block(g, transform.pos, graphic, get_dir_transform(phys.facing));
+  }}
 }
 
 fn soldier_draw(g: *GameState, entity_id: EntityId) void {
-  const creature = g.session.creatures.find(entity_id).?;
-  const phys = g.session.phys_objects.find(entity_id).?;
-  const transform = g.session.transforms.find(entity_id).?;
-
-  if (creature.invulnerability_timer > 0) {
-    if ((g.session.frameindex & 1) == 0) {
-      return;
-    }
-  }
-
-  const xpos = switch (phys.facing) {
-    Math.Direction.W, Math.Direction.E => transform.pos.x,
-    Math.Direction.N, Math.Direction.S => transform.pos.y,
-  };
-  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
-
-  var player_tex: c.GLuint = undefined;
-  // animate legs every 4 screen pixels
-  if (@mod(@divFloor(sxpos, 4), 2) == 0) {
-    player_tex = g.graphics.texture(Graphic.Man1).handle;
-  } else {
-    player_tex = g.graphics.texture(Graphic.Man2).handle;
-  }
-  const t = get_dir_transform(phys.facing);
-  draw_block(g, transform.pos, player_tex, t);
+  DrawCreature.run(g, DrawCreature.Params{
+    .entity_id = entity_id,
+    .graphic1 = Graphic.Man1,
+    .graphic2 = Graphic.Man2,
+  });
 }
 
 fn soldier_corpse_draw(g: *GameState, entity_id: EntityId) void {
-  const transform = g.session.transforms.find(entity_id).?;
-
-  draw_block(g, transform.pos, g.graphics.texture(Graphic.Skeleton).handle, Transform.Identity);
+  if (g.session.transforms.find(entity_id)) |transform| {
+    draw_block(g, transform.pos, Graphic.Skeleton, Transform.Identity);
+  }
 }
 
-fn monster_draw(g: *GameState, entity_id: EntityId) void {
-  const creature = g.session.creatures.find(entity_id).?;
-  const phys = g.session.phys_objects.find(entity_id).?;
-  const transform = g.session.transforms.find(entity_id).?;
-
-  if (creature.invulnerability_timer > 0) {
-    if (((g.session.frameindex >> 2) & 1) == 0) {
-      return;
-    }
-  }
-
-  const xpos = switch (phys.facing) {
-    Math.Direction.W, Math.Direction.E => transform.pos.x,
-    Math.Direction.N, Math.Direction.S => transform.pos.y,
-  };
-  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
-
-  var player_tex: c.GLuint = undefined;
-  // animate legs every 4 screen pixels
-  if (@mod(@divFloor(sxpos, 4), 2) == 0) {
-    player_tex = g.graphics.texture(Graphic.Monster1).handle;
-  } else {
-    player_tex = g.graphics.texture(Graphic.Monster2).handle;
-  }
-  const t = get_dir_transform(phys.facing);
-  draw_block(g, transform.pos, player_tex, t);
+fn spider_draw(g: *GameState, entity_id: EntityId) void {
+  DrawCreature.run(g, DrawCreature.Params{
+    .entity_id = entity_id,
+    .graphic1 = Graphic.Spider1,
+    .graphic2 = Graphic.Spider2,
+  });
 }
 
 fn squid_draw(g: *GameState, entity_id: EntityId) void {
-  const creature = g.session.creatures.find(entity_id).?;
-  const phys = g.session.phys_objects.find(entity_id).?;
-  const transform = g.session.transforms.find(entity_id).?;
-
-  if (creature.invulnerability_timer > 0) {
-    if (((g.session.frameindex >> 2) & 1) == 0) {
-      return;
-    }
-  }
-
-  const xpos = switch (phys.facing) {
-    Math.Direction.W, Math.Direction.E => transform.pos.x,
-    Math.Direction.N, Math.Direction.S => transform.pos.y,
-  };
-  const sxpos = @divFloor(xpos, Math.SUBPIXELS);
-
-  var player_tex: c.GLuint = undefined;
-  // animate legs every 4 screen pixels
-  if (@mod(@divFloor(sxpos, 4), 2) == 0) {
-    player_tex = g.graphics.texture(Graphic.Squid1).handle;
-  } else {
-    player_tex = g.graphics.texture(Graphic.Squid2).handle;
-  }
-  const t = get_dir_transform(phys.facing);
-  draw_block(g, transform.pos, player_tex, t);
+  DrawCreature.run(g, DrawCreature.Params{
+    .entity_id = entity_id,
+    .graphic1 = Graphic.Squid1,
+    .graphic2 = Graphic.Squid2,
+  });
 }
 
 fn monster_spawn_draw(g: *GameState, entity_id: EntityId) void {
-  const transform = g.session.transforms.find(entity_id).?;
-
-  var player_tex: c.GLuint = undefined;
-  // animate legs every 4 screen pixels
-  if (((g.session.frameindex >> 2) & 1) == 0) {
-    player_tex = g.graphics.texture(Graphic.Spawn1).handle;
-  } else {
-    player_tex = g.graphics.texture(Graphic.Spawn2).handle;
+  if (g.session.transforms.find(entity_id)) |transform| {
+    const graphic = if (alternation(u8, g.session.frameindex, 2)) Graphic.Spawn1 else Graphic.Spawn2;
+    draw_block(g, transform.pos, graphic, Transform.Identity);
   }
-  draw_block(g, transform.pos, player_tex, Transform.Identity);
 }
 
 pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
-  const animation = g.session.animations.find(entity_id).?;
-  const transform = g.session.transforms.find(entity_id).?;
+  if (g.session.animations.find(entity_id)) |animation| {
+  if (g.session.transforms.find(entity_id)) |transform| {
+    const animcfg = getSimpleAnim(animation.simple_anim);
 
-  const animcfg = getSimpleAnim(animation.simple_anim);
+    std.debug.assert(animation.frame_index < animcfg.frames.len);
 
-  std.debug.assert(animation.frame_index < animcfg.frames.len);
-
-  const graphic = animcfg.frames[animation.frame_index];
-  const tex = g.graphics.texture(graphic).handle;
-  draw_block(g, transform.pos, tex, Transform.Identity);
+    const graphic = animcfg.frames[animation.frame_index];
+    draw_block(g, transform.pos, graphic, Transform.Identity);
+  }}
 }
 
 pub fn draw_map(g: *GameState) void {
@@ -204,14 +173,14 @@ pub fn draw_map(g: *GameState) void {
     while (x < LEVEL.w) : (x += 1) {
       const gridpos = Math.Vec2.init(x, y);
       if (switch (LEVEL.get_gridvalue(gridpos).?) {
-        0x00 => g.graphics.texture(Graphic.Floor).handle,
-        0x80 => g.graphics.texture(Graphic.Wall).handle,
-        0x81 => g.graphics.texture(Graphic.Wall2).handle,
-        0x82 => g.graphics.texture(Graphic.Pit).handle,
+        0x00 => Graphic.Floor,
+        0x80 => Graphic.Wall,
+        0x81 => Graphic.Wall2,
+        0x82 => Graphic.Pit,
         else => null,
-      }) |tex| {
+      }) |graphic| {
         const size = GRIDSIZE_SUBPIXELS;
-        draw_block(g, Math.Vec2.scale(gridpos, size), tex, Transform.Identity);
+        draw_block(g, Math.Vec2.scale(gridpos, size), graphic, Transform.Identity);
       }
     }
   }
@@ -228,7 +197,8 @@ pub fn get_dir_transform(direction: Math.Direction) Transform {
   };
 }
 
-pub fn draw_block(g: *GameState, pos: Math.Vec2, tex: c.GLuint, transform: Transform) void {
+pub fn draw_block(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Transform) void {
+  const tex = g.graphics.texture(graphic).handle;
   const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS));
   const w = GRIDSIZE_PIXELS;
