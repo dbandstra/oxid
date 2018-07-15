@@ -49,7 +49,6 @@ pub fn game_draw(g: *GameState) void {
       Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
       Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
       Drawable.Type.Spider => spider_draw(g, object.entity_id),
-      Drawable.Type.MonsterSpawn => monster_spawn_draw(g, object.entity_id),
       Drawable.Type.Squid => squid_draw(g, object.entity_id),
       Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
       Drawable.Type.MonsterBullet => bullet_draw(g, object.entity_id, Graphic.MonBullet),
@@ -80,6 +79,7 @@ fn alternation(comptime T: type, variable: T, half_period: T) bool {
 const DrawCreature = struct{
   const Params = struct{
     entity_id: EntityId,
+    spawning_timer: u32,
     graphic1: Graphic,
     graphic2: Graphic,
   };
@@ -90,6 +90,11 @@ const DrawCreature = struct{
     if (g.session.creatures.find(entity_id)) |creature| {
     if (g.session.phys_objects.find(entity_id)) |phys| {
     if (g.session.transforms.find(entity_id)) |transform| {
+      if (params.spawning_timer > 0) {
+        const graphic = if (alternation(u8, g.session.frameindex, 2)) Graphic.Spawn1 else Graphic.Spawn2;
+        draw_block(g, transform.pos, graphic, Transform.Identity);
+        return;
+      }
       if (creature.invulnerability_timer > 0) {
         if (alternation(u8, g.session.frameindex, 2)) {
           return;
@@ -120,6 +125,7 @@ fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
 fn soldier_draw(g: *GameState, entity_id: EntityId) void {
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
+    .spawning_timer = 0,
     .graphic1 = Graphic.Man1,
     .graphic2 = Graphic.Man2,
   });
@@ -132,25 +138,24 @@ fn soldier_corpse_draw(g: *GameState, entity_id: EntityId) void {
 }
 
 fn spider_draw(g: *GameState, entity_id: EntityId) void {
-  DrawCreature.run(g, DrawCreature.Params{
-    .entity_id = entity_id,
-    .graphic1 = Graphic.Spider1,
-    .graphic2 = Graphic.Spider2,
-  });
+  if (g.session.monsters.find(entity_id)) |monster| {
+    DrawCreature.run(g, DrawCreature.Params{
+      .entity_id = entity_id,
+      .spawning_timer = monster.spawning_timer,
+      .graphic1 = Graphic.Spider1,
+      .graphic2 = Graphic.Spider2,
+    });
+  }
 }
 
 fn squid_draw(g: *GameState, entity_id: EntityId) void {
-  DrawCreature.run(g, DrawCreature.Params{
-    .entity_id = entity_id,
-    .graphic1 = Graphic.Squid1,
-    .graphic2 = Graphic.Squid2,
-  });
-}
-
-fn monster_spawn_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    const graphic = if (alternation(u8, g.session.frameindex, 2)) Graphic.Spawn1 else Graphic.Spawn2;
-    draw_block(g, transform.pos, graphic, Transform.Identity);
+  if (g.session.monsters.find(entity_id)) |monster| {
+    DrawCreature.run(g, DrawCreature.Params{
+      .entity_id = entity_id,
+      .spawning_timer = monster.spawning_timer,
+      .graphic1 = Graphic.Squid1,
+      .graphic2 = Graphic.Squid2,
+    });
   }
 }
 

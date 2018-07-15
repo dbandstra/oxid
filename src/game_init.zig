@@ -5,7 +5,6 @@ const GameSession = @import("game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const TerrainType = @import("game_level.zig").TerrainType;
 const LEVEL = @import("game_level.zig").LEVEL;
-const SpawningMonster = @import("game_components.zig").SpawningMonster;
 const Prototypes = @import("game_prototypes.zig");
 
 pub fn game_init(gs: *GameSession) void {
@@ -23,15 +22,29 @@ pub fn game_spawn_player(gs: *GameSession) void {
   });
 }
 
-pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: SpawningMonster.Type) void {
+pub const MonsterType = enum{
+  Spider,
+  Squid,
+};
+
+pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: MonsterType) void {
   std.debug.assert(count <= 100);
   var spawn_locs: [100]Math.Vec2 = undefined;
   pick_spawn_locations(gs, spawn_locs[0..count]);
   for (spawn_locs[0..count]) |loc| {
-    _ = Prototypes.SpawningMonster.spawn(gs, Prototypes.SpawningMonster.Params{
-      .pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
-      .monsterType = monsterType,
-    });
+    const pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS);
+    switch (monsterType) {
+      MonsterType.Spider => {
+        _ = Prototypes.Spider.spawn(gs, Prototypes.Spider.Params{
+          .pos = pos,
+        });
+      },
+      MonsterType.Squid => {
+        _ = Prototypes.Squid.spawn(gs, Prototypes.Squid.Params{
+          .pos = pos,
+        });
+      },
+    }
   }
 }
 

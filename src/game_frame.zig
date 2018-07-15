@@ -13,6 +13,7 @@ const ComponentList = @import("game.zig").ComponentList;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
 const Constants = @import("game_constants.zig");
+const MonsterType = @import("game_init.zig").MonsterType;
 const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
 const game_spawn_player = @import("game_init.zig").game_spawn_player;
 const components = @import("game_components.zig");
@@ -23,7 +24,6 @@ const GameController = components.GameController;
 const Monster = components.Monster;
 const PhysObject = components.PhysObject;
 const Player = components.Player;
-const SpawningMonster = components.SpawningMonster;
 const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
 const EventTakeDamage = components.EventTakeDamage;
@@ -54,7 +54,6 @@ fn RunFrame(
 
 pub fn game_frame(gs: *GameSession) void {
   RunFrame(GameController, gs, &gs.game_controllers, game_controller_frame);
-  RunFrame(SpawningMonster, gs, &gs.spawning_monsters, spawning_monster_frame);
   RunFrame(Animation, gs, &gs.animations, animation_frame);
   PlayerMovementSystem.run(gs);
   MonsterMovementSystem.run(gs);
@@ -85,11 +84,6 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   if (self.next_wave_timer == 0) {
     // are all monsters dead
     var num_monsters: u32 = 0;
-    for (gs.spawning_monsters.objects) |object| {
-      if (object.is_active) {
-        num_monsters += 1;
-      }
-    }
     for (gs.monsters.objects) |object| {
       if (object.is_active) {
         num_monsters += 1;
@@ -108,37 +102,37 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
       self.enemy_speed_ticks = 0;
       switch (self.wave_index) {
         1 => {
-          game_spawn_monsters(gs, 8, SpawningMonster.Type.Spider);
+          game_spawn_monsters(gs, 8, MonsterType.Spider);
         },
         2 => {
-          game_spawn_monsters(gs, 8, SpawningMonster.Type.Squid);
+          game_spawn_monsters(gs, 8, MonsterType.Squid);
         },
         3 => {
-          game_spawn_monsters(gs, 12, SpawningMonster.Type.Spider);
+          game_spawn_monsters(gs, 12, MonsterType.Spider);
         },
         4 => {
-          game_spawn_monsters(gs, 4, SpawningMonster.Type.Squid);
-          game_spawn_monsters(gs, 10, SpawningMonster.Type.Spider);
+          game_spawn_monsters(gs, 4, MonsterType.Squid);
+          game_spawn_monsters(gs, 10, MonsterType.Spider);
         },
         5 => {
-          game_spawn_monsters(gs, 20, SpawningMonster.Type.Spider);
+          game_spawn_monsters(gs, 20, MonsterType.Spider);
         },
         6 => {
-          game_spawn_monsters(gs, 14, SpawningMonster.Type.Squid);
+          game_spawn_monsters(gs, 14, MonsterType.Squid);
         },
         7 => {
-          game_spawn_monsters(gs, 8, SpawningMonster.Type.Spider);
-          game_spawn_monsters(gs, 8, SpawningMonster.Type.Squid);
+          game_spawn_monsters(gs, 8, MonsterType.Spider);
+          game_spawn_monsters(gs, 8, MonsterType.Squid);
           self.enemy_speed_level = 1;
         },
         8 => {
-          game_spawn_monsters(gs, 10, SpawningMonster.Type.Spider);
-          game_spawn_monsters(gs, 10, SpawningMonster.Type.Squid);
+          game_spawn_monsters(gs, 10, MonsterType.Spider);
+          game_spawn_monsters(gs, 10, MonsterType.Squid);
           self.enemy_speed_level = 1;
         },
         else => {
           // done
-          game_spawn_monsters(gs, 1, SpawningMonster.Type.Spider);
+          game_spawn_monsters(gs, 1, MonsterType.Spider);
         },
       }
     }
@@ -166,27 +160,6 @@ fn game_controller_react(gs: *GameSession, self_id: EntityId, self: *GameControl
     if (object.is_active) {
       self.respawn_timer = Constants.PlayerRespawnTime;
     }
-  }
-  return true;
-}
-
-fn spawning_monster_frame(gs: *GameSession, self_id: EntityId, self: *SpawningMonster) bool {
-  self.timer += 1;
-  if (self.timer >= 60) {
-    const self_transform = gs.transforms.find(self_id).?;
-    switch (self.monsterType) {
-      SpawningMonster.Type.Spider => {
-        _ = Prototypes.Spider.spawn(gs, Prototypes.Spider.Params{
-          .pos = self_transform.pos,
-        });
-      },
-      SpawningMonster.Type.Squid => {
-        _ = Prototypes.Squid.spawn(gs, Prototypes.Squid.Params{
-          .pos = self_transform.pos,
-        });
-      },
-    }    
-    return false;
   }
   return true;
 }

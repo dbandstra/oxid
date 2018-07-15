@@ -26,18 +26,22 @@ pub const MonsterMovementSystem = struct{
         continue;
       }
 
+      const monster = &object.data;
       if (gs.creatures.find(object.entity_id)) |creature| {
       if (gs.phys_objects.find(object.entity_id)) |phys| {
       if (gs.transforms.find(object.entity_id)) |transform| {
         const self = SystemData{
-          .monster = &object.data,
+          .monster = monster,
           .creature = creature,
           .phys = phys,
           .transform = transform,
         };
-
-        monster_move(gs, object.entity_id, self);
-        monster_shoot(gs, object.entity_id, self);
+        if (monster.spawning_timer > 0) {
+          monster.spawning_timer -= 1;
+        } else {
+          monster_move(gs, object.entity_id, self);
+          monster_shoot(gs, object.entity_id, self);
+        }
       }}}
     }
   }
@@ -263,10 +267,12 @@ pub const MonsterTouchResponseSystem = struct{
             }
             if (gs.monsters.find(event_collide.other_id) == null) {
               // if it's a non-monster creature, inflict damage on it
-              _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
-                .self_id = event_collide.other_id,
-                .amount = 1,
-              });
+              if (self_monster.spawning_timer == 0) {
+                _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+                  .self_id = event_collide.other_id,
+                  .amount = 1,
+                });
+              }
             }
           }
         }

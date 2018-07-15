@@ -144,6 +144,7 @@ pub const Spider = struct{
     });
 
     gs.monsters.create(entity_id, C.Monster{
+      .spawning_timer = 60,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
@@ -192,38 +193,12 @@ pub const Squid = struct{
     });
 
     gs.monsters.create(entity_id, C.Monster{
+      .spawning_timer = 60,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
       .next_shoot_timer = gs.getRand().range(u32, 75, 400),
-    });
-
-    return entity_id;
-  }
-};
-
-pub const SpawningMonster = struct{
-  pub const Params = struct{
-    pos: Math.Vec2,
-    monsterType: C.SpawningMonster.Type,
-  };
-  
-  pub fn spawn(gs: *GameSession, params: Params) EntityId {
-    const entity_id = gs.spawn();
-
-    gs.transforms.create(entity_id, C.Transform{
-      .pos = params.pos,
-    });
-
-    gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.MonsterSpawn,
-      .z_index = Constants.ZIndexEnemy,
-    });
-
-    gs.spawning_monsters.create(entity_id, C.SpawningMonster{
-      .timer = 0,
-      .monsterType = params.monsterType,
     });
 
     return entity_id;

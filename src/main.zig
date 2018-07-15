@@ -18,7 +18,7 @@ const LEVEL = @import("game_level.zig").LEVEL;
 const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("game.zig").InputEvent;
-const SpawningMonster = @import("game_components.zig").SpawningMonster;
+const MonsterType = @import("game_init.zig").MonsterType;
 const game_init = @import("game_init.zig").game_init;
 const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
 const game_frame = @import("game_frame.zig").game_frame;
@@ -199,7 +199,7 @@ pub fn main() !void {
               game_init(&g.session);
             },
             c.SDLK_RETURN => {
-              game_spawn_monsters(&g.session, 8, SpawningMonster.Type.Spider);
+              game_spawn_monsters(&g.session, 8, MonsterType.Spider);
             },
             c.SDLK_F2 => {
               g.render_move_boxes = !g.render_move_boxes;

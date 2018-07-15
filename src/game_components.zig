@@ -15,7 +15,6 @@ pub const Drawable = struct {
     MonsterBullet,
     Soldier,
     SoldierCorpse,
-    MonsterSpawn,
     Spider,
     Squid,
     Animation,
@@ -37,6 +36,7 @@ pub const Monster = struct {
     Wander,
   };
 
+  spawning_timer: u32,
   personality: Personality,
   next_shoot_timer: u32,
 };
@@ -106,16 +106,6 @@ pub const PhysObjectInternal = struct {
 pub const Player = struct {
   trigger_released: bool,
   bullets: [Constants.PlayerMaxBullets]?EntityId,
-};
-
-pub const SpawningMonster = struct {
-  pub const Type = enum{
-    Spider,
-    Squid,
-  };
-
-  timer: u32,
-  monsterType: Type,
 };
 
 pub const Transform = struct {

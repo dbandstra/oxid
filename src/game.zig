@@ -13,7 +13,6 @@ const Monster = components.Monster;
 const GameController = components.GameController;
 const PhysObject = components.PhysObject;
 const Player = components.Player;
-const SpawningMonster = components.SpawningMonster;
 const Transform = components.Transform;
 const EventCollide = components.EventCollide;
 const EventPlayerDied = components.EventPlayerDied;
@@ -126,7 +125,6 @@ pub const GameSession = struct {
   monsters: ComponentList(Monster),
   phys_objects: ComponentList(PhysObject),
   players: ComponentList(Player),
-  spawning_monsters: ComponentList(SpawningMonster),
   transforms: ComponentList(Transform),
   event_collides: ComponentList(EventCollide),
   event_player_dieds: ComponentList(EventPlayerDied),
@@ -167,7 +165,6 @@ pub const GameSession = struct {
       .monsters = ComponentList(Monster).init(),
       .phys_objects = ComponentList(PhysObject).init(),
       .players = ComponentList(Player).init(),
-      .spawning_monsters = ComponentList(SpawningMonster).init(),
       .transforms = ComponentList(Transform).init(),
       .event_collides = ComponentList(EventCollide).init(),
       .event_player_dieds = ComponentList(EventPlayerDied).init(),
@@ -214,7 +211,6 @@ pub const GameSession = struct {
       self.monsters.destroy(entity_id);
       self.phys_objects.destroy(entity_id);
       self.players.destroy(entity_id);
-      self.spawning_monsters.destroy(entity_id);
       self.transforms.destroy(entity_id);
       self.event_collides.destroy(entity_id);
       self.event_player_dieds.destroy(entity_id);
