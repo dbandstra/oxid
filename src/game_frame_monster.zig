@@ -109,7 +109,7 @@ pub const MonsterMovementSystem = struct{
         .facing = self.phys.facing,
         .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
       });
-      self.monster.next_shoot_timer = 100;
+      self.monster.next_shoot_timer = gs.getRand().range(u32, 75, 400);
     }
   }
 

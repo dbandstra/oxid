@@ -21,8 +21,8 @@ pub const SquidWalkSpeed: u31 = 6;
 
 pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 
-pub const PlayerBulletSpeed: u31 = 48;
-pub const MonsterBulletSpeed: u31 = 32;
+pub const PlayerBulletSpeed: u31 = 72;
+pub const MonsterBulletSpeed: u31 = 28;
 
 pub const PlayerMaxBullets: usize = 2;
 pub const PlayerWalkSpeed: u31 = 20;

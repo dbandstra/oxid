@@ -148,7 +148,7 @@ pub const Spider = struct{
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
-      .next_shoot_timer = 100,
+      .next_shoot_timer = gs.getRand().range(u32, 75, 400),
     });
 
     return entity_id;
@@ -196,7 +196,7 @@ pub const Squid = struct{
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
-      .next_shoot_timer = 100,
+      .next_shoot_timer = gs.getRand().range(u32, 75, 400),
     });
 
     return entity_id;
