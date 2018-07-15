@@ -1,4 +1,3 @@
-const std = @import("std");
 const u31 = @import("types.zig").u31;
 const SUBPIXELS = @import("math.zig").SUBPIXELS;
 const Direction = @import("math.zig").Direction;
@@ -97,7 +96,6 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
     self.next_wave_timer -= 1;
     if (self.next_wave_timer == 0) {
       self.wave_index += 1;
-      std.debug.warn("wave {}\n", self.wave_index);
       self.enemy_speed_level = 0;
       self.enemy_speed_ticks = 0;
       switch (self.wave_index) {
@@ -148,7 +146,6 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   if (self.enemy_speed_ticks == 800) {
     if (self.enemy_speed_level < 4) {
       self.enemy_speed_level += 1;
-      std.debug.warn("speed level {}\n", self.enemy_speed_level);
     }
     self.enemy_speed_ticks = 0;
   }

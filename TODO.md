@@ -14,6 +14,9 @@ CODE:
 - get tests passing again
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
 - do something to avoid spawning monsters inside other monsters (or just make it possible to move out of something you're stuck in)
+- instead of breaking tileset into multiple textures, upload it as one and render it using different texcoord buffers (or better yet, do this in the shader)
+- move all drawing stuff into a file, all opengl stuff, with layer of abstraction so that a software renderer could be done (i probably won't bother to do one though)
+- as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines
 
 IDEAS:
 - enemy with a shield that deflects your bullets back at you

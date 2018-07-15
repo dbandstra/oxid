@@ -12,7 +12,9 @@ const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
 
 const Graphics = @import("graphics.zig").Graphics;
 const load_graphics = @import("graphics.zig").load_graphics;
-
+const Font = @import("font.zig").Font;
+const load_font = @import("font.zig").load_font;
+const Draw = @import("draw.zig");
 const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
 const GameInput = @import("game.zig").GameInput;
@@ -33,13 +35,16 @@ const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
 extern fn SDL_PollEvent(event: *c.SDL_Event) c_int;
 
+// this many pixels is added to the top of the window for font stuff
+pub const HUD_HEIGHT = 16;
+
 // size of the virtual screen
-pub const GAME_W = LEVEL.w * GRIDSIZE_PIXELS; // 320
-pub const GAME_H = LEVEL.h * GRIDSIZE_PIXELS; // 224
+pub const VWIN_W = LEVEL.w * GRIDSIZE_PIXELS; // 320
+pub const VWIN_H = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
 
 // size of the system window (virtual screen will be scaled to this)
 const WINDOW_W = 1280;
-const WINDOW_H = 896;
+const WINDOW_H = 960;
 
 var dsaf_buffer: [200*1024]u8 = undefined;
 var dsaf_ = DoubleStackAllocatorFlat.init(dsaf_buffer[0..]);
@@ -50,6 +55,7 @@ pub const GameState = struct {
   static_geometry: static_geometry.StaticGeometry,
   projection: Mat4x4,
   graphics: Graphics,
+  font: Font,
   session: GameSession,
   render_move_boxes: bool,
   paused: bool,
@@ -145,6 +151,7 @@ pub fn main() !void {
   defer g.static_geometry.destroy();
 
   try load_graphics(dsaf, &g.graphics);
+  try load_font(dsaf, &g.font);
 
   var fb: c.GLuint = 0;
   c.glGenFramebuffers(1, c.ptr(&fb));
@@ -153,7 +160,7 @@ pub fn main() !void {
   var rt: c.GLuint = 0;
   c.glGenTextures(1, c.ptr(&rt));
   c.glBindTexture(c.GL_TEXTURE_2D, rt);
-  c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @intCast(c_int, GAME_W), @intCast(c_int, GAME_H), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, @intToPtr(*const c_void, 0));
+  c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @intCast(c_int, VWIN_W), @intCast(c_int, VWIN_H), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, @intToPtr(*const c_void, 0));
   c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
   c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
   c.glTexParameterf(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
@@ -250,84 +257,25 @@ pub fn main() !void {
       }
     }
 
-    g.projection = mat4x4_ortho(0.0, @intToFloat(f32, GAME_W), @intToFloat(f32, GAME_H), 0.0);
+    g.projection = mat4x4_ortho(0.0, @intToFloat(f32, VWIN_W), @intToFloat(f32, VWIN_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
-    c.glViewport(0, 0, @intCast(c_int, GAME_W), @intCast(c_int, GAME_H));
+    c.glViewport(0, 0, @intCast(c_int, VWIN_W), @intCast(c_int, VWIN_H));
     c.glClear(c.GL_COLOR_BUFFER_BIT);
     game_draw(g);
 
     g.projection = mat4x4_ortho(0.0, @intToFloat(f32, WINDOW_W), @intToFloat(f32, WINDOW_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
     c.glViewport(0, 0, WINDOW_W, WINDOW_H);
-    fillRect(g, rt, 0, 0, WINDOW_W, WINDOW_H, Transform.FlipVertical);
+    Draw.rect(g, 0, 0, WINDOW_W, WINDOW_H, Draw.RectStyle{
+      .Textured = Draw.TexturedParams{
+        .tex_id = rt,
+        .transform = Draw.Transform.FlipVertical,
+      },
+    });
 
     c.SDL_GL_SwapWindow(window);
 
     // FIXME - don't delay if vsync is enabled
     c.SDL_Delay(17);
   }
-}
-
-pub const Transform = enum {
-  Identity,
-  FlipHorizontal,
-  FlipVertical,
-  RotateClockwise,
-  RotateCounterClockwise,
-};
-
-pub fn fillRectMvp(g: *GameState, texid: c.GLuint, mvp: *const Mat4x4, transform: Transform) void {
-  g.shaders.texture.bind();
-  g.shaders.texture.set_uniform_int(g.shaders.texture_uniform_tex, 0);
-  g.shaders.texture.set_uniform_mat4x4(g.shaders.texture_uniform_mvp, mvp);
-
-  if (g.shaders.texture_attrib_position >= 0) { // ?
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_vertex_buffer);
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.texture_attrib_position));
-    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.texture_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
-  }
-
-  if (g.shaders.texture_attrib_tex_coord >= 0) { // ?
-    switch (transform) {
-      Transform.Identity => c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_normal),
-      Transform.FlipHorizontal => c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_flip_horizontal),
-      Transform.FlipVertical => c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_flip_vertical),
-      Transform.RotateClockwise => c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_rotate_clockwise),
-      Transform.RotateCounterClockwise => c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_rotate_counter_clockwise),
-    }
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.texture_attrib_tex_coord));
-    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
-  }
-
-  c.glActiveTexture(c.GL_TEXTURE0);
-  c.glBindTexture(c.GL_TEXTURE_2D, texid);
-
-  c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
-}
-
-pub fn fillRect(g: *GameState, texid: c.GLuint, x: f32, y: f32, w: f32, h: f32, transform: Transform) void {
-  const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
-  const mvp = g.projection.mult(model);
-  fillRectMvp(g, texid, mvp, transform);
-}
-
-pub fn drawBox(g: *GameState, x: f32, y: f32, w: f32, h: f32, R: f32, G: f32, B: f32) void {
-  const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
-  const mvp = g.projection.mult(model);
-
-  const color = vec4(R, G, B, 1);
-
-  g.shaders.primitive.bind();
-  g.shaders.primitive.set_uniform_vec4(g.shaders.primitive_uniform_color, &color);
-  g.shaders.primitive.set_uniform_mat4x4(g.shaders.primitive_uniform_mvp, mvp);
-
-  if (g.shaders.primitive_attrib_position >= 0) { // ?
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_vertex_buffer);
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.primitive_attrib_position));
-    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.primitive_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
-  }
-
-  c.glPolygonMode(c.GL_FRONT, c.GL_LINE);
-  c.glDrawArrays(c.GL_QUAD_STRIP, 0, 4);
-  c.glPolygonMode(c.GL_FRONT, c.GL_FILL);
 }

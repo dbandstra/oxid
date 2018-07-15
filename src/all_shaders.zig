@@ -17,6 +17,8 @@ pub const AllShaders = struct {
     texture_attrib_position: c.GLint,
     texture_uniform_mvp: c.GLint,
     texture_uniform_tex: c.GLint,
+    texture_uniform_region_pos: c.GLint,
+    texture_uniform_region_dims: c.GLint,
 
     pub fn destroy(as: *AllShaders) void {
         as.primitive.destroy();
@@ -61,6 +63,12 @@ pub const ShaderProgram = struct {
     pub fn set_uniform_float(sp: *const ShaderProgram, uniform_id: c.GLint, value: f32) void {
         if (uniform_id != -1) {
             c.glUniform1f(uniform_id, value);
+        }
+    }
+
+    pub fn set_uniform_vec2(sp: *const ShaderProgram, uniform_id: c.GLint, x: f32, y: f32) void {
+        if (uniform_id != -1) {
+            c.glUniform2f(uniform_id, x, y);
         }
     }
 
@@ -150,10 +158,12 @@ pub fn createAllShaders() !AllShaders {
         \\out vec4 FragColor;
         \\
         \\uniform sampler2D Tex;
+        \\uniform vec2 RegionPos;
+        \\uniform vec2 RegionDims;
         \\
         \\void main(void)
         \\{
-        \\    FragColor = texture(Tex, FragTexCoord);
+        \\    FragColor = texture(Tex, RegionPos + FragTexCoord * RegionDims);
         \\}
     , null);
 
@@ -161,6 +171,8 @@ pub fn createAllShaders() !AllShaders {
     as.texture_attrib_position = as.texture.attrib_location(c"VertexPosition");
     as.texture_uniform_mvp = as.texture.uniform_location(c"MVP");
     as.texture_uniform_tex = as.texture.uniform_location(c"Tex");
+    as.texture_uniform_region_pos = as.texture.uniform_location(c"RegionPos");
+    as.texture_uniform_region_dims = as.texture.uniform_location(c"RegionDims");
 
     debug_gl.assertNoError();
 
