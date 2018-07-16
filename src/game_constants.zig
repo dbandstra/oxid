@@ -12,6 +12,7 @@ pub const MaxComponentsPerType: usize = 1000; // FIXME - different for each type
 pub const PlayerSlipThreshold = 12*16; // FIXME - use screen space
 
 pub const PlayerRespawnTime: u32 = 120; // 2 seconds
+pub const PlayerNumLives: u32 = 4; // 1 will be subtracted when drawing the hud
 
 pub const SpiderHitPoints: u32 = 1;
 pub const SpiderWalkSpeed: u31 = 8;

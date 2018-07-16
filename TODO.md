@@ -1,7 +1,6 @@
 GAMEPLAY:
 - if a monster starts to spawn where you're standing, you get stuck
 - you can't face a pit if there is no space
-- lives and game over. going to need a font soon...
 
 CODE:
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)

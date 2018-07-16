@@ -45,6 +45,7 @@ pub const PlayerController = struct{
     const entity_id = gs.spawn();
 
     gs.player_controllers.create(entity_id, C.PlayerController{
+      .lives = Constants.PlayerNumLives,
       .score = 0,
       .respawn_timer = 0,
     });

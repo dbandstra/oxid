@@ -163,7 +163,12 @@ fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *PlayerCon
 fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *PlayerController) bool {
   for (gs.event_player_dieds.objects) |object| {
     if (object.is_active) {
-      self.respawn_timer = Constants.PlayerRespawnTime;
+      if (self.lives > 0) {
+        self.lives -= 1;
+        if (self.lives > 0) {
+          self.respawn_timer = Constants.PlayerRespawnTime;
+        }
+      }
     }
   }
   for (gs.event_monster_killeds.objects) |object| {

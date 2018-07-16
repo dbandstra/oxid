@@ -50,6 +50,7 @@ pub const GameController = struct {
 };
 
 pub const PlayerController = struct {
+  lives: u32,
   score: u32,
   respawn_timer: u32,
 };

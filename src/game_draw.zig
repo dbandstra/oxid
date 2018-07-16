@@ -211,17 +211,30 @@ pub fn draw_hud(g: *GameState) void {
     },
   });
 
-  var buffer: [40]u8 = undefined;
-  var dest = MemoryOutStream.init(buffer[0..]);
-  _ = dest.stream.print("Wave: {}", gc.wave_index);
-  font_drawstring(g, Math.Vec2.init(0, 0), dest.getSlice());
-  dest.reset();
-  _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
-  font_drawstring(g, Math.Vec2.init(10*8, 0), dest.getSlice());
-  dest.reset();
   if (pc_maybe) |pc| {
+    var buffer: [40]u8 = undefined;
+    var dest = MemoryOutStream.init(buffer[0..]);
+    _ = dest.stream.print("Wave: {}", gc.wave_index);
+    font_drawstring(g, Math.Vec2.init(0, 0), dest.getSlice());
+    dest.reset();
+    _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
+    font_drawstring(g, Math.Vec2.init(9*8, 0), dest.getSlice());
+    dest.reset();
+    if (pc.lives > 0) {
+      // show one less so that 0 is a life
+      _ = dest.stream.print("Lives: {}", pc.lives - 1);
+      font_drawstring(g, Math.Vec2.init(19*8, 0), dest.getSlice());
+      dest.reset();
+    } else {
+      _ = dest.stream.print("GAME");
+      font_drawstring(g, Math.Vec2.init(20*8, 0), dest.getSlice());
+      dest.reset();
+      _ = dest.stream.print("OVER");
+      font_drawstring(g, Math.Vec2.init(20*8, 8), dest.getSlice());
+      dest.reset();
+    }
     _ = dest.stream.print("Score: {}", pc.score);
-    font_drawstring(g, Math.Vec2.init(20*8, 0), dest.getSlice());
+    font_drawstring(g, Math.Vec2.init(29*8, 0), dest.getSlice());
     dest.reset();
   }
 }
