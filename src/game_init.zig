@@ -2,6 +2,7 @@ const std = @import("std");
 const Math = @import("math.zig");
 const Constants = @import("game_constants.zig");
 const GameSession = @import("game.zig").GameSession;
+const EntityId = @import("game.zig").EntityId;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const TerrainType = @import("game_level.zig").TerrainType;
 const LEVEL = @import("game_level.zig").LEVEL;
@@ -10,11 +11,14 @@ const Prototypes = @import("game_prototypes.zig");
 pub fn game_init(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);
 
-  game_spawn_player(gs);
+  const player_controller_id = Prototypes.PlayerController.spawn(gs);
+
+  game_spawn_player(gs, player_controller_id);
 }
 
-pub fn game_spawn_player(gs: *GameSession) void {
+pub fn game_spawn_player(gs: *GameSession, player_controller_id: EntityId) void {
   _ = Prototypes.Player.spawn(gs, Prototypes.Player.Params{
+    .player_controller_id = player_controller_id,
     .pos = Math.Vec2.init(
       9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
       5 * GRIDSIZE_SUBPIXELS,

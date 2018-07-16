@@ -108,6 +108,7 @@ pub const MonsterMovementSystem = struct{
       const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
       const bullet_pos = Math.Vec2.add(pos, ofs);
       _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+        .inflictor_player_controller_id = null,
         .owner_id = self_id,
         .pos = bullet_pos,
         .facing = self.phys.facing,
@@ -269,6 +270,7 @@ pub const MonsterTouchResponseSystem = struct{
               // if it's a non-monster creature, inflict damage on it
               if (self_monster.spawning_timer == 0) {
                 _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+                  .inflictor_player_controller_id = null,
                   .self_id = event_collide.other_id,
                   .amount = 1,
                 });

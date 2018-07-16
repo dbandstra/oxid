@@ -1,4 +1,5 @@
 GAMEPLAY:
+- if a monster starts to spawn where you're standing, you get stuck
 - you can't face a pit if there is no space
 - lives and game over. going to need a font soon...
 
@@ -21,6 +22,6 @@ CODE:
 IDEAS:
 - enemy with a shield that deflects your bullets back at you
 - exploding enemy
-- enemy that multiples (like mantra)
+- enemy that multiplies (like mantra)
 - flying enemy that can move over pits
 - enemy that usually wanders, but occasionally chases, and increases speed when chasing (rushes at player)

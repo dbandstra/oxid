@@ -23,7 +23,9 @@ const GameController = components.GameController;
 const Monster = components.Monster;
 const PhysObject = components.PhysObject;
 const Player = components.Player;
+const PlayerController = components.PlayerController;
 const EventCollide = components.EventCollide;
+const EventMonsterKilled = components.EventMonsterKilled;
 const EventPlayerDied = components.EventPlayerDied;
 const EventTakeDamage = components.EventTakeDamage;
 const Prototypes = @import("game_prototypes.zig");
@@ -53,6 +55,7 @@ fn RunFrame(
 
 pub fn game_frame(gs: *GameSession) void {
   RunFrame(GameController, gs, &gs.game_controllers, game_controller_frame);
+  RunFrame(PlayerController, gs, &gs.player_controllers, player_controller_frame);
   RunFrame(Animation, gs, &gs.animations, animation_frame);
   PlayerMovementSystem.run(gs);
   MonsterMovementSystem.run(gs);
@@ -68,10 +71,11 @@ pub fn game_frame(gs: *GameSession) void {
   // creatures react to event_take_damage, die
   RunFrame(Creature, gs, &gs.creatures, creature_take_damage);
 
-  // game controller reacts to 'player died' event
-  RunFrame(GameController, gs, &gs.game_controllers, game_controller_react);
+  // player controller reacts to 'player died' event
+  RunFrame(PlayerController, gs, &gs.player_controllers, player_controller_react);
 
   RunFrame(EventCollide, gs, &gs.event_collides, null);
+  RunFrame(EventMonsterKilled, gs, &gs.event_monster_killeds, null);
   RunFrame(EventPlayerDied, gs, &gs.event_player_dieds, null);
   RunFrame(EventTakeDamage, gs, &gs.event_take_damages, null);
 
@@ -136,12 +140,6 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
     }
   }
 
-  if (self.respawn_timer > 0) {
-    self.respawn_timer -= 1;
-    if (self.respawn_timer == 0) {
-      game_spawn_player(gs);
-    }
-  }
   self.enemy_speed_ticks += 1;
   if (self.enemy_speed_ticks == 800) {
     if (self.enemy_speed_level < 4) {
@@ -152,10 +150,27 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   return true;
 }
 
-fn game_controller_react(gs: *GameSession, self_id: EntityId, self: *GameController) bool {
+fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *PlayerController) bool {
+  if (self.respawn_timer > 0) {
+    self.respawn_timer -= 1;
+    if (self.respawn_timer == 0) {
+      game_spawn_player(gs, self_id);
+    }
+  }
+  return true;
+}
+
+fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *PlayerController) bool {
   for (gs.event_player_dieds.objects) |object| {
     if (object.is_active) {
       self.respawn_timer = Constants.PlayerRespawnTime;
+    }
+  }
+  for (gs.event_monster_killeds.objects) |object| {
+    if (object.is_active) {
+      if (object.data.player_controller_id.id == self_id.id) {
+        self.score += object.data.points;
+      }
     }
   }
   return true;
@@ -194,6 +209,7 @@ pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet)
       });
       if (object.data.other_id.id != 0) {
         _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+          .inflictor_player_controller_id = self_bullet.inflictor_player_controller_id,
           .self_id = object.data.other_id,
           .amount = 1,
         });
@@ -222,12 +238,22 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
         self_creature.hit_points = 0;
         const self_transform = gs.transforms.find(self_id).?;
         if (gs.players.find(self_id)) |_| {
+          // player died
           _ = Prototypes.EventPlayerDied.spawn(gs);
           _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
             .pos = self_transform.pos,
           });
           return false;
         } else {
+          if (gs.monsters.find(self_id)) |self_monster| {
+            if (object.data.inflictor_player_controller_id) |player_controller_id| {
+              _ = Prototypes.EventMonsterKilled.spawn(gs, Prototypes.EventMonsterKilled.Params{
+                .player_controller_id = player_controller_id,
+                .points = self_monster.kill_points,
+              });
+            }
+          }
+          // something other than a player died
           _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
             .pos = self_transform.pos,
             .simple_anim = SimpleAnim.Explosion,

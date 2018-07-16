@@ -199,6 +199,12 @@ pub fn draw_map(g: *GameState) void {
 pub fn draw_hud(g: *GameState) void {
   const gc = g.session.getGameController();
 
+  const pc_maybe = for (g.session.player_controllers.objects) |object| {
+    if (object.is_active) {
+      break &object.data;
+    }
+  } else null;
+
   Draw.rect(g, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
     .Solid = Draw.SolidParams{
       .color = vec4(0, 0, 0, 1),
@@ -213,6 +219,11 @@ pub fn draw_hud(g: *GameState) void {
   _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
   font_drawstring(g, Math.Vec2.init(10*8, 0), dest.getSlice());
   dest.reset();
+  if (pc_maybe) |pc| {
+    _ = dest.stream.print("Score: {}", pc.score);
+    font_drawstring(g, Math.Vec2.init(20*8, 0), dest.getSlice());
+    dest.reset();
+  }
 }
 
 ///////////////////////////////////////////////////////////

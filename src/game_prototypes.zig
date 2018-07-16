@@ -30,7 +30,6 @@ pub const GameController = struct{
     const entity_id = gs.spawn();
 
     gs.game_controllers.create(entity_id, C.GameController{
-      .respawn_timer = 0,
       .enemy_speed_level = 0,
       .enemy_speed_ticks = 0,
       .wave_index = 0,
@@ -41,8 +40,22 @@ pub const GameController = struct{
   }
 };
 
+pub const PlayerController = struct{
+  pub fn spawn(gs: *GameSession) EntityId {
+    const entity_id = gs.spawn();
+
+    gs.player_controllers.create(entity_id, C.PlayerController{
+      .score = 0,
+      .respawn_timer = 0,
+    });
+
+    return entity_id;
+  }
+};
+
 pub const Player = struct{
   pub const Params = struct{
+    player_controller_id: EntityId,
     pos: Math.Vec2,
   };
 
@@ -78,6 +91,7 @@ pub const Player = struct{
     });
 
     gs.players.create(entity_id, C.Player{
+      .player_controller_id = params.player_controller_id,
       .trigger_released = true,
       .bullets = []?EntityId{null} ** Constants.PlayerMaxBullets,
     });
@@ -149,6 +163,7 @@ pub const Spider = struct{
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
+      .kill_points = Constants.SpiderKillPoints,
       .next_shoot_timer = gs.getRand().range(u32, 75, 400),
     });
 
@@ -198,6 +213,7 @@ pub const Squid = struct{
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
+      .kill_points = Constants.SquidKillPoints,
       .next_shoot_timer = gs.getRand().range(u32, 75, 400),
     });
 
@@ -212,6 +228,7 @@ pub const Bullet = struct{
   };
 
   pub const Params = struct{
+    inflictor_player_controller_id: ?EntityId,
     owner_id: EntityId,
     pos: Math.Vec2,
     facing: Math.Direction,
@@ -263,7 +280,7 @@ pub const Bullet = struct{
     });
 
     gs.bullets.create(entity_id, C.Bullet{
-      .unused = true,
+      .inflictor_player_controller_id = params.inflictor_player_controller_id,
     });
 
     return entity_id;
@@ -319,8 +336,27 @@ pub const EventCollide = struct{
   }
 };
 
+pub const EventMonsterKilled = struct{
+  pub const Params = struct{
+    player_controller_id: EntityId,
+    points: u32,
+  };
+
+  pub fn spawn(gs: *GameSession, params: Params) EntityId {
+    const entity_id = gs.spawn();
+
+    gs.event_monster_killeds.create(entity_id, C.EventMonsterKilled{
+      .player_controller_id = params.player_controller_id,
+      .points = params.points,
+    });
+
+    return entity_id;
+  }
+};
+
 pub const EventTakeDamage = struct{
   pub const Params = struct{
+    inflictor_player_controller_id: ?EntityId,
     self_id: EntityId,
     amount: u32,
   };
@@ -329,6 +365,7 @@ pub const EventTakeDamage = struct{
     const entity_id = gs.spawn();
 
     gs.event_take_damages.create(entity_id, C.EventTakeDamage{
+      .inflictor_player_controller_id = params.inflictor_player_controller_id,
       .self_id = params.self_id,
       .amount = params.amount,
     });

@@ -15,9 +15,11 @@ pub const PlayerRespawnTime: u32 = 120; // 2 seconds
 
 pub const SpiderHitPoints: u32 = 1;
 pub const SpiderWalkSpeed: u31 = 8;
+pub const SpiderKillPoints: u32 = 10;
 
 pub const SquidHitPoints: u32 = 5;
 pub const SquidWalkSpeed: u31 = 6;
+pub const SquidKillPoints: u32 = 15;
 
 pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 

@@ -6,7 +6,7 @@ const Constants = @import("game_constants.zig");
 const EntityId = @import("game.zig").EntityId;
 
 pub const Bullet = struct {
-  unused: bool, // remove once #1178 is fixed
+  inflictor_player_controller_id: ?EntityId,
 };
 
 pub const Drawable = struct {
@@ -38,15 +38,20 @@ pub const Monster = struct {
 
   spawning_timer: u32,
   personality: Personality,
+  kill_points: u32,
   next_shoot_timer: u32,
 };
 
 pub const GameController = struct {
-  respawn_timer: u32, // for player
   enemy_speed_level: u31,
   enemy_speed_ticks: u32,
   wave_index: u32,
   next_wave_timer: u32,
+};
+
+pub const PlayerController = struct {
+  score: u32,
+  respawn_timer: u32,
 };
 
 pub const Animation = struct {
@@ -104,6 +109,7 @@ pub const PhysObjectInternal = struct {
 };
 
 pub const Player = struct {
+  player_controller_id: EntityId,
   trigger_released: bool,
   bullets: [Constants.PlayerMaxBullets]?EntityId,
 };
@@ -122,11 +128,17 @@ pub const EventCollide = struct {
   propelled: bool,
 };
 
+pub const EventMonsterKilled = struct {
+  player_controller_id: EntityId,
+  points: u32,
+};
+
 pub const EventPlayerDied = struct {
   unused: bool, // remove once #1178 is fixed
 };
 
 pub const EventTakeDamage = struct {
+  inflictor_player_controller_id: ?EntityId,
   self_id: EntityId,
   amount: u32,
 };

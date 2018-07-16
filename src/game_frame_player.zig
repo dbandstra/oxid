@@ -64,6 +64,7 @@ pub const PlayerMovementSystem = struct{
           const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
           const bullet_pos = Math.Vec2.add(pos, ofs);
           slot.* = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+            .inflictor_player_controller_id = self.player.player_controller_id,
             .owner_id = self_id,
             .pos = bullet_pos,
             .facing = self.phys.facing,
