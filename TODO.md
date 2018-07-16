@@ -1,5 +1,6 @@
 GAMEPLAY:
 - if a monster starts to spawn where you're standing, you get stuck
+- enemies should start at faster speeds on later levels
 - you can't face a pit if there is no space
 
 CODE:

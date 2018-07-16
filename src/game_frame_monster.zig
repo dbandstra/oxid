@@ -38,6 +38,9 @@ pub const MonsterMovementSystem = struct{
         };
         if (monster.spawning_timer > 0) {
           monster.spawning_timer -= 1;
+          if (monster.spawning_timer == 0) {
+            creature.hit_points = monster.full_hit_points;
+          }
         } else {
           monster_move(gs, object.entity_id, self);
           monster_shoot(gs, object.entity_id, self);

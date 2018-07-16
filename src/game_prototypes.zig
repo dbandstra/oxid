@@ -154,12 +154,13 @@ pub const Spider = struct{
 
     gs.creatures.create(entity_id, C.Creature{
       .invulnerability_timer = 0,
-      .hit_points = Constants.SpiderHitPoints,
+      .hit_points = 1,
       .walk_speed = Constants.SpiderWalkSpeed,
     });
 
     gs.monsters.create(entity_id, C.Monster{
       .spawning_timer = 60,
+      .full_hit_points = Constants.SpiderHitPoints,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
@@ -204,12 +205,13 @@ pub const Squid = struct{
 
     gs.creatures.create(entity_id, C.Creature{
       .invulnerability_timer = 0,
-      .hit_points = Constants.SquidHitPoints,
+      .hit_points = 1,
       .walk_speed = Constants.SquidWalkSpeed,
     });
 
     gs.monsters.create(entity_id, C.Monster{
       .spawning_timer = 60,
+      .full_hit_points = Constants.SquidHitPoints,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,

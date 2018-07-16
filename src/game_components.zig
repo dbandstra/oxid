@@ -37,6 +37,7 @@ pub const Monster = struct {
   };
 
   spawning_timer: u32,
+  full_hit_points: u32,
   personality: Personality,
   kill_points: u32,
   next_shoot_timer: u32,
