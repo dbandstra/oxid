@@ -1,4 +1,3 @@
-const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const Velocity = @import("math.zig").Velocity;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;

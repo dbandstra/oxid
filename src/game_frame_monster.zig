@@ -1,5 +1,4 @@
 const std = @import("std");
-const u31 = @import("types.zig").u31;
 const lessThanField = @import("util.zig").lessThanField;
 const Math = @import("math.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;

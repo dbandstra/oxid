@@ -1,4 +1,3 @@
-const u31 = @import("types.zig").u31;
 const SUBPIXELS = @import("math.zig").SUBPIXELS;
 const Direction = @import("math.zig").Direction;
 const Vec2 = @import("math.zig").Vec2;

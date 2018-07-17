@@ -1,5 +1,3 @@
-const u31 = @import("types.zig").u31;
-
 // limits
 
 pub const MaxRemovalsPerFrame: usize = 1000;

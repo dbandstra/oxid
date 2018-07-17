@@ -2,7 +2,6 @@ const std = @import("std");
 const c = @import("c.zig");
 use @import("math3d.zig");
 const MemoryOutStream = @import("../zigutils/src/MemoryOutStream.zig").MemoryOutStream;
-const u31 = @import("types.zig").u31;
 const lessThanField = @import("util.zig").lessThanField;
 const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;

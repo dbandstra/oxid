@@ -1,5 +1,4 @@
 const std = @import("std");
-const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const abs_boxes_overlap = @import("boxes_overlap.zig").abs_boxes_overlap;
 const boxes_overlap = @import("boxes_overlap.zig").boxes_overlap;

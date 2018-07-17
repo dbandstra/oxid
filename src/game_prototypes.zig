@@ -1,4 +1,3 @@
-const u31 = @import("types.zig").u31;
 const Math = @import("math.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const EntityId = @import("game.zig").EntityId;
