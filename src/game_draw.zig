@@ -27,8 +27,6 @@ const SortItem = struct {
 };
 
 pub fn game_draw(g: *GameState) void {
-  draw_hud(g);
-
   // sort drawables
   var sortarray: [Constants.MaxComponentsPerType]SortItem = undefined;
   var num_drawables: usize = 0;
@@ -72,6 +70,8 @@ pub fn game_draw(g: *GameState) void {
       draw_box(g, int.move_bbox, R, G, B);
     }
   }
+
+  draw_hud(g);
 }
 
 // helper
@@ -225,12 +225,9 @@ pub fn draw_hud(g: *GameState) void {
       font_drawstring(g, Math.Vec2.init(19*8, 0), dest.getSlice());
       dest.reset();
     } else {
-      _ = dest.stream.print("GAME");
-      font_drawstring(g, Math.Vec2.init(20*8, 0), dest.getSlice());
-      dest.reset();
-      _ = dest.stream.print("OVER");
-      font_drawstring(g, Math.Vec2.init(20*8, 8), dest.getSlice());
-      dest.reset();
+      font_drawstring(g, Math.Vec2.init(19*8, 0), "Lives: " ++ []u8{31}); // skull
+      font_drawstring(g, Math.Vec2.init(18*8, 15*8), "GAME");
+      font_drawstring(g, Math.Vec2.init(18*8, 16*8), "OVER");
     }
     _ = dest.stream.print("Score: {}", pc.score);
     font_drawstring(g, Math.Vec2.init(29*8, 0), dest.getSlice());
