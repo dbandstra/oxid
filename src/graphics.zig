@@ -2,6 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const convertToTrueColor = @import("../zigutils/src/image/image.zig").convertToTrueColor;
+const flipImageHorizontal = @import("../zigutils/src/image/image.zig").flipImageHorizontal;
 const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
 const Image = @import("../zigutils/src/image/image.zig").Image;
 const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
@@ -10,12 +12,10 @@ const Pixel = @import("../zigutils/src/image/image.zig").Pixel;
 const allocImage = @import("../zigutils/src/image/image.zig").allocImage;
 const allocImagePalette = @import("../zigutils/src/image/image.zig").allocImagePalette;
 const getColor = @import("../zigutils/src/image/image.zig").getColor;
+const getPixel = @import("../zigutils/src/image/image.zig").getPixel;
+const setPixel = @import("../zigutils/src/image/image.zig").setPixel;
 const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
-
-const convertToTrueColor = @import("imagefuncs.zig").convertToTrueColor;
-const extract_tile = @import("imagefuncs.zig").extract_tile;
-const flip_image_horizontal = @import("imagefuncs.zig").flip_image_horizontal;
 
 const Texture = @import("main.zig").Texture;
 const upload_texture = @import("main.zig").upload_texture;
@@ -181,8 +181,21 @@ pub fn load_graphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void
     const config = getGraphicConfig(graphic);
     extract_tile(tile, tileset, config.tx, config.ty);
     if (config.fliph) {
-      flip_image_horizontal(tile);
+      flipImageHorizontal(tile);
     }
     graphics.textures[field.value] = upload_texture(tile);
+  }
+}
+
+fn extract_tile(dest: *Image, source: *const Image, tx: u32, ty: u32) void {
+  var y: u32 = 0;
+  while (y < dest.info.height) : (y += 1) {
+    var x: u32 = 0;
+    while (x < dest.info.width) : (x += 1) {
+      const px = tx * dest.info.width + x;
+      const py = ty * dest.info.height + y;
+      const pixel = getPixel(source, px, py).?;
+      setPixel(dest, x, y, pixel);
+    }
   }
 }

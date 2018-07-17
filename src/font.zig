@@ -8,12 +8,12 @@ const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
 const ImageInfo = @import("../zigutils/src/image/image.zig").ImageInfo;
 const allocImage = @import("../zigutils/src/image/image.zig").allocImage;
 const allocImagePalette = @import("../zigutils/src/image/image.zig").allocImagePalette;
+const convertToTrueColor = @import("../zigutils/src/image/image.zig").convertToTrueColor;
 const getColor = @import("../zigutils/src/image/image.zig").getColor;
 const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
 const Math = @import("math.zig");
-const convertToTrueColor = @import("imagefuncs.zig").convertToTrueColor;
 
 const GameState = @import("main.zig").GameState;
 const Texture = @import("main.zig").Texture;
