@@ -3,13 +3,7 @@ use @import("math3d.zig");
 
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
-const Image = @import("../zigutils/src/image/image.zig").Image;
-const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
-const ImageInfo = @import("../zigutils/src/image/image.zig").ImageInfo;
-const allocImage = @import("../zigutils/src/image/image.zig").allocImage;
-const allocImagePalette = @import("../zigutils/src/image/image.zig").allocImagePalette;
-const convertToTrueColor = @import("../zigutils/src/image/image.zig").convertToTrueColor;
-const getColor = @import("../zigutils/src/image/image.zig").getColor;
+const image = @import("../zigutils/src/image/image.zig");
 const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
@@ -30,7 +24,7 @@ pub const Font = struct{
 };
 
 // return an Image allocated in the low_allocator
-fn load_fontset(dsaf: *DoubleStackAllocatorFlat) !*Image {
+fn load_fontset(dsaf: *DoubleStackAllocatorFlat) !*image.Image {
   const high_mark = dsaf.get_high_mark();
   defer dsaf.free_to_high_mark(high_mark);
 
@@ -40,26 +34,26 @@ fn load_fontset(dsaf: *DoubleStackAllocatorFlat) !*Image {
 
   // load pcx
   const pcxInfo = try LoadPcx(MemoryInStream.ReadError).preload(&source.stream, &source.seekable);
-  const image = try allocImage(&dsaf.high_allocator, ImageInfo{
+  const img = try image.createImage(&dsaf.high_allocator, image.Info{
     .width = pcxInfo.width,
     .height = pcxInfo.height,
     .format = pcxBestStoreFormat(pcxInfo),
   });
-  try LoadPcx(MemoryInStream.ReadError).load(&source.stream, &source.seekable, pcxInfo, image);
+  try LoadPcx(MemoryInStream.ReadError).load(&source.stream, &source.seekable, pcxInfo, img);
 
   // load palette
-  const palette = try allocImagePalette(&dsaf.high_allocator);
+  const palette = try image.createPalette(&dsaf.high_allocator);
   try LoadPcx(MemoryInStream.ReadError).loadPalette(&source.stream, &source.seekable, pcxInfo, palette);
 
   // convert to true color image
-  const image2 = try allocImage(&dsaf.low_allocator, ImageInfo{
-    .width = image.info.width,
-    .height = image.info.height,
-    .format = ImageFormat.RGBA,
+  const img2 = try image.createImage(&dsaf.low_allocator, image.Info{
+    .width = img.info.width,
+    .height = img.info.height,
+    .format = image.Format.RGBA,
   });
-  convertToTrueColor(image2, image, palette, null);
+  image.convertToTrueColor(img2, img, palette, null);
 
-  return image2;
+  return img2;
 }
 
 pub fn load_font(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {

@@ -2,18 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const convertToTrueColor = @import("../zigutils/src/image/image.zig").convertToTrueColor;
-const flipImageHorizontal = @import("../zigutils/src/image/image.zig").flipImageHorizontal;
 const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
-const Image = @import("../zigutils/src/image/image.zig").Image;
-const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
-const ImageInfo = @import("../zigutils/src/image/image.zig").ImageInfo;
-const Pixel = @import("../zigutils/src/image/image.zig").Pixel;
-const allocImage = @import("../zigutils/src/image/image.zig").allocImage;
-const allocImagePalette = @import("../zigutils/src/image/image.zig").allocImagePalette;
-const getColor = @import("../zigutils/src/image/image.zig").getColor;
-const getPixel = @import("../zigutils/src/image/image.zig").getPixel;
-const setPixel = @import("../zigutils/src/image/image.zig").setPixel;
+const image = @import("../zigutils/src/image/image.zig");
 const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
@@ -120,7 +110,7 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 }
 
 pub const Graphics = struct{
-  background_colour: Pixel,
+  background_colour: image.Pixel,
   textures: [@memberCount(Graphic)]Texture,
 
   pub fn texture(self: *Graphics, graphic: Graphic) *Texture {
@@ -129,7 +119,7 @@ pub const Graphics = struct{
 };
 
 // return an Image allocated in the low_allocator
-fn load_tileset(dsaf: *DoubleStackAllocatorFlat, out_background_colour: *Pixel) !*Image {
+fn load_tileset(dsaf: *DoubleStackAllocatorFlat, out_background_colour: *image.Pixel) !*image.Image {
   const high_mark = dsaf.get_high_mark();
   defer dsaf.free_to_high_mark(high_mark);
 
@@ -140,28 +130,28 @@ fn load_tileset(dsaf: *DoubleStackAllocatorFlat, out_background_colour: *Pixel) 
 
   // load pcx
   const pcxInfo = try LoadPcx(MemoryInStream.ReadError).preload(&source.stream, &source.seekable);
-  const image = try allocImage(&dsaf.high_allocator, ImageInfo{
+  const img = try image.createImage(&dsaf.high_allocator, image.Info{
     .width = pcxInfo.width,
     .height = pcxInfo.height,
     .format = pcxBestStoreFormat(pcxInfo),
   });
-  try LoadPcx(MemoryInStream.ReadError).load(&source.stream, &source.seekable, pcxInfo, image);
+  try LoadPcx(MemoryInStream.ReadError).load(&source.stream, &source.seekable, pcxInfo, img);
 
   // load palette
-  const palette = try allocImagePalette(&dsaf.high_allocator);
+  const palette = try image.createPalette(&dsaf.high_allocator);
   try LoadPcx(MemoryInStream.ReadError).loadPalette(&source.stream, &source.seekable, pcxInfo, palette);
 
   // convert to true color image
-  const image2 = try allocImage(&dsaf.low_allocator, ImageInfo{
-    .width = image.info.width,
-    .height = image.info.height,
-    .format = ImageFormat.RGBA,
+  const img2 = try image.createImage(&dsaf.low_allocator, image.Info{
+    .width = img.info.width,
+    .height = img.info.height,
+    .format = image.Format.RGBA,
   });
-  convertToTrueColor(image2, image, palette, TRANSPARENT_COLOR_INDEX);
+  image.convertToTrueColor(img2, img, palette, TRANSPARENT_COLOR_INDEX);
 
-  out_background_colour.* = getColor(palette.format, palette.data, TRANSPARENT_COLOR_INDEX);
+  out_background_colour.* = image.getColor(palette.format, palette.data, TRANSPARENT_COLOR_INDEX);
 
-  return image2;
+  return img2;
 }
 
 pub fn load_graphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void {
@@ -170,10 +160,10 @@ pub fn load_graphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void
 
   const tileset = try load_tileset(dsaf, &graphics.background_colour);
 
-  const tile = try allocImage(&dsaf.low_allocator, ImageInfo{
+  const tile = try image.createImage(&dsaf.low_allocator, image.Info{
     .width = 16,
     .height = 16,
-    .format = ImageFormat.RGBA,
+    .format = image.Format.RGBA,
   });
 
   for (@typeInfo(Graphic).Enum.fields) |field| {
@@ -181,21 +171,21 @@ pub fn load_graphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void
     const config = getGraphicConfig(graphic);
     extract_tile(tile, tileset, config.tx, config.ty);
     if (config.fliph) {
-      flipImageHorizontal(tile);
+      image.flipHorizontal(tile);
     }
     graphics.textures[field.value] = upload_texture(tile);
   }
 }
 
-fn extract_tile(dest: *Image, source: *const Image, tx: u32, ty: u32) void {
+fn extract_tile(dest: *image.Image, source: *const image.Image, tx: u32, ty: u32) void {
   var y: u32 = 0;
   while (y < dest.info.height) : (y += 1) {
     var x: u32 = 0;
     while (x < dest.info.width) : (x += 1) {
       const px = tx * dest.info.width + x;
       const py = ty * dest.info.height + y;
-      const pixel = getPixel(source, px, py).?;
-      setPixel(dest, x, y, pixel);
+      const pixel = image.getPixel(source, px, py).?;
+      image.setPixel(dest, x, y, pixel);
     }
   }
 }

@@ -7,8 +7,7 @@ const all_shaders = @import("all_shaders.zig");
 const static_geometry = @import("static_geometry.zig");
 
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const Image = @import("../zigutils/src/image/image.zig").Image;
-const ImageFormat = @import("../zigutils/src/image/image.zig").ImageFormat;
+const image = @import("../zigutils/src/image/image.zig");
 
 const Graphics = @import("graphics.zig").Graphics;
 const load_graphics = @import("graphics.zig").load_graphics;
@@ -67,7 +66,10 @@ pub const Texture = struct{
   handle: c.GLuint,
 };
 
-pub fn upload_texture(image: *const Image) Texture {
+pub fn upload_texture(img: *const image.Image) Texture {
+  if (img.info.format == image.Format.INDEXED) {
+    @panic("upload_texture does not work on indexed-color images");
+  }
   var texid: c.GLuint = undefined;
   c.glGenTextures(1, c.ptr(&texid));
   c.glBindTexture(c.GL_TEXTURE_2D, texid);
@@ -80,22 +82,22 @@ pub fn upload_texture(image: *const Image) Texture {
     c.GL_TEXTURE_2D, // target
     0, // level
     // internalFormat
-    switch (image.info.format) {
-      ImageFormat.RGB => @intCast(c.GLint, c.GL_RGB),
-      ImageFormat.RGBA => @intCast(c.GLint, c.GL_RGBA),
-      ImageFormat.INDEXED => unreachable, // FIXME
+    switch (img.info.format) {
+      image.Format.RGB => @intCast(c.GLint, c.GL_RGB),
+      image.Format.RGBA => @intCast(c.GLint, c.GL_RGBA),
+      image.Format.INDEXED => unreachable, // FIXME
     },
-    @intCast(c.GLsizei, image.info.width), // width
-    @intCast(c.GLsizei, image.info.height), // height
+    @intCast(c.GLsizei, img.info.width), // width
+    @intCast(c.GLsizei, img.info.height), // height
     0, // border
     // format
-    switch (image.info.format) {
-      ImageFormat.RGB => @intCast(c.GLenum, c.GL_RGB),
-      ImageFormat.RGBA => @intCast(c.GLenum, c.GL_RGBA),
-      ImageFormat.INDEXED => unreachable, // FIXME
+    switch (img.info.format) {
+      image.Format.RGB => @intCast(c.GLenum, c.GL_RGB),
+      image.Format.RGBA => @intCast(c.GLenum, c.GL_RGBA),
+      image.Format.INDEXED => unreachable, // FIXME
     },
     c.GL_UNSIGNED_BYTE, // type
-    @ptrCast(*const c_void, &image.pixels[0]), // data
+    @ptrCast(*const c_void, &img.pixels[0]), // data
   );
   return Texture{
     .handle = texid,
