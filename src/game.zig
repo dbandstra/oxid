@@ -12,11 +12,13 @@ const Drawable = components.Drawable;
 const Monster = components.Monster;
 const GameController = components.GameController;
 const PhysObject = components.PhysObject;
+const Pickup = components.Pickup;
 const Player = components.Player;
 const PlayerController = components.PlayerController;
 const Transform = components.Transform;
 const EventCollide = components.EventCollide;
-const EventMonsterKilled = components.EventMonsterKilled;
+const EventConferBonus = components.EventConferBonus;
+const EventAwardPoints = components.EventAwardPoints;
 const EventPlayerDied = components.EventPlayerDied;
 const EventTakeDamage = components.EventTakeDamage;
 
@@ -126,11 +128,13 @@ pub const GameSession = struct {
   game_controllers: ComponentList(GameController),
   monsters: ComponentList(Monster),
   phys_objects: ComponentList(PhysObject),
+  pickups: ComponentList(Pickup),
   players: ComponentList(Player),
   player_controllers: ComponentList(PlayerController),
   transforms: ComponentList(Transform),
   event_collides: ComponentList(EventCollide),
-  event_monster_killeds: ComponentList(EventMonsterKilled),
+  event_confer_bonuses: ComponentList(EventConferBonus),
+  event_award_pointses: ComponentList(EventAwardPoints),
   event_player_dieds: ComponentList(EventPlayerDied),
   event_take_damages: ComponentList(EventTakeDamage),
 
@@ -168,11 +172,13 @@ pub const GameSession = struct {
       .game_controllers = ComponentList(GameController).init(),
       .monsters = ComponentList(Monster).init(),
       .phys_objects = ComponentList(PhysObject).init(),
+      .pickups = ComponentList(Pickup).init(),
       .player_controllers = ComponentList(PlayerController).init(),
       .players = ComponentList(Player).init(),
       .transforms = ComponentList(Transform).init(),
       .event_collides = ComponentList(EventCollide).init(),
-      .event_monster_killeds = ComponentList(EventMonsterKilled).init(),
+      .event_confer_bonuses = ComponentList(EventConferBonus).init(),
+      .event_award_pointses = ComponentList(EventAwardPoints).init(),
       .event_player_dieds = ComponentList(EventPlayerDied).init(),
       .event_take_damages = ComponentList(EventTakeDamage).init(),
       .in_up = false,
@@ -216,11 +222,13 @@ pub const GameSession = struct {
       self.game_controllers.destroy(entity_id);
       self.monsters.destroy(entity_id);
       self.phys_objects.destroy(entity_id);
+      self.pickups.destroy(entity_id);
       self.players.destroy(entity_id);
       self.player_controllers.destroy(entity_id);
       self.transforms.destroy(entity_id);
       self.event_collides.destroy(entity_id);
-      self.event_monster_killeds.destroy(entity_id);
+      self.event_confer_bonuses.destroy(entity_id);
+      self.event_award_pointses.destroy(entity_id);
       self.event_player_dieds.destroy(entity_id);
       self.event_take_damages.destroy(entity_id);
     }

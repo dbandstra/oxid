@@ -6,17 +6,21 @@ const EntityId = @import("game.zig").EntityId;
 
 pub const Bullet = struct {
   inflictor_player_controller_id: ?EntityId,
+  damage: u32,
 };
 
 pub const Drawable = struct {
   pub const Type = enum{
     PlayerBullet,
+    PlayerBullet2,
+    PlayerBullet3,
     MonsterBullet,
     Soldier,
     SoldierCorpse,
     Spider,
     Squid,
     Animation,
+    Pickup,
   };
 
   drawType: Type,
@@ -47,6 +51,7 @@ pub const GameController = struct {
   enemy_speed_ticks: u32,
   wave_index: u32,
   next_wave_timer: u32,
+  next_pickup_timer: u32,
 };
 
 pub const PlayerController = struct {
@@ -109,10 +114,34 @@ pub const PhysObjectInternal = struct {
   group_index: usize,
 };
 
+pub const Pickup = struct {
+  const Type = enum{
+    PowerUp,
+    SpeedUp,
+  };
+
+  pickup_type: Type,
+  timer: u32,
+};
+
 pub const Player = struct {
+  const AttackLevel = enum {
+    One,
+    Two,
+    Three,
+  };
+
+  const SpeedLevel = enum {
+    One,
+    Two,
+    Three,
+  };
+
   player_controller_id: EntityId,
   trigger_released: bool,
   bullets: [Constants.PlayerMaxBullets]?EntityId,
+  attack_level: AttackLevel,
+  speed_level: SpeedLevel,
 };
 
 pub const Transform = struct {
@@ -129,7 +158,12 @@ pub const EventCollide = struct {
   propelled: bool,
 };
 
-pub const EventMonsterKilled = struct {
+pub const EventConferBonus = struct {
+  recipient_id: EntityId,
+  pickup_type: Pickup.Type,
+};
+
+pub const EventAwardPoints = struct {
   player_controller_id: EntityId,
   points: u32,
 };

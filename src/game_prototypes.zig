@@ -23,6 +23,8 @@ const world_bbox = make_bbox(GRIDSIZE_SUBPIXELS);
 const player_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
 // monster's ent-vs-ent bbox is 75% size
 const monster_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
+// pickups are 50% size
+const pickup_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
 
 pub const GameController = struct{
   pub fn spawn(gs: *GameSession) EntityId {
@@ -33,6 +35,7 @@ pub const GameController = struct{
       .enemy_speed_ticks = 0,
       .wave_index = 0,
       .next_wave_timer = 90,
+      .next_pickup_timer = 15*60,
     });
 
     return entity_id;
@@ -87,13 +90,15 @@ pub const Player = struct{
     gs.creatures.create(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
-      .walk_speed = Constants.PlayerWalkSpeed,
+      .walk_speed = Constants.PlayerWalkSpeed1,
     });
 
     gs.players.create(entity_id, C.Player{
       .player_controller_id = params.player_controller_id,
       .trigger_released = true,
       .bullets = []?EntityId{null} ** Constants.PlayerMaxBullets,
+      .attack_level = C.Player.AttackLevel.One,
+      .speed_level = C.Player.SpeedLevel.One,
     });
 
     return entity_id;
@@ -235,6 +240,7 @@ pub const Bullet = struct{
     pos: Math.Vec2,
     facing: Math.Direction,
     bullet_type: BulletType,
+    cluster_size: u32,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
@@ -276,13 +282,18 @@ pub const Bullet = struct{
     gs.drawables.create(entity_id, C.Drawable{
       .drawType = switch (params.bullet_type) {
         BulletType.MonsterBullet => C.Drawable.Type.MonsterBullet,
-        BulletType.PlayerBullet => C.Drawable.Type.PlayerBullet,
+        BulletType.PlayerBullet => switch (params.cluster_size) {
+          1 => C.Drawable.Type.PlayerBullet,
+          2 => C.Drawable.Type.PlayerBullet2,
+          else => C.Drawable.Type.PlayerBullet3,
+        },
       },
       .z_index = Constants.ZIndexBullet,
     });
 
     gs.bullets.create(entity_id, C.Bullet{
       .inflictor_player_controller_id = params.inflictor_player_controller_id,
+      .damage = params.cluster_size,
     });
 
     return entity_id;
@@ -318,60 +329,74 @@ pub const Animation = struct{
   }
 };
 
-pub const EventCollide = struct{
+pub const Pickup = struct{
   pub const Params = struct{
-    self_id: EntityId,
-    other_id: EntityId,
-    propelled: bool,
+    pos: Math.Vec2,
+    pickup_type: C.Pickup.Type,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.event_collides.create(entity_id, C.EventCollide{
-      .self_id = params.self_id,
-      .other_id = params.other_id,
-      .propelled = params.propelled,
+    gs.transforms.create(entity_id, C.Transform{
+      .pos = params.pos,
+    });
+
+    gs.drawables.create(entity_id, C.Drawable{
+      .drawType = C.Drawable.Type.Pickup,
+      .z_index = Constants.ZIndexPickup,
+    });
+
+    gs.phys_objects.create(entity_id, C.PhysObject{
+      .world_bbox = world_bbox,
+      .entity_bbox = pickup_entity_bbox,
+      .facing = Math.Direction.E,
+      .speed = 0,
+      .push_dir = null,
+      .owner_id = EntityId{ .id = 0 },
+      .ignore_pits = false,
+      .flags = 0,
+      .ignore_flags = C.PhysObject.FLAG_BULLET | C.PhysObject.FLAG_MONSTER,
+      .internal = undefined,
+    });
+
+    gs.pickups.create(entity_id, C.Pickup{
+      .pickup_type = params.pickup_type,
+      .timer = 15*60, // will disappear in 15 seconds
     });
 
     return entity_id;
   }
 };
 
-pub const EventMonsterKilled = struct{
-  pub const Params = struct{
-    player_controller_id: EntityId,
-    points: u32,
-  };
-
-  pub fn spawn(gs: *GameSession, params: Params) EntityId {
+pub const EventCollide = struct{
+  pub fn spawn(gs: *GameSession, body: C.EventCollide) EntityId {
     const entity_id = gs.spawn();
+    gs.event_collides.create(entity_id, body);
+    return entity_id;
+  }
+};
 
-    gs.event_monster_killeds.create(entity_id, C.EventMonsterKilled{
-      .player_controller_id = params.player_controller_id,
-      .points = params.points,
-    });
+pub const EventConferBonus = struct{
+  pub fn spawn(gs: *GameSession, body: C.EventConferBonus) EntityId {
+    const entity_id = gs.spawn();
+    gs.event_confer_bonuses.create(entity_id, body);
+    return entity_id;
+  }
+};
 
+pub const EventAwardPoints = struct{
+  pub fn spawn(gs: *GameSession, body: C.EventAwardPoints) EntityId {
+    const entity_id = gs.spawn();
+    gs.event_award_pointses.create(entity_id, body);
     return entity_id;
   }
 };
 
 pub const EventTakeDamage = struct{
-  pub const Params = struct{
-    inflictor_player_controller_id: ?EntityId,
-    self_id: EntityId,
-    amount: u32,
-  };
-
-  pub fn spawn(gs: *GameSession, params: Params) EntityId {
+  pub fn spawn(gs: *GameSession, body: C.EventTakeDamage) EntityId {
     const entity_id = gs.spawn();
-
-    gs.event_take_damages.create(entity_id, C.EventTakeDamage{
-      .inflictor_player_controller_id = params.inflictor_player_controller_id,
-      .self_id = params.self_id,
-      .amount = params.amount,
-    });
-
+    gs.event_take_damages.create(entity_id, body);
     return entity_id;
   }
 };
@@ -379,11 +404,7 @@ pub const EventTakeDamage = struct{
 pub const EventPlayerDied = struct{
   pub fn spawn(gs: *GameSession) EntityId {
     const entity_id = gs.spawn();
-
-    gs.event_player_dieds.create(entity_id, C.EventPlayerDied{
-      .unused = true,
-    });
-
+    gs.event_player_dieds.create(entity_id, C.EventPlayerDied{.unused = true});
     return entity_id;
   }
 };

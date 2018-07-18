@@ -115,6 +115,7 @@ pub const MonsterMovementSystem = struct{
         .pos = bullet_pos,
         .facing = self.phys.facing,
         .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
+        .cluster_size = 1,
       });
       self.monster.next_shoot_timer = gs.getRand().range(u32, 75, 400);
     }
@@ -271,7 +272,7 @@ pub const MonsterTouchResponseSystem = struct{
             if (gs.monsters.find(event_collide.other_id) == null) {
               // if it's a non-monster creature, inflict damage on it
               if (self_monster.spawning_timer == 0) {
-                _ = Prototypes.EventTakeDamage.spawn(gs, Prototypes.EventTakeDamage.Params{
+                _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
                   .inflictor_player_controller_id = null,
                   .self_id = event_collide.other_id,
                   .amount = 1,

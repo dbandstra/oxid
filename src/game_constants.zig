@@ -20,17 +20,22 @@ pub const SquidHitPoints: u32 = 5;
 pub const SquidWalkSpeed: u31 = 6;
 pub const SquidKillPoints: u32 = 15;
 
+pub const PickupGetPoints: u32 = 20;
+
 pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 
 pub const PlayerBulletSpeed: u31 = 72;
 pub const MonsterBulletSpeed: u31 = 28;
 
 pub const PlayerMaxBullets: usize = 2;
-pub const PlayerWalkSpeed: u31 = 20;
+pub const PlayerWalkSpeed1: u31 = 20;
+pub const PlayerWalkSpeed2: u31 = 24;
+pub const PlayerWalkSpeed3: u31 = 28;
 
 pub const ZIndexSparks: u32 = 120;
 pub const ZIndexPlayer: u32 = 100;
 pub const ZIndexExplosion: u32 = 81;
 pub const ZIndexEnemy: u32 = 80;
 pub const ZIndexBullet: u32 = 50;
+pub const ZIndexPickup: u32 = 30;
 pub const ZIndexCorpse: u32 = 20;

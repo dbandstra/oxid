@@ -16,10 +16,7 @@ const Constants = @import("game_constants.zig");
 const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
-const components = @import("game_components.zig");
-const Bullet = components.Bullet;
-const Drawable = components.Drawable;
-const Player = components.Player;
+const C = @import("game_components.zig");
 
 const SortItem = struct {
   component_index: usize,
@@ -48,13 +45,16 @@ pub fn game_draw(g: *GameState) void {
   for (sortslice) |sort_item| {
     const object = &g.session.drawables.objects[sort_item.component_index];
     switch (object.data.drawType) {
-      Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
-      Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
-      Drawable.Type.Spider => spider_draw(g, object.entity_id),
-      Drawable.Type.Squid => squid_draw(g, object.entity_id),
-      Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
-      Drawable.Type.MonsterBullet => bullet_draw(g, object.entity_id, Graphic.MonBullet),
-      Drawable.Type.Animation => animation_draw(g, object.entity_id),
+      C.Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
+      C.Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
+      C.Drawable.Type.Spider => spider_draw(g, object.entity_id),
+      C.Drawable.Type.Squid => squid_draw(g, object.entity_id),
+      C.Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
+      C.Drawable.Type.PlayerBullet2 => bullet_draw(g, object.entity_id, Graphic.PlaBullet2),
+      C.Drawable.Type.PlayerBullet3 => bullet_draw(g, object.entity_id, Graphic.PlaBullet3),
+      C.Drawable.Type.MonsterBullet => bullet_draw(g, object.entity_id, Graphic.MonBullet),
+      C.Drawable.Type.Animation => animation_draw(g, object.entity_id),
+      C.Drawable.Type.Pickup => pickup_draw(g, object.entity_id),
     }
   }
 
@@ -175,6 +175,17 @@ pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
   }}
 }
 
+pub fn pickup_draw(g: *GameState, entity_id: EntityId) void {
+  if (g.session.pickups.find(entity_id)) |pickup| {
+  if (g.session.transforms.find(entity_id)) |transform| {
+    const graphic = switch (pickup.pickup_type) {
+      C.Pickup.Type.PowerUp => Graphic.PowerUp,
+      C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
+    };
+    draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
+  }}
+}
+
 pub fn draw_map(g: *GameState) void {
   var y: u31 = 0;
   while (y < LEVEL.h) : (y += 1) {
@@ -225,7 +236,7 @@ pub fn draw_hud(g: *GameState) void {
       font_drawstring(g, Math.Vec2.init(19*8, 0), dest.getSlice());
       dest.reset();
     } else {
-      font_drawstring(g, Math.Vec2.init(19*8, 0), "Lives: " ++ []u8{31}); // skull
+      font_drawstring(g, Math.Vec2.init(19*8, 0), "Lives: \x1F"); // skull
       font_drawstring(g, Math.Vec2.init(18*8, 15*8), "GAME");
       font_drawstring(g, Math.Vec2.init(18*8, 16*8), "OVER");
     }

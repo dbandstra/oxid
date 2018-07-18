@@ -207,7 +207,7 @@ pub fn physics_frame(gs: *GameSession) void {
         var hit_something = false;
 
         if (phys_in_wall(m.phys, new_pos)) {
-          _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+          _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
             .self_id = m.entity_id,
             .other_id = EntityId{ .id = 0 },
             .propelled = true,
@@ -249,7 +249,7 @@ fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
   if (find_collision_event(gs, self_id, other_id)) |event_collide| {
     event_collide.propelled = true;
   } else {
-    _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+    _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
       .self_id = self_id,
       .other_id = other_id,
       .propelled = true,
@@ -257,7 +257,7 @@ fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
   }
 
   if (find_collision_event(gs, other_id, self_id) == null) {
-    _ = Prototypes.EventCollide.spawn(gs, Prototypes.EventCollide.Params{
+    _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
       .self_id = other_id,
       .other_id = self_id,
       .propelled = false,

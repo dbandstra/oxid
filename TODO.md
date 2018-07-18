@@ -4,6 +4,12 @@ GAMEPLAY:
 - you can't face a pit if there is no space
 
 CODE:
+- move more stuff to constants, e.g. the timers
+- can i make some kind of reusable thing for timers?
+- only accepts components from `C`. get rid of one-by-one imports
+- standardize camel/snake case usage
+- when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
+- creature.walk_speed doesn't really make sense as a field
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - per-component type limits
 - figure out how to refactor the component lists in game.zig so i only have to list them once
@@ -14,7 +20,7 @@ CODE:
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
 - get tests passing again
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
-- do something to avoid spawning monsters inside other monsters (or just make it possible to move out of something you're stuck in)
+- do something to avoid spawning monsters inside other monsters (or just make it possible to move out of something you're stuck in). sometimes a level begins with two monsters in the same spot. both monsters and pickups should be spawned away from the player and from each other
 - instead of breaking tileset into multiple textures, upload it as one and render it using different texcoord buffers (or better yet, do this in the shader)
 - move all drawing stuff into a file, all opengl stuff, with layer of abstraction so that a software renderer could be done (i probably won't bother to do one though)
 - as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines

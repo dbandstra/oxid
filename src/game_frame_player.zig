@@ -68,6 +68,11 @@ pub const PlayerMovementSystem = struct{
             .pos = bullet_pos,
             .facing = self.phys.facing,
             .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
+            .cluster_size = switch (self.player.attack_level) {
+              C.Player.AttackLevel.One => u32(1),
+              C.Player.AttackLevel.Two => u32(2),
+              C.Player.AttackLevel.Three => u32(3),
+            },
           });
           self.player.trigger_released = false;
         }
@@ -157,6 +162,51 @@ pub const PlayerMovementSystem = struct{
       self_phys.facing = slipdir;
       self_phys.speed = speed;
       self_phys.push_dir = dir;
+    }
+  }
+};
+
+pub const PlayerReactionSystem = struct{
+  pub fn run(gs: *GameSession) void {
+    for (gs.players.objects) |*object| {
+      if (!object.is_active) {
+        continue;
+      }
+      player_react(gs, object.entity_id, &object.data);
+    }
+  }
+
+  fn player_react(gs: *GameSession, self_id: EntityId, self_player: *C.Player) void {
+    const self_creature = gs.creatures.find(self_id).?;
+    const self_phys = gs.phys_objects.find(self_id).?;
+    const self_transform = gs.transforms.find(self_id).?;
+
+    for (gs.event_confer_bonuses.objects) |*object| {
+      if (!object.is_active) {
+        continue;
+      }
+      const event_confer_bonus = &object.data;
+      if (event_confer_bonus.recipient_id.id == self_id.id) {
+        switch (event_confer_bonus.pickup_type) {
+          C.Pickup.Type.PowerUp => {
+            self_player.attack_level = switch (self_player.attack_level) {
+              C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
+              else => C.Player.AttackLevel.Three,
+            };
+          },
+          C.Pickup.Type.SpeedUp => {
+            self_player.speed_level = switch (self_player.speed_level) {
+              C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
+              else => C.Player.SpeedLevel.Three,
+            };
+            self_creature.walk_speed = switch (self_player.speed_level) {
+              C.Player.SpeedLevel.One => Constants.PlayerWalkSpeed1,
+              C.Player.SpeedLevel.Two => Constants.PlayerWalkSpeed2,
+              C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
+            };
+          },
+        }
+      }
     }
   }
 };

@@ -7,6 +7,7 @@ const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const TerrainType = @import("game_level.zig").TerrainType;
 const LEVEL = @import("game_level.zig").LEVEL;
 const Prototypes = @import("game_prototypes.zig");
+const C = @import("game_components.zig");
 
 pub fn game_init(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);
@@ -50,6 +51,16 @@ pub fn game_spawn_monsters(gs: *GameSession, count: usize, monsterType: MonsterT
       },
     }
   }
+}
+
+pub fn game_spawn_pickup(gs: *GameSession, pickup_type: C.Pickup.Type) void {
+  var spawn_locs: [1]Math.Vec2 = undefined;
+  pick_spawn_locations(gs, spawn_locs[0..]);
+  const pos = Math.Vec2.scale(spawn_locs[0], GRIDSIZE_SUBPIXELS);
+  _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
+    .pos = pos,
+    .pickup_type = pickup_type,
+  });
 }
 
 // fill given slice with random grid positions, none of which is in a wall and

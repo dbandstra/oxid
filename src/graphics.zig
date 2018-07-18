@@ -13,6 +13,8 @@ const upload_texture = @import("main.zig").upload_texture;
 pub const Graphic = enum{
   Pit,
   PlaBullet,
+  PlaBullet2,
+  PlaBullet3,
   PlaSpark1,
   PlaSpark2,
   MonBullet,
@@ -34,6 +36,8 @@ pub const Graphic = enum{
   Spawn2,
   Squid1,
   Squid2,
+  PowerUp,
+  SpeedUp,
 };
 
 const GraphicConfig = struct{
@@ -46,6 +50,8 @@ fn getGraphicConfig(graphic: Graphic) GraphicConfig {
   return switch (graphic) {
     Graphic.Pit       => GraphicConfig{ .tx = 1, .ty = 1, .fliph = false },
     Graphic.PlaBullet => GraphicConfig{ .tx = 2, .ty = 2, .fliph = true },
+    Graphic.PlaBullet2=> GraphicConfig{ .tx = 9, .ty = 2, .fliph = true },
+    Graphic.PlaBullet3=> GraphicConfig{ .tx =10, .ty = 2, .fliph = true },
     Graphic.PlaSpark1 => GraphicConfig{ .tx = 1, .ty = 2, .fliph = true },
     Graphic.PlaSpark2 => GraphicConfig{ .tx = 0, .ty = 2, .fliph = true },
     Graphic.MonBullet => GraphicConfig{ .tx = 2, .ty = 4, .fliph = true },
@@ -67,6 +73,8 @@ fn getGraphicConfig(graphic: Graphic) GraphicConfig {
     Graphic.Spawn2    => GraphicConfig{ .tx = 1, .ty = 3, .fliph = false },
     Graphic.Squid1    => GraphicConfig{ .tx = 3, .ty = 4, .fliph = true },
     Graphic.Squid2    => GraphicConfig{ .tx = 4, .ty = 4, .fliph = true },
+    Graphic.PowerUp   => GraphicConfig{ .tx = 8, .ty = 2, .fliph = false },
+    Graphic.SpeedUp   => GraphicConfig{ .tx = 7, .ty = 2, .fliph = false },
   };
 }
 
