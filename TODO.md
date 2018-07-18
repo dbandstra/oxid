@@ -6,7 +6,6 @@ GAMEPLAY:
 CODE:
 - move more stuff to constants, e.g. the timers
 - can i make some kind of reusable thing for timers?
-- only accepts components from `C`. get rid of one-by-one imports
 - standardize camel/snake case usage
 - when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
 - creature.walk_speed doesn't really make sense as a field

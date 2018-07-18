@@ -4,23 +4,7 @@ const Direction = @import("math.zig").Direction;
 const Vec2 = @import("math.zig").Vec2;
 
 const Constants = @import("game_constants.zig");
-const components = @import("game_components.zig");
-const Animation = components.Animation;
-const Bullet = components.Bullet;
-const Creature = components.Creature;
-const Drawable = components.Drawable;
-const Monster = components.Monster;
-const GameController = components.GameController;
-const PhysObject = components.PhysObject;
-const Pickup = components.Pickup;
-const Player = components.Player;
-const PlayerController = components.PlayerController;
-const Transform = components.Transform;
-const EventCollide = components.EventCollide;
-const EventConferBonus = components.EventConferBonus;
-const EventAwardPoints = components.EventAwardPoints;
-const EventPlayerDied = components.EventPlayerDied;
-const EventTakeDamage = components.EventTakeDamage;
+const C = @import("game_components.zig");
 
 pub const InputEvent = enum {
   Left,
@@ -121,22 +105,22 @@ pub const GameSession = struct {
 
   god_mode: bool,
 
-  animations: ComponentList(Animation),
-  bullets: ComponentList(Bullet),
-  creatures: ComponentList(Creature),
-  drawables: ComponentList(Drawable),
-  game_controllers: ComponentList(GameController),
-  monsters: ComponentList(Monster),
-  phys_objects: ComponentList(PhysObject),
-  pickups: ComponentList(Pickup),
-  players: ComponentList(Player),
-  player_controllers: ComponentList(PlayerController),
-  transforms: ComponentList(Transform),
-  event_collides: ComponentList(EventCollide),
-  event_confer_bonuses: ComponentList(EventConferBonus),
-  event_award_pointses: ComponentList(EventAwardPoints),
-  event_player_dieds: ComponentList(EventPlayerDied),
-  event_take_damages: ComponentList(EventTakeDamage),
+  animations: ComponentList(C.Animation),
+  bullets: ComponentList(C.Bullet),
+  creatures: ComponentList(C.Creature),
+  drawables: ComponentList(C.Drawable),
+  game_controllers: ComponentList(C.GameController),
+  monsters: ComponentList(C.Monster),
+  phys_objects: ComponentList(C.PhysObject),
+  pickups: ComponentList(C.Pickup),
+  players: ComponentList(C.Player),
+  player_controllers: ComponentList(C.PlayerController),
+  transforms: ComponentList(C.Transform),
+  event_collides: ComponentList(C.EventCollide),
+  event_confer_bonuses: ComponentList(C.EventConferBonus),
+  event_award_pointses: ComponentList(C.EventAwardPoints),
+  event_player_dieds: ComponentList(C.EventPlayerDied),
+  event_take_damages: ComponentList(C.EventTakeDamage),
 
   in_left: bool,
   in_right: bool,
@@ -165,22 +149,22 @@ pub const GameSession = struct {
       .removals = undefined,
       .num_removals = 0,
       .god_mode = false,
-      .animations = ComponentList(Animation).init(),
-      .bullets = ComponentList(Bullet).init(),
-      .creatures = ComponentList(Creature).init(),
-      .drawables = ComponentList(Drawable).init(),
-      .game_controllers = ComponentList(GameController).init(),
-      .monsters = ComponentList(Monster).init(),
-      .phys_objects = ComponentList(PhysObject).init(),
-      .pickups = ComponentList(Pickup).init(),
-      .player_controllers = ComponentList(PlayerController).init(),
-      .players = ComponentList(Player).init(),
-      .transforms = ComponentList(Transform).init(),
-      .event_collides = ComponentList(EventCollide).init(),
-      .event_confer_bonuses = ComponentList(EventConferBonus).init(),
-      .event_award_pointses = ComponentList(EventAwardPoints).init(),
-      .event_player_dieds = ComponentList(EventPlayerDied).init(),
-      .event_take_damages = ComponentList(EventTakeDamage).init(),
+      .animations = ComponentList(C.Animation).init(),
+      .bullets = ComponentList(C.Bullet).init(),
+      .creatures = ComponentList(C.Creature).init(),
+      .drawables = ComponentList(C.Drawable).init(),
+      .game_controllers = ComponentList(C.GameController).init(),
+      .monsters = ComponentList(C.Monster).init(),
+      .phys_objects = ComponentList(C.PhysObject).init(),
+      .pickups = ComponentList(C.Pickup).init(),
+      .player_controllers = ComponentList(C.PlayerController).init(),
+      .players = ComponentList(C.Player).init(),
+      .transforms = ComponentList(C.Transform).init(),
+      .event_collides = ComponentList(C.EventCollide).init(),
+      .event_confer_bonuses = ComponentList(C.EventConferBonus).init(),
+      .event_award_pointses = ComponentList(C.EventAwardPoints).init(),
+      .event_player_dieds = ComponentList(C.EventPlayerDied).init(),
+      .event_take_damages = ComponentList(C.EventTakeDamage).init(),
       .in_up = false,
       .in_down = false,
       .in_left = false,
@@ -189,7 +173,7 @@ pub const GameSession = struct {
     };
   }
 
-  pub fn getGameController(self: *GameSession) *GameController {
+  pub fn getGameController(self: *GameSession) *C.GameController {
     var object = &self.game_controllers.objects[0];
     std.debug.assert(object.is_active == true);
     return &object.data;

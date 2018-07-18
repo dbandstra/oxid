@@ -16,21 +16,7 @@ const MonsterType = @import("game_init.zig").MonsterType;
 const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
 const game_spawn_player = @import("game_init.zig").game_spawn_player;
 const game_spawn_pickup = @import("game_init.zig").game_spawn_pickup;
-const components = @import("game_components.zig");
-const Animation = components.Animation;
-const Bullet = components.Bullet;
-const Creature = components.Creature;
-const GameController = components.GameController;
-const Monster = components.Monster;
-const PhysObject = components.PhysObject;
-const Pickup = components.Pickup;
-const Player = components.Player;
-const PlayerController = components.PlayerController;
-const EventCollide = components.EventCollide;
-const EventConferBonus = components.EventConferBonus;
-const EventAwardPoints = components.EventAwardPoints;
-const EventPlayerDied = components.EventPlayerDied;
-const EventTakeDamage = components.EventTakeDamage;
+const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 const physics_frame = @import("game_physics.zig").physics_frame;
 const MonsterMovementSystem = @import("game_frame_monster.zig").MonsterMovementSystem;
@@ -58,42 +44,42 @@ fn RunFrame(
 }
 
 pub fn game_frame(gs: *GameSession) void {
-  RunFrame(GameController, gs, &gs.game_controllers, game_controller_frame);
-  RunFrame(PlayerController, gs, &gs.player_controllers, player_controller_frame);
-  RunFrame(Animation, gs, &gs.animations, animation_frame);
+  RunFrame(C.GameController, gs, &gs.game_controllers, game_controller_frame);
+  RunFrame(C.PlayerController, gs, &gs.player_controllers, player_controller_frame);
+  RunFrame(C.Animation, gs, &gs.animations, animation_frame);
   PlayerMovementSystem.run(gs);
   MonsterMovementSystem.run(gs);
-  RunFrame(Creature, gs, &gs.creatures, creature_frame);
-  RunFrame(Pickup, gs, &gs.pickups, pickup_frame);
+  RunFrame(C.Creature, gs, &gs.creatures, creature_frame);
+  RunFrame(C.Pickup, gs, &gs.pickups, pickup_frame);
 
   physics_frame(gs);
 
   // pickups react to event_collide, spawn event_confer_bonus
-  RunFrame(Pickup, gs, &gs.pickups, pickup_collide);
+  RunFrame(C.Pickup, gs, &gs.pickups, pickup_collide);
   // bullets react to event_collide, spawn event_take_damage
-  RunFrame(Bullet, gs, &gs.bullets, bullet_collide);
+  RunFrame(C.Bullet, gs, &gs.bullets, bullet_collide);
   // monsters react to event_collide, damage others
   MonsterTouchResponseSystem.run(gs);
   // player reacts to event_confer_bonus, gets bonus effect
   PlayerReactionSystem.run(gs);
 
   // creatures react to event_take_damage, die
-  RunFrame(Creature, gs, &gs.creatures, creature_take_damage);
+  RunFrame(C.Creature, gs, &gs.creatures, creature_take_damage);
 
   // player controller reacts to 'player died' event
-  RunFrame(PlayerController, gs, &gs.player_controllers, player_controller_react);
+  RunFrame(C.PlayerController, gs, &gs.player_controllers, player_controller_react);
 
-  RunFrame(EventCollide, gs, &gs.event_collides, null);
-  RunFrame(EventConferBonus, gs, &gs.event_confer_bonuses, null);
-  RunFrame(EventAwardPoints, gs, &gs.event_award_pointses, null);
-  RunFrame(EventPlayerDied, gs, &gs.event_player_dieds, null);
-  RunFrame(EventTakeDamage, gs, &gs.event_take_damages, null);
+  RunFrame(C.EventCollide, gs, &gs.event_collides, null);
+  RunFrame(C.EventConferBonus, gs, &gs.event_confer_bonuses, null);
+  RunFrame(C.EventAwardPoints, gs, &gs.event_award_pointses, null);
+  RunFrame(C.EventPlayerDied, gs, &gs.event_player_dieds, null);
+  RunFrame(C.EventTakeDamage, gs, &gs.event_take_damages, null);
 
   gs.purge_removed();
   gs.frameindex +%= 1;
 }
 
-fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameController) bool {
+fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *C.GameController) bool {
   if (self.next_wave_timer == 0) {
     // are all monsters dead
     var num_monsters: u32 = 0;
@@ -161,7 +147,7 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   if (self.next_pickup_timer > 0) {
     self.next_pickup_timer -= 1;
     if (self.next_pickup_timer == 0) {
-      const pickup_type = randomEnumValue(Pickup.Type, gs.getRand());
+      const pickup_type = randomEnumValue(C.Pickup.Type, gs.getRand());
       game_spawn_pickup(gs, pickup_type);
       self.next_pickup_timer = 45*60; // 45 seconds
     }
@@ -170,7 +156,7 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *GameControl
   return true;
 }
 
-fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *PlayerController) bool {
+fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *C.PlayerController) bool {
   if (self.respawn_timer > 0) {
     self.respawn_timer -= 1;
     if (self.respawn_timer == 0) {
@@ -180,7 +166,7 @@ fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *PlayerCon
   return true;
 }
 
-fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *PlayerController) bool {
+fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *C.PlayerController) bool {
   for (gs.event_player_dieds.objects) |object| {
     if (object.is_active) {
       if (self.lives > 0) {
@@ -201,7 +187,7 @@ fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *PlayerCon
   return true;
 }
 
-fn animation_frame(gs: *GameSession, self_id: EntityId, self: *Animation) bool {
+fn animation_frame(gs: *GameSession, self_id: EntityId, self: *C.Animation) bool {
   const animcfg = getSimpleAnim(self.simple_anim);
 
   self.ticks += 1;
@@ -216,14 +202,14 @@ fn animation_frame(gs: *GameSession, self_id: EntityId, self: *Animation) bool {
   return true;
 }
 
-fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *Creature) bool {
+fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *C.Creature) bool {
   if (self_creature.invulnerability_timer > 0) {
     self_creature.invulnerability_timer -= 1;
   }
   return true;
 }
 
-pub fn pickup_frame(gs: *GameSession, self_id: EntityId, self_pickup: *Pickup) bool {
+pub fn pickup_frame(gs: *GameSession, self_id: EntityId, self_pickup: *C.Pickup) bool {
   if (self_pickup.timer > 0) {
     self_pickup.timer -= 1;
   }
@@ -233,15 +219,15 @@ pub fn pickup_frame(gs: *GameSession, self_id: EntityId, self_pickup: *Pickup) b
   return true;
 }
 
-pub fn pickup_collide(gs: *GameSession, self_id: EntityId, self_pickup: *Pickup) bool {
+pub fn pickup_collide(gs: *GameSession, self_id: EntityId, self_pickup: *C.Pickup) bool {
   for (gs.event_collides.objects) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       if (gs.players.find(object.data.other_id)) |other_player| {
-        _ = Prototypes.EventConferBonus.spawn(gs, EventConferBonus{
+        _ = Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
           .recipient_id = object.data.other_id,
           .pickup_type = self_pickup.pickup_type,
         });
-        _ = Prototypes.EventAwardPoints.spawn(gs, EventAwardPoints{
+        _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
           .player_controller_id = other_player.player_controller_id,
           .points = Constants.PickupGetPoints,
         });
@@ -252,7 +238,7 @@ pub fn pickup_collide(gs: *GameSession, self_id: EntityId, self_pickup: *Pickup)
   return true;
 }
 
-pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet) bool {
+pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *C.Bullet) bool {
   for (gs.event_collides.objects) |*object| {
     if (object.is_active and object.data.self_id.id == self_id.id) {
       const self_transform = gs.transforms.find(self_id).?;
@@ -262,7 +248,7 @@ pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet)
         .z_index = Constants.ZIndexSparks,
       });
       if (object.data.other_id.id != 0) {
-        _ = Prototypes.EventTakeDamage.spawn(gs, EventTakeDamage{
+        _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
           .inflictor_player_controller_id = self_bullet.inflictor_player_controller_id,
           .self_id = object.data.other_id,
           .amount = self_bullet.damage,
@@ -274,7 +260,7 @@ pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *Bullet)
   return true;
 }
 
-pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: *Creature) bool {
+pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: *C.Creature) bool {
   if (self_creature.invulnerability_timer > 0) {
     return true;
   }
@@ -301,7 +287,7 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
         } else {
           if (gs.monsters.find(self_id)) |self_monster| {
             if (object.data.inflictor_player_controller_id) |player_controller_id| {
-              _ = Prototypes.EventAwardPoints.spawn(gs, EventAwardPoints{
+              _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
                 .player_controller_id = player_controller_id,
                 .points = self_monster.kill_points,
               });
