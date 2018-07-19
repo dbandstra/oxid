@@ -66,6 +66,8 @@ pub fn game_frame(gs: *GameSession) void {
   // creatures react to event_take_damage, die
   RunFrame(C.Creature, gs, &gs.creatures, creature_take_damage);
 
+  // game controller reacts to 'player died' event
+  RunFrame(C.GameController, gs, &gs.game_controllers, game_controller_react);
   // player controller reacts to 'player died' event
   RunFrame(C.PlayerController, gs, &gs.player_controllers, player_controller_react);
 
@@ -153,6 +155,19 @@ fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *C.GameContr
     }
   }
 
+  if (self.freeze_monsters_timer > 0) {
+    self.freeze_monsters_timer -= 1;
+  }
+
+  return true;
+}
+
+fn game_controller_react(gs: *GameSession, self_id: EntityId, self: *C.GameController) bool {
+  for (gs.event_player_dieds.objects) |object| {
+    if (object.is_active) {
+      self.freeze_monsters_timer = 3*60;
+    }
+  }
   return true;
 }
 
@@ -277,13 +292,11 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
       } else if (self_creature.hit_points > 0) {
         self_creature.hit_points = 0;
         const self_transform = gs.transforms.find(self_id).?;
-        if (gs.players.find(self_id)) |_| {
+        if (gs.players.find(self_id)) |player| {
           // player died
+          player.dying_timer = 45;
           _ = Prototypes.EventPlayerDied.spawn(gs);
-          _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
-            .pos = self_transform.pos,
-          });
-          return false;
+          return true;
         } else {
           if (gs.monsters.find(self_id)) |self_monster| {
             if (object.data.inflictor_player_controller_id) |player_controller_id| {

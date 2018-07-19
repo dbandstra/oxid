@@ -28,15 +28,28 @@ pub const PlayerMovementSystem = struct{
       if (gs.creatures.find(object.entity_id)) |creature| {
       if (gs.phys_objects.find(object.entity_id)) |phys| {
       if (gs.transforms.find(object.entity_id)) |transform| {
+        const player = &object.data;
         const self = SystemData{
-          .player = &object.data,
+          .player = player,
           .creature = creature,
           .phys = phys,
           .transform = transform,
         };
 
-        player_move(gs, object.entity_id, self);
-        player_shoot(gs, object.entity_id, self);
+        if (player.dying_timer > 0) {
+          player.dying_timer -= 1;
+          phys.speed = 0;
+          phys.push_dir = null;
+          if (player.dying_timer == 0) {
+            _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
+              .pos = transform.pos,
+            });
+            gs.remove(object.entity_id);
+          }
+        } else {
+          player_move(gs, object.entity_id, self);
+          player_shoot(gs, object.entity_id, self);
+        }
       }}}
     }
   }

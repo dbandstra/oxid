@@ -76,7 +76,7 @@ pub fn game_draw(g: *GameState) void {
 
 // helper
 fn alternation(comptime T: type, variable: T, half_period: T) bool {
-  return @mod(@divFloor(variable, half_period * 2), half_period) == 0;
+  return @mod(@divFloor(variable, half_period), 2) == 0;
 }
 
 // helper
@@ -95,12 +95,12 @@ const DrawCreature = struct{
     if (g.session.phys_objects.find(entity_id)) |phys| {
     if (g.session.transforms.find(entity_id)) |transform| {
       if (params.spawning_timer > 0) {
-        const graphic = if (alternation(u8, g.session.frameindex, 2)) Graphic.Spawn1 else Graphic.Spawn2;
+        const graphic = if (alternation(u8, g.session.frameindex, 4)) Graphic.Spawn1 else Graphic.Spawn2;
         draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
         return;
       }
       if (creature.invulnerability_timer > 0) {
-        if (alternation(u8, g.session.frameindex, 2)) {
+        if (alternation(u8, g.session.frameindex, 1)) {
           return;
         }
       }
@@ -112,7 +112,7 @@ const DrawCreature = struct{
       const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
       // animate legs every 4 screen pixels
-      const graphic = if (alternation(i32, sxpos, 2)) params.graphic1 else params.graphic2;
+      const graphic = if (alternation(i32, sxpos, 4)) params.graphic1 else params.graphic2;
 
       draw_block(g, transform.pos, graphic, get_dir_transform(phys.facing));
     }
@@ -127,6 +127,22 @@ fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
 }
 
 fn soldier_draw(g: *GameState, entity_id: EntityId) void {
+  if (g.session.players.find(entity_id)) |player| {
+  if (g.session.transforms.find(entity_id)) |transform| {
+    if (player.dying_timer > 0) {
+      if (player.dying_timer > 15) {
+        const graphic = if (alternation(u32, g.session.frameindex, 2)) Graphic.ManDying1 else Graphic.ManDying2;
+        draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
+      } else if (player.dying_timer > 10) {
+        draw_block(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
+      } else if (player.dying_timer > 5) {
+        draw_block(g, transform.pos, Graphic.ManDying4, Draw.Transform.Identity);
+      } else {
+        draw_block(g, transform.pos, Graphic.ManDying5, Draw.Transform.Identity);
+      }
+      return;
+    }
+  }}
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = 0,
@@ -137,7 +153,7 @@ fn soldier_draw(g: *GameState, entity_id: EntityId) void {
 
 fn soldier_corpse_draw(g: *GameState, entity_id: EntityId) void {
   if (g.session.transforms.find(entity_id)) |transform| {
-    draw_block(g, transform.pos, Graphic.Skeleton, Draw.Transform.Identity);
+    draw_block(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
   }
 }
 

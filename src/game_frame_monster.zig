@@ -51,11 +51,16 @@ pub const MonsterMovementSystem = struct{
   fn monster_move(gs: *GameSession, self_id: EntityId, self: SystemData) void {
     const gc = gs.getGameController();
 
+    self.phys.push_dir = null;
+
+    if (gc.freeze_monsters_timer > 0) {
+      self.phys.speed = 0;
+      return;
+    }
+
     const speed
       = self.creature.walk_speed
       + self.creature.walk_speed * gc.enemy_speed_level / 2;
-
-    self.phys.push_dir = null;
 
     // look ahead for corners
     const pos = self.transform.pos;
@@ -101,6 +106,10 @@ pub const MonsterMovementSystem = struct{
   }
 
   fn monster_shoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+    const gc = gs.getGameController();
+    if (gc.freeze_monsters_timer > 0) {
+      return;
+    }
     if (self.monster.next_shoot_timer > 0) {
       self.monster.next_shoot_timer -= 1;
     } else {

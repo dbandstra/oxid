@@ -52,6 +52,7 @@ pub const GameController = struct {
   wave_index: u32,
   next_wave_timer: u32,
   next_pickup_timer: u32,
+  freeze_monsters_timer: u32,
 };
 
 pub const PlayerController = struct {
@@ -142,6 +143,7 @@ pub const Player = struct {
   bullets: [Constants.PlayerMaxBullets]?EntityId,
   attack_level: AttackLevel,
   speed_level: SpeedLevel,
+  dying_timer: u32,
 };
 
 pub const Transform = struct {

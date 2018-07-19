@@ -2,6 +2,7 @@ GAMEPLAY:
 - if a monster starts to spawn where you're standing, you get stuck
 - enemies should start at faster speeds on later levels
 - you can't face a pit if there is no space
+- verminian trap: enemy speedup doesn't seem to be based on time. the last 3 or 4 enemies killed will trigger speedup. i think they also all go into chase mode at this point
 
 CODE:
 - move more stuff to constants, e.g. the timers
@@ -10,6 +11,7 @@ CODE:
 - when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
 - creature.walk_speed doesn't really make sense as a field
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
+- maybe get rid of gs.frameindex and make everything based on local timers
 - per-component type limits
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - choose_slot shouldn't crash! it should return errors

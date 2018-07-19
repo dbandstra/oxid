@@ -36,6 +36,7 @@ pub const GameController = struct{
       .wave_index = 0,
       .next_wave_timer = 90,
       .next_pickup_timer = 15*60,
+      .freeze_monsters_timer = 0,
     });
 
     return entity_id;
@@ -99,6 +100,7 @@ pub const Player = struct{
       .bullets = []?EntityId{null} ** Constants.PlayerMaxBullets,
       .attack_level = C.Player.AttackLevel.One,
       .speed_level = C.Player.SpeedLevel.One,
+      .dying_timer = 0,
     });
 
     return entity_id;
