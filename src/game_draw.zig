@@ -44,7 +44,7 @@ pub fn game_draw(g: *GameState) void {
 
   for (sortslice) |sort_item| {
     const object = &g.session.drawables.objects[sort_item.component_index];
-    switch (object.data.drawType) {
+    switch (object.data.draw_type) {
       C.Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
       C.Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
       C.Drawable.Type.Spider => spider_draw(g, object.entity_id),

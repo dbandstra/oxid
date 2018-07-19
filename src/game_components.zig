@@ -23,7 +23,7 @@ pub const Drawable = struct {
     Pickup,
   };
 
-  drawType: Type,
+  draw_type: Type,
   z_index: u32,
 };
 

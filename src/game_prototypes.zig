@@ -84,7 +84,7 @@ pub const Player = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Soldier,
+      .draw_type = C.Drawable.Type.Soldier,
       .z_index = Constants.ZIndexPlayer,
     });
 
@@ -120,7 +120,7 @@ pub const Corpse = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.SoldierCorpse,
+      .draw_type = C.Drawable.Type.SoldierCorpse,
       .z_index = Constants.ZIndexCorpse,
     });
 
@@ -154,7 +154,7 @@ pub const Spider = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Spider,
+      .draw_type = C.Drawable.Type.Spider,
       .z_index = Constants.ZIndexEnemy,
     });
 
@@ -205,7 +205,7 @@ pub const Squid = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Squid,
+      .draw_type = C.Drawable.Type.Squid,
       .z_index = Constants.ZIndexEnemy,
     });
 
@@ -282,7 +282,7 @@ pub const Bullet = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = switch (params.bullet_type) {
+      .draw_type = switch (params.bullet_type) {
         BulletType.MonsterBullet => C.Drawable.Type.MonsterBullet,
         BulletType.PlayerBullet => switch (params.cluster_size) {
           1 => C.Drawable.Type.PlayerBullet,
@@ -317,7 +317,7 @@ pub const Animation = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Animation,
+      .draw_type = C.Drawable.Type.Animation,
       .z_index = params.z_index,
     });
 
@@ -345,7 +345,7 @@ pub const Pickup = struct{
     });
 
     gs.drawables.create(entity_id, C.Drawable{
-      .drawType = C.Drawable.Type.Pickup,
+      .draw_type = C.Drawable.Type.Pickup,
       .z_index = Constants.ZIndexPickup,
     });
 
