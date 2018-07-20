@@ -1,5 +1,6 @@
 const Math = @import("math.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
+const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
 const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
@@ -32,7 +33,7 @@ pub const GameController = struct{
 
     gs.game_controllers.create(entity_id, C.GameController{
       .enemy_speed_level = 0,
-      .enemy_speed_ticks = 0,
+      .enemy_speed_timer = Constants.EnemySpeedTicks,
       .wave_index = 0,
       .next_wave_timer = 90,
       .next_pickup_timer = 15*60,
@@ -324,7 +325,7 @@ pub const Animation = struct{
     gs.animations.create(entity_id, C.Animation{
       .simple_anim = params.simple_anim,
       .frame_index = 0,
-      .ticks = 0,
+      .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
     });
 
     return entity_id;

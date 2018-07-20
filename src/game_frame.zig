@@ -30,17 +30,27 @@ fn RunFrame(
   list: *ComponentList(T),
   func: ?fn(*GameSession, EntityId, *T)bool,
 ) void {
-  for (list.objects) |*object| {
-    if (object.is_active) {
-      if (func) |f| {
-        if (!f(gs, object.entity_id, &object.data)) {
-          gs.remove(object.entity_id);
-        }
-      } else {
+  var it = list.iter(); while (it.next()) |object| {
+    if (func) |f| {
+      if (!f(gs, object.entity_id, &object.data)) {
         gs.remove(object.entity_id);
       }
+    } else {
+      gs.remove(object.entity_id);
     }
   }
+}
+
+// decrements the timer. return true if it just hit zero (but not if it was
+// already at zero
+pub fn decrementTimer(timer: *u32) bool {
+  if (timer.* > 0) {
+    timer.* -= 1;
+    if (timer.* == 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 pub fn game_frame(gs: *GameSession) void {
@@ -81,122 +91,73 @@ pub fn game_frame(gs: *GameSession) void {
   gs.frameindex +%= 1;
 }
 
+fn countMonsters(gs: *GameSession) u32 {
+  var count: u32 = 0;
+  var it = gs.monsters.iter(); while (it.next()) |object| {
+    count += 1;
+  }
+  return count;
+}
+
 fn game_controller_frame(gs: *GameSession, self_id: EntityId, self: *C.GameController) bool {
-  if (self.next_wave_timer == 0) {
-    // are all monsters dead
-    var num_monsters: u32 = 0;
-    for (gs.monsters.objects) |object| {
-      if (object.is_active) {
-        num_monsters += 1;
-      }
-    }
-    if (num_monsters == 0) {
-      // prepare next wave
-      self.next_wave_timer = 90;
-    }
-  } else {
-    self.next_wave_timer -= 1;
-    if (self.next_wave_timer == 0) {
-      self.wave_index += 1;
-      self.enemy_speed_level = 0;
-      self.enemy_speed_ticks = 0;
-      switch (self.wave_index) {
-        1 => {
-          game_spawn_monsters(gs, 8, MonsterType.Spider);
-        },
-        2 => {
-          game_spawn_monsters(gs, 8, MonsterType.Squid);
-        },
-        3 => {
-          game_spawn_monsters(gs, 12, MonsterType.Spider);
-        },
-        4 => {
-          game_spawn_monsters(gs, 4, MonsterType.Squid);
-          game_spawn_monsters(gs, 10, MonsterType.Spider);
-        },
-        5 => {
-          game_spawn_monsters(gs, 20, MonsterType.Spider);
-        },
-        6 => {
-          game_spawn_monsters(gs, 14, MonsterType.Squid);
-        },
-        7 => {
-          game_spawn_monsters(gs, 8, MonsterType.Spider);
-          game_spawn_monsters(gs, 8, MonsterType.Squid);
-          self.enemy_speed_level = 1;
-        },
-        8 => {
-          game_spawn_monsters(gs, 10, MonsterType.Spider);
-          game_spawn_monsters(gs, 10, MonsterType.Squid);
-          self.enemy_speed_level = 1;
-        },
-        else => {
-          // done
-          game_spawn_monsters(gs, 1, MonsterType.Spider);
-        },
-      }
+  // if all monsters are dead, prepare next wave
+  if (self.next_wave_timer == 0 and countMonsters(gs) == 0) {
+    self.next_wave_timer = Constants.NextWaveTime;
+  }
+  if (decrementTimer(&self.next_wave_timer)) {
+    self.wave_index += 1;
+    self.enemy_speed_level = 0;
+    self.enemy_speed_timer = Constants.EnemySpeedTicks;
+    if (self.wave_index - 1 < Constants.Waves.len) {
+      const wave = &Constants.Waves[self.wave_index - 1];
+      game_spawn_monsters(gs, wave.spiders, MonsterType.Spider);
+      game_spawn_monsters(gs, wave.squids, MonsterType.Squid);
+      self.enemy_speed_level = wave.speed;
+    } else {
+      game_spawn_monsters(gs, 1, MonsterType.Spider);
     }
   }
-
-  self.enemy_speed_ticks += 1;
-  if (self.enemy_speed_ticks == 800) {
-    if (self.enemy_speed_level < 4) {
+  if (decrementTimer(&self.enemy_speed_timer)) {
+    if (self.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
       self.enemy_speed_level += 1;
     }
-    self.enemy_speed_ticks = 0;
+    self.enemy_speed_timer = Constants.EnemySpeedTicks;
   }
-
-  if (self.next_pickup_timer > 0) {
-    self.next_pickup_timer -= 1;
-    if (self.next_pickup_timer == 0) {
-      const pickup_type = randomEnumValue(C.Pickup.Type, gs.getRand());
-      game_spawn_pickup(gs, pickup_type);
-      self.next_pickup_timer = 45*60; // 45 seconds
-    }
+  if (decrementTimer(&self.next_pickup_timer)) {
+    const pickup_type = randomEnumValue(C.Pickup.Type, gs.getRand());
+    game_spawn_pickup(gs, pickup_type);
+    self.next_pickup_timer = Constants.PickupSpawnTime;
   }
-
-  if (self.freeze_monsters_timer > 0) {
-    self.freeze_monsters_timer -= 1;
-  }
-
+  _ = decrementTimer(&self.freeze_monsters_timer);
   return true;
 }
 
 fn game_controller_react(gs: *GameSession, self_id: EntityId, self: *C.GameController) bool {
-  for (gs.event_player_dieds.objects) |object| {
-    if (object.is_active) {
-      self.freeze_monsters_timer = 3*60;
-    }
+  var it = gs.event_player_dieds.iter(); while (it.next()) |object| {
+    self.freeze_monsters_timer = Constants.MonsterFreezeTimer;
   }
   return true;
 }
 
 fn player_controller_frame(gs: *GameSession, self_id: EntityId, self: *C.PlayerController) bool {
-  if (self.respawn_timer > 0) {
-    self.respawn_timer -= 1;
-    if (self.respawn_timer == 0) {
-      game_spawn_player(gs, self_id);
-    }
+  if (decrementTimer(&self.respawn_timer)) {
+    game_spawn_player(gs, self_id);
   }
   return true;
 }
 
 fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *C.PlayerController) bool {
-  for (gs.event_player_dieds.objects) |object| {
-    if (object.is_active) {
+  var it = gs.event_player_dieds.iter(); while (it.next()) |object| {
+    if (self.lives > 0) {
+      self.lives -= 1;
       if (self.lives > 0) {
-        self.lives -= 1;
-        if (self.lives > 0) {
-          self.respawn_timer = Constants.PlayerRespawnTime;
-        }
+        self.respawn_timer = Constants.PlayerRespawnTime;
       }
     }
   }
-  for (gs.event_award_pointses.objects) |object| {
-    if (object.is_active) {
-      if (object.data.player_controller_id.id == self_id.id) {
-        self.score += object.data.points;
-      }
+  var it2 = gs.event_award_pointses.iter(); while (it2.next()) |object| {
+    if (EntityId.eql(object.data.player_controller_id, self_id)) {
+      self.score += object.data.points;
     }
   }
   return true;
@@ -204,39 +165,31 @@ fn player_controller_react(gs: *GameSession, self_id: EntityId, self: *C.PlayerC
 
 fn animation_frame(gs: *GameSession, self_id: EntityId, self: *C.Animation) bool {
   const animcfg = getSimpleAnim(self.simple_anim);
-
-  self.ticks += 1;
-  if (self.ticks >= animcfg.ticks_per_frame) {
-    self.ticks = 0;
+  if (decrementTimer(&self.frame_timer)) {
     self.frame_index += 1;
     if (self.frame_index >= animcfg.frames.len) {
       return false;
     }
+    self.frame_timer = animcfg.ticks_per_frame;
   }
-
   return true;
 }
 
 fn creature_frame(gs: *GameSession, self_id: EntityId, self_creature: *C.Creature) bool {
-  if (self_creature.invulnerability_timer > 0) {
-    self_creature.invulnerability_timer -= 1;
-  }
+  _ = decrementTimer(&self_creature.invulnerability_timer);
   return true;
 }
 
 pub fn pickup_frame(gs: *GameSession, self_id: EntityId, self_pickup: *C.Pickup) bool {
-  if (self_pickup.timer > 0) {
-    self_pickup.timer -= 1;
-  }
-  if (self_pickup.timer == 0) {
+  if (decrementTimer(&self_pickup.timer)) {
     return false;
   }
   return true;
 }
 
 pub fn pickup_collide(gs: *GameSession, self_id: EntityId, self_pickup: *C.Pickup) bool {
-  for (gs.event_collides.objects) |*object| {
-    if (object.is_active and object.data.self_id.id == self_id.id) {
+  var it = gs.event_collides.iter(); while (it.next()) |object| {
+    if (EntityId.eql(object.data.self_id, self_id)) {
       if (gs.players.find(object.data.other_id)) |other_player| {
         _ = Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
           .recipient_id = object.data.other_id,
@@ -254,8 +207,8 @@ pub fn pickup_collide(gs: *GameSession, self_id: EntityId, self_pickup: *C.Picku
 }
 
 pub fn bullet_collide(gs: *GameSession, self_id: EntityId, self_bullet: *C.Bullet) bool {
-  for (gs.event_collides.objects) |*object| {
-    if (object.is_active and object.data.self_id.id == self_id.id) {
+  var it = gs.event_collides.iter(); while (it.next()) |object| {
+    if (EntityId.eql(object.data.self_id, self_id)) {
       const self_transform = gs.transforms.find(self_id).?;
       _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
         .pos = self_transform.pos,
@@ -279,12 +232,10 @@ pub fn creature_take_damage(gs: *GameSession, self_id: EntityId, self_creature: 
   if (self_creature.invulnerability_timer > 0) {
     return true;
   }
-  for (gs.event_take_damages.objects) |*object| {
-    if (object.is_active and object.data.self_id.id == self_id.id) {
-      if (gs.players.find(self_id)) |_| {
-        if (gs.god_mode) {
-          continue;
-        }
+  var it = gs.event_take_damages.iter(); while (it.next()) |object| {
+    if (EntityId.eql(object.data.self_id, self_id)) {
+      if (gs.players.find(self_id) != null and gs.god_mode) {
+        continue;
       }
       const amount = object.data.amount;
       if (self_creature.hit_points > amount) {

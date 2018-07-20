@@ -13,6 +13,17 @@ Oxid is written in the [Zig](https://ziglang.org) programming language.
 * Depending on your version of Git, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
 * `zig build play`
 
+Controls:
+* arrow keys: move
+* space: shoot
+* tab: pause
+* backquote: fast forward
+* esc: quit
+* backspace: reset
+* return: spawn more monsters (debug command)
+* F2: toggle rendering of move boxes
+* F3: toggle god mode
+
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
 

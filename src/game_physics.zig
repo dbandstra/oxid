@@ -32,12 +32,9 @@ var move_groups: [Constants.MaxComponentsPerType]MoveGroup = undefined;
 
 pub fn physics_frame(gs: *GameSession) void {
   // calculate move bboxes
-  for (gs.phys_objects.objects) |*object| {
-    if (!object.is_active) {
-      continue;
-    }
+  var it = gs.phys_objects.iter(); while (it.next()) |object| {
     const phys = &object.data;
-    const transform = gs.transforms.find(object.entity_id).?;
+    const transform = gs.transforms.find(object.entity_id) orelse continue;
     phys.internal.move_bbox.mins = Math.Vec2.add(transform.pos, phys.entity_bbox.mins);
     phys.internal.move_bbox.maxs = Math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
     if (phys.speed != 0) {
@@ -266,12 +263,10 @@ fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
 }
 
 fn find_collision_event(gs: *GameSession, self_id: EntityId, other_id: EntityId) ?*C.EventCollide {
-  for (gs.event_collides.objects) |*object| {
-    if (object.is_active) {
-      const event_collide = &object.data;
-      if (event_collide.self_id.id == self_id.id and event_collide.other_id.id == other_id.id) {
-        return event_collide;
-      }
+  var it = gs.event_collides.iter(); while (it.next()) |object| {
+    const event_collide = &object.data;
+    if (EntityId.eql(event_collide.self_id, self_id) and EntityId.eql(event_collide.other_id, other_id)) {
+      return event_collide;
     }
   }
   return null;
@@ -314,13 +309,13 @@ fn could_objects_collide(
   b_id: EntityId,
   b_phys: *C.PhysObject,
 ) bool {
-  if (a_id.id == b_id.id) {
+  if (EntityId.eql(a_id, b_id)) {
     return false;
   }
-  if (a_id.id == b_phys.owner_id.id) {
+  if (EntityId.eql(a_id, b_phys.owner_id)) {
     return false;
   }
-  if (a_phys.owner_id.id == b_id.id) {
+  if (EntityId.eql(a_phys.owner_id, b_id)) {
     return false;
   }
   if ((a_phys.flags & b_phys.ignore_flags) != 0) {
@@ -333,23 +328,18 @@ fn could_objects_collide(
 }
 
 fn assert_no_overlaps(gs: *GameSession) void {
-  for (gs.phys_objects.objects) |*self| {
-    if (!self.is_active) {
-      continue;
-    }
-    const self_transform = gs.transforms.find(self.entity_id).?;
-    for (gs.phys_objects.objects) |*other| {
-      if (!other.is_active) {
+  var it = gs.phys_objects.iter(); while (it.next()) |self| {
+    const self_transform = gs.transforms.find(self.entity_id) orelse continue;
+    var it2 = gs.phys_objects.iter(); while (it2.next()) |other| {
+      if (!could_objects_collide(self.entity_id, &self.data, other.entity_id, &other.data)) {
         continue;
       }
-      if (could_objects_collide(self.entity_id, &self.data, other.entity_id, &other.data)) {
-        const other_transform = gs.transforms.find(other.entity_id).?;
-        if (boxes_overlap(
-          self_transform.pos, self.data.entity_bbox,
-          other_transform.pos, other.data.entity_bbox,
-        )) {
-          std.debug.warn("who is this joker\n");
-        }
+      const other_transform = gs.transforms.find(other.entity_id) orelse continue;
+      if (boxes_overlap(
+        self_transform.pos, self.data.entity_bbox,
+        other_transform.pos, other.data.entity_bbox,
+      )) {
+        std.debug.warn("who is this joker\n");
       }
     }
   }

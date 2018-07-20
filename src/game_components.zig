@@ -48,7 +48,7 @@ pub const Monster = struct {
 
 pub const GameController = struct {
   enemy_speed_level: u31,
-  enemy_speed_ticks: u32,
+  enemy_speed_timer: u32,
   wave_index: u32,
   next_wave_timer: u32,
   next_pickup_timer: u32,
@@ -64,7 +64,7 @@ pub const PlayerController = struct {
 pub const Animation = struct {
   simple_anim: SimpleAnim,
   frame_index: u32,
-  ticks: u32,
+  frame_timer: u32,
 };
 
 pub const PhysObject = struct {

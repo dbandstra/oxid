@@ -23,11 +23,12 @@ const SortItem = struct {
   z_index: u32,
 };
 
-pub fn game_draw(g: *GameState) void {
+pub fn drawGame(g: *GameState) void {
+  const gs = &g.session;
   // sort drawables
   var sortarray: [Constants.MaxComponentsPerType]SortItem = undefined;
   var num_drawables: usize = 0;
-  for (g.session.drawables.objects) |*object, i| {
+  for (gs.drawables.objects) |*object, i| {
     if (object.is_active) {
       sortarray[num_drawables] = SortItem{
         .component_index = i,
@@ -40,38 +41,35 @@ pub fn game_draw(g: *GameState) void {
   std.sort.sort(SortItem, sortslice, lessThanField(SortItem, "z_index"));
 
   // actually draw
-  draw_map(g);
+  drawMap(g);
 
   for (sortslice) |sort_item| {
-    const object = &g.session.drawables.objects[sort_item.component_index];
+    const object = &gs.drawables.objects[sort_item.component_index];
     switch (object.data.draw_type) {
-      C.Drawable.Type.Soldier => soldier_draw(g, object.entity_id),
-      C.Drawable.Type.SoldierCorpse => soldier_corpse_draw(g, object.entity_id),
-      C.Drawable.Type.Spider => spider_draw(g, object.entity_id),
-      C.Drawable.Type.Squid => squid_draw(g, object.entity_id),
-      C.Drawable.Type.PlayerBullet => bullet_draw(g, object.entity_id, Graphic.PlaBullet),
-      C.Drawable.Type.PlayerBullet2 => bullet_draw(g, object.entity_id, Graphic.PlaBullet2),
-      C.Drawable.Type.PlayerBullet3 => bullet_draw(g, object.entity_id, Graphic.PlaBullet3),
-      C.Drawable.Type.MonsterBullet => bullet_draw(g, object.entity_id, Graphic.MonBullet),
-      C.Drawable.Type.Animation => animation_draw(g, object.entity_id),
-      C.Drawable.Type.Pickup => pickup_draw(g, object.entity_id),
+      C.Drawable.Type.Soldier => drawSoldier(g, object.entity_id),
+      C.Drawable.Type.SoldierCorpse => drawSoldierCorpse(g, object.entity_id),
+      C.Drawable.Type.Spider => drawSpider(g, object.entity_id),
+      C.Drawable.Type.Squid => drawSquid(g, object.entity_id),
+      C.Drawable.Type.PlayerBullet => drawBullet(g, object.entity_id, Graphic.PlaBullet),
+      C.Drawable.Type.PlayerBullet2 => drawBullet(g, object.entity_id, Graphic.PlaBullet2),
+      C.Drawable.Type.PlayerBullet3 => drawBullet(g, object.entity_id, Graphic.PlaBullet3),
+      C.Drawable.Type.MonsterBullet => drawBullet(g, object.entity_id, Graphic.MonBullet),
+      C.Drawable.Type.Animation => drawAnimation(g, object.entity_id),
+      C.Drawable.Type.Pickup => drawPickup(g, object.entity_id),
     }
   }
 
   if (g.render_move_boxes) {
-    for (g.session.phys_objects.objects) |*object| {
-      if (!object.is_active) {
-        continue;
-      }
+    var it = gs.phys_objects.iter(); while (it.next()) |object| {
       const int = object.data.internal;
       const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
       const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
       const B = @intCast(u8, 64 + ((int.group_index * 10031) % 192));
-      draw_box(g, int.move_bbox, R, G, B);
+      drawBox(g, int.move_bbox, R, G, B);
     }
   }
 
-  draw_hud(g);
+  drawHud(g);
 }
 
 // helper
@@ -90,59 +88,56 @@ const DrawCreature = struct{
 
   fn run(g: *GameState, params: Params) void {
     const entity_id = params.entity_id;
+    const creature = g.session.creatures.find(entity_id) orelse return;
+    const phys = g.session.phys_objects.find(entity_id) orelse return;
+    const transform = g.session.transforms.find(entity_id) orelse return;
 
-    if (g.session.creatures.find(entity_id)) |creature| {
-    if (g.session.phys_objects.find(entity_id)) |phys| {
-    if (g.session.transforms.find(entity_id)) |transform| {
-      if (params.spawning_timer > 0) {
-        const graphic = if (alternation(u8, g.session.frameindex, 4)) Graphic.Spawn1 else Graphic.Spawn2;
-        draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
-        return;
-      }
-      if (creature.invulnerability_timer > 0) {
-        if (alternation(u8, g.session.frameindex, 1)) {
-          return;
-        }
-      }
-
-      const xpos = switch (phys.facing) {
-        Math.Direction.W, Math.Direction.E => transform.pos.x,
-        Math.Direction.N, Math.Direction.S => transform.pos.y,
-      };
-      const sxpos = @divFloor(xpos, Math.SUBPIXELS);
-
-      // animate legs every 4 screen pixels
-      const graphic = if (alternation(i32, sxpos, 4)) params.graphic1 else params.graphic2;
-
-      draw_block(g, transform.pos, graphic, get_dir_transform(phys.facing));
-    }
-  }}}
-};
-
-fn bullet_draw(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
-  if (g.session.phys_objects.find(entity_id)) |phys| {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    draw_block(g, transform.pos, graphic, get_dir_transform(phys.facing));
-  }}
-}
-
-fn soldier_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.players.find(entity_id)) |player| {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    if (player.dying_timer > 0) {
-      if (player.dying_timer > 15) {
-        const graphic = if (alternation(u32, g.session.frameindex, 2)) Graphic.ManDying1 else Graphic.ManDying2;
-        draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
-      } else if (player.dying_timer > 10) {
-        draw_block(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
-      } else if (player.dying_timer > 5) {
-        draw_block(g, transform.pos, Graphic.ManDying4, Draw.Transform.Identity);
-      } else {
-        draw_block(g, transform.pos, Graphic.ManDying5, Draw.Transform.Identity);
-      }
+    if (params.spawning_timer > 0) {
+      const graphic = if (alternation(u8, g.session.frameindex, 4)) Graphic.Spawn1 else Graphic.Spawn2;
+      drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
       return;
     }
-  }}
+    if (creature.invulnerability_timer > 0) {
+      if (alternation(u8, g.session.frameindex, 1)) {
+        return;
+      }
+    }
+
+    const xpos = switch (phys.facing) {
+      Math.Direction.W, Math.Direction.E => transform.pos.x,
+      Math.Direction.N, Math.Direction.S => transform.pos.y,
+    };
+    const sxpos = @divFloor(xpos, Math.SUBPIXELS);
+
+    // animate legs every 4 screen pixels
+    const graphic = if (alternation(i32, sxpos, 4)) params.graphic1 else params.graphic2;
+
+    drawBlock(g, transform.pos, graphic, getDirTransform(phys.facing));
+  }
+};
+
+fn drawBullet(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
+  const phys = g.session.phys_objects.find(entity_id) orelse return;
+  const transform = g.session.transforms.find(entity_id) orelse return;
+  drawBlock(g, transform.pos, graphic, getDirTransform(phys.facing));
+}
+
+fn drawSoldier(g: *GameState, entity_id: EntityId) void {
+  const player = g.session.players.find(entity_id) orelse return;
+  const transform = g.session.transforms.find(entity_id) orelse return;
+  if (player.dying_timer > 0) {
+    if (player.dying_timer > 15) {
+      const graphic = if (alternation(u32, g.session.frameindex, 2)) Graphic.ManDying1 else Graphic.ManDying2;
+      drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
+    } else if (player.dying_timer > 10) {
+      drawBlock(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
+    } else if (player.dying_timer > 5) {
+      drawBlock(g, transform.pos, Graphic.ManDying4, Draw.Transform.Identity);
+    } else {
+      drawBlock(g, transform.pos, Graphic.ManDying5, Draw.Transform.Identity);
+    }
+    return;
+  }
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = 0,
@@ -151,58 +146,51 @@ fn soldier_draw(g: *GameState, entity_id: EntityId) void {
   });
 }
 
-fn soldier_corpse_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    draw_block(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
-  }
+fn drawSoldierCorpse(g: *GameState, entity_id: EntityId) void {
+  const transform = g.session.transforms.find(entity_id) orelse return;
+  drawBlock(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
 }
 
-fn spider_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.monsters.find(entity_id)) |monster| {
-    DrawCreature.run(g, DrawCreature.Params{
-      .entity_id = entity_id,
-      .spawning_timer = monster.spawning_timer,
-      .graphic1 = Graphic.Spider1,
-      .graphic2 = Graphic.Spider2,
-    });
-  }
+fn drawSpider(g: *GameState, entity_id: EntityId) void {
+  const monster = g.session.monsters.find(entity_id) orelse return;
+  DrawCreature.run(g, DrawCreature.Params{
+    .entity_id = entity_id,
+    .spawning_timer = monster.spawning_timer,
+    .graphic1 = Graphic.Spider1,
+    .graphic2 = Graphic.Spider2,
+  });
 }
 
-fn squid_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.monsters.find(entity_id)) |monster| {
-    DrawCreature.run(g, DrawCreature.Params{
-      .entity_id = entity_id,
-      .spawning_timer = monster.spawning_timer,
-      .graphic1 = Graphic.Squid1,
-      .graphic2 = Graphic.Squid2,
-    });
-  }
+fn drawSquid(g: *GameState, entity_id: EntityId) void {
+  const monster = g.session.monsters.find(entity_id) orelse return;
+  DrawCreature.run(g, DrawCreature.Params{
+    .entity_id = entity_id,
+    .spawning_timer = monster.spawning_timer,
+    .graphic1 = Graphic.Squid1,
+    .graphic2 = Graphic.Squid2,
+  });
 }
 
-pub fn animation_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.animations.find(entity_id)) |animation| {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    const animcfg = getSimpleAnim(animation.simple_anim);
-
-    std.debug.assert(animation.frame_index < animcfg.frames.len);
-
-    const graphic = animcfg.frames[animation.frame_index];
-    draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
-  }}
+pub fn drawAnimation(g: *GameState, entity_id: EntityId) void {
+  const animation = g.session.animations.find(entity_id) orelse return;
+  const transform = g.session.transforms.find(entity_id) orelse return;
+  const animcfg = getSimpleAnim(animation.simple_anim);
+  std.debug.assert(animation.frame_index < animcfg.frames.len);
+  const graphic = animcfg.frames[animation.frame_index];
+  drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
 
-pub fn pickup_draw(g: *GameState, entity_id: EntityId) void {
-  if (g.session.pickups.find(entity_id)) |pickup| {
-  if (g.session.transforms.find(entity_id)) |transform| {
-    const graphic = switch (pickup.pickup_type) {
-      C.Pickup.Type.PowerUp => Graphic.PowerUp,
-      C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
-    };
-    draw_block(g, transform.pos, graphic, Draw.Transform.Identity);
-  }}
+pub fn drawPickup(g: *GameState, entity_id: EntityId) void {
+  const pickup = g.session.pickups.find(entity_id) orelse return;
+  const transform = g.session.transforms.find(entity_id) orelse return;
+  const graphic = switch (pickup.pickup_type) {
+    C.Pickup.Type.PowerUp => Graphic.PowerUp,
+    C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
+  };
+  drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
 
-pub fn draw_map(g: *GameState) void {
+pub fn drawMap(g: *GameState) void {
   var y: u31 = 0;
   while (y < LEVEL.h) : (y += 1) {
     var x: u31 = 0;
@@ -216,20 +204,19 @@ pub fn draw_map(g: *GameState) void {
         else => null,
       }) |graphic| {
         const size = GRIDSIZE_SUBPIXELS;
-        draw_block(g, Math.Vec2.scale(gridpos, size), graphic, Draw.Transform.Identity);
+        drawBlock(g, Math.Vec2.scale(gridpos, size), graphic, Draw.Transform.Identity);
       }
     }
   }
 }
 
-pub fn draw_hud(g: *GameState) void {
+pub fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
 
-  const pc_maybe = for (g.session.player_controllers.objects) |object| {
-    if (object.is_active) {
-      break &object.data;
-    }
-  } else null;
+  const pc_maybe = blk: {
+    var it = g.session.player_controllers.iter();
+    break :blk while (it.next()) |object| { break &object.data; } else null;
+  };
 
   Draw.rect(g, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
     .Solid = Draw.SolidParams{
@@ -264,7 +251,7 @@ pub fn draw_hud(g: *GameState) void {
 
 ///////////////////////////////////////////////////////////
 
-pub fn get_dir_transform(direction: Math.Direction) Draw.Transform {
+fn getDirTransform(direction: Math.Direction) Draw.Transform {
   return switch (direction) {
     Math.Direction.N => Draw.Transform.RotateCounterClockwise,
     Math.Direction.E => Draw.Transform.Identity,
@@ -273,7 +260,7 @@ pub fn get_dir_transform(direction: Math.Direction) Draw.Transform {
   };
 }
 
-pub fn draw_block(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Transform) void {
+fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Transform) void {
   const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
@@ -286,7 +273,7 @@ pub fn draw_block(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Dr
   });
 }
 
-pub fn draw_box(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void {
+fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void {
   const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
   const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, Math.SUBPIXELS));

@@ -16,13 +16,17 @@ pub const InputEvent = enum {
 
 pub const EntityId = struct {
   id: usize,
+
+  pub fn eql(a: EntityId, b: EntityId) bool {
+    return a.id == b.id;
+  }
 };
 
 pub fn ComponentObject(comptime T: type) type {
   return struct {
+    is_active: bool,
     entity_id: EntityId,
     data: T,
-    is_active: bool,
   };
 }
 
@@ -42,17 +46,41 @@ pub fn ComponentList(comptime T: type) type {
       };
     }
 
+    pub const Iterator = struct {
+      list: *Self,
+      index: usize,
+
+      pub fn next(self: *Iterator) ?*ComponentObject(T) {
+        var i = self.index;
+        while (i < self.list.count) : (i += 1) {
+          if (self.list.objects_array[i].is_active) {
+            self.index = i + 1;
+            return &self.list.objects_array[i];
+          }
+        }
+        self.index = self.list.count + 1;
+        return null;
+      }
+    };
+
+    pub fn iter(self: *Self) Iterator {
+      return Iterator{
+        .list = self,
+        .index = 0,
+      };
+    }
+
     // TODO - optional LRU reuse.
     // (ok for non crucial entities. crucial ones should still crash)
     pub fn create(self: *Self, entity_id: EntityId, data: *const T) void {
-      const i = choose_slot(self).?; // can crash
+      const i = chooseSlot(self).?; // can crash
       var object = &self.objects_array[i];
       object.is_active = true;
       object.data = data.*;
       object.entity_id = entity_id;
     }
 
-    fn choose_slot(self: *Self) ?usize {
+    fn chooseSlot(self: *Self) ?usize {
       var i: usize = 0;
       while (i < self.count) : (i += 1) {
         if (!self.objects_array[i].is_active) {
@@ -68,9 +96,9 @@ pub fn ComponentList(comptime T: type) type {
       return null;
     }
 
-    pub fn find_object(self: *Self, entity_id: EntityId) ?*ComponentObject(T) {
-      for (self.objects) |*object| {
-        if (object.is_active and object.entity_id.id == entity_id.id) {
+    pub fn findObject(self: *Self, entity_id: EntityId) ?*ComponentObject(T) {
+      var it = self.iter(); while (it.next()) |object| {
+        if (EntityId.eql(object.entity_id, entity_id)) {
           return object;
         }
       }
@@ -78,7 +106,7 @@ pub fn ComponentList(comptime T: type) type {
     }
 
     pub fn find(self: *Self, entity_id: EntityId) ?*T {
-      if (self.find_object(entity_id)) |object| {
+      if (self.findObject(entity_id)) |object| {
         return &object.data;
       } else {
         return null;
@@ -86,7 +114,7 @@ pub fn ComponentList(comptime T: type) type {
     }
 
     pub fn destroy(self: *Self, entity_id: EntityId) void {
-      if (self.find_object(entity_id)) |object| {
+      if (self.findObject(entity_id)) |object| {
         object.is_active = false;
       }
     }

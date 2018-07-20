@@ -24,7 +24,7 @@ const game_init = @import("game_init.zig").game_init;
 const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
 const game_frame = @import("game_frame.zig").game_frame;
 const game_input = @import("game.zig").game_input;
-const game_draw = @import("game_draw.zig").game_draw;
+const drawGame = @import("game_draw.zig").drawGame;
 
 // See https://github.com/zig-lang/zig/issues/565
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
@@ -263,7 +263,7 @@ pub fn main() !void {
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
     c.glViewport(0, 0, @intCast(c_int, VWIN_W), @intCast(c_int, VWIN_H));
     c.glClear(c.GL_COLOR_BUFFER_BIT);
-    game_draw(g);
+    drawGame(g);
 
     g.projection = mat4x4_ortho(0.0, @intToFloat(f32, WINDOW_W), @intToFloat(f32, WINDOW_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);

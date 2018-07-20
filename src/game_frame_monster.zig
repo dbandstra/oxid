@@ -5,6 +5,7 @@ const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
 const EntityId = @import("game.zig").EntityId;
+const decrementTimer = @import("game_frame.zig").decrementTimer;
 const phys_in_wall = @import("game_physics.zig").phys_in_wall;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
@@ -20,35 +21,26 @@ pub const MonsterMovementSystem = struct{
   pub fn run(gs: *GameSession) void {
     // can i make this outer loop not tied to a hard coded component?
     // it should use reflection and choose the best one?
-    for (gs.monsters.objects) |*object| {
-      if (!object.is_active) {
-        continue;
+    var it = gs.monsters.iter(); while (it.next()) |object| {
+      const self = SystemData{
+        .monster = &object.data,
+        .creature = gs.creatures.find(object.entity_id) orelse continue,
+        .phys = gs.phys_objects.find(object.entity_id) orelse continue,
+        .transform = gs.transforms.find(object.entity_id) orelse continue,
+      };
+      if (decrementTimer(&self.monster.spawning_timer)) {
+        self.creature.hit_points = self.monster.full_hit_points;
+      } else if (self.monster.spawning_timer > 0) {
+        self.phys.speed = 0;
+        self.phys.push_dir = null;
+      } else {
+        monsterMove(gs, object.entity_id, self);
+        monsterShoot(gs, object.entity_id, self);
       }
-
-      const monster = &object.data;
-      if (gs.creatures.find(object.entity_id)) |creature| {
-      if (gs.phys_objects.find(object.entity_id)) |phys| {
-      if (gs.transforms.find(object.entity_id)) |transform| {
-        const self = SystemData{
-          .monster = monster,
-          .creature = creature,
-          .phys = phys,
-          .transform = transform,
-        };
-        if (monster.spawning_timer > 0) {
-          monster.spawning_timer -= 1;
-          if (monster.spawning_timer == 0) {
-            creature.hit_points = monster.full_hit_points;
-          }
-        } else {
-          monster_move(gs, object.entity_id, self);
-          monster_shoot(gs, object.entity_id, self);
-        }
-      }}}
     }
   }
 
-  fn monster_move(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn monsterMove(gs: *GameSession, self_id: EntityId, self: SystemData) void {
     const gc = gs.getGameController();
 
     self.phys.push_dir = null;
@@ -96,7 +88,7 @@ pub const MonsterMovementSystem = struct{
       }
     }
 
-    if (choose_turn(gs, self.monster.personality, pos, self.phys.facing, !wall_in_front, left_corner, right_corner)) |dir| {
+    if (chooseTurn(gs, self.monster.personality, pos, self.phys.facing, !wall_in_front, left_corner, right_corner)) |dir| {
       self.phys.push_dir = dir;
     }
 
@@ -105,7 +97,7 @@ pub const MonsterMovementSystem = struct{
     self.phys.speed = @intCast(i32, speed);
   }
 
-  fn monster_shoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn monsterShoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
     const gc = gs.getGameController();
     if (gc.freeze_monsters_timer > 0) {
       return;
@@ -130,7 +122,19 @@ pub const MonsterMovementSystem = struct{
     }
   }
 
-  fn choose_turn(
+  // this function needs more args if this is going to be any good
+  fn getChaseTarget(gs: *GameSession) ?Math.Vec2 {
+    // chase the first player in the entity list
+    var it = gs.players.iter();
+    if (while (it.next()) |player| { break player; } else null) |player| {
+      if (gs.transforms.find(player.entity_id)) |player_transform| {
+        return player_transform.pos;
+      }
+    }
+    return null;
+  }
+
+  fn chooseTurn(
     gs: *GameSession,
     personality: C.Monster.Personality,
     pos: Math.Vec2,
@@ -145,11 +149,7 @@ pub const MonsterMovementSystem = struct{
     var choices = Choices.init();
 
     if (personality == C.Monster.Personality.Chase) {
-      if (for (gs.players.objects) |*player| {
-        if (player.is_active) {
-          break gs.transforms.find(player.entity_id).?.pos;
-        }
-      } else null) |player_pos| {
+      if (getChaseTarget(gs)) |target_pos| {
         const fwd = Math.Direction.normal(facing);
         const left_normal = Math.Direction.normal(left);
         const right_normal = Math.Direction.normal(right);
@@ -158,9 +158,9 @@ pub const MonsterMovementSystem = struct{
         const left_point = Math.Vec2.add(pos, Math.Vec2.scale(left_normal, GRIDSIZE_SUBPIXELS));
         const right_point = Math.Vec2.add(pos, Math.Vec2.scale(right_normal, GRIDSIZE_SUBPIXELS));
 
-        const forward_point_dist = Math.Vec2.manhattan_distance(forward_point, player_pos);
-        const left_point_dist = Math.Vec2.manhattan_distance(left_point, player_pos);
-        const right_point_dist = Math.Vec2.manhattan_distance(right_point, player_pos);
+        const forward_point_dist = Math.Vec2.manhattan_distance(forward_point, target_pos);
+        const left_point_dist = Math.Vec2.manhattan_distance(left_point, target_pos);
+        const right_point_dist = Math.Vec2.manhattan_distance(right_point, target_pos);
 
         if (can_go_forward) {
           choices.add(facing, forward_point_dist);
@@ -249,15 +249,12 @@ const Choices = struct{
 
 pub const MonsterTouchResponseSystem = struct{
   pub fn run(gs: *GameSession) void {
-    for (gs.monsters.objects) |*object| {
-      if (!object.is_active) {
-        continue;
-      }
-      monster_collide(gs, object.entity_id, &object.data);
+    var it = gs.monsters.iter(); while (it.next()) |object| {
+      monsterCollide(gs, object.entity_id, &object.data);
     }
   }
 
-  fn monster_collide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) void {
+  fn monsterCollide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) void {
     const self_creature = gs.creatures.find(self_id).?;
     const self_phys = gs.phys_objects.find(self_id).?;
     const self_transform = gs.transforms.find(self_id).?;
@@ -265,12 +262,9 @@ pub const MonsterTouchResponseSystem = struct{
     var hit_wall = false;
     var hit_creature = false;
 
-    for (gs.event_collides.objects) |*object| {
-      if (!object.is_active) {
-        continue;
-      }
+    var it = gs.event_collides.iter(); while (it.next()) |object| {
       const event_collide = &object.data;
-      if (event_collide.self_id.id == self_id.id) {
+      if (EntityId.eql(event_collide.self_id, self_id)) {
         if (event_collide.other_id.id == 0) {
           hit_wall = true;
         } else {
