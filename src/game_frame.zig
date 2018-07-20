@@ -88,7 +88,6 @@ pub fn game_frame(gs: *GameSession) void {
   RunFrame(C.EventTakeDamage, gs, &gs.event_take_damages, null);
 
   gs.purge_removed();
-  gs.frameindex +%= 1;
 }
 
 fn countMonsters(gs: *GameSession) u32 {

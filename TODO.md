@@ -9,10 +9,9 @@ CODE:
 - when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
 - creature.walk_speed doesn't really make sense as a field
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
-- maybe get rid of gs.frameindex and make everything based on local timers
 - per-component type limits
 - figure out how to refactor the component lists in game.zig so i only have to list them once
-- choose_slot shouldn't crash! it should return errors
+- chooseSlot shouldn't crash! it should return errors
 - use a single hunk memory system, and print allocation amounts for debugging
 - refactor so main.zig is just SDL stuff. opengl stuff (that could be reused if we swap SDL for something else) is somewhere else
 - do the old state/new state page flipping thing for deterministic game code (think functions can only read old state of other entities)

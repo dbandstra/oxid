@@ -122,8 +122,6 @@ pub fn ComponentList(comptime T: type) type {
 }
 
 pub const GameSession = struct {
-  frameindex: u8,
-
   prng: std.rand.DefaultPrng,
 
   next_entity_id: usize,
@@ -171,7 +169,6 @@ pub const GameSession = struct {
     const rand_seed = 0;
 
     return GameSession{
-      .frameindex = 0,
       .prng = std.rand.DefaultPrng.init(rand_seed),
       .next_entity_id = 1,
       .removals = undefined,

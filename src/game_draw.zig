@@ -93,12 +93,12 @@ const DrawCreature = struct{
     const transform = g.session.transforms.find(entity_id) orelse return;
 
     if (params.spawning_timer > 0) {
-      const graphic = if (alternation(u8, g.session.frameindex, 4)) Graphic.Spawn1 else Graphic.Spawn2;
+      const graphic = if (alternation(u32, params.spawning_timer, 4)) Graphic.Spawn1 else Graphic.Spawn2;
       drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
       return;
     }
     if (creature.invulnerability_timer > 0) {
-      if (alternation(u8, g.session.frameindex, 1)) {
+      if (alternation(u32, creature.invulnerability_timer, 1)) {
         return;
       }
     }
@@ -127,7 +127,7 @@ fn drawSoldier(g: *GameState, entity_id: EntityId) void {
   const transform = g.session.transforms.find(entity_id) orelse return;
   if (player.dying_timer > 0) {
     if (player.dying_timer > 15) {
-      const graphic = if (alternation(u32, g.session.frameindex, 2)) Graphic.ManDying1 else Graphic.ManDying2;
+      const graphic = if (alternation(u32, player.dying_timer, 2)) Graphic.ManDying1 else Graphic.ManDying2;
       drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
     } else if (player.dying_timer > 10) {
       drawBlock(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
