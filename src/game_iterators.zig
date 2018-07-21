@@ -10,11 +10,9 @@ pub fn ComponentObjectIterator(comptime T: type) type {
     index: usize,
 
     pub fn next(self: *Self) ?*ComponentObject(T) {
-      var i = self.index;
-      while (i < self.list.count) : (i += 1) {
-        const object = &self.list.objects[i];
+      for (self.list.objects[self.index..self.list.count]) |*object, i| {
         if (object.is_active) {
-          self.index = i + 1;
+          self.index += i + 1;
           return object;
         }
       }
@@ -45,11 +43,9 @@ pub fn EventIterator(comptime T: type, comptime field: []const u8) type {
     index: usize,
 
     pub fn next(self: *Self) ?*T {
-      var i = self.index;
-      while (i < self.list.count) : (i += 1) {
-        const object = &self.list.objects[i];
+      for (self.list.objects[self.index..self.list.count]) |*object, i| {
         if (object.is_active and EntityId.eql(@field(&object.data, field), self.entity_id)) {
-          self.index = i + 1;
+          self.index += i + 1;
           return &object.data;
         }
       }

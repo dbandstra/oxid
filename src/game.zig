@@ -20,6 +20,7 @@ pub const EntityId = struct {
 
 pub fn ComponentObject(comptime T: type) type {
   return struct {
+    unused: u64, // workaround for https://github.com/ziglang/zig/issues/1154
     is_active: bool,
     entity_id: EntityId,
     data: T,
