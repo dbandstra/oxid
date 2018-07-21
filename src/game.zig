@@ -91,7 +91,6 @@ pub const GameSession = struct {
   in_shoot: bool,
 
   pub fn init(self: *GameSession, rand_seed: u32) void {
-
     self.prng = std.rand.DefaultPrng.init(rand_seed);
     self.next_entity_id = 1;
     self.removals = undefined;
