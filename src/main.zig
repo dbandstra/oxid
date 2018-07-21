@@ -18,12 +18,12 @@ const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
 const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
-const InputEvent = @import("game.zig").InputEvent;
+const InputEvent = @import("game_input.zig").InputEvent;
 const MonsterType = @import("game_init.zig").MonsterType;
 const game_init = @import("game_init.zig").game_init;
 const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
 const game_frame = @import("game_frame.zig").game_frame;
-const game_input = @import("game.zig").game_input;
+const game_input = @import("game_input.zig").game_input;
 const drawGame = @import("game_draw.zig").drawGame;
 
 // See https://github.com/zig-lang/zig/issues/565
@@ -139,11 +139,19 @@ pub fn main() !void {
 
   _ = c.SDL_GL_MakeCurrent(window, glcontext);
 
+  const rand_seed = blk: {
+    var seed_bytes: [4]u8 = undefined;
+    std.os.getRandomBytes(seed_bytes[0..]) catch {
+      break :blk 0;
+    };
+    break :blk std.mem.readIntLE(u32, seed_bytes);
+  };
+
   const g = &game_state;
   g.render_move_boxes = false;
   g.paused = false;
   g.fast_forward = false;
-  g.session.init();
+  g.session.init(rand_seed);
   game_init(&g.session);
 
   g.shaders = try all_shaders.createAllShaders();
@@ -204,7 +212,7 @@ pub fn main() !void {
           switch (event.key.keysym.sym) {
             c.SDLK_ESCAPE => return,
             c.SDLK_BACKSPACE => {
-              g.session.init();
+              g.session.init(rand_seed);
               game_init(&g.session);
             },
             c.SDLK_RETURN => {

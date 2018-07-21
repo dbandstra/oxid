@@ -6,14 +6,6 @@ const Constants = @import("game_constants.zig");
 const C = @import("game_components.zig");
 const GameIterators = @import("game_iterators.zig");
 
-pub const InputEvent = enum {
-  Left,
-  Right,
-  Up,
-  Down,
-  Shoot,
-};
-
 pub const EntityId = struct {
   id: usize,
 
@@ -98,19 +90,7 @@ pub const GameSession = struct {
   in_down: bool,
   in_shoot: bool,
 
-  pub fn init(self: *GameSession) void {
-    // fn getRandomSeed() !u32 {
-    //   var seed: u32 = undefined;
-    //   const seed_bytes = @ptrCast([*]u8, &seed)[0..4];
-    //   try std.os.getRandomBytes(seed_bytes);
-    //   return seed;
-    // }
-
-    // const rand_seed = getRandomSeed() catch {
-    //   std.debug.warn("unable to get random seed\n");
-    //   std.os.abort();
-    // };
-    const rand_seed = 0;
+  pub fn init(self: *GameSession, rand_seed: u32) void {
 
     self.prng = std.rand.DefaultPrng.init(rand_seed);
     self.next_entity_id = 1;
@@ -227,23 +207,3 @@ pub const GameSession = struct {
     self.num_removals = 0;
   }
 };
-
-pub fn game_input(gs: *GameSession, event: InputEvent, down: bool) void {
-  switch (event) {
-    InputEvent.Left => {
-      gs.in_left = down;
-    },
-    InputEvent.Right => {
-      gs.in_right = down;
-    },
-    InputEvent.Up => {
-      gs.in_up = down;
-    },
-    InputEvent.Down => {
-      gs.in_down = down;
-    },
-    InputEvent.Shoot => {
-      gs.in_shoot = down;
-    },
-  }
-}
