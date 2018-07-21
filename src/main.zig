@@ -143,7 +143,7 @@ pub fn main() !void {
   g.render_move_boxes = false;
   g.paused = false;
   g.fast_forward = false;
-  g.session = GameSession.init();
+  g.session.init();
   game_init(&g.session);
 
   g.shaders = try all_shaders.createAllShaders();
@@ -204,7 +204,7 @@ pub fn main() !void {
           switch (event.key.keysym.sym) {
             c.SDLK_ESCAPE => return,
             c.SDLK_BACKSPACE => {
-              g.session = GameSession.init();
+              g.session.init();
               game_init(&g.session);
             },
             c.SDLK_RETURN => {

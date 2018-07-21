@@ -1,10 +1,10 @@
+const builtin = @import("builtin");
 const std = @import("std");
-
-const Direction = @import("math.zig").Direction;
-const Vec2 = @import("math.zig").Vec2;
+const assert = std.debug.assert;
 
 const Constants = @import("game_constants.zig");
 const C = @import("game_components.zig");
+const GameIterators = @import("game_iterators.zig");
 
 pub const InputEvent = enum {
   Left,
@@ -20,6 +20,10 @@ pub const EntityId = struct {
   pub fn eql(a: EntityId, b: EntityId) bool {
     return a.id == b.id;
   }
+
+  pub fn isZero(a: EntityId) bool {
+    return a.id == 0;
+  }
 };
 
 pub fn ComponentObject(comptime T: type) type {
@@ -32,94 +36,49 @@ pub fn ComponentObject(comptime T: type) type {
 
 pub fn ComponentList(comptime T: type) type {
   return struct {
-    const Self = this;
-
-    objects_array: [Constants.MaxComponentsPerType]ComponentObject(T),
-    objects: []ComponentObject(T),
+    objects: [Constants.MaxComponentsPerType]ComponentObject(T),
     count: usize,
-
-    pub fn init() Self {
-      return Self{
-        .objects_array = undefined,
-        .objects = ([*]ComponentObject(T))(undefined)[0..0],
-        .count = 0,
-      };
-    }
-
-    pub const Iterator = struct {
-      list: *Self,
-      index: usize,
-
-      pub fn next(self: *Iterator) ?*ComponentObject(T) {
-        var i = self.index;
-        while (i < self.list.count) : (i += 1) {
-          if (self.list.objects_array[i].is_active) {
-            self.index = i + 1;
-            return &self.list.objects_array[i];
-          }
-        }
-        self.index = self.list.count + 1;
-        return null;
-      }
-    };
-
-    pub fn iter(self: *Self) Iterator {
-      return Iterator{
-        .list = self,
-        .index = 0,
-      };
-    }
-
-    // TODO - optional LRU reuse.
-    // (ok for non crucial entities. crucial ones should still crash)
-    pub fn create(self: *Self, entity_id: EntityId, data: *const T) void {
-      const i = chooseSlot(self).?; // can crash
-      var object = &self.objects_array[i];
-      object.is_active = true;
-      object.data = data.*;
-      object.entity_id = entity_id;
-    }
-
-    fn chooseSlot(self: *Self) ?usize {
-      var i: usize = 0;
-      while (i < self.count) : (i += 1) {
-        if (!self.objects_array[i].is_active) {
-          return i;
-        }
-      }
-      if (self.count < Constants.MaxComponentsPerType) {
-        i = self.count;
-        self.count += 1;
-        self.objects = self.objects_array[0..self.count];
-        return i;
-      }
-      return null;
-    }
-
-    pub fn findObject(self: *Self, entity_id: EntityId) ?*ComponentObject(T) {
-      var it = self.iter(); while (it.next()) |object| {
-        if (EntityId.eql(object.entity_id, entity_id)) {
-          return object;
-        }
-      }
-      return null;
-    }
-
-    pub fn find(self: *Self, entity_id: EntityId) ?*T {
-      if (self.findObject(entity_id)) |object| {
-        return &object.data;
-      } else {
-        return null;
-      }
-    }
-
-    pub fn destroy(self: *Self, entity_id: EntityId) void {
-      if (self.findObject(entity_id)) |object| {
-        object.is_active = false;
-      }
-    }
   };
 }
+
+const COMPONENT_TYPES = []type{
+  C.Animation,
+  C.Bullet,
+  C.Creature,
+  C.Drawable,
+  C.GameController,
+  C.Monster,
+  C.PhysObject,
+  C.Pickup,
+  C.Player,
+  C.PlayerController,
+  C.Transform,
+  C.EventCollide,
+  C.EventConferBonus,
+  C.EventAwardPoints,
+  C.EventPlayerDied,
+  C.EventTakeDamage,
+};
+
+// FIXME - is there any way to generate this from COMPONENT_TYPES
+pub const GameComponentLists = struct {
+  Animation: ComponentList(C.Animation),
+  Bullet: ComponentList(C.Bullet),
+  Creature: ComponentList(C.Creature),
+  Drawable: ComponentList(C.Drawable),
+  GameController: ComponentList(C.GameController),
+  Monster: ComponentList(C.Monster),
+  PhysObject: ComponentList(C.PhysObject),
+  Pickup: ComponentList(C.Pickup),
+  Player: ComponentList(C.Player),
+  PlayerController: ComponentList(C.PlayerController),
+  Transform: ComponentList(C.Transform),
+  EventCollide: ComponentList(C.EventCollide),
+  EventConferBonus: ComponentList(C.EventConferBonus),
+  EventAwardPoints: ComponentList(C.EventAwardPoints),
+  EventPlayerDied: ComponentList(C.EventPlayerDied),
+  EventTakeDamage: ComponentList(C.EventTakeDamage),
+};
 
 pub const GameSession = struct {
   prng: std.rand.DefaultPrng,
@@ -131,22 +90,7 @@ pub const GameSession = struct {
 
   god_mode: bool,
 
-  animations: ComponentList(C.Animation),
-  bullets: ComponentList(C.Bullet),
-  creatures: ComponentList(C.Creature),
-  drawables: ComponentList(C.Drawable),
-  game_controllers: ComponentList(C.GameController),
-  monsters: ComponentList(C.Monster),
-  phys_objects: ComponentList(C.PhysObject),
-  pickups: ComponentList(C.Pickup),
-  players: ComponentList(C.Player),
-  player_controllers: ComponentList(C.PlayerController),
-  transforms: ComponentList(C.Transform),
-  event_collides: ComponentList(C.EventCollide),
-  event_confer_bonuses: ComponentList(C.EventConferBonus),
-  event_award_pointses: ComponentList(C.EventAwardPoints),
-  event_player_dieds: ComponentList(C.EventPlayerDied),
-  event_take_damages: ComponentList(C.EventTakeDamage),
+  components: GameComponentLists,
 
   in_left: bool,
   in_right: bool,
@@ -154,7 +98,7 @@ pub const GameSession = struct {
   in_down: bool,
   in_shoot: bool,
 
-  pub fn init() GameSession {
+  pub fn init(self: *GameSession) void {
     // fn getRandomSeed() !u32 {
     //   var seed: u32 = undefined;
     //   const seed_bytes = @ptrCast([*]u8, &seed)[0..4];
@@ -168,40 +112,50 @@ pub const GameSession = struct {
     // };
     const rand_seed = 0;
 
-    return GameSession{
-      .prng = std.rand.DefaultPrng.init(rand_seed),
-      .next_entity_id = 1,
-      .removals = undefined,
-      .num_removals = 0,
-      .god_mode = false,
-      .animations = ComponentList(C.Animation).init(),
-      .bullets = ComponentList(C.Bullet).init(),
-      .creatures = ComponentList(C.Creature).init(),
-      .drawables = ComponentList(C.Drawable).init(),
-      .game_controllers = ComponentList(C.GameController).init(),
-      .monsters = ComponentList(C.Monster).init(),
-      .phys_objects = ComponentList(C.PhysObject).init(),
-      .pickups = ComponentList(C.Pickup).init(),
-      .player_controllers = ComponentList(C.PlayerController).init(),
-      .players = ComponentList(C.Player).init(),
-      .transforms = ComponentList(C.Transform).init(),
-      .event_collides = ComponentList(C.EventCollide).init(),
-      .event_confer_bonuses = ComponentList(C.EventConferBonus).init(),
-      .event_award_pointses = ComponentList(C.EventAwardPoints).init(),
-      .event_player_dieds = ComponentList(C.EventPlayerDied).init(),
-      .event_take_damages = ComponentList(C.EventTakeDamage).init(),
-      .in_up = false,
-      .in_down = false,
-      .in_left = false,
-      .in_right = false,
-      .in_shoot = false,
-    };
+    self.prng = std.rand.DefaultPrng.init(rand_seed);
+    self.next_entity_id = 1;
+    self.removals = undefined;
+    self.num_removals = 0;
+    self.god_mode = false;
+    inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+      @field(&self.components, field.name).count = 0;
+    }
+    self.in_up = false;
+    self.in_down = false;
+    self.in_left = false;
+    self.in_right = false;
+    self.in_shoot = false;
+  }
+
+  pub fn iter(self: *GameSession, comptime T: type) GameIterators.ComponentObjectIterator(T) {
+    const list = &@field(&self.components, @typeName(T));
+    return GameIterators.ComponentObjectIterator(T).init(list);
+  }
+
+  pub fn eventIter(self: *GameSession, comptime T: type, comptime field: []const u8, entity_id: EntityId) GameIterators.EventIterator(T, field) {
+    const list = &@field(&self.components, @typeName(T));
+    return GameIterators.EventIterator(T, field).init(list, entity_id);
+  }
+
+  pub fn findObject(self: *GameSession, entity_id: EntityId, comptime T: type) ?*ComponentObject(T) {
+    var it = self.iter(T); while (it.next()) |object| {
+      if (EntityId.eql(object.entity_id, entity_id)) {
+        return object;
+      }
+    }
+    return null;
+  }
+
+  pub fn find(self: *GameSession, entity_id: EntityId, comptime T: type) ?*T {
+    if (self.findObject(entity_id, T)) |object| {
+      return &object.data;
+    } else {
+      return null;
+    }
   }
 
   pub fn getGameController(self: *GameSession) *C.GameController {
-    var object = &self.game_controllers.objects[0];
-    std.debug.assert(object.is_active == true);
-    return &object.data;
+    return &self.iter(C.GameController).next().?.data;
   }
 
   pub fn getRand(self: *GameSession) *std.rand.Random {
@@ -222,24 +176,53 @@ pub const GameSession = struct {
     self.num_removals += 1;
   }
 
-  pub fn purge_removed(self: *GameSession) void {
+  // `data` must be a struct object, and it must be one of the structs in GameComponentLists.
+  // FIXME - before i used duck typing for this, `data` had type `*const T`.
+  // then you could pass struct using as-value syntax, and it was implicitly sent as a reference
+  // (like c++ references). but with `var`, i don't think this is possible?
+  // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
+  // component to an entity twice?
+  // TODO - optional LRU reuse.
+  // (ok for non crucial entities. crucial ones should still crash)
+  pub fn addComponent(self: *GameSession, entity_id: EntityId, data: var) void {
+    const T: type = @typeOf(data);
+    assert(@typeId(T) == builtin.TypeId.Struct);
+    var list = &@field(&self.components, @typeName(T));
+    const slot = blk: {
+      var i: usize = 0;
+      while (i < list.count) : (i += 1) {
+        const object = &list.objects[i];
+        if (!object.is_active) {
+          break :blk object;
+        }
+      }
+      if (list.count < Constants.MaxComponentsPerType) {
+        i = list.count;
+        list.count += 1;
+        break :blk &list.objects[i];
+      }
+      break :blk null;
+    };
+    if (slot) |object| {
+      object.is_active = true;
+      object.data = data;
+      object.entity_id = entity_id;
+    } else {
+      @panic("no slots left to add component");
+    }
+  }
+
+  pub fn destroyComponent(self: *GameSession, entity_id: EntityId, comptime T: type) void {
+    if (self.findObject(entity_id, T)) |object| {
+      object.is_active = false;
+    }
+  }
+
+  pub fn applyRemovals(self: *GameSession) void {
     for (self.removals) |entity_id| {
-      self.animations.destroy(entity_id);
-      self.bullets.destroy(entity_id);
-      self.creatures.destroy(entity_id);
-      self.drawables.destroy(entity_id);
-      self.game_controllers.destroy(entity_id);
-      self.monsters.destroy(entity_id);
-      self.phys_objects.destroy(entity_id);
-      self.pickups.destroy(entity_id);
-      self.players.destroy(entity_id);
-      self.player_controllers.destroy(entity_id);
-      self.transforms.destroy(entity_id);
-      self.event_collides.destroy(entity_id);
-      self.event_confer_bonuses.destroy(entity_id);
-      self.event_award_pointses.destroy(entity_id);
-      self.event_player_dieds.destroy(entity_id);
-      self.event_take_damages.destroy(entity_id);
+      inline for (COMPONENT_TYPES) |component_type| {
+        self.destroyComponent(entity_id, component_type);
+      }
     }
     self.num_removals = 0;
   }

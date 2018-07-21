@@ -171,7 +171,7 @@ pub const EventAwardPoints = struct {
 };
 
 pub const EventPlayerDied = struct {
-  unused: bool, // remove once #1178 is fixed
+  player_controller_id: EntityId,
 };
 
 pub const EventTakeDamage = struct {

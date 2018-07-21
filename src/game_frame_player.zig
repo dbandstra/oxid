@@ -1,46 +1,47 @@
-const std = @import("std");
 const Math = @import("math.zig");
 const Constants = @import("game_constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
-const RunFrame = @import("game_frame.zig").RunFrame;
 const decrementTimer = @import("game_frame.zig").decrementTimer;
 const phys_in_wall = @import("game_physics.zig").phys_in_wall;
+const BuildSystem = @import("game_system.zig").BuildSystem;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
+// TODO - system should be able to read all of these, but only write to them
+// one (player)...
+// right now, other than player fields, it's writing:
+// - self.phys.speed
+// - self.phys.push_dir
+// - self.phys.facing
+// that's it. the react system is also writing self.creature.walk_speed.
+// need an Event to set phys fields.
+
 pub const PlayerMovementSystem = struct{
-  pub const SystemData = struct{
+  const SystemData = struct{
     creature: *C.Creature,
     phys: *C.PhysObject,
     player: *C.Player,
     transform: *C.Transform,
   };
 
-  pub fn run(gs: *GameSession) void {
-    // can i make this outer loop not tied to a hard coded component?
-    // it should use reflection and choose the best one?
-    var it = gs.players.iter(); while (it.next()) |object| {
-      const self = SystemData{
-        .player = &object.data,
-        .creature = gs.creatures.find(object.entity_id) orelse continue,
-        .phys = gs.phys_objects.find(object.entity_id) orelse continue,
-        .transform = gs.transforms.find(object.entity_id) orelse continue,
-      };
-      if (decrementTimer(&self.player.dying_timer)) {
-        _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
-          .pos = self.transform.pos,
-        });
-        gs.remove(object.entity_id);
-      } else if (self.player.dying_timer > 0) {
-        self.phys.speed = 0;
-        self.phys.push_dir = null;
-      } else {
-        playerMove(gs, object.entity_id, self);
-        playerShoot(gs, object.entity_id, self);
-      }
+  pub const run = BuildSystem(SystemData, C.Player, think);
+
+  fn think(gs: *GameSession, self_id: EntityId, self: SystemData) bool {
+    if (decrementTimer(&self.player.dying_timer)) {
+      _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
+        .pos = self.transform.pos,
+      });
+      return false;
+    } else if (self.player.dying_timer > 0) {
+      self.phys.speed = 0;
+      self.phys.push_dir = null;
+    } else {
+      playerMove(gs, self_id, self);
+      playerShoot(gs, self_id, self);
     }
+    return true;
   }
 
   fn playerShoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
@@ -52,7 +53,7 @@ pub const PlayerMovementSystem = struct{
         // non-existent entity (old bullet is gone)
         if (for (self.player.bullets) |*slot| {
           if (slot.*) |bullet_id| {
-            if (gs.bullets.find(bullet_id) == null) {
+            if (gs.find(bullet_id, C.Bullet) == null) {
               break slot;
             }
           } else {
@@ -169,40 +170,37 @@ pub const PlayerMovementSystem = struct{
 };
 
 pub const PlayerReactionSystem = struct{
-  pub fn run(gs: *GameSession) void {
-    var it = gs.players.iter(); while (it.next()) |object| {
-      playerReact(gs, object.entity_id, &object.data);
-    }
-  }
+  pub const SystemData = struct{
+    creature: *C.Creature,
+    phys: *C.PhysObject,
+    player: *C.Player,
+    transform: *C.Transform,
+  };
 
-  fn playerReact(gs: *GameSession, self_id: EntityId, self_player: *C.Player) void {
-    const self_creature = gs.creatures.find(self_id) orelse return;
-    const self_phys = gs.phys_objects.find(self_id) orelse return;
-    const self_transform = gs.transforms.find(self_id) orelse return;
+  pub const run = BuildSystem(SystemData, C.Player, playerReact);
 
-    var it = gs.event_confer_bonuses.iter(); while (it.next()) |object| {
-      const event_confer_bonus = &object.data;
-      if (EntityId.eql(event_confer_bonus.recipient_id, self_id)) {
-        switch (event_confer_bonus.pickup_type) {
-          C.Pickup.Type.PowerUp => {
-            self_player.attack_level = switch (self_player.attack_level) {
-              C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
-              else => C.Player.AttackLevel.Three,
-            };
-          },
-          C.Pickup.Type.SpeedUp => {
-            self_player.speed_level = switch (self_player.speed_level) {
-              C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
-              else => C.Player.SpeedLevel.Three,
-            };
-            self_creature.walk_speed = switch (self_player.speed_level) {
-              C.Player.SpeedLevel.One => Constants.PlayerWalkSpeed1,
-              C.Player.SpeedLevel.Two => Constants.PlayerWalkSpeed2,
-              C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
-            };
-          },
-        }
+  fn playerReact(gs: *GameSession, self_id: EntityId, self: SystemData) bool {
+    var it = gs.eventIter(C.EventConferBonus, "recipient_id", self_id); while (it.next()) |event| {
+      switch (event.pickup_type) {
+        C.Pickup.Type.PowerUp => {
+          self.player.attack_level = switch (self.player.attack_level) {
+            C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
+            else => C.Player.AttackLevel.Three,
+          };
+        },
+        C.Pickup.Type.SpeedUp => {
+          self.player.speed_level = switch (self.player.speed_level) {
+            C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
+            else => C.Player.SpeedLevel.Three,
+          };
+          self.creature.walk_speed = switch (self.player.speed_level) {
+            C.Player.SpeedLevel.One => Constants.PlayerWalkSpeed1,
+            C.Player.SpeedLevel.Two => Constants.PlayerWalkSpeed2,
+            C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
+          };
+        },
       }
     }
+    return true;
   }
 };

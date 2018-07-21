@@ -21,12 +21,12 @@ pub const MonsterMovementSystem = struct{
   pub fn run(gs: *GameSession) void {
     // can i make this outer loop not tied to a hard coded component?
     // it should use reflection and choose the best one?
-    var it = gs.monsters.iter(); while (it.next()) |object| {
+    var it = gs.iter(C.Monster); while (it.next()) |object| {
       const self = SystemData{
         .monster = &object.data,
-        .creature = gs.creatures.find(object.entity_id) orelse continue,
-        .phys = gs.phys_objects.find(object.entity_id) orelse continue,
-        .transform = gs.transforms.find(object.entity_id) orelse continue,
+        .creature = gs.find(object.entity_id, C.Creature) orelse continue,
+        .phys = gs.find(object.entity_id, C.PhysObject) orelse continue,
+        .transform = gs.find(object.entity_id, C.Transform) orelse continue,
       };
       if (decrementTimer(&self.monster.spawning_timer)) {
         self.creature.hit_points = self.monster.full_hit_points;
@@ -125,9 +125,8 @@ pub const MonsterMovementSystem = struct{
   // this function needs more args if this is going to be any good
   fn getChaseTarget(gs: *GameSession) ?Math.Vec2 {
     // chase the first player in the entity list
-    var it = gs.players.iter();
-    if (while (it.next()) |player| { break player; } else null) |player| {
-      if (gs.transforms.find(player.entity_id)) |player_transform| {
+    if (gs.iter(C.Player).next()) |player| {
+      if (gs.find(player.entity_id, C.Transform)) |player_transform| {
         return player_transform.pos;
       }
     }
@@ -249,38 +248,35 @@ const Choices = struct{
 
 pub const MonsterTouchResponseSystem = struct{
   pub fn run(gs: *GameSession) void {
-    var it = gs.monsters.iter(); while (it.next()) |object| {
+    var it = gs.iter(C.Monster); while (it.next()) |object| {
       monsterCollide(gs, object.entity_id, &object.data);
     }
   }
 
   fn monsterCollide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) void {
-    const self_creature = gs.creatures.find(self_id).?;
-    const self_phys = gs.phys_objects.find(self_id).?;
-    const self_transform = gs.transforms.find(self_id).?;
+    const self_creature = gs.find(self_id, C.Creature) orelse return;
+    const self_phys = gs.find(self_id, C.PhysObject) orelse return;
+    const self_transform = gs.find(self_id, C.Transform) orelse return;
 
     var hit_wall = false;
     var hit_creature = false;
 
-    var it = gs.event_collides.iter(); while (it.next()) |object| {
-      const event_collide = &object.data;
-      if (EntityId.eql(event_collide.self_id, self_id)) {
-        if (event_collide.other_id.id == 0) {
-          hit_wall = true;
-        } else {
-          if (gs.creatures.find(event_collide.other_id)) |other_creature| {
-            if (event_collide.propelled) {
-              hit_creature = true;
-            }
-            if (gs.monsters.find(event_collide.other_id) == null) {
-              // if it's a non-monster creature, inflict damage on it
-              if (self_monster.spawning_timer == 0) {
-                _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
-                  .inflictor_player_controller_id = null,
-                  .self_id = event_collide.other_id,
-                  .amount = 1,
-                });
-              }
+    var it = gs.eventIter(C.EventCollide, "self_id", self_id); while (it.next()) |event| {
+      if (EntityId.isZero(event.other_id)) {
+        hit_wall = true;
+      } else {
+        if (gs.find(event.other_id, C.Creature)) |other_creature| {
+          if (event.propelled) {
+            hit_creature = true;
+          }
+          if (gs.find(event.other_id, C.Monster) == null) {
+            // if it's a non-monster creature, inflict damage on it
+            if (self_monster.spawning_timer == 0) {
+              Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
+                .inflictor_player_controller_id = null,
+                .self_id = event.other_id,
+                .amount = 1,
+              });
             }
           }
         }

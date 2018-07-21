@@ -31,7 +31,7 @@ pub const GameController = struct{
   pub fn spawn(gs: *GameSession) EntityId {
     const entity_id = gs.spawn();
 
-    gs.game_controllers.create(entity_id, C.GameController{
+    gs.addComponent(entity_id, C.GameController{
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
       .wave_index = 0,
@@ -48,7 +48,7 @@ pub const PlayerController = struct{
   pub fn spawn(gs: *GameSession) EntityId {
     const entity_id = gs.spawn();
 
-    gs.player_controllers.create(entity_id, C.PlayerController{
+    gs.addComponent(entity_id, C.PlayerController{
       .lives = Constants.PlayerNumLives,
       .score = 0,
       .respawn_timer = 0,
@@ -67,11 +67,11 @@ pub const Player = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.phys_objects.create(entity_id, C.PhysObject{
+    gs.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = player_entity_bbox,
       .facing = Math.Direction.E,
@@ -84,18 +84,18 @@ pub const Player = struct{
       .internal = undefined,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Soldier,
       .z_index = Constants.ZIndexPlayer,
     });
 
-    gs.creatures.create(entity_id, C.Creature{
+    gs.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
       .walk_speed = Constants.PlayerWalkSpeed1,
     });
 
-    gs.players.create(entity_id, C.Player{
+    gs.addComponent(entity_id, C.Player{
       .player_controller_id = params.player_controller_id,
       .trigger_released = true,
       .bullets = []?EntityId{null} ** Constants.PlayerMaxBullets,
@@ -116,11 +116,11 @@ pub const Corpse = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.SoldierCorpse,
       .z_index = Constants.ZIndexCorpse,
     });
@@ -137,11 +137,11 @@ pub const Spider = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.phys_objects.create(entity_id, C.PhysObject{
+    gs.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -154,18 +154,18 @@ pub const Spider = struct{
       .internal = undefined,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Spider,
       .z_index = Constants.ZIndexEnemy,
     });
 
-    gs.creatures.create(entity_id, C.Creature{
+    gs.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
       .hit_points = 1,
       .walk_speed = Constants.SpiderWalkSpeed,
     });
 
-    gs.monsters.create(entity_id, C.Monster{
+    gs.addComponent(entity_id, C.Monster{
       .spawning_timer = 60,
       .full_hit_points = Constants.SpiderHitPoints,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
@@ -188,11 +188,11 @@ pub const Squid = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.phys_objects.create(entity_id, C.PhysObject{
+    gs.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -205,18 +205,18 @@ pub const Squid = struct{
       .internal = undefined,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Squid,
       .z_index = Constants.ZIndexEnemy,
     });
 
-    gs.creatures.create(entity_id, C.Creature{
+    gs.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
       .hit_points = 1,
       .walk_speed = Constants.SquidWalkSpeed,
     });
 
-    gs.monsters.create(entity_id, C.Monster{
+    gs.addComponent(entity_id, C.Monster{
       .spawning_timer = 60,
       .full_hit_points = Constants.SquidHitPoints,
       .personality = switch (gs.getRand().range(u32, 0, 2)) {
@@ -249,7 +249,7 @@ pub const Bullet = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
@@ -257,7 +257,7 @@ pub const Bullet = struct{
     const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
 
-    gs.phys_objects.create(entity_id, C.PhysObject{
+    gs.addComponent(entity_id, C.PhysObject{
       .world_bbox = Math.BoundingBox{
         .mins = Math.Vec2.init(min, min),
         .maxs = Math.Vec2.init(max, max),
@@ -282,7 +282,7 @@ pub const Bullet = struct{
       .internal = undefined,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = switch (params.bullet_type) {
         BulletType.MonsterBullet => C.Drawable.Type.MonsterBullet,
         BulletType.PlayerBullet => switch (params.cluster_size) {
@@ -294,7 +294,7 @@ pub const Bullet = struct{
       .z_index = Constants.ZIndexBullet,
     });
 
-    gs.bullets.create(entity_id, C.Bullet{
+    gs.addComponent(entity_id, C.Bullet{
       .inflictor_player_controller_id = params.inflictor_player_controller_id,
       .damage = params.cluster_size,
     });
@@ -313,16 +313,16 @@ pub const Animation = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Animation,
       .z_index = params.z_index,
     });
 
-    gs.animations.create(entity_id, C.Animation{
+    gs.addComponent(entity_id, C.Animation{
       .simple_anim = params.simple_anim,
       .frame_index = 0,
       .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -341,16 +341,16 @@ pub const Pickup = struct{
   pub fn spawn(gs: *GameSession, params: Params) EntityId {
     const entity_id = gs.spawn();
 
-    gs.transforms.create(entity_id, C.Transform{
+    gs.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.drawables.create(entity_id, C.Drawable{
+    gs.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Pickup,
       .z_index = Constants.ZIndexPickup,
     });
 
-    gs.phys_objects.create(entity_id, C.PhysObject{
+    gs.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = pickup_entity_bbox,
       .facing = Math.Direction.E,
@@ -363,7 +363,7 @@ pub const Pickup = struct{
       .internal = undefined,
     });
 
-    gs.pickups.create(entity_id, C.Pickup{
+    gs.addComponent(entity_id, C.Pickup{
       .pickup_type = params.pickup_type,
       .timer = 15*60, // will disappear in 15 seconds
     });
@@ -372,42 +372,16 @@ pub const Pickup = struct{
   }
 };
 
-pub const EventCollide = struct{
-  pub fn spawn(gs: *GameSession, body: C.EventCollide) EntityId {
-    const entity_id = gs.spawn();
-    gs.event_collides.create(entity_id, body);
-    return entity_id;
-  }
-};
+fn Event(comptime T: type, comptime list_name: []const u8) type {
+  return struct {
+    fn spawn(gs: *GameSession, body: T) void {
+      gs.addComponent(gs.spawn(), body);
+    }
+  };
+}
 
-pub const EventConferBonus = struct{
-  pub fn spawn(gs: *GameSession, body: C.EventConferBonus) EntityId {
-    const entity_id = gs.spawn();
-    gs.event_confer_bonuses.create(entity_id, body);
-    return entity_id;
-  }
-};
-
-pub const EventAwardPoints = struct{
-  pub fn spawn(gs: *GameSession, body: C.EventAwardPoints) EntityId {
-    const entity_id = gs.spawn();
-    gs.event_award_pointses.create(entity_id, body);
-    return entity_id;
-  }
-};
-
-pub const EventTakeDamage = struct{
-  pub fn spawn(gs: *GameSession, body: C.EventTakeDamage) EntityId {
-    const entity_id = gs.spawn();
-    gs.event_take_damages.create(entity_id, body);
-    return entity_id;
-  }
-};
-
-pub const EventPlayerDied = struct{
-  pub fn spawn(gs: *GameSession) EntityId {
-    const entity_id = gs.spawn();
-    gs.event_player_dieds.create(entity_id, C.EventPlayerDied{.unused = true});
-    return entity_id;
-  }
-};
+pub const EventCollide = Event(C.EventCollide, "event_collides");
+pub const EventConferBonus = Event(C.EventConferBonus, "event_confer_bonuses");
+pub const EventAwardPoints = Event(C.EventAwardPoints, "event_award_pointses");
+pub const EventTakeDamage = Event(C.EventTakeDamage, "event_take_damages");
+pub const EventPlayerDied = Event(C.EventPlayerDied, "event_player_dieds");
