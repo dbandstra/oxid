@@ -27,7 +27,7 @@ pub const PlayerMovementSystem = struct{
     transform: *C.Transform,
   };
 
-  pub const run = GbeSystem.build(GameSession, SystemData, C.Player, think);
+  pub const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.player.dying_timer)) {
@@ -179,7 +179,7 @@ pub const PlayerReactionSystem = struct{
     transform: *C.Transform,
   };
 
-  pub const run = GbeSystem.build(GameSession, SystemData, C.Player, playerReact);
+  pub const run = GbeSystem.build(GameSession, SystemData, playerReact);
 
   fn playerReact(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {

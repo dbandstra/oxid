@@ -20,7 +20,7 @@ pub const MonsterMovementSystem = struct{
     transform: *C.Transform,
   };
 
-  pub const run = GbeSystem.build(GameSession, SystemData, C.Monster, think);
+  pub const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.monster.spawning_timer)) {
@@ -248,7 +248,7 @@ pub const MonsterTouchResponseSystem = struct{
     monster: *C.Monster,
   };
 
-  pub const run = GbeSystem.build(GameSession, SystemData, C.Monster, monsterCollide);
+  pub const run = GbeSystem.build(GameSession, SystemData, monsterCollide);
 
   fn monsterCollide(gs: *GameSession, self: SystemData) bool {
     var hit_wall = false;

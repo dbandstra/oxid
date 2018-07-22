@@ -79,7 +79,7 @@ pub fn game_frame(gs: *GameSession) void {
 
 const GameControllerSystem = struct{
   const SystemData = struct{ gc: *C.GameController };
-  const run = GbeSystem.build(GameSession, SystemData, C.GameController, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     // if all monsters are dead, prepare next wave
@@ -125,7 +125,7 @@ const GameControllerSystem = struct{
 
 const GameControllerReactSystem = struct{
   const SystemData = struct{ gc: *C.GameController };
-  const run = GbeSystem.build(GameSession, SystemData, C.GameController, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (gs.gbe.iter(C.EventPlayerDied).next() != null) {
@@ -137,7 +137,7 @@ const GameControllerReactSystem = struct{
 
 const PlayerControllerSystem = struct{
   const SystemData = struct{ id: Gbe.EntityId, pc: *C.PlayerController };
-  const run = GbeSystem.build(GameSession, SystemData, C.PlayerController, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.pc.respawn_timer)) {
@@ -149,7 +149,7 @@ const PlayerControllerSystem = struct{
 
 const PlayerControllerReactSystem = struct{
   const SystemData = struct{ id: Gbe.EntityId, pc: *C.PlayerController };
-  const run = GbeSystem.build(GameSession, SystemData, C.PlayerController, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventPlayerDied, "player_controller_id", self.id); while (it.next()) |_| {
@@ -169,7 +169,7 @@ const PlayerControllerReactSystem = struct{
 
 const AnimationSystem = struct {
   const SystemData = struct{ animation: *C.Animation };
-  const run = GbeSystem.build(GameSession, SystemData, C.Animation, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     const animcfg = getSimpleAnim(self.animation.simple_anim);
@@ -186,7 +186,7 @@ const AnimationSystem = struct {
 
 const CreatureSystem = struct {
   const SystemData = struct{ creature: *C.Creature };
-  const run = GbeSystem.build(GameSession, SystemData, C.Creature, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     _ = decrementTimer(&self.creature.invulnerability_timer);
@@ -196,7 +196,7 @@ const CreatureSystem = struct {
 
 const PickupSystem = struct {
   const SystemData = struct{ pickup: *C.Pickup };
-  const run = GbeSystem.build(GameSession, SystemData, C.Pickup, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.pickup.timer)) {
@@ -208,7 +208,7 @@ const PickupSystem = struct {
 
 const PickupCollideSystem = struct{
   const SystemData = struct{ id: Gbe.EntityId, pickup: *C.Pickup };
-  const run = GbeSystem.build(GameSession, SystemData, C.Pickup, collide);
+  const run = GbeSystem.build(GameSession, SystemData, collide);
 
   fn collide(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
@@ -234,7 +234,7 @@ const BulletCollideSystem = struct {
     transform: *C.Transform,
   };
 
-  const run = GbeSystem.build(GameSession, SystemData, C.Bullet, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
@@ -265,7 +265,7 @@ const CreatureTakeDamageSystem = struct{
     player: ?*C.Player,
   };
 
-  const run = GbeSystem.build(GameSession, SystemData, C.Creature, think);
+  const run = GbeSystem.build(GameSession, SystemData, think);
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (self.creature.invulnerability_timer > 0) {

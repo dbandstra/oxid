@@ -6,16 +6,20 @@ const Gbe = @import("gbe.zig");
 // `SessionType` param to these functions must have have a field called `gbe`
 // which is of type `Gbe.Session(...)`
 
+// TODO - implement a system that exposes an iterator instead of running
+// everything internally
+
+// TODO - write tests for this stuff
+
 pub fn build(
   comptime SessionType: type,
   comptime SelfType: type,
-  comptime MainComponentType: type,
   comptime think: fn(*SessionType, SelfType)bool,
 ) fn(*SessionType)void {
   assert(@typeId(SelfType) == builtin.TypeId.Struct);
 
   const Impl = struct{
-    fn runOne(gs: *SessionType, self_id: Gbe.EntityId, main_component: *MainComponentType) bool {
+    fn runOne(gs: *SessionType, self_id: Gbe.EntityId, comptime MainComponentType: type, main_component: *MainComponentType) bool {
       // fill in the fields of the `self` structure
       var self: SelfType = undefined;
       inline for (@typeInfo(SelfType).Struct.fields) |field| {
@@ -26,17 +30,8 @@ pub fn build(
         }
         // otherwise, it must be a pointer to a component, or an optional
         // pointer to a component
-        comptime var field_type = field.field_type;
-        comptime var is_optional = false;
-        if (@typeId(field_type) == builtin.TypeId.Optional) {
-          field_type = @typeInfo(field_type).Optional.child;
-          is_optional = true;
-        }
-        if (@typeId(field_type) != builtin.TypeId.Pointer) {
-          @compileError("field must be a pointer");
-          unreachable;
-        }
-        comptime const ComponentType = @typeInfo(field_type).Pointer.child;
+        comptime const ComponentType = unpackComponentType(field.field_type);
+        comptime const is_optional = @typeId(field.field_type) == builtin.TypeId.Optional;
         @field(self, field.name) =
           if (ComponentType == MainComponentType)
             main_component
@@ -49,12 +44,68 @@ pub fn build(
       return think(gs, self);
     }
 
-    fn run(gs: *SessionType) void {
+    fn runAll(gs: *SessionType, comptime MainComponentType: type) void {
       var it = gs.gbe.iter(MainComponentType); while (it.next()) |object| {
-        if (!runOne(gs, object.entity_id, &object.data)) {
+        if (!runOne(gs, object.entity_id, MainComponentType, &object.data)) {
           gs.gbe.markEntityForRemoval(object.entity_id);
         }
       }
+    }
+
+    fn run(gs: *SessionType) void {
+      // choose which component type to do the outermost iteration over.
+      // (TODO - pick the component type with the lowest amount of active
+      // entities)
+      // var best: usize = @maxValue(usize);
+      // var which: ?usize = null;
+      comptime var i: usize = 0;
+      inline while (i < @typeInfo(SelfType).Struct.fields.len) : (i += 1) {
+        comptime const field = @typeInfo(SelfType).Struct.fields[i];
+        if (field.field_type == Gbe.EntityId) {
+          continue;
+        }
+        comptime const field_type = unpackComponentType(field.field_type);
+        // FIXME - this commented out code doesn't work... everything seems
+        // fine, except that the player's bullets don't hurt the monsters (the
+        // monsters' bullets do hurt the player).
+        // // if (@field(&gs.gbe.components, @typeName(field_type)).count < best) {
+        // //   best = @field(&gs.gbe.components, @typeName(field_type)).count;
+        // //   which = i;
+        // // }
+        runAll(gs, field_type);
+        return;
+      }
+      // // run the iteration
+      // if (which) |which_index| {
+      //   i = 0;
+      //   inline while (i < @typeInfo(SelfType).Struct.fields.len) : (i += 1) {
+      //     comptime const field = @typeInfo(SelfType).Struct.fields[i];
+      //     if (field.field_type == Gbe.EntityId) {
+      //       continue;
+      //     }
+      //     comptime const field_type = unpackComponentType(field.field_type);
+      //     if (i == which_index) {
+      //       runAll(gs, field_type);
+      //       return;
+      //     }
+      //   }
+      //   @panic("something didn't work");
+      // } else {
+      //   @panic("no matches");
+      // }
+    }
+
+    fn unpackComponentType(comptime field_type: type) type {
+      comptime var ft = field_type;
+      if (@typeId(ft) == builtin.TypeId.Optional) {
+        ft = @typeInfo(ft).Optional.child;
+      }
+      if (@typeId(ft) != builtin.TypeId.Pointer) {
+        @compileError("field must be a pointer");
+        unreachable;
+      }
+      ft = @typeInfo(ft).Pointer.child;
+      return ft;
     }
   };
 
