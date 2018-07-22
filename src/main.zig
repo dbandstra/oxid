@@ -9,22 +9,22 @@ const static_geometry = @import("static_geometry.zig");
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const image = @import("../zigutils/src/image/image.zig");
 
-const Graphics = @import("game_graphics.zig").Graphics;
-const loadGraphics = @import("game_graphics.zig").loadGraphics;
 const Font = @import("font.zig").Font;
 const load_font = @import("font.zig").load_font;
 const Draw = @import("draw.zig");
-const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
-const LEVEL = @import("game_level.zig").LEVEL;
-const GameInput = @import("game.zig").GameInput;
-const GameSession = @import("game.zig").GameSession;
-const InputEvent = @import("game_input.zig").InputEvent;
-const MonsterType = @import("game_init.zig").MonsterType;
-const game_init = @import("game_init.zig").game_init;
-const game_spawn_monsters = @import("game_init.zig").game_spawn_monsters;
-const game_frame = @import("game_frame.zig").game_frame;
-const game_input = @import("game_input.zig").game_input;
-const drawGame = @import("game_draw.zig").drawGame;
+const Graphics = @import("oxid/graphics.zig").Graphics;
+const loadGraphics = @import("oxid/graphics.zig").loadGraphics;
+const GRIDSIZE_PIXELS = @import("oxid/level.zig").GRIDSIZE_PIXELS;
+const LEVEL = @import("oxid/level.zig").LEVEL;
+const GameInput = @import("oxid/game.zig").GameInput;
+const GameSession = @import("oxid/game.zig").GameSession;
+const InputEvent = @import("oxid/input.zig").InputEvent;
+const MonsterType = @import("oxid/init.zig").MonsterType;
+const game_init = @import("oxid/init.zig").game_init;
+const game_spawn_monsters = @import("oxid/init.zig").game_spawn_monsters;
+const game_frame = @import("oxid/frame.zig").game_frame;
+const game_input = @import("oxid/input.zig").game_input;
+const drawGame = @import("oxid/draw.zig").drawGame;
 
 // See https://github.com/zig-lang/zig/issues/565
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)

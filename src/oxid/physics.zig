@@ -1,13 +1,13 @@
 const std = @import("std");
-const Math = @import("math.zig");
-const abs_boxes_overlap = @import("boxes_overlap.zig").abs_boxes_overlap;
-const boxes_overlap = @import("boxes_overlap.zig").boxes_overlap;
-const GbeConstants = @import("gbe_constants.zig");
-const Gbe = @import("gbe.zig");
-const LEVEL = @import("game_level.zig").LEVEL;
+const Math = @import("../math.zig");
+const abs_boxes_overlap = @import("../boxes_overlap.zig").abs_boxes_overlap;
+const boxes_overlap = @import("../boxes_overlap.zig").boxes_overlap;
+const GbeConstants = @import("../gbe_constants.zig");
+const Gbe = @import("../gbe.zig");
+const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
-const C = @import("game_components.zig");
-const Prototypes = @import("game_prototypes.zig");
+const C = @import("components.zig");
+const Prototypes = @import("prototypes.zig");
 
 // convenience function
 pub fn phys_in_wall(phys: *C.PhysObject, pos: Math.Vec2) bool {

@@ -2,10 +2,9 @@ const builtin = @import("builtin");
 const std = @import("std");
 const assert = std.debug.assert;
 
-const Constants = @import("game_constants.zig");
-const C = @import("game_components.zig");
-const GameIterators = @import("game_iterators.zig");
-const Gbe = @import("gbe.zig");
+const Gbe = @import("../gbe.zig");
+const Constants = @import("constants.zig");
+const C = @import("components.zig");
 
 const COMPONENT_TYPES = []const type{
   C.Animation,

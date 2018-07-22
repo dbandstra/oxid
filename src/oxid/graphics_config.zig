@@ -1,4 +1,4 @@
-pub const GRAPHICS_FILENAME = "../assets/mytiles.pcx";
+pub const GRAPHICS_FILENAME = "../../assets/mytiles.pcx";
 pub const TRANSPARENT_COLOR_INDEX = 12;
 
 pub const Graphic = enum{

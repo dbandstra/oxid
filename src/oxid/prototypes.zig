@@ -1,12 +1,12 @@
-const Math = @import("math.zig");
-const SimpleAnim = @import("game_graphics_config.zig").SimpleAnim;
-const getSimpleAnim = @import("game_graphics_config.zig").getSimpleAnim;
-const Gbe = @import("gbe.zig");
+const Math = @import("../math.zig");
+const Gbe = @import("../gbe.zig");
+const SimpleAnim = @import("graphics_config.zig").SimpleAnim;
+const getSimpleAnim = @import("graphics_config.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
-const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
-const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
-const Constants = @import("game_constants.zig");
-const C = @import("game_components.zig");
+const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
+const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const Constants = @import("constants.zig");
+const C = @import("components.zig");
 
 fn make_bbox(diameter: u31) Math.BoundingBox {
   const graphic_diameter = GRIDSIZE_SUBPIXELS;

@@ -1,16 +1,16 @@
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
-const image = @import("../zigutils/src/image/image.zig");
-const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
-const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
+const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const MemoryInStream = @import("../../zigutils/src/MemoryInStream.zig").MemoryInStream;
+const image = @import("../../zigutils/src/image/image.zig");
+const LoadPcx = @import("../../zigutils/src/image/pcx.zig").LoadPcx;
+const pcxBestStoreFormat = @import("../../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
-const Texture = @import("main.zig").Texture;
-const uploadTexture = @import("main.zig").uploadTexture;
+const Texture = @import("../main.zig").Texture;
+const uploadTexture = @import("../main.zig").uploadTexture;
 
-const GRAPHICS_FILENAME = @import("game_graphics_config.zig").GRAPHICS_FILENAME;
-const TRANSPARENT_COLOR_INDEX = @import("game_graphics_config.zig").TRANSPARENT_COLOR_INDEX;
-const Graphic = @import("game_graphics_config.zig").Graphic;
-const getGraphicConfig = @import("game_graphics_config.zig").getGraphicConfig;
+const GRAPHICS_FILENAME = @import("graphics_config.zig").GRAPHICS_FILENAME;
+const TRANSPARENT_COLOR_INDEX = @import("graphics_config.zig").TRANSPARENT_COLOR_INDEX;
+const Graphic = @import("graphics_config.zig").Graphic;
+const getGraphicConfig = @import("graphics_config.zig").getGraphicConfig;
 
 pub const Graphics = struct{
   background_colour: image.Pixel,

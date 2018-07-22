@@ -1,7 +1,7 @@
-const Math = @import("math.zig");
-const Gbe = @import("gbe.zig");
-const Constants = @import("game_constants.zig");
-const SimpleAnim = @import("game_graphics_config.zig").SimpleAnim;
+const Math = @import("../math.zig");
+const Gbe = @import("../gbe.zig");
+const Constants = @import("constants.zig");
+const SimpleAnim = @import("graphics_config.zig").SimpleAnim;
 
 pub const Bullet = struct {
   inflictor_player_controller_id: ?Gbe.EntityId,

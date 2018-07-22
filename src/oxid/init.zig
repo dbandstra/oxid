@@ -1,13 +1,13 @@
 const std = @import("std");
-const Math = @import("math.zig");
-const Gbe = @import("gbe.zig");
-const Constants = @import("game_constants.zig");
+const Math = @import("../math.zig");
+const Gbe = @import("../gbe.zig");
+const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
-const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
-const TerrainType = @import("game_level.zig").TerrainType;
-const LEVEL = @import("game_level.zig").LEVEL;
-const Prototypes = @import("game_prototypes.zig");
-const C = @import("game_components.zig");
+const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const TerrainType = @import("level.zig").TerrainType;
+const LEVEL = @import("level.zig").LEVEL;
+const Prototypes = @import("prototypes.zig");
+const C = @import("components.zig");
 
 pub fn game_init(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);

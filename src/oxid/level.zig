@@ -1,5 +1,5 @@
 const assert = @import("std").debug.assert;
-const Math = @import("math.zig");
+const Math = @import("../math.zig");
 
 // there are 16 pixels to a grid cell
 pub const GRIDSIZE_PIXELS = 16;

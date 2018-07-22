@@ -1,13 +1,13 @@
-const Math = @import("math.zig");
-const Gbe = @import("gbe.zig");
-const GbeSystem = @import("gbe_system.zig");
-const Constants = @import("game_constants.zig");
-const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
+const Math = @import("../math.zig");
+const Gbe = @import("../gbe.zig");
+const GbeSystem = @import("../gbe_system.zig");
+const Constants = @import("constants.zig");
+const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const GameSession = @import("game.zig").GameSession;
-const decrementTimer = @import("game_frame.zig").decrementTimer;
-const phys_in_wall = @import("game_physics.zig").phys_in_wall;
-const C = @import("game_components.zig");
-const Prototypes = @import("game_prototypes.zig");
+const decrementTimer = @import("frame.zig").decrementTimer;
+const phys_in_wall = @import("physics.zig").phys_in_wall;
+const C = @import("components.zig");
+const Prototypes = @import("prototypes.zig");
 
 // TODO - system should be able to read all of these, but only write to them
 // one (player)...

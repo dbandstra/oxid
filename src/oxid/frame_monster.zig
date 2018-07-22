@@ -1,15 +1,15 @@
 const std = @import("std");
-const lessThanField = @import("util.zig").lessThanField;
-const Math = @import("math.zig");
-const Gbe = @import("gbe.zig");
-const GbeSystem = @import("gbe_system.zig");
-const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
-const LEVEL = @import("game_level.zig").LEVEL;
+const lessThanField = @import("../util.zig").lessThanField;
+const Math = @import("../math.zig");
+const Gbe = @import("../gbe.zig");
+const GbeSystem = @import("../gbe_system.zig");
+const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
-const decrementTimer = @import("game_frame.zig").decrementTimer;
-const phys_in_wall = @import("game_physics.zig").phys_in_wall;
-const C = @import("game_components.zig");
-const Prototypes = @import("game_prototypes.zig");
+const decrementTimer = @import("frame.zig").decrementTimer;
+const phys_in_wall = @import("physics.zig").phys_in_wall;
+const C = @import("components.zig");
+const Prototypes = @import("prototypes.zig");
 
 pub const MonsterMovementSystem = struct{
   pub const SystemData = struct{

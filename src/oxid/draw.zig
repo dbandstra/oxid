@@ -1,22 +1,21 @@
 const std = @import("std");
-const c = @import("c.zig");
-use @import("math3d.zig");
-const MemoryOutStream = @import("../zigutils/src/MemoryOutStream.zig").MemoryOutStream;
-const lessThanField = @import("util.zig").lessThanField;
-const VWIN_W = @import("main.zig").VWIN_W;
-const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
-const GameState = @import("main.zig").GameState;
-const Math = @import("math.zig");
-const Draw = @import("draw.zig");
-const Graphic = @import("game_graphics_config.zig").Graphic;
-const getSimpleAnim = @import("game_graphics_config.zig").getSimpleAnim;
-const font_drawstring = @import("font.zig").font_drawstring;
-const GbeConstants = @import("gbe_constants.zig");
-const Gbe = @import("gbe.zig");
-const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
-const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
-const LEVEL = @import("game_level.zig").LEVEL;
-const C = @import("game_components.zig");
+const MemoryOutStream = @import("../../zigutils/src/MemoryOutStream.zig").MemoryOutStream;
+use @import("../math3d.zig");
+const lessThanField = @import("../util.zig").lessThanField;
+const VWIN_W = @import("../main.zig").VWIN_W;
+const HUD_HEIGHT = @import("../main.zig").HUD_HEIGHT;
+const GameState = @import("../main.zig").GameState;
+const Math = @import("../math.zig");
+const Draw = @import("../draw.zig");
+const font_drawstring = @import("../font.zig").font_drawstring;
+const GbeConstants = @import("../gbe_constants.zig");
+const Gbe = @import("../gbe.zig");
+const Graphic = @import("graphics_config.zig").Graphic;
+const getSimpleAnim = @import("graphics_config.zig").getSimpleAnim;
+const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
+const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const LEVEL = @import("level.zig").LEVEL;
+const C = @import("components.zig");
 
 const SortItem = struct {
   object: *Gbe.ComponentObject(C.Drawable),
