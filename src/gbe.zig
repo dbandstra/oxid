@@ -1,0 +1,167 @@
+// (g)ame (b)ack (e)nd
+
+const builtin = @import("builtin");
+const std = @import("std");
+const assert = std.debug.assert;
+
+const GbeConstants = @import("gbe_constants.zig");
+const GbeIterators = @import("gbe_iterators.zig");
+
+pub const EntityId = struct {
+  id: usize,
+
+  pub fn eql(a: EntityId, b: EntityId) bool {
+    return a.id == b.id;
+  }
+
+  pub fn isZero(a: EntityId) bool {
+    return a.id == 0;
+  }
+};
+
+pub fn ComponentObject(comptime T: type) type {
+  return struct {
+    unused: u64, // workaround for https://github.com/ziglang/zig/issues/1154
+    is_active: bool,
+    entity_id: EntityId,
+    data: T,
+  };
+}
+
+pub fn ComponentList(comptime T: type) type {
+  return struct {
+    objects: [GbeConstants.MaxComponentsPerType]ComponentObject(T),
+    count: usize,
+  };
+}
+
+pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: type) type {
+  assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
+  inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    // ?! is it possible to assert that a type == ComponentList(X)?
+
+    // without doing some kind of duck typing check on every field
+    // so that it "looks like" ComponentList?
+
+    // @compileError(@typeName(field.field_type));
+  }
+
+  return struct {
+    const Self = this;
+
+    prng: std.rand.DefaultPrng,
+
+    next_entity_id: usize,
+
+    removals: [GbeConstants.MaxRemovalsPerFrame]EntityId,
+    num_removals: usize,
+
+    components: ComponentLists,
+
+    pub fn init(self: *Self, rand_seed: u32) void {
+      self.prng = std.rand.DefaultPrng.init(rand_seed);
+      self.next_entity_id = 1;
+      self.removals = undefined;
+      self.num_removals = 0;
+      inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        @field(&self.components, field.name).count = 0;
+      }
+    }
+
+    pub fn iter(self: *Self, comptime T: type) GbeIterators.ComponentObjectIterator(T) {
+      const list = &@field(&self.components, @typeName(T));
+      return GbeIterators.ComponentObjectIterator(T).init(list);
+    }
+
+    pub fn eventIter(self: *Self, comptime T: type, comptime field: []const u8, entity_id: EntityId) GbeIterators.EventIterator(T, field) {
+      const list = &@field(&self.components, @typeName(T));
+      return GbeIterators.EventIterator(T, field).init(list, entity_id);
+    }
+
+    pub fn findObject(self: *Self, entity_id: EntityId, comptime T: type) ?*ComponentObject(T) {
+      var it = self.iter(T); while (it.next()) |object| {
+        if (EntityId.eql(object.entity_id, entity_id)) {
+          return object;
+        }
+      }
+      return null;
+    }
+
+    pub fn find(self: *Self, entity_id: EntityId, comptime T: type) ?*T {
+      if (self.findObject(entity_id, T)) |object| {
+        return &object.data;
+      } else {
+        return null;
+      }
+    }
+
+    pub fn getRand(self: *Self) *std.rand.Random {
+      return &self.prng.random;
+    }
+
+    pub fn spawn(self: *Self) EntityId {
+      const id = EntityId{ .id = self.next_entity_id };
+      self.next_entity_id += 1; // TODO - reuse these?
+      return id;
+    }
+
+    pub fn markEntityForRemoval(self: *Self, entity_id: EntityId) void {
+      if (self.num_removals >= GbeConstants.MaxRemovalsPerFrame) {
+        unreachable;
+      }
+      self.removals[self.num_removals] = entity_id;
+      self.num_removals += 1;
+    }
+
+    // `data` must be a struct object, and it must be one of the structs in GameComponentLists.
+    // FIXME - before i used duck typing for this, `data` had type `*const T`.
+    // then you could pass struct using as-value syntax, and it was implicitly sent as a reference
+    // (like c++ references). but with `var`, i don't think this is possible?
+    // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
+    // component to an entity twice?
+    // TODO - optional LRU reuse.
+    // (ok for non crucial entities. crucial ones should still crash)
+    pub fn addComponent(self: *Self, entity_id: EntityId, data: var) void {
+      const T: type = @typeOf(data);
+      assert(@typeId(T) == builtin.TypeId.Struct);
+      var list = &@field(&self.components, @typeName(T));
+      const slot = blk: {
+        var i: usize = 0;
+        while (i < list.count) : (i += 1) {
+          const object = &list.objects[i];
+          if (!object.is_active) {
+            break :blk object;
+          }
+        }
+        if (list.count < GbeConstants.MaxComponentsPerType) {
+          i = list.count;
+          list.count += 1;
+          break :blk &list.objects[i];
+        }
+        break :blk null;
+      };
+      if (slot) |object| {
+        object.is_active = true;
+        object.data = data;
+        object.entity_id = entity_id;
+      } else {
+        @panic("no slots left to add component");
+      }
+    }
+
+    pub fn destroyComponent(self: *Self, entity_id: EntityId, comptime T: type) void {
+      if (self.findObject(entity_id, T)) |object| {
+        object.is_active = false;
+      }
+    }
+
+    pub fn applyRemovals(self: *Self) void {
+      for (self.removals) |entity_id| {
+        inline for (ComponentTypes) |component_type| {
+          self.destroyComponent(entity_id, component_type);
+        }
+      }
+      self.num_removals = 0;
+    }
+  };
+}

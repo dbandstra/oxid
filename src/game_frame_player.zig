@@ -1,11 +1,11 @@
 const Math = @import("math.zig");
+const Gbe = @import("gbe.zig");
+const GbeSystem = @import("gbe_system.zig");
 const Constants = @import("game_constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
-const EntityId = @import("game.zig").EntityId;
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("game_frame.zig").decrementTimer;
 const phys_in_wall = @import("game_physics.zig").phys_in_wall;
-const BuildSystem = @import("game_system.zig").BuildSystem;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
@@ -20,15 +20,16 @@ const Prototypes = @import("game_prototypes.zig");
 
 pub const PlayerMovementSystem = struct{
   const SystemData = struct{
+    id: Gbe.EntityId,
     creature: *C.Creature,
     phys: *C.PhysObject,
     player: *C.Player,
     transform: *C.Transform,
   };
 
-  pub const run = BuildSystem(SystemData, C.Player, think);
+  pub const run = GbeSystem.build(GameSession, SystemData, C.Player, think);
 
-  fn think(gs: *GameSession, self_id: EntityId, self: SystemData) bool {
+  fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.player.dying_timer)) {
       _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
         .pos = self.transform.pos,
@@ -38,13 +39,13 @@ pub const PlayerMovementSystem = struct{
       self.phys.speed = 0;
       self.phys.push_dir = null;
     } else {
-      playerMove(gs, self_id, self);
-      playerShoot(gs, self_id, self);
+      playerMove(gs, self);
+      playerShoot(gs, self);
     }
     return true;
   }
 
-  fn playerShoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn playerShoot(gs: *GameSession, self: SystemData) void {
     if (gs.in_shoot) {
       if (self.player.trigger_released) {
         // the player can only have a certain amount of bullets in play at a
@@ -53,7 +54,7 @@ pub const PlayerMovementSystem = struct{
         // non-existent entity (old bullet is gone)
         if (for (self.player.bullets) |*slot| {
           if (slot.*) |bullet_id| {
-            if (gs.find(bullet_id, C.Bullet) == null) {
+            if (gs.gbe.find(bullet_id, C.Bullet) == null) {
               break slot;
             }
           } else {
@@ -67,7 +68,7 @@ pub const PlayerMovementSystem = struct{
           const bullet_pos = Math.Vec2.add(pos, ofs);
           slot.* = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
             .inflictor_player_controller_id = self.player.player_controller_id,
-            .owner_id = self_id,
+            .owner_id = self.id,
             .pos = bullet_pos,
             .facing = self.phys.facing,
             .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
@@ -85,7 +86,7 @@ pub const PlayerMovementSystem = struct{
     }
   }
 
-  fn playerMove(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn playerMove(gs: *GameSession, self: SystemData) void {
     var xmove: i32 = 0;
     var ymove: i32 = 0;
     if (gs.in_right) { xmove += 1; }
@@ -171,16 +172,17 @@ pub const PlayerMovementSystem = struct{
 
 pub const PlayerReactionSystem = struct{
   pub const SystemData = struct{
+    id: Gbe.EntityId,
     creature: *C.Creature,
     phys: *C.PhysObject,
     player: *C.Player,
     transform: *C.Transform,
   };
 
-  pub const run = BuildSystem(SystemData, C.Player, playerReact);
+  pub const run = GbeSystem.build(GameSession, SystemData, C.Player, playerReact);
 
-  fn playerReact(gs: *GameSession, self_id: EntityId, self: SystemData) bool {
-    var it = gs.eventIter(C.EventConferBonus, "recipient_id", self_id); while (it.next()) |event| {
+  fn playerReact(gs: *GameSession, self: SystemData) bool {
+    var it = gs.gbe.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
       switch (event.pickup_type) {
         C.Pickup.Type.PowerUp => {
           self.player.attack_level = switch (self.player.attack_level) {

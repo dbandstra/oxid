@@ -1,11 +1,10 @@
 const Math = @import("math.zig");
-const Velocity = @import("math.zig").Velocity;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
+const Gbe = @import("gbe.zig");
 const Constants = @import("game_constants.zig");
-const EntityId = @import("game.zig").EntityId;
 
 pub const Bullet = struct {
-  inflictor_player_controller_id: ?EntityId,
+  inflictor_player_controller_id: ?Gbe.EntityId,
   damage: u32,
 };
 
@@ -94,7 +93,7 @@ pub const PhysObject = struct {
 
   // `owner_id`: collision will be skipped between an object and its owner.
   // e.g. a bullet is owned by the person who shot it
-  owner_id: EntityId,
+  owner_id: Gbe.EntityId,
 
   // `ignore_pits`: if true, this object can travel over pits
   ignore_pits: bool,
@@ -138,9 +137,9 @@ pub const Player = struct {
     Three,
   };
 
-  player_controller_id: EntityId,
+  player_controller_id: Gbe.EntityId,
   trigger_released: bool,
-  bullets: [Constants.PlayerMaxBullets]?EntityId,
+  bullets: [Constants.PlayerMaxBullets]?Gbe.EntityId,
   attack_level: AttackLevel,
   speed_level: SpeedLevel,
   dying_timer: u32,
@@ -151,8 +150,8 @@ pub const Transform = struct {
 };
 
 pub const EventCollide = struct {
-  self_id: EntityId,
-  other_id: EntityId, // 0 = wall
+  self_id: Gbe.EntityId,
+  other_id: Gbe.EntityId, // 0 = wall
 
   // `propelled`: if true, `self` ran into `other` (or they both ran into each
   // other). if false, `other` ran into `self` while `self` was either
@@ -161,21 +160,21 @@ pub const EventCollide = struct {
 };
 
 pub const EventConferBonus = struct {
-  recipient_id: EntityId,
+  recipient_id: Gbe.EntityId,
   pickup_type: Pickup.Type,
 };
 
 pub const EventAwardPoints = struct {
-  player_controller_id: EntityId,
+  player_controller_id: Gbe.EntityId,
   points: u32,
 };
 
 pub const EventPlayerDied = struct {
-  player_controller_id: EntityId,
+  player_controller_id: Gbe.EntityId,
 };
 
 pub const EventTakeDamage = struct {
-  inflictor_player_controller_id: ?EntityId,
-  self_id: EntityId,
+  inflictor_player_controller_id: ?Gbe.EntityId,
+  self_id: Gbe.EntityId,
   amount: u32,
 };

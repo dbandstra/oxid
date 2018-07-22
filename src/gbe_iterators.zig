@@ -1,15 +1,13 @@
-const ComponentList = @import("game.zig").ComponentList;
-const ComponentObject = @import("game.zig").ComponentObject;
-const EntityId = @import("game.zig").EntityId;
+const Gbe = @import("gbe.zig");
 
 pub fn ComponentObjectIterator(comptime T: type) type {
   return struct {
     const Self = this;
 
-    list: *ComponentList(T),
+    list: *Gbe.ComponentList(T),
     index: usize,
 
-    pub fn next(self: *Self) ?*ComponentObject(T) {
+    pub fn next(self: *Self) ?*Gbe.ComponentObject(T) {
       for (self.list.objects[self.index..self.list.count]) |*object, i| {
         if (object.is_active) {
           self.index += i + 1;
@@ -20,7 +18,7 @@ pub fn ComponentObjectIterator(comptime T: type) type {
       return null;
     }
 
-    pub fn init(list: *ComponentList(T)) Self {
+    pub fn init(list: *Gbe.ComponentList(T)) Self {
       return Self{
         .list = list,
         .index = 0,
@@ -38,13 +36,13 @@ pub fn EventIterator(comptime T: type, comptime field: []const u8) type {
   return struct {
     const Self = this;
 
-    list: *ComponentList(T),
-    entity_id: EntityId,
+    list: *Gbe.ComponentList(T),
+    entity_id: Gbe.EntityId,
     index: usize,
 
     pub fn next(self: *Self) ?*T {
       for (self.list.objects[self.index..self.list.count]) |*object, i| {
-        if (object.is_active and EntityId.eql(@field(&object.data, field), self.entity_id)) {
+        if (object.is_active and Gbe.EntityId.eql(@field(&object.data, field), self.entity_id)) {
           self.index += i + 1;
           return &object.data;
         }
@@ -53,7 +51,7 @@ pub fn EventIterator(comptime T: type, comptime field: []const u8) type {
       return null;
     }
 
-    pub fn init(list: *ComponentList(T), entity_id: EntityId) Self {
+    pub fn init(list: *Gbe.ComponentList(T), entity_id: Gbe.EntityId) Self {
       return Self{
         .list = list,
         .entity_id = entity_id,

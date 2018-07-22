@@ -2,10 +2,10 @@ const std = @import("std");
 const Math = @import("math.zig");
 const abs_boxes_overlap = @import("boxes_overlap.zig").abs_boxes_overlap;
 const boxes_overlap = @import("boxes_overlap.zig").boxes_overlap;
-const Constants = @import("game_constants.zig");
+const GbeConstants = @import("gbe_constants.zig");
+const Gbe = @import("gbe.zig");
 const LEVEL = @import("game_level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
-const EntityId = @import("game.zig").EntityId;
 const C = @import("game_components.zig");
 const Prototypes = @import("game_prototypes.zig");
 
@@ -17,7 +17,7 @@ pub fn phys_in_wall(phys: *C.PhysObject, pos: Math.Vec2) bool {
 const MoveGroupMember = struct{
   phys: *C.PhysObject,
   next: ?*MoveGroupMember,
-  entity_id: EntityId,
+  entity_id: Gbe.EntityId,
   progress: u31,
   step: u31,
 };
@@ -27,14 +27,14 @@ const MoveGroup = struct{
   is_active: bool,
 };
 
-var move_group_members: [Constants.MaxComponentsPerType]MoveGroupMember = undefined;
-var move_groups: [Constants.MaxComponentsPerType]MoveGroup = undefined;
+var move_group_members: [GbeConstants.MaxComponentsPerType]MoveGroupMember = undefined;
+var move_groups: [GbeConstants.MaxComponentsPerType]MoveGroup = undefined;
 
 pub fn physics_frame(gs: *GameSession) void {
   // calculate move bboxes
-  var it = gs.iter(C.PhysObject); while (it.next()) |object| {
+  var it = gs.gbe.iter(C.PhysObject); while (it.next()) |object| {
     const phys = &object.data;
-    const transform = gs.find(object.entity_id, C.Transform) orelse continue;
+    const transform = gs.gbe.find(object.entity_id, C.Transform) orelse continue;
     phys.internal.move_bbox.mins = Math.Vec2.add(transform.pos, phys.entity_bbox.mins);
     phys.internal.move_bbox.maxs = Math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
     if (phys.speed != 0) {
@@ -64,7 +64,7 @@ pub fn physics_frame(gs: *GameSession) void {
   // group intersecting moves
   var num_move_groups: usize = 0;
   var i: usize = 0;
-  it = gs.iter(C.PhysObject); while (it.next()) |object| : (i += 1) {
+  it = gs.gbe.iter(C.PhysObject); while (it.next()) |object| : (i += 1) {
     const phys = &object.data;
     var my_move_group: ?*MoveGroup = null;
     // try to add to an existing move_group
@@ -184,7 +184,7 @@ pub fn physics_frame(gs: *GameSession) void {
 
       if (lowest) |m| {
         // try to move this guy one subpixel
-        const transform = gs.find(m.entity_id, C.Transform).?;
+        const transform = gs.gbe.find(m.entity_id, C.Transform).?;
         var new_pos = Math.Vec2.add(transform.pos, Math.Direction.normal(m.phys.facing));
 
         // if push_dir differs from velocity direction, and we can move in that
@@ -204,7 +204,7 @@ pub fn physics_frame(gs: *GameSession) void {
         if (phys_in_wall(m.phys, new_pos)) {
           Prototypes.EventCollide.spawn(gs, C.EventCollide{
             .self_id = m.entity_id,
-            .other_id = EntityId{ .id = 0 },
+            .other_id = Gbe.EntityId{ .id = 0 },
             .propelled = true,
           });
           hit_something = true;
@@ -213,7 +213,7 @@ pub fn physics_frame(gs: *GameSession) void {
         var other: ?*MoveGroupMember = move_group.head;
         while (other) |o| : (other = o.next) {
           if (could_objects_collide(m.entity_id, m.phys, o.entity_id, o.phys)) {
-            const other_transform = gs.find(o.entity_id, C.Transform).?;
+            const other_transform = gs.gbe.find(o.entity_id, C.Transform).?;
             if (boxes_overlap(
               new_pos, m.phys.entity_bbox,
               other_transform.pos, o.phys.entity_bbox,
@@ -240,7 +240,7 @@ pub fn physics_frame(gs: *GameSession) void {
   assert_no_overlaps(gs);
 }
 
-fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
+fn collide(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) void {
   if (find_collision_event(gs, self_id, other_id)) |event_collide| {
     event_collide.propelled = true;
   } else {
@@ -260,9 +260,9 @@ fn collide(gs: *GameSession, self_id: EntityId, other_id: EntityId) void {
   }
 }
 
-fn find_collision_event(gs: *GameSession, self_id: EntityId, other_id: EntityId) ?*C.EventCollide {
-  var it = gs.eventIter(C.EventCollide, "self_id", self_id); while (it.next()) |event| {
-    if (EntityId.eql(event.other_id, other_id)) {
+fn find_collision_event(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) ?*C.EventCollide {
+  var it = gs.gbe.eventIter(C.EventCollide, "self_id", self_id); while (it.next()) |event| {
+    if (Gbe.EntityId.eql(event.other_id, other_id)) {
       return event;
     }
   }
@@ -301,18 +301,18 @@ fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
 
 // a and b params in this function should be commutative
 fn could_objects_collide(
-  a_id: EntityId,
+  a_id: Gbe.EntityId,
   a_phys: *C.PhysObject,
-  b_id: EntityId,
+  b_id: Gbe.EntityId,
   b_phys: *C.PhysObject,
 ) bool {
-  if (EntityId.eql(a_id, b_id)) {
+  if (Gbe.EntityId.eql(a_id, b_id)) {
     return false;
   }
-  if (EntityId.eql(a_id, b_phys.owner_id)) {
+  if (Gbe.EntityId.eql(a_id, b_phys.owner_id)) {
     return false;
   }
-  if (EntityId.eql(a_phys.owner_id, b_id)) {
+  if (Gbe.EntityId.eql(a_phys.owner_id, b_id)) {
     return false;
   }
   if ((a_phys.flags & b_phys.ignore_flags) != 0) {
@@ -325,13 +325,13 @@ fn could_objects_collide(
 }
 
 fn assert_no_overlaps(gs: *GameSession) void {
-  var it = gs.iter(C.PhysObject); while (it.next()) |self| {
-    const self_transform = gs.find(self.entity_id, C.Transform) orelse continue;
-    var it2 = gs.iter(C.PhysObject); while (it2.next()) |other| {
+  var it = gs.gbe.iter(C.PhysObject); while (it.next()) |self| {
+    const self_transform = gs.gbe.find(self.entity_id, C.Transform) orelse continue;
+    var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |other| {
       if (!could_objects_collide(self.entity_id, &self.data, other.entity_id, &other.data)) {
         continue;
       }
-      const other_transform = gs.find(other.entity_id, C.Transform) orelse continue;
+      const other_transform = gs.gbe.find(other.entity_id, C.Transform) orelse continue;
       if (boxes_overlap(
         self_transform.pos, self.data.entity_bbox,
         other_transform.pos, other.data.entity_bbox,

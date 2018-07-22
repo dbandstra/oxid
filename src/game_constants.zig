@@ -1,10 +1,3 @@
-// limits
-
-pub const MaxRemovalsPerFrame: usize = 1000;
-pub const MaxComponentsPerType: usize = 1000; // FIXME - different for each type
-
-// game
-
 pub const EnemySpeedTicks = 12*60; // every 12 seconds, increase monster speed
 pub const MaxEnemySpeedLevel = 4;
 pub const PickupSpawnTime = 45*60; // spawn a new pickup every 45 seconds

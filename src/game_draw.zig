@@ -11,25 +11,24 @@ const Draw = @import("draw.zig");
 const Graphic = @import("graphics.zig").Graphic;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const font_drawstring = @import("font.zig").font_drawstring;
-const ComponentObject = @import("game.zig").ComponentObject;
-const EntityId = @import("game.zig").EntityId;
-const Constants = @import("game_constants.zig");
+const GbeConstants = @import("gbe_constants.zig");
+const Gbe = @import("gbe.zig");
 const GRIDSIZE_PIXELS = @import("game_level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
 const C = @import("game_components.zig");
 
 const SortItem = struct {
-  object: *ComponentObject(C.Drawable),
+  object: *Gbe.ComponentObject(C.Drawable),
   z_index: u32,
 };
 
 pub fn drawGame(g: *GameState) void {
   const gs = &g.session;
   // sort drawables
-  var sortarray: [Constants.MaxComponentsPerType]SortItem = undefined;
+  var sortarray: [GbeConstants.MaxComponentsPerType]SortItem = undefined;
   var num_drawables: usize = 0;
-  var it = gs.iter(C.Drawable); while (it.next()) |object| {
+  var it = gs.gbe.iter(C.Drawable); while (it.next()) |object| {
     if (object.is_active) {
       sortarray[num_drawables] = SortItem{
         .object = object,
@@ -61,7 +60,7 @@ pub fn drawGame(g: *GameState) void {
   }
 
   if (g.render_move_boxes) {
-    var it2 = gs.iter(C.PhysObject); while (it2.next()) |object| {
+    var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
       const int = object.data.internal;
       const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
       const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
@@ -81,7 +80,7 @@ fn alternation(comptime T: type, variable: T, half_period: T) bool {
 // helper
 const DrawCreature = struct{
   const Params = struct{
-    entity_id: EntityId,
+    entity_id: Gbe.EntityId,
     spawning_timer: u32,
     graphic1: Graphic,
     graphic2: Graphic,
@@ -89,9 +88,9 @@ const DrawCreature = struct{
 
   fn run(g: *GameState, params: Params) void {
     const entity_id = params.entity_id;
-    const creature = g.session.find(entity_id, C.Creature) orelse return;
-    const phys = g.session.find(entity_id, C.PhysObject) orelse return;
-    const transform = g.session.find(entity_id, C.Transform) orelse return;
+    const creature = g.session.gbe.find(entity_id, C.Creature) orelse return;
+    const phys = g.session.gbe.find(entity_id, C.PhysObject) orelse return;
+    const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
 
     if (params.spawning_timer > 0) {
       const graphic = if (alternation(u32, params.spawning_timer, 4)) Graphic.Spawn1 else Graphic.Spawn2;
@@ -117,15 +116,15 @@ const DrawCreature = struct{
   }
 };
 
-fn drawBullet(g: *GameState, entity_id: EntityId, graphic: Graphic) void {
-  const phys = g.session.find(entity_id, C.PhysObject) orelse return;
-  const transform = g.session.find(entity_id, C.Transform) orelse return;
+fn drawBullet(g: *GameState, entity_id: Gbe.EntityId, graphic: Graphic) void {
+  const phys = g.session.gbe.find(entity_id, C.PhysObject) orelse return;
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   drawBlock(g, transform.pos, graphic, getDirTransform(phys.facing));
 }
 
-fn drawSoldier(g: *GameState, entity_id: EntityId) void {
-  const player = g.session.find(entity_id, C.Player) orelse return;
-  const transform = g.session.find(entity_id, C.Transform) orelse return;
+fn drawSoldier(g: *GameState, entity_id: Gbe.EntityId) void {
+  const player = g.session.gbe.find(entity_id, C.Player) orelse return;
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   if (player.dying_timer > 0) {
     if (player.dying_timer > 15) {
       const graphic = if (alternation(u32, player.dying_timer, 2)) Graphic.ManDying1 else Graphic.ManDying2;
@@ -147,13 +146,13 @@ fn drawSoldier(g: *GameState, entity_id: EntityId) void {
   });
 }
 
-fn drawSoldierCorpse(g: *GameState, entity_id: EntityId) void {
-  const transform = g.session.find(entity_id, C.Transform) orelse return;
+fn drawSoldierCorpse(g: *GameState, entity_id: Gbe.EntityId) void {
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   drawBlock(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
 }
 
-fn drawSpider(g: *GameState, entity_id: EntityId) void {
-  const monster = g.session.find(entity_id, C.Monster) orelse return;
+fn drawSpider(g: *GameState, entity_id: Gbe.EntityId) void {
+  const monster = g.session.gbe.find(entity_id, C.Monster) orelse return;
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = monster.spawning_timer,
@@ -162,8 +161,8 @@ fn drawSpider(g: *GameState, entity_id: EntityId) void {
   });
 }
 
-fn drawSquid(g: *GameState, entity_id: EntityId) void {
-  const monster = g.session.find(entity_id, C.Monster) orelse return;
+fn drawSquid(g: *GameState, entity_id: Gbe.EntityId) void {
+  const monster = g.session.gbe.find(entity_id, C.Monster) orelse return;
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = monster.spawning_timer,
@@ -172,18 +171,18 @@ fn drawSquid(g: *GameState, entity_id: EntityId) void {
   });
 }
 
-pub fn drawAnimation(g: *GameState, entity_id: EntityId) void {
-  const animation = g.session.find(entity_id, C.Animation) orelse return;
-  const transform = g.session.find(entity_id, C.Transform) orelse return;
+pub fn drawAnimation(g: *GameState, entity_id: Gbe.EntityId) void {
+  const animation = g.session.gbe.find(entity_id, C.Animation) orelse return;
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   const animcfg = getSimpleAnim(animation.simple_anim);
   std.debug.assert(animation.frame_index < animcfg.frames.len);
   const graphic = animcfg.frames[animation.frame_index];
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
 
-pub fn drawPickup(g: *GameState, entity_id: EntityId) void {
-  const pickup = g.session.find(entity_id, C.Pickup) orelse return;
-  const transform = g.session.find(entity_id, C.Transform) orelse return;
+pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
+  const pickup = g.session.gbe.find(entity_id, C.Pickup) orelse return;
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   const graphic = switch (pickup.pickup_type) {
     C.Pickup.Type.PowerUp => Graphic.PowerUp,
     C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
@@ -213,7 +212,7 @@ pub fn drawMap(g: *GameState) void {
 
 pub fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
-  const pc_maybe = if (g.session.iter(C.PlayerController).next()) |object| &object.data else null;
+  const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
   Draw.rect(g, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
     .Solid = Draw.SolidParams{

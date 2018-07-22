@@ -1,8 +1,8 @@
 const std = @import("std");
 const Math = @import("math.zig");
+const Gbe = @import("gbe.zig");
 const Constants = @import("game_constants.zig");
 const GameSession = @import("game.zig").GameSession;
-const EntityId = @import("game.zig").EntityId;
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const TerrainType = @import("game_level.zig").TerrainType;
 const LEVEL = @import("game_level.zig").LEVEL;
@@ -17,7 +17,7 @@ pub fn game_init(gs: *GameSession) void {
   game_spawn_player(gs, player_controller_id);
 }
 
-pub fn game_spawn_player(gs: *GameSession, player_controller_id: EntityId) void {
+pub fn game_spawn_player(gs: *GameSession, player_controller_id: Gbe.EntityId) void {
   _ = Prototypes.Player.spawn(gs, Prototypes.Player.Params{
     .player_controller_id = player_controller_id,
     .pos = Math.Vec2.init(
@@ -78,8 +78,8 @@ fn pick_spawn_locations(gs: *GameSession, out_gridlocs: []Math.Vec2) void {
       }
       inf0 += 1;
 
-      out_loc.x = gs.getRand().range(i32, 0, @intCast(i32, LEVEL.w));
-      out_loc.y = gs.getRand().range(i32, 0, @intCast(i32, LEVEL.h));
+      out_loc.x = gs.gbe.getRand().range(i32, 0, @intCast(i32, LEVEL.w));
+      out_loc.y = gs.gbe.getRand().range(i32, 0, @intCast(i32, LEVEL.h));
 
       if (LEVEL.get_grid_terrain_type(out_loc.*) != TerrainType.Floor) {
         continue;

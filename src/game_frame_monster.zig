@@ -1,10 +1,11 @@
 const std = @import("std");
 const lessThanField = @import("util.zig").lessThanField;
 const Math = @import("math.zig");
+const Gbe = @import("gbe.zig");
+const GbeSystem = @import("gbe_system.zig");
 const GRIDSIZE_SUBPIXELS = @import("game_level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("game_level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
-const EntityId = @import("game.zig").EntityId;
 const decrementTimer = @import("game_frame.zig").decrementTimer;
 const phys_in_wall = @import("game_physics.zig").phys_in_wall;
 const C = @import("game_components.zig");
@@ -12,35 +13,29 @@ const Prototypes = @import("game_prototypes.zig");
 
 pub const MonsterMovementSystem = struct{
   pub const SystemData = struct{
+    id: Gbe.EntityId,
     creature: *C.Creature,
     phys: *C.PhysObject,
     monster: *C.Monster,
     transform: *C.Transform,
   };
 
-  pub fn run(gs: *GameSession) void {
-    // can i make this outer loop not tied to a hard coded component?
-    // it should use reflection and choose the best one?
-    var it = gs.iter(C.Monster); while (it.next()) |object| {
-      const self = SystemData{
-        .monster = &object.data,
-        .creature = gs.find(object.entity_id, C.Creature) orelse continue,
-        .phys = gs.find(object.entity_id, C.PhysObject) orelse continue,
-        .transform = gs.find(object.entity_id, C.Transform) orelse continue,
-      };
-      if (decrementTimer(&self.monster.spawning_timer)) {
-        self.creature.hit_points = self.monster.full_hit_points;
-      } else if (self.monster.spawning_timer > 0) {
-        self.phys.speed = 0;
-        self.phys.push_dir = null;
-      } else {
-        monsterMove(gs, object.entity_id, self);
-        monsterShoot(gs, object.entity_id, self);
-      }
+  pub const run = GbeSystem.build(GameSession, SystemData, C.Monster, think);
+
+  fn think(gs: *GameSession, self: SystemData) bool {
+    if (decrementTimer(&self.monster.spawning_timer)) {
+      self.creature.hit_points = self.monster.full_hit_points;
+    } else if (self.monster.spawning_timer > 0) {
+      self.phys.speed = 0;
+      self.phys.push_dir = null;
+    } else {
+      monsterMove(gs, self);
+      monsterShoot(gs, self);
     }
+    return true;
   }
 
-  fn monsterMove(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn monsterMove(gs: *GameSession, self: SystemData) void {
     const gc = gs.getGameController();
 
     self.phys.push_dir = null;
@@ -97,7 +92,7 @@ pub const MonsterMovementSystem = struct{
     self.phys.speed = @intCast(i32, speed);
   }
 
-  fn monsterShoot(gs: *GameSession, self_id: EntityId, self: SystemData) void {
+  fn monsterShoot(gs: *GameSession, self: SystemData) void {
     const gc = gs.getGameController();
     if (gc.freeze_monsters_timer > 0) {
       return;
@@ -112,21 +107,21 @@ pub const MonsterMovementSystem = struct{
       const bullet_pos = Math.Vec2.add(pos, ofs);
       _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
         .inflictor_player_controller_id = null,
-        .owner_id = self_id,
+        .owner_id = self.id,
         .pos = bullet_pos,
         .facing = self.phys.facing,
         .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
         .cluster_size = 1,
       });
-      self.monster.next_shoot_timer = gs.getRand().range(u32, 75, 400);
+      self.monster.next_shoot_timer = gs.gbe.getRand().range(u32, 75, 400);
     }
   }
 
   // this function needs more args if this is going to be any good
   fn getChaseTarget(gs: *GameSession) ?Math.Vec2 {
     // chase the first player in the entity list
-    if (gs.iter(C.Player).next()) |player| {
-      if (gs.find(player.entity_id, C.Transform)) |player_transform| {
+    if (gs.gbe.iter(C.Player).next()) |player| {
+      if (gs.gbe.find(player.entity_id, C.Transform)) |player_transform| {
         return player_transform.pos;
       }
     }
@@ -198,7 +193,7 @@ pub const MonsterMovementSystem = struct{
       }
       break :blk total;
     };
-    var r = gs.getRand().range(u32, 0, total_score);
+    var r = gs.gbe.getRand().range(u32, 0, total_score);
     for (choices.choices[0..choices.num_choices]) |choice| {
       if (r < choice.score) {
         return choice.direction;
@@ -247,31 +242,29 @@ const Choices = struct{
 };
 
 pub const MonsterTouchResponseSystem = struct{
-  pub fn run(gs: *GameSession) void {
-    var it = gs.iter(C.Monster); while (it.next()) |object| {
-      monsterCollide(gs, object.entity_id, &object.data);
-    }
-  }
+  pub const SystemData = struct{
+    id: Gbe.EntityId,
+    phys: *C.PhysObject,
+    monster: *C.Monster,
+  };
 
-  fn monsterCollide(gs: *GameSession, self_id: EntityId, self_monster: *C.Monster) void {
-    const self_creature = gs.find(self_id, C.Creature) orelse return;
-    const self_phys = gs.find(self_id, C.PhysObject) orelse return;
-    const self_transform = gs.find(self_id, C.Transform) orelse return;
+  pub const run = GbeSystem.build(GameSession, SystemData, C.Monster, monsterCollide);
 
+  fn monsterCollide(gs: *GameSession, self: SystemData) bool {
     var hit_wall = false;
     var hit_creature = false;
 
-    var it = gs.eventIter(C.EventCollide, "self_id", self_id); while (it.next()) |event| {
-      if (EntityId.isZero(event.other_id)) {
+    var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
+      if (Gbe.EntityId.isZero(event.other_id)) {
         hit_wall = true;
       } else {
-        if (gs.find(event.other_id, C.Creature)) |other_creature| {
+        if (gs.gbe.find(event.other_id, C.Creature)) |other_creature| {
           if (event.propelled) {
             hit_creature = true;
           }
-          if (gs.find(event.other_id, C.Monster) == null) {
+          if (gs.gbe.find(event.other_id, C.Monster) == null) {
             // if it's a non-monster creature, inflict damage on it
-            if (self_monster.spawning_timer == 0) {
+            if (self.monster.spawning_timer == 0) {
               Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
                 .inflictor_player_controller_id = null,
                 .self_id = event.other_id,
@@ -282,10 +275,10 @@ pub const MonsterTouchResponseSystem = struct{
         }
       }
     }
-
     if (hit_creature) {
       // reverse direction
-      self_phys.facing = Math.Direction.invert(self_phys.facing);
+      self.phys.facing = Math.Direction.invert(self.phys.facing);
     }
+    return true;
   }
 };
