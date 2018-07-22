@@ -1,14 +1,5 @@
-const std = @import("std");
-const Allocator = std.mem.Allocator;
-
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
-const image = @import("../zigutils/src/image/image.zig");
-const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
-const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
-
-const Texture = @import("main.zig").Texture;
-const upload_texture = @import("main.zig").upload_texture;
+pub const GRAPHICS_FILENAME = "../assets/mytiles.pcx";
+pub const TRANSPARENT_COLOR_INDEX = 12;
 
 pub const Graphic = enum{
   Pit,
@@ -45,13 +36,13 @@ pub const Graphic = enum{
   SpeedUp,
 };
 
-const GraphicConfig = struct{
+pub const GraphicConfig = struct{
   tx: u32,
   ty: u32,
   fliph: bool,
 };
 
-fn getGraphicConfig(graphic: Graphic) GraphicConfig {
+pub fn getGraphicConfig(graphic: Graphic) GraphicConfig {
   return switch (graphic) {
     Graphic.Pit       => GraphicConfig{ .tx = 1, .ty = 1, .fliph = false },
     Graphic.PlaBullet => GraphicConfig{ .tx = 2, .ty = 2, .fliph = true },
@@ -125,85 +116,4 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
       .ticks_per_frame = 4,
     }
   };
-}
-
-pub const Graphics = struct{
-  background_colour: image.Pixel,
-  textures: [@memberCount(Graphic)]Texture,
-
-  pub fn texture(self: *Graphics, graphic: Graphic) *Texture {
-    return &self.textures[@enumToInt(graphic)];
-  }
-};
-
-// return an Image allocated in the low_allocator
-fn load_tileset(dsaf: *DoubleStackAllocatorFlat, out_background_colour: *image.Pixel) !*image.Image {
-  const high_mark = dsaf.get_high_mark();
-  defer dsaf.free_to_high_mark(high_mark);
-
-  const filename = "../assets/mytiles.pcx";
-  const TRANSPARENT_COLOR_INDEX = 12;
-
-  var source = MemoryInStream.init(@embedFile(filename));
-
-  // load pcx
-  const pcxInfo = try LoadPcx(MemoryInStream.ReadError).preload(&source.stream, &source.seekable);
-  const img = try image.createImage(&dsaf.high_allocator, image.Info{
-    .width = pcxInfo.width,
-    .height = pcxInfo.height,
-    .format = pcxBestStoreFormat(pcxInfo),
-  });
-  try LoadPcx(MemoryInStream.ReadError).load(&source.stream, &source.seekable, pcxInfo, img);
-
-  // load palette
-  const palette = try image.createPalette(&dsaf.high_allocator);
-  try LoadPcx(MemoryInStream.ReadError).loadPalette(&source.stream, &source.seekable, pcxInfo, palette);
-
-  // convert to true color image
-  const img2 = try image.createImage(&dsaf.low_allocator, image.Info{
-    .width = img.info.width,
-    .height = img.info.height,
-    .format = image.Format.RGBA,
-  });
-  image.convertToTrueColor(img2, img, palette, TRANSPARENT_COLOR_INDEX);
-
-  out_background_colour.* = image.getColor(palette.format, palette.data, TRANSPARENT_COLOR_INDEX);
-
-  return img2;
-}
-
-pub fn load_graphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void {
-  const low_mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(low_mark);
-
-  const tileset = try load_tileset(dsaf, &graphics.background_colour);
-
-  const tile = try image.createImage(&dsaf.low_allocator, image.Info{
-    .width = 16,
-    .height = 16,
-    .format = image.Format.RGBA,
-  });
-
-  for (@typeInfo(Graphic).Enum.fields) |field| {
-    const graphic = @intToEnum(Graphic, @intCast(@typeInfo(Graphic).Enum.tag_type, field.value));
-    const config = getGraphicConfig(graphic);
-    extract_tile(tile, tileset, config.tx, config.ty);
-    if (config.fliph) {
-      image.flipHorizontal(tile);
-    }
-    graphics.textures[field.value] = upload_texture(tile);
-  }
-}
-
-fn extract_tile(dest: *image.Image, source: *const image.Image, tx: u32, ty: u32) void {
-  var y: u32 = 0;
-  while (y < dest.info.height) : (y += 1) {
-    var x: u32 = 0;
-    while (x < dest.info.width) : (x += 1) {
-      const px = tx * dest.info.width + x;
-      const py = ty * dest.info.height + y;
-      const pixel = image.getPixel(source, px, py).?;
-      image.setPixel(dest, x, y, pixel);
-    }
-  }
 }

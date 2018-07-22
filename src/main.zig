@@ -9,8 +9,8 @@ const static_geometry = @import("static_geometry.zig");
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const image = @import("../zigutils/src/image/image.zig");
 
-const Graphics = @import("graphics.zig").Graphics;
-const load_graphics = @import("graphics.zig").load_graphics;
+const Graphics = @import("game_graphics.zig").Graphics;
+const loadGraphics = @import("game_graphics.zig").loadGraphics;
 const Font = @import("font.zig").Font;
 const load_font = @import("font.zig").load_font;
 const Draw = @import("draw.zig");
@@ -66,9 +66,9 @@ pub const Texture = struct{
   handle: c.GLuint,
 };
 
-pub fn upload_texture(img: *const image.Image) Texture {
+pub fn uploadTexture(img: *const image.Image) Texture {
   if (img.info.format == image.Format.INDEXED) {
-    @panic("upload_texture does not work on indexed-color images");
+    @panic("uploadTexture does not work on indexed-color images");
   }
   var texid: c.GLuint = undefined;
   c.glGenTextures(1, c.ptr(&texid));
@@ -160,7 +160,7 @@ pub fn main() !void {
   g.static_geometry = static_geometry.createStaticGeometry();
   defer g.static_geometry.destroy();
 
-  try load_graphics(dsaf, &g.graphics);
+  try loadGraphics(dsaf, &g.graphics);
   try load_font(dsaf, &g.font);
 
   var fb: c.GLuint = 0;

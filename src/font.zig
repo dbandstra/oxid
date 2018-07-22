@@ -11,7 +11,7 @@ const Math = @import("math.zig");
 
 const GameState = @import("main.zig").GameState;
 const Texture = @import("main.zig").Texture;
-const upload_texture = @import("main.zig").upload_texture;
+const uploadTexture = @import("main.zig").uploadTexture;
 
 const FONT_FILENAME = "../assets/font.pcx";
 const FONT_CHAR_WIDTH = 8;
@@ -62,7 +62,7 @@ pub fn load_font(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
 
   const fontset = try load_fontset(dsaf);
 
-  font.texture = upload_texture(fontset);
+  font.texture = uploadTexture(fontset);
 }
 
 pub fn font_drawchar(g: *GameState, pos: Math.Vec2, char: u8) void {
