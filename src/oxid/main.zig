@@ -1,30 +1,31 @@
 const std = @import("std");
 const assert = std.debug.assert;
-const c = @import("c.zig");
-const debug_gl = @import("debug_gl.zig");
-use @import("math3d.zig");
-const all_shaders = @import("all_shaders.zig");
-const static_geometry = @import("static_geometry.zig");
+const c = @import("../platform/c.zig");
+const debug_gl = @import("../platform/debug_gl.zig");
+use @import("../math3d.zig");
+const all_shaders = @import("../platform/all_shaders.zig");
+const static_geometry = @import("../platform/static_geometry.zig");
 
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const image = @import("../zigutils/src/image/image.zig");
+const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const image = @import("../../zigutils/src/image/image.zig");
 
-const Font = @import("font.zig").Font;
-const load_font = @import("font.zig").load_font;
-const Draw = @import("draw.zig");
-const Graphics = @import("oxid/graphics.zig").Graphics;
-const loadGraphics = @import("oxid/graphics.zig").loadGraphics;
-const GRIDSIZE_PIXELS = @import("oxid/level.zig").GRIDSIZE_PIXELS;
-const LEVEL = @import("oxid/level.zig").LEVEL;
-const GameInput = @import("oxid/game.zig").GameInput;
-const GameSession = @import("oxid/game.zig").GameSession;
-const InputEvent = @import("oxid/input.zig").InputEvent;
-const MonsterType = @import("oxid/init.zig").MonsterType;
-const game_init = @import("oxid/init.zig").game_init;
-const game_spawn_monsters = @import("oxid/init.zig").game_spawn_monsters;
-const game_frame = @import("oxid/frame.zig").game_frame;
-const game_input = @import("oxid/input.zig").game_input;
-const drawGame = @import("oxid/draw.zig").drawGame;
+const Platform = @import("../platform/platform.zig");
+const Font = @import("../font.zig").Font;
+const load_font = @import("../font.zig").load_font;
+const Draw = @import("../draw.zig");
+const Graphics = @import("graphics.zig").Graphics;
+const loadGraphics = @import("graphics.zig").loadGraphics;
+const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
+const LEVEL = @import("level.zig").LEVEL;
+const GameInput = @import("game.zig").GameInput;
+const GameSession = @import("game.zig").GameSession;
+const InputEvent = @import("input.zig").InputEvent;
+const MonsterType = @import("init.zig").MonsterType;
+const game_init = @import("init.zig").game_init;
+const game_spawn_monsters = @import("init.zig").game_spawn_monsters;
+const game_frame = @import("frame.zig").game_frame;
+const game_input = @import("input.zig").game_input;
+const drawGame = @import("draw.zig").drawGame;
 
 // See https://github.com/zig-lang/zig/issues/565
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
@@ -50,59 +51,14 @@ var dsaf_ = DoubleStackAllocatorFlat.init(dsaf_buffer[0..]);
 const dsaf = &dsaf_;
 
 pub const GameState = struct {
-  shaders: all_shaders.AllShaders,
-  static_geometry: static_geometry.StaticGeometry,
-  projection: Mat4x4,
+  platform_state: Platform.State,
   graphics: Graphics,
-  font: Font,
   session: GameSession,
   render_move_boxes: bool,
   paused: bool,
   fast_forward: bool,
 };
 pub var game_state: GameState = undefined;
-
-pub const Texture = struct{
-  handle: c.GLuint,
-};
-
-pub fn uploadTexture(img: *const image.Image) Texture {
-  if (img.info.format == image.Format.INDEXED) {
-    @panic("uploadTexture does not work on indexed-color images");
-  }
-  var texid: c.GLuint = undefined;
-  c.glGenTextures(1, c.ptr(&texid));
-  c.glBindTexture(c.GL_TEXTURE_2D, texid);
-  c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-  c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-  c.glTexParameterf(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
-  c.glTexParameterf(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
-  c.glPixelStorei(c.GL_PACK_ALIGNMENT, 4);
-  c.glTexImage2D(
-    c.GL_TEXTURE_2D, // target
-    0, // level
-    // internalFormat
-    switch (img.info.format) {
-      image.Format.RGB => @intCast(c.GLint, c.GL_RGB),
-      image.Format.RGBA => @intCast(c.GLint, c.GL_RGBA),
-      image.Format.INDEXED => unreachable, // FIXME
-    },
-    @intCast(c.GLsizei, img.info.width), // width
-    @intCast(c.GLsizei, img.info.height), // height
-    0, // border
-    // format
-    switch (img.info.format) {
-      image.Format.RGB => @intCast(c.GLenum, c.GL_RGB),
-      image.Format.RGBA => @intCast(c.GLenum, c.GL_RGBA),
-      image.Format.INDEXED => unreachable, // FIXME
-    },
-    c.GL_UNSIGNED_BYTE, // type
-    @ptrCast(*const c_void, &img.pixels[0]), // data
-  );
-  return Texture{
-    .handle = texid,
-  };
-}
 
 pub fn main() !void {
   if (c.SDL_Init(c.SDL_INIT_VIDEO) != 0) {
@@ -154,14 +110,14 @@ pub fn main() !void {
   g.session.init(rand_seed);
   game_init(&g.session);
 
-  g.shaders = try all_shaders.createAllShaders();
-  defer g.shaders.destroy();
+  g.platform_state.shaders = try all_shaders.createAllShaders();
+  defer g.platform_state.shaders.destroy();
 
-  g.static_geometry = static_geometry.createStaticGeometry();
-  defer g.static_geometry.destroy();
+  g.platform_state.static_geometry = static_geometry.createStaticGeometry();
+  defer g.platform_state.static_geometry.destroy();
 
   try loadGraphics(dsaf, &g.graphics);
-  try load_font(dsaf, &g.font);
+  try load_font(dsaf, &g.platform_state.font);
 
   var fb: c.GLuint = 0;
   c.glGenFramebuffers(1, c.ptr(&fb));
@@ -267,16 +223,16 @@ pub fn main() !void {
       }
     }
 
-    g.projection = mat4x4_ortho(0.0, @intToFloat(f32, VWIN_W), @intToFloat(f32, VWIN_H), 0.0);
+    g.platform_state.projection = mat4x4_ortho(0.0, @intToFloat(f32, VWIN_W), @intToFloat(f32, VWIN_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
     c.glViewport(0, 0, @intCast(c_int, VWIN_W), @intCast(c_int, VWIN_H));
     c.glClear(c.GL_COLOR_BUFFER_BIT);
     drawGame(g);
 
-    g.projection = mat4x4_ortho(0.0, @intToFloat(f32, WINDOW_W), @intToFloat(f32, WINDOW_H), 0.0);
+    g.platform_state.projection = mat4x4_ortho(0.0, @intToFloat(f32, WINDOW_W), @intToFloat(f32, WINDOW_H), 0.0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
     c.glViewport(0, 0, WINDOW_W, WINDOW_H);
-    Draw.rect(g, 0, 0, WINDOW_W, WINDOW_H, Draw.RectStyle{
+    Draw.rect(&g.platform_state, 0, 0, WINDOW_W, WINDOW_H, Draw.RectStyle{
       .Textured = Draw.TexturedParams{
         .tex_id = rt,
         .transform = Draw.Transform.FlipVertical,

@@ -9,7 +9,7 @@ pub fn build(b: *Builder) void {
   const test_step = b.step("test", "Run all tests");
   test_step.dependOn(&t.step);
 
-  var exe = b.addExecutable("oxid", "src/main.zig");
+  var exe = b.addExecutable("oxid", "src/oxid/main.zig");
   exe.setBuildMode(mode);
   exe.linkSystemLibrary("SDL2");
   exe.linkSystemLibrary("epoxy");

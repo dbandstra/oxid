@@ -4,8 +4,7 @@ const image = @import("../../zigutils/src/image/image.zig");
 const LoadPcx = @import("../../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
-const Texture = @import("../main.zig").Texture;
-const uploadTexture = @import("../main.zig").uploadTexture;
+const Platform = @import("../platform/platform.zig");
 
 const GRAPHICS_FILENAME = @import("graphics_config.zig").GRAPHICS_FILENAME;
 const TRANSPARENT_COLOR_INDEX = @import("graphics_config.zig").TRANSPARENT_COLOR_INDEX;
@@ -14,9 +13,9 @@ const getGraphicConfig = @import("graphics_config.zig").getGraphicConfig;
 
 pub const Graphics = struct{
   background_colour: image.Pixel,
-  textures: [@memberCount(Graphic)]Texture,
+  textures: [@memberCount(Graphic)]Platform.Texture,
 
-  pub fn texture(self: *Graphics, graphic: Graphic) *Texture {
+  pub fn texture(self: *Graphics, graphic: Graphic) *Platform.Texture {
     return &self.textures[@enumToInt(graphic)];
   }
 };
@@ -73,7 +72,7 @@ pub fn loadGraphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void 
     if (config.fliph) {
       image.flipHorizontal(tile);
     }
-    graphics.textures[field.value] = uploadTexture(tile);
+    graphics.textures[field.value] = Platform.uploadTexture(tile);
   }
 }
 

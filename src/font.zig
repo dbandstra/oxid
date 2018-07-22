@@ -1,4 +1,4 @@
-const c = @import("c.zig");
+const c = @import("platform/c.zig");
 use @import("math3d.zig");
 
 const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
@@ -8,10 +8,7 @@ const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
 const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
 const Math = @import("math.zig");
-
-const GameState = @import("main.zig").GameState;
-const Texture = @import("main.zig").Texture;
-const uploadTexture = @import("main.zig").uploadTexture;
+const Platform = @import("platform/platform.zig");
 
 const FONT_FILENAME = "../assets/font.pcx";
 const FONT_CHAR_WIDTH = 8;
@@ -20,7 +17,7 @@ const FONT_NUM_COLS = 16;
 const FONT_NUM_ROWS = 8;
 
 pub const Font = struct{
-  texture: Texture,
+  texture: Platform.Texture,
 };
 
 // return an Image allocated in the low_allocator
@@ -62,18 +59,19 @@ pub fn load_font(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
 
   const fontset = try load_fontset(dsaf);
 
-  font.texture = uploadTexture(fontset);
+  font.texture = Platform.uploadTexture(fontset);
 }
 
-pub fn font_drawchar(g: *GameState, pos: Math.Vec2, char: u8) void {
-  const texid = g.font.texture.handle;
+// TODO - move to platform
+pub fn font_drawchar(ps: *Platform.State, pos: Math.Vec2, char: u8) void {
+  const texid = ps.font.texture.handle;
   const x = @intToFloat(f32, pos.x);
   const y = @intToFloat(f32, pos.y);
   const w = FONT_CHAR_WIDTH;
   const h = FONT_CHAR_HEIGHT;
 
   const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
-  const mvp = g.projection.mult(model);
+  const mvp = ps.projection.mult(model);
 
   const tx = char % FONT_NUM_COLS;
   const ty = char / FONT_NUM_COLS;
@@ -85,22 +83,22 @@ pub fn font_drawchar(g: *GameState, pos: Math.Vec2, char: u8) void {
   const dims_x = 1 / f32(FONT_NUM_COLS);
   const dims_y = 1 / f32(FONT_NUM_ROWS);
 
-  g.shaders.texture.bind();
-  g.shaders.texture.set_uniform_int(g.shaders.texture_uniform_tex, 0);
-  g.shaders.texture.set_uniform_mat4x4(g.shaders.texture_uniform_mvp, mvp);
-  g.shaders.texture.set_uniform_vec2(g.shaders.texture_uniform_region_pos, pos_x, pos_y);
-  g.shaders.texture.set_uniform_vec2(g.shaders.texture_uniform_region_dims, dims_x, dims_y);
+  ps.shaders.texture.bind();
+  ps.shaders.texture.set_uniform_int(ps.shaders.texture_uniform_tex, 0);
+  ps.shaders.texture.set_uniform_mat4x4(ps.shaders.texture_uniform_mvp, mvp);
+  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_pos, pos_x, pos_y);
+  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_dims, dims_x, dims_y);
 
-  if (g.shaders.texture_attrib_position >= 0) { // ?
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_vertex_buffer);
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.texture_attrib_position));
-    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.texture_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
+  if (ps.shaders.texture_attrib_position >= 0) { // ?
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, ps.static_geometry.rect_2d_vertex_buffer);
+    c.glEnableVertexAttribArray(@intCast(c.GLuint, ps.shaders.texture_attrib_position));
+    c.glVertexAttribPointer(@intCast(c.GLuint, ps.shaders.texture_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
   }
 
-  if (g.shaders.texture_attrib_tex_coord >= 0) { // ?
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, g.static_geometry.rect_2d_tex_coord_buffer_normal);
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, g.shaders.texture_attrib_tex_coord));
-    c.glVertexAttribPointer(@intCast(c.GLuint, g.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+  if (ps.shaders.texture_attrib_tex_coord >= 0) { // ?
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, ps.static_geometry.rect_2d_tex_coord_buffer_normal);
+    c.glEnableVertexAttribArray(@intCast(c.GLuint, ps.shaders.texture_attrib_tex_coord));
+    c.glVertexAttribPointer(@intCast(c.GLuint, ps.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
   }
 
   c.glActiveTexture(c.GL_TEXTURE0);
@@ -109,11 +107,11 @@ pub fn font_drawchar(g: *GameState, pos: Math.Vec2, char: u8) void {
   c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
 }
 
-pub fn font_drawstring(g: *GameState, pos: Math.Vec2, string: []const u8) void {
+pub fn font_drawstring(ps: *Platform.State, pos: Math.Vec2, string: []const u8) void {
   var x = pos.x;
   var y = pos.y;
   for (string) |char| {
-    font_drawchar(g, Math.Vec2.init(x, y), char);
+    font_drawchar(ps, Math.Vec2.init(x, y), char);
     x += FONT_CHAR_WIDTH;
   }
 }

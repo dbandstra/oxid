@@ -1,6 +1,6 @@
 const os = @import("std").os;
 const c = @import("c.zig");
-const math3d = @import("math3d.zig");
+const math3d = @import("../math3d.zig");
 const debug_gl = @import("debug_gl.zig");
 const Vec4 = math3d.Vec4;
 const Mat4x4 = math3d.Mat4x4;
