@@ -68,9 +68,10 @@ pub fn game_frame(gs: *GameSession) void {
   // player controller reacts to 'player died' event
   PlayerControllerReactSystem.run(gs);
 
+  removeAll(gs, C.EventAwardPoints);
   removeAll(gs, C.EventCollide);
   removeAll(gs, C.EventConferBonus);
-  removeAll(gs, C.EventAwardPoints);
+  removeAll(gs, C.EventMonsterDied);
   removeAll(gs, C.EventPlayerDied);
   removeAll(gs, C.EventTakeDamage);
 
@@ -95,6 +96,7 @@ const GameControllerSystem = struct{
         game_spawn_monsters(gs, wave.spiders, MonsterType.Spider);
         game_spawn_monsters(gs, wave.squids, MonsterType.Squid);
         self.gc.enemy_speed_level = wave.speed;
+        self.gc.monster_count = wave.spiders + wave.squids;
       } else {
         game_spawn_monsters(gs, 1, MonsterType.Spider);
       }
@@ -130,6 +132,23 @@ const GameControllerReactSystem = struct{
   fn think(gs: *GameSession, self: SystemData) bool {
     if (gs.gbe.iter(C.EventPlayerDied).next() != null) {
       self.gc.freeze_monsters_timer = Constants.MonsterFreezeTimer;
+    }
+    var it = gs.gbe.iter(C.EventMonsterDied); while (it.next()) |object| {
+      if (self.gc.monster_count > 0) {
+        self.gc.monster_count -= 1;
+        if (self.gc.monster_count == 4 and self.gc.enemy_speed_level < 1) {
+          self.gc.enemy_speed_level = 1;
+        }
+        if (self.gc.monster_count == 3 and self.gc.enemy_speed_level < 2) {
+          self.gc.enemy_speed_level = 2;
+        }
+        if (self.gc.monster_count == 2 and self.gc.enemy_speed_level < 3) {
+          self.gc.enemy_speed_level = 3;
+        }
+        if (self.gc.monster_count == 1 and self.gc.enemy_speed_level < 4) {
+          self.gc.enemy_speed_level = 4;
+        }
+      }
     }
     return true;
   }
@@ -289,6 +308,9 @@ const CreatureTakeDamageSystem = struct{
           return true;
         } else {
           if (self.monster) |self_monster| {
+            Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{
+              .unused = 0,
+            });
             if (event.inflictor_player_controller_id) |player_controller_id| {
               Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
                 .player_controller_id = player_controller_id,

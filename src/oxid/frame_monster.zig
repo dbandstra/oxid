@@ -45,6 +45,10 @@ pub const MonsterMovementSystem = struct{
       return;
     }
 
+    if (gc.monster_count < 5) {
+      self.monster.personality = C.Monster.Personality.Chase;
+    }
+
     const speed
       = self.creature.walk_speed
       + self.creature.walk_speed * gc.enemy_speed_level / 2;

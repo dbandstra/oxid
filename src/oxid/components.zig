@@ -46,6 +46,7 @@ pub const Monster = struct {
 };
 
 pub const GameController = struct {
+  monster_count: u32,
   enemy_speed_level: u31,
   enemy_speed_timer: u32,
   wave_index: u32,
@@ -167,6 +168,10 @@ pub const EventConferBonus = struct {
 pub const EventAwardPoints = struct {
   player_controller_id: Gbe.EntityId,
   points: u32,
+};
+
+pub const EventMonsterDied = struct {
+  unused: u32, // FIXME
 };
 
 pub const EventPlayerDied = struct {

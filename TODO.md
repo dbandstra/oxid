@@ -2,7 +2,6 @@ GAMEPLAY:
 - if a monster starts to spawn where you're standing, you get stuck
 - enemies should start at faster speeds on later levels
 - you can't face a pit if there is no space
-- verminian trap: enemy speedup doesn't seem to be based on time. the last 3 or 4 enemies killed will trigger speedup. i think they also all go into chase mode at this point
 - remove the pits
 - it looks too much like a glitch when the enemies freeze after you die
 

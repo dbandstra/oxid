@@ -32,6 +32,7 @@ pub const GameController = struct{
     const entity_id = gs.gbe.spawn();
 
     gs.gbe.addComponent(entity_id, C.GameController{
+      .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
       .wave_index = 0,
@@ -372,7 +373,7 @@ pub const Pickup = struct{
   }
 };
 
-fn Event(comptime T: type, comptime list_name: []const u8) type {
+fn Event(comptime T: type) type {
   return struct {
     fn spawn(gs: *GameSession, body: T) void {
       gs.gbe.addComponent(gs.gbe.spawn(), body);
@@ -380,8 +381,9 @@ fn Event(comptime T: type, comptime list_name: []const u8) type {
   };
 }
 
-pub const EventCollide = Event(C.EventCollide, "event_collides");
-pub const EventConferBonus = Event(C.EventConferBonus, "event_confer_bonuses");
-pub const EventAwardPoints = Event(C.EventAwardPoints, "event_award_pointses");
-pub const EventTakeDamage = Event(C.EventTakeDamage, "event_take_damages");
-pub const EventPlayerDied = Event(C.EventPlayerDied, "event_player_dieds");
+pub const EventAwardPoints = Event(C.EventAwardPoints);
+pub const EventCollide = Event(C.EventCollide);
+pub const EventConferBonus = Event(C.EventConferBonus);
+pub const EventMonsterDied = Event(C.EventMonsterDied);
+pub const EventPlayerDied = Event(C.EventPlayerDied);
+pub const EventTakeDamage = Event(C.EventTakeDamage);

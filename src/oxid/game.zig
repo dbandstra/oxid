@@ -18,9 +18,10 @@ const COMPONENT_TYPES = []const type{
   C.Player,
   C.PlayerController,
   C.Transform,
+  C.EventAwardPoints,
   C.EventCollide,
   C.EventConferBonus,
-  C.EventAwardPoints,
+  C.EventMonsterDied,
   C.EventPlayerDied,
   C.EventTakeDamage,
 };
@@ -38,9 +39,10 @@ pub const GameComponentLists = struct {
   Player: Gbe.ComponentList(C.Player),
   PlayerController: Gbe.ComponentList(C.PlayerController),
   Transform: Gbe.ComponentList(C.Transform),
+  EventAwardPoints: Gbe.ComponentList(C.EventAwardPoints),
   EventCollide: Gbe.ComponentList(C.EventCollide),
   EventConferBonus: Gbe.ComponentList(C.EventConferBonus),
-  EventAwardPoints: Gbe.ComponentList(C.EventAwardPoints),
+  EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage),
 };
