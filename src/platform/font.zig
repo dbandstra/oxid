@@ -1,16 +1,16 @@
-const c = @import("platform/c.zig");
+const c = @import("c.zig");
 use @import("math3d.zig");
 
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const MemoryInStream = @import("../zigutils/src/MemoryInStream.zig").MemoryInStream;
-const image = @import("../zigutils/src/image/image.zig");
-const LoadPcx = @import("../zigutils/src/image/pcx.zig").LoadPcx;
-const pcxBestStoreFormat = @import("../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
+const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const MemoryInStream = @import("../../zigutils/src/MemoryInStream.zig").MemoryInStream;
+const image = @import("../../zigutils/src/image/image.zig");
+const LoadPcx = @import("../../zigutils/src/image/pcx.zig").LoadPcx;
+const pcxBestStoreFormat = @import("../../zigutils/src/image/pcx.zig").pcxBestStoreFormat;
 
-const Math = @import("math.zig");
-const Platform = @import("platform/platform.zig");
+const Math = @import("../math.zig");
+const Platform = @import("platform.zig");
 
-const FONT_FILENAME = "../assets/font.pcx";
+const FONT_FILENAME = "../../assets/font.pcx";
 const FONT_CHAR_WIDTH = 8;
 const FONT_CHAR_HEIGHT = 8;
 const FONT_NUM_COLS = 16;

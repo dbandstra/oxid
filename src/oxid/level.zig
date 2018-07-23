@@ -12,12 +12,12 @@ pub const TerrainType = enum{
   Pit, // blocks creatures but not bullets
 };
 
-pub fn Level(comptime w: usize, comptime h: usize) type {
+pub fn Level(comptime w: u32, comptime h: u32) type {
   return struct {
     const Self = this;
 
-    w: usize,
-    h: usize,
+    w: u32,
+    h: u32,
     data: [w*h]u8,
 
     pub fn init(data: [w*h]u8) Self {

@@ -1,10 +1,11 @@
 const std = @import("std");
 const MemoryOutStream = @import("../../zigutils/src/MemoryOutStream.zig").MemoryOutStream;
-use @import("../math3d.zig");
+use @import("../platform/math3d.zig"); // FIXME
 const lessThanField = @import("../util.zig").lessThanField;
 const Math = @import("../math.zig");
 const Draw = @import("../draw.zig");
-const font_drawstring = @import("../font.zig").font_drawstring;
+const font_drawstring = @import("../platform/font.zig").font_drawstring;
+const PlatformDraw = @import("../platform/draw.zig");
 const GbeConstants = @import("../gbe_constants.zig");
 const Gbe = @import("../gbe.zig");
 const VWIN_W = @import("main.zig").VWIN_W;
@@ -213,7 +214,7 @@ pub fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
-  Draw.rect(&g.platform_state, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
+  PlatformDraw.rect(&g.platform_state, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
     .Solid = Draw.SolidParams{
       .color = vec4(0, 0, 0, 1),
     },
@@ -260,7 +261,7 @@ fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Tr
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
-  Draw.rect(&g.platform_state, x, y, w, h, Draw.RectStyle{
+  PlatformDraw.rect(&g.platform_state, x, y, w, h, Draw.RectStyle{
     .Textured = Draw.TexturedParams{
       .tex_id = g.graphics.texture(graphic).handle,
       .transform = transform,
@@ -275,7 +276,7 @@ fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void 
   const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = x1 - x0;
   const h = y1 - y0;
-  Draw.rect(&g.platform_state, x0, y0, w, h, Draw.RectStyle{
+  PlatformDraw.rect(&g.platform_state, x0, y0, w, h, Draw.RectStyle{
     .Outline = Draw.OutlineParams{
       .color = vec4(
         @intToFloat(f32, R) / 255.0,
