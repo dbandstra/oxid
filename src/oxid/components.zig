@@ -119,6 +119,7 @@ pub const Pickup = struct {
   const Type = enum{
     PowerUp,
     SpeedUp,
+    LifeUp,
   };
 
   pickup_type: Type,
@@ -163,6 +164,10 @@ pub const EventCollide = struct {
 pub const EventConferBonus = struct {
   recipient_id: Gbe.EntityId,
   pickup_type: Pickup.Type,
+};
+
+pub const EventAwardLife = struct {
+  player_controller_id: Gbe.EntityId,
 };
 
 pub const EventAwardPoints = struct {

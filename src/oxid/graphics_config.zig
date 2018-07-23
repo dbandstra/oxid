@@ -34,6 +34,7 @@ pub const Graphic = enum{
   Squid2,
   PowerUp,
   SpeedUp,
+  LifeUp,
 };
 
 pub const GraphicConfig = struct{
@@ -74,6 +75,7 @@ pub fn getGraphicConfig(graphic: Graphic) GraphicConfig {
     Graphic.Spawn2    => GraphicConfig{ .tx = 1, .ty = 3, .fliph = false },
     Graphic.Squid1    => GraphicConfig{ .tx = 3, .ty = 4, .fliph = true },
     Graphic.Squid2    => GraphicConfig{ .tx = 4, .ty = 4, .fliph = true },
+    Graphic.LifeUp    => GraphicConfig{ .tx = 6, .ty = 2, .fliph = false },
     Graphic.PowerUp   => GraphicConfig{ .tx = 8, .ty = 2, .fliph = false },
     Graphic.SpeedUp   => GraphicConfig{ .tx = 7, .ty = 2, .fliph = false },
   };

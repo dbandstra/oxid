@@ -381,6 +381,7 @@ fn Event(comptime T: type) type {
   };
 }
 
+pub const EventAwardLife = Event(C.EventAwardLife);
 pub const EventAwardPoints = Event(C.EventAwardPoints);
 pub const EventCollide = Event(C.EventCollide);
 pub const EventConferBonus = Event(C.EventConferBonus);

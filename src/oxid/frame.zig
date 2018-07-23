@@ -68,6 +68,7 @@ pub fn game_frame(gs: *GameSession) void {
   // player controller reacts to 'player died' event
   PlayerControllerReactSystem.run(gs);
 
+  removeAll(gs, C.EventAwardLife);
   removeAll(gs, C.EventAwardPoints);
   removeAll(gs, C.EventCollide);
   removeAll(gs, C.EventConferBonus);
@@ -181,6 +182,9 @@ const PlayerControllerReactSystem = struct{
     }
     var it2 = gs.gbe.eventIter(C.EventAwardPoints, "player_controller_id", self.id); while (it2.next()) |event| {
       self.pc.score += event.points;
+    }
+    var it3 = gs.gbe.eventIter(C.EventAwardLife, "player_controller_id", self.id); while (it3.next()) |event| {
+      self.pc.lives += 1;
     }
     return true;
   }

@@ -186,6 +186,7 @@ pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
   const graphic = switch (pickup.pickup_type) {
     C.Pickup.Type.PowerUp => Graphic.PowerUp,
     C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
+    C.Pickup.Type.LifeUp => Graphic.LifeUp,
   };
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }

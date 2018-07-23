@@ -201,6 +201,11 @@ pub const PlayerReactionSystem = struct{
             C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
           };
         },
+        C.Pickup.Type.LifeUp => {
+          Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
+            .player_controller_id = self.player.player_controller_id,
+          });
+        },
       }
     }
     return true;
