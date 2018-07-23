@@ -6,7 +6,6 @@ GAMEPLAY:
 - it looks too much like a glitch when the enemies freeze after you die
 
 CODE:
-- standardize camel/snake case usage
 - when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
 - creature.walk_speed doesn't really make sense as a field
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)

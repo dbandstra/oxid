@@ -5,7 +5,7 @@ const Constants = @import("constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("frame.zig").decrementTimer;
-const phys_in_wall = @import("physics.zig").phys_in_wall;
+const physInWall = @import("physics.zig").physInWall;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
@@ -104,16 +104,16 @@ pub const PlayerMovementSystem = struct{
 
       if (ymove == 0) {
         // only moving along x axis. try to slip around corners
-        try_push(pos, dir, self.creature.walk_speed, self.phys);
+        tryPush(pos, dir, self.creature.walk_speed, self.phys);
       } else {
         // trying to move diagonally.
         const secondary_dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
         // prefer to move on the x axis (arbitrary, but i had to pick something)
-        if (!phys_in_wall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(dir)))) {
+        if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(dir)))) {
           self.phys.facing = dir;
           self.phys.speed = self.creature.walk_speed;
-        } else if (!phys_in_wall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(secondary_dir)))) {
+        } else if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(secondary_dir)))) {
           self.phys.facing = secondary_dir;
           self.phys.speed = self.creature.walk_speed;
         }
@@ -122,14 +122,14 @@ pub const PlayerMovementSystem = struct{
       // only moving along y axis. try to slip around corners
       const dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
-      try_push(pos, dir, self.creature.walk_speed, self.phys);
+      tryPush(pos, dir, self.creature.walk_speed, self.phys);
     }
   }
 
-  fn try_push(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysObject) void {
+  fn tryPush(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysObject) void {
     const pos1 = Math.Vec2.add(pos, Math.Direction.normal(dir));
 
-    if (!phys_in_wall(self_phys, pos1)) {
+    if (!physInWall(self_phys, pos1)) {
       // no need to push, this direction works
       self_phys.facing = dir;
       self_phys.speed = speed;
@@ -141,21 +141,21 @@ pub const PlayerMovementSystem = struct{
     var i: i32 = 1;
     while (i < Constants.PlayerSlipThreshold) : (i += 1) {
       if (dir == Math.Direction.W or dir == Math.Direction.E) {
-        if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y - i))) {
+        if (!physInWall(self_phys, Math.Vec2.init(pos1.x, pos1.y - i))) {
           slip_dir = Math.Direction.N;
           break;
         }
-        if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x, pos1.y + i))) {
+        if (!physInWall(self_phys, Math.Vec2.init(pos1.x, pos1.y + i))) {
           slip_dir = Math.Direction.S;
           break;
         }
       }
       if (dir == Math.Direction.N or dir == Math.Direction.S) {
-        if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x - i, pos1.y))) {
+        if (!physInWall(self_phys, Math.Vec2.init(pos1.x - i, pos1.y))) {
           slip_dir = Math.Direction.W;
           break;
         }
-        if (!phys_in_wall(self_phys, Math.Vec2.init(pos1.x + i, pos1.y))) {
+        if (!physInWall(self_phys, Math.Vec2.init(pos1.x + i, pos1.y))) {
           slip_dir = Math.Direction.E;
           break;
         }

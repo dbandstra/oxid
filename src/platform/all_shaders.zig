@@ -36,7 +36,7 @@ pub const ShaderProgram = struct {
         c.glUseProgram(sp.program_id);
     }
 
-    pub fn attrib_location(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
+    pub fn attribLocation(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
         const id = c.glGetAttribLocation(sp.program_id, name);
         if (id == -1) {
             _ = c.printf(c"invalid attrib: %s\n", name);
@@ -45,7 +45,7 @@ pub const ShaderProgram = struct {
         return id;
     }
 
-    pub fn uniform_location(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
+    pub fn uniformLocation(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
         const id = c.glGetUniformLocation(sp.program_id, name);
         // if (id == -1) {
         //     _ = c.printf(c"invalid uniform: %s\n", name);
@@ -54,37 +54,37 @@ pub const ShaderProgram = struct {
         return id;
     }
 
-    pub fn set_uniform_int(sp: *const ShaderProgram, uniform_id: c.GLint, value: c_int) void {
+    pub fn setUniformInt(sp: *const ShaderProgram, uniform_id: c.GLint, value: c_int) void {
         if (uniform_id != -1) {
             c.glUniform1i(uniform_id, value);
         }
     }
 
-    pub fn set_uniform_float(sp: *const ShaderProgram, uniform_id: c.GLint, value: f32) void {
+    pub fn setUniformFloat(sp: *const ShaderProgram, uniform_id: c.GLint, value: f32) void {
         if (uniform_id != -1) {
             c.glUniform1f(uniform_id, value);
         }
     }
 
-    pub fn set_uniform_vec2(sp: *const ShaderProgram, uniform_id: c.GLint, x: f32, y: f32) void {
+    pub fn setUniformVec2(sp: *const ShaderProgram, uniform_id: c.GLint, x: f32, y: f32) void {
         if (uniform_id != -1) {
             c.glUniform2f(uniform_id, x, y);
         }
     }
 
-    pub fn set_uniform_vec3(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const math3d.Vec3) void {
+    pub fn setUniformVec3(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const math3d.Vec3) void {
         if (uniform_id != -1) {
             c.glUniform3fv(uniform_id, 1, value.data[0..].ptr);
         }
     }
 
-    pub fn set_uniform_vec4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Vec4) void {
+    pub fn setUniformVec4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Vec4) void {
         if (uniform_id != -1) {
             c.glUniform4fv(uniform_id, 1, value.data[0..].ptr);
         }
     }
 
-    pub fn set_uniform_mat4x4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Mat4x4) void {
+    pub fn setUniformMat4x4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Mat4x4) void {
         if (uniform_id != -1) {
             c.glUniformMatrix4fv(uniform_id, 1, c.GL_FALSE, value.data[0][0..].ptr);
         }
@@ -132,9 +132,9 @@ pub fn createAllShaders() !AllShaders {
         \\}
     , null);
 
-    as.primitive_attrib_position = as.primitive.attrib_location(c"VertexPosition");
-    as.primitive_uniform_mvp = as.primitive.uniform_location(c"MVP");
-    as.primitive_uniform_color = as.primitive.uniform_location(c"Color");
+    as.primitive_attrib_position = as.primitive.attribLocation(c"VertexPosition");
+    as.primitive_uniform_mvp = as.primitive.uniformLocation(c"MVP");
+    as.primitive_uniform_color = as.primitive.uniformLocation(c"Color");
 
     as.texture = try createShader(
         \\#version 150 core
@@ -167,12 +167,12 @@ pub fn createAllShaders() !AllShaders {
         \\}
     , null);
 
-    as.texture_attrib_tex_coord = as.texture.attrib_location(c"TexCoord");
-    as.texture_attrib_position = as.texture.attrib_location(c"VertexPosition");
-    as.texture_uniform_mvp = as.texture.uniform_location(c"MVP");
-    as.texture_uniform_tex = as.texture.uniform_location(c"Tex");
-    as.texture_uniform_region_pos = as.texture.uniform_location(c"RegionPos");
-    as.texture_uniform_region_dims = as.texture.uniform_location(c"RegionDims");
+    as.texture_attrib_tex_coord = as.texture.attribLocation(c"TexCoord");
+    as.texture_attrib_position = as.texture.attribLocation(c"VertexPosition");
+    as.texture_uniform_mvp = as.texture.uniformLocation(c"MVP");
+    as.texture_uniform_tex = as.texture.uniformLocation(c"Tex");
+    as.texture_uniform_region_pos = as.texture.uniformLocation(c"RegionPos");
+    as.texture_uniform_region_dims = as.texture.uniformLocation(c"RegionDims");
 
     debug_gl.assertNoError();
 
@@ -185,10 +185,10 @@ pub fn createShader(
     maybe_geometry_source: ?[]u8,
 ) !ShaderProgram {
     var sp: ShaderProgram = undefined;
-    sp.vertex_id = try init_shader(vertex_source, c"vertex", c.GL_VERTEX_SHADER);
-    sp.fragment_id = try init_shader(frag_source, c"fragment", c.GL_FRAGMENT_SHADER);
+    sp.vertex_id = try initShader(vertex_source, c"vertex", c.GL_VERTEX_SHADER);
+    sp.fragment_id = try initShader(frag_source, c"fragment", c.GL_FRAGMENT_SHADER);
     sp.geometry_id = if (maybe_geometry_source) |geo_source|
-        try init_shader(geo_source, c"geometry", c.GL_GEOMETRY_SHADER)
+        try initShader(geo_source, c"geometry", c.GL_GEOMETRY_SHADER)
     else
         null;
 
@@ -212,7 +212,7 @@ pub fn createShader(
     os.abort();
 }
 
-fn init_shader(source: []const u8, name: [*]const u8, kind: c.GLenum) !c.GLuint {
+fn initShader(source: []const u8, name: [*]const u8, kind: c.GLenum) !c.GLuint {
     const shader_id = c.glCreateShader(kind);
     const source_ptr: ?[*]const u8 = source.ptr;
     const source_len = @intCast(c.GLint, source.len);

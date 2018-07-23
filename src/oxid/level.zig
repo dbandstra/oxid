@@ -28,7 +28,7 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
       };
     }
 
-    pub fn get_terrain_type(value: u8) TerrainType {
+    pub fn getTerrainType(value: u8) TerrainType {
       if (value == 0x82) {
         return TerrainType.Pit;
       } else if ((value & 0x80) != 0) {
@@ -39,7 +39,7 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
     }
 
     // currently unused
-    pub fn pos_in_wall(self: *const Self, pos: Math.Vec2) bool {
+    pub fn posInWall(self: *const Self, pos: Math.Vec2) bool {
       const x = pos.x;
       const y = pos.y;
 
@@ -49,13 +49,13 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
       const offy = @mod(y, GRIDSIZE_SUBPIXELS) != 0;
 
       return
-        self.grid_is_wall(gx0, gy0) or
+        self.gridIsWall(gx0, gy0) or
         (offx and self.grid_is_wall(gx0 + 1, gy0)) or
         (offy and self.grid_is_wall(gx0, gy0 + 1)) or
         (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
     }
 
-    pub fn box_in_wall(self: *const Self, pos: Math.Vec2, bbox: Math.BoundingBox, ignore_pits: bool) bool {
+    pub fn boxInWall(self: *const Self, pos: Math.Vec2, bbox: Math.BoundingBox, ignore_pits: bool) bool {
       assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
 
       const gx0 = @divFloor(pos.x + bbox.mins.x, GRIDSIZE_SUBPIXELS);
@@ -67,8 +67,8 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
       while (gy <= gy1) : (gy += 1) {
         var gx: i32 = gx0;
         while (gx <= gx1) : (gx += 1) {
-          if (self.get_gridvalue(Math.Vec2.init(gx, gy))) |value| {
-            const tt = get_terrain_type(value);
+          if (self.getGridValue(Math.Vec2.init(gx, gy))) |value| {
+            const tt = getTerrainType(value);
             if (tt == TerrainType.Wall or (!ignore_pits and tt == TerrainType.Pit)) {
               return true;
             }
@@ -79,7 +79,7 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
       return false;
     }
 
-    pub fn get_gridvalue(self: *const Self, pos: Math.Vec2) ?u8 {
+    pub fn getGridValue(self: *const Self, pos: Math.Vec2) ?u8 {
       if (pos.x >= 0 and pos.y >= 0) {
         const x = @intCast(usize, pos.x);
         const y = @intCast(usize, pos.y);
@@ -92,9 +92,9 @@ pub fn Level(comptime w: u32, comptime h: u32) type {
       return null;
     }
 
-    pub fn get_grid_terrain_type(self: *const Self, pos: Math.Vec2) TerrainType {
-      if (self.get_gridvalue(pos)) |value| {
-        return get_terrain_type(value);
+    pub fn getGridTerrainType(self: *const Self, pos: Math.Vec2) TerrainType {
+      if (self.getGridValue(pos)) |value| {
+        return getTerrainType(value);
       } else {
         return TerrainType.Wall;
       }

@@ -21,7 +21,7 @@ pub const Font = struct{
 };
 
 // return an Image allocated in the low_allocator
-fn load_fontset(dsaf: *DoubleStackAllocatorFlat) !*image.Image {
+fn loadFontset(dsaf: *DoubleStackAllocatorFlat) !*image.Image {
   const high_mark = dsaf.get_high_mark();
   defer dsaf.free_to_high_mark(high_mark);
 
@@ -53,17 +53,17 @@ fn load_fontset(dsaf: *DoubleStackAllocatorFlat) !*image.Image {
   return img2;
 }
 
-pub fn load_font(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
+pub fn loadFont(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
   const low_mark = dsaf.get_low_mark();
   defer dsaf.free_to_low_mark(low_mark);
 
-  const fontset = try load_fontset(dsaf);
+  const fontset = try loadFontset(dsaf);
 
   font.texture = Platform.uploadTexture(fontset);
 }
 
 // TODO - move to platform
-pub fn font_drawchar(ps: *Platform.State, pos: Math.Vec2, char: u8) void {
+pub fn fontDrawChar(ps: *Platform.State, pos: Math.Vec2, char: u8) void {
   const texid = ps.font.texture.handle;
   const x = @intToFloat(f32, pos.x);
   const y = @intToFloat(f32, pos.y);
@@ -84,10 +84,10 @@ pub fn font_drawchar(ps: *Platform.State, pos: Math.Vec2, char: u8) void {
   const dims_y = 1 / f32(FONT_NUM_ROWS);
 
   ps.shaders.texture.bind();
-  ps.shaders.texture.set_uniform_int(ps.shaders.texture_uniform_tex, 0);
-  ps.shaders.texture.set_uniform_mat4x4(ps.shaders.texture_uniform_mvp, mvp);
-  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_pos, pos_x, pos_y);
-  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_dims, dims_x, dims_y);
+  ps.shaders.texture.setUniformInt(ps.shaders.texture_uniform_tex, 0);
+  ps.shaders.texture.setUniformMat4x4(ps.shaders.texture_uniform_mvp, mvp);
+  ps.shaders.texture.setUniformVec2(ps.shaders.texture_uniform_region_pos, pos_x, pos_y);
+  ps.shaders.texture.setUniformVec2(ps.shaders.texture_uniform_region_dims, dims_x, dims_y);
 
   if (ps.shaders.texture_attrib_position >= 0) { // ?
     c.glBindBuffer(c.GL_ARRAY_BUFFER, ps.static_geometry.rect_2d_vertex_buffer);
@@ -107,11 +107,11 @@ pub fn font_drawchar(ps: *Platform.State, pos: Math.Vec2, char: u8) void {
   c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
 }
 
-pub fn font_drawstring(ps: *Platform.State, pos: Math.Vec2, string: []const u8) void {
+pub fn fontDrawString(ps: *Platform.State, pos: Math.Vec2, string: []const u8) void {
   var x = pos.x;
   var y = pos.y;
   for (string) |char| {
-    font_drawchar(ps, Math.Vec2.init(x, y), char);
+    fontDrawChar(ps, Math.Vec2.init(x, y), char);
     x += FONT_CHAR_WIDTH;
   }
 }

@@ -11,12 +11,12 @@ const ComponentList = @import("game.zig").ComponentList;
 const GameSession = @import("game.zig").GameSession;
 const Constants = @import("constants.zig");
 const MonsterType = @import("init.zig").MonsterType;
-const game_spawn_monsters = @import("init.zig").game_spawn_monsters;
-const game_spawn_player = @import("init.zig").game_spawn_player;
-const game_spawn_pickup = @import("init.zig").game_spawn_pickup;
+const spawnMonsters = @import("init.zig").spawnMonsters;
+const spawnPlayer = @import("init.zig").spawnPlayer;
+const spawnPickup = @import("init.zig").spawnPickup;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
-const physics_frame = @import("physics.zig").physics_frame;
+const physicsFrame = @import("physics.zig").physicsFrame;
 const MonsterMovementSystem = @import("frame_monster.zig").MonsterMovementSystem;
 const MonsterTouchResponseSystem = @import("frame_monster.zig").MonsterTouchResponseSystem;
 const PlayerMovementSystem = @import("frame_player.zig").PlayerMovementSystem;
@@ -40,7 +40,7 @@ fn removeAll(gs: *GameSession, comptime T: type) void {
   }
 }
 
-pub fn game_frame(gs: *GameSession) void {
+pub fn gameFrame(gs: *GameSession) void {
   GameControllerSystem.run(gs);
   PlayerControllerSystem.run(gs);
   AnimationSystem.run(gs);
@@ -49,7 +49,7 @@ pub fn game_frame(gs: *GameSession) void {
   CreatureSystem.run(gs);
   PickupSystem.run(gs);
 
-  physics_frame(gs);
+  physicsFrame(gs);
 
   // pickups react to event_collide, spawn event_confer_bonus
   PickupCollideSystem.run(gs);
@@ -94,12 +94,12 @@ const GameControllerSystem = struct{
       self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
       if (self.gc.wave_index - 1 < Constants.Waves.len) {
         const wave = &Constants.Waves[self.gc.wave_index - 1];
-        game_spawn_monsters(gs, wave.spiders, MonsterType.Spider);
-        game_spawn_monsters(gs, wave.squids, MonsterType.Squid);
+        spawnMonsters(gs, wave.spiders, MonsterType.Spider);
+        spawnMonsters(gs, wave.squids, MonsterType.Squid);
         self.gc.enemy_speed_level = wave.speed;
         self.gc.monster_count = wave.spiders + wave.squids;
       } else {
-        game_spawn_monsters(gs, 1, MonsterType.Spider);
+        spawnMonsters(gs, 1, MonsterType.Spider);
       }
     }
     if (decrementTimer(&self.gc.enemy_speed_timer)) {
@@ -110,7 +110,7 @@ const GameControllerSystem = struct{
     }
     if (decrementTimer(&self.gc.next_pickup_timer)) {
       const pickup_type = randomEnumValue(C.Pickup.Type, gs.gbe.getRand());
-      game_spawn_pickup(gs, pickup_type);
+      spawnPickup(gs, pickup_type);
       self.gc.next_pickup_timer = Constants.PickupSpawnTime;
     }
     _ = decrementTimer(&self.gc.freeze_monsters_timer);
@@ -161,7 +161,7 @@ const PlayerControllerSystem = struct{
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.pc.respawn_timer)) {
-      game_spawn_player(gs, self.id);
+      spawnPlayer(gs, self.id);
     }
     return true;
   }

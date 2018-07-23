@@ -6,7 +6,7 @@ use @import("math3d.zig");
 const all_shaders = @import("all_shaders.zig");
 const static_geometry = @import("static_geometry.zig");
 const Font = @import("font.zig").Font;
-const load_font = @import("font.zig").load_font;
+const loadFont = @import("font.zig").loadFont;
 const PlatformDraw = @import("draw.zig");
 const Draw = @import("../draw.zig");
 
@@ -136,7 +136,7 @@ pub fn init(ps: *State, params: *const InitParams) !void {
   ps.static_geometry = static_geometry.createStaticGeometry();
   errdefer ps.static_geometry.destroy();
 
-  try load_font(params.dsaf, &ps.font);
+  try loadFont(params.dsaf, &ps.font);
 
   var fb: c.GLuint = 0;
   c.glGenFramebuffers(1, c.ptr(&fb));

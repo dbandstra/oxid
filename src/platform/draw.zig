@@ -5,8 +5,8 @@ const Draw = @import("../draw.zig");
 
 fn drawUntexturedRectMvp(ps: *Platform.State, mvp: *const Mat4x4, color: Vec4, outline: bool) void {
   ps.shaders.primitive.bind();
-  ps.shaders.primitive.set_uniform_vec4(ps.shaders.primitive_uniform_color, &color);
-  ps.shaders.primitive.set_uniform_mat4x4(ps.shaders.primitive_uniform_mvp, mvp);
+  ps.shaders.primitive.setUniformVec4(ps.shaders.primitive_uniform_color, &color);
+  ps.shaders.primitive.setUniformMat4x4(ps.shaders.primitive_uniform_mvp, mvp);
 
   if (ps.shaders.primitive_attrib_position >= 0) { // ?
     c.glBindBuffer(c.GL_ARRAY_BUFFER, ps.static_geometry.rect_2d_vertex_buffer);
@@ -25,10 +25,10 @@ fn drawUntexturedRectMvp(ps: *Platform.State, mvp: *const Mat4x4, color: Vec4, o
 
 fn drawTexturedRectMvp(ps: *Platform.State, mvp: *const Mat4x4, tex_id: c.GLuint, transform: Draw.Transform) void {
   ps.shaders.texture.bind();
-  ps.shaders.texture.set_uniform_int(ps.shaders.texture_uniform_tex, 0);
-  ps.shaders.texture.set_uniform_mat4x4(ps.shaders.texture_uniform_mvp, mvp);
-  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_pos, 0, 0);
-  ps.shaders.texture.set_uniform_vec2(ps.shaders.texture_uniform_region_dims, 1, 1);
+  ps.shaders.texture.setUniformInt(ps.shaders.texture_uniform_tex, 0);
+  ps.shaders.texture.setUniformMat4x4(ps.shaders.texture_uniform_mvp, mvp);
+  ps.shaders.texture.setUniformVec2(ps.shaders.texture_uniform_region_pos, 0, 0);
+  ps.shaders.texture.setUniformVec2(ps.shaders.texture_uniform_region_dims, 1, 1);
 
   if (ps.shaders.texture_attrib_position >= 0) { // ?
     c.glBindBuffer(c.GL_ARRAY_BUFFER, ps.static_geometry.rect_2d_vertex_buffer);

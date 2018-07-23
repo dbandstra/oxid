@@ -17,10 +17,10 @@ const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("input.zig").InputEvent;
 const MonsterType = @import("init.zig").MonsterType;
-const game_init = @import("init.zig").game_init;
-const game_spawn_monsters = @import("init.zig").game_spawn_monsters;
-const game_frame = @import("frame.zig").game_frame;
-const game_input = @import("input.zig").game_input;
+const gameInit = @import("init.zig").gameInit;
+const spawnMonsters = @import("init.zig").spawnMonsters;
+const gameFrame = @import("frame.zig").gameFrame;
+const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
 
 // this many pixels is added to the top of the window for font stuff
@@ -71,7 +71,7 @@ pub fn main() !void {
   g.paused = false;
   g.fast_forward = false;
   g.session.init(rand_seed);
-  game_init(&g.session);
+  gameInit(&g.session);
 
   try loadGraphics(dsaf, &g.graphics);
 
@@ -88,10 +88,10 @@ pub fn main() !void {
             c.SDLK_ESCAPE => return,
             c.SDLK_BACKSPACE => {
               g.session.init(rand_seed);
-              game_init(&g.session);
+              gameInit(&g.session);
             },
             c.SDLK_RETURN => {
-              game_spawn_monsters(&g.session, 8, MonsterType.Spider);
+              spawnMonsters(&g.session, 8, MonsterType.Spider);
             },
             c.SDLK_F2 => {
               g.render_move_boxes = !g.render_move_boxes;
@@ -100,11 +100,11 @@ pub fn main() !void {
               g.session.god_mode = !g.session.god_mode;
               std.debug.warn("god mode {}\n", if (g.session.god_mode) "enabled" else "disabled");
             },
-            c.SDLK_UP => game_input(&g.session, InputEvent.Up, true),
-            c.SDLK_DOWN => game_input(&g.session, InputEvent.Down, true),
-            c.SDLK_LEFT => game_input(&g.session, InputEvent.Left, true),
-            c.SDLK_RIGHT => game_input(&g.session, InputEvent.Right, true),
-            c.SDLK_SPACE => game_input(&g.session, InputEvent.Shoot, true),
+            c.SDLK_UP => gameInput(&g.session, InputEvent.Up, true),
+            c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, true),
+            c.SDLK_LEFT => gameInput(&g.session, InputEvent.Left, true),
+            c.SDLK_RIGHT => gameInput(&g.session, InputEvent.Right, true),
+            c.SDLK_SPACE => gameInput(&g.session, InputEvent.Shoot, true),
             c.SDLK_TAB => {
               g.paused = !g.paused;
             },
@@ -116,11 +116,11 @@ pub fn main() !void {
         },
         c.SDL_KEYUP => {
           switch (event.key.keysym.sym) {
-            c.SDLK_UP => game_input(&g.session, InputEvent.Up, false),
-            c.SDLK_DOWN => game_input(&g.session, InputEvent.Down, false),
-            c.SDLK_LEFT => game_input(&g.session, InputEvent.Left, false),
-            c.SDLK_RIGHT => game_input(&g.session, InputEvent.Right, false),
-            c.SDLK_SPACE => game_input(&g.session, InputEvent.Shoot, false),
+            c.SDLK_UP => gameInput(&g.session, InputEvent.Up, false),
+            c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, false),
+            c.SDLK_LEFT => gameInput(&g.session, InputEvent.Left, false),
+            c.SDLK_RIGHT => gameInput(&g.session, InputEvent.Right, false),
+            c.SDLK_SPACE => gameInput(&g.session, InputEvent.Shoot, false),
             c.SDLK_BACKQUOTE => {
               g.fast_forward = false;
             },
@@ -138,7 +138,7 @@ pub fn main() !void {
       const n = if (g.fast_forward) u32(4) else u32(1);
       var i: u32 = 0;
       while (i < n) : (i += 1) {
-        game_frame(&g.session);
+        gameFrame(&g.session);
       }
     }
 

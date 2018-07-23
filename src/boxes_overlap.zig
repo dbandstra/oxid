@@ -1,7 +1,7 @@
 const assert = @import("std").debug.assert;
 const Math = @import("math.zig");
 
-pub fn abs_boxes_overlap(a: Math.BoundingBox, b: Math.BoundingBox) bool {
+pub fn absBoxesOverlap(a: Math.BoundingBox, b: Math.BoundingBox) bool {
   assert(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
   assert(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
 
@@ -12,11 +12,11 @@ pub fn abs_boxes_overlap(a: Math.BoundingBox, b: Math.BoundingBox) bool {
     b.maxs.y >= a.mins.y;
 }
 
-pub fn boxes_overlap(
+pub fn boxesOverlap(
   a_pos: Math.Vec2, a_bbox: Math.BoundingBox,
   b_pos: Math.Vec2, b_bbox: Math.BoundingBox,
 ) bool {
-  return abs_boxes_overlap(
+  return absBoxesOverlap(
     Math.BoundingBox.move(a_bbox, a_pos),
     Math.BoundingBox.move(b_bbox, b_pos),
   );
@@ -25,19 +25,19 @@ pub fn boxes_overlap(
 test "boxes_overlap" {
   const dims = Vec2.init(16, 16);
 
-  assert(!boxes_overlap(
+  assert(!boxesOverlap(
     Vec2.init(0, 0), dims,
     Vec2.init(16, 0), dims,
   ));
-  assert(boxes_overlap(
+  assert(boxesOverlap(
     Vec2.init(0, 0), dims,
     Vec2.init(15, 0), dims,
   ));
-  assert(!boxes_overlap(
+  assert(!boxesOverlap(
     Vec2.init(0, 0), dims,
     Vec2.init(-16, 0), dims,
   ));
-  assert(boxes_overlap(
+  assert(boxesOverlap(
     Vec2.init(0, 0), dims,
     Vec2.init(-15, 0), dims,
   ));

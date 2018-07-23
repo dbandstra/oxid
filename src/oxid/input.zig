@@ -8,7 +8,7 @@ pub const InputEvent = enum {
   Shoot,
 };
 
-pub fn game_input(gs: *GameSession, event: InputEvent, down: bool) void {
+pub fn gameInput(gs: *GameSession, event: InputEvent, down: bool) void {
   switch (event) {
     InputEvent.Left => {
       gs.in_left = down;

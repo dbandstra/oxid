@@ -7,7 +7,7 @@ const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("frame.zig").decrementTimer;
-const phys_in_wall = @import("physics.zig").phys_in_wall;
+const physInWall = @import("physics.zig").physInWall;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
@@ -56,8 +56,8 @@ pub const MonsterMovementSystem = struct{
     // look ahead for corners
     const pos = self.transform.pos;
     const fwd = Math.Direction.normal(self.phys.facing);
-    const left = Math.Direction.rotate_ccw(self.phys.facing);
-    const right = Math.Direction.rotate_cw(self.phys.facing);
+    const left = Math.Direction.rotateCcw(self.phys.facing);
+    const right = Math.Direction.rotateCw(self.phys.facing);
     const left_normal = Math.Direction.normal(left);
     const right_normal = Math.Direction.normal(right);
 
@@ -65,7 +65,7 @@ pub const MonsterMovementSystem = struct{
     var left_corner = false;
     var right_corner = false;
 
-    if (phys_in_wall(self.phys, pos)) {
+    if (physInWall(self.phys, pos)) {
       // stuck in a wall
       return;
     }
@@ -76,13 +76,13 @@ pub const MonsterMovementSystem = struct{
       const left_pos = Math.Vec2.add(new_pos, left_normal);
       const right_pos = Math.Vec2.add(new_pos, right_normal);
 
-      if (i > 0 and phys_in_wall(self.phys, new_pos)) {
+      if (i > 0 and physInWall(self.phys, new_pos)) {
         wall_in_front = true;
       }
-      if (!phys_in_wall(self.phys, left_pos)) {
+      if (!physInWall(self.phys, left_pos)) {
         left_corner = true;
       }
-      if (!phys_in_wall(self.phys, right_pos)) {
+      if (!physInWall(self.phys, right_pos)) {
         right_corner = true;
       }
     }
@@ -141,8 +141,8 @@ pub const MonsterMovementSystem = struct{
     can_go_left: bool,
     can_go_right: bool,
   ) ?Math.Direction {
-    const left = Math.Direction.rotate_ccw(facing);
-    const right = Math.Direction.rotate_cw(facing);
+    const left = Math.Direction.rotateCcw(facing);
+    const right = Math.Direction.rotateCw(facing);
 
     var choices = Choices.init();
 
@@ -156,9 +156,9 @@ pub const MonsterMovementSystem = struct{
         const left_point = Math.Vec2.add(pos, Math.Vec2.scale(left_normal, GRIDSIZE_SUBPIXELS));
         const right_point = Math.Vec2.add(pos, Math.Vec2.scale(right_normal, GRIDSIZE_SUBPIXELS));
 
-        const forward_point_dist = Math.Vec2.manhattan_distance(forward_point, target_pos);
-        const left_point_dist = Math.Vec2.manhattan_distance(left_point, target_pos);
-        const right_point_dist = Math.Vec2.manhattan_distance(right_point, target_pos);
+        const forward_point_dist = Math.Vec2.manhattanDistance(forward_point, target_pos);
+        const left_point_dist = Math.Vec2.manhattanDistance(left_point, target_pos);
+        const right_point_dist = Math.Vec2.manhattanDistance(right_point, target_pos);
 
         if (can_go_forward) {
           choices.add(facing, forward_point_dist);

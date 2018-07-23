@@ -24,10 +24,10 @@ test "box_in_wall" {
 
   const dims = Vec2.init(1*s, 1*s);
 
-  assert(!level.box_in_wall(Vec2.init(1*s, 1*s,), dims));
+  assert(!level.boxInWall(Vec2.init(1*s, 1*s,), dims));
 
-  assert(level.box_in_wall(Vec2.init(1*s-1, 1*s,), dims));
-  assert(level.box_in_wall(Vec2.init(1*s+1, 1*s,), dims));
-  assert(level.box_in_wall(Vec2.init(1*s, 1*s-1,), dims));
-  assert(level.box_in_wall(Vec2.init(1*s, 1*s+1,), dims));
+  assert(level.boxInWall(Vec2.init(1*s-1, 1*s,), dims));
+  assert(level.boxInWall(Vec2.init(1*s+1, 1*s,), dims));
+  assert(level.boxInWall(Vec2.init(1*s, 1*s-1,), dims));
+  assert(level.boxInWall(Vec2.init(1*s, 1*s+1,), dims));
 }

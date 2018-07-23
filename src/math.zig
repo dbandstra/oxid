@@ -25,7 +25,7 @@ pub const Direction = enum {
     };
   }
 
-  pub fn rotate_cw(direction: Direction) Direction {
+  pub fn rotateCw(direction: Direction) Direction {
     return switch (direction) {
       Direction.N => Direction.E,
       Direction.E => Direction.S,
@@ -34,7 +34,7 @@ pub const Direction = enum {
     };
   }
 
-  pub fn rotate_ccw(direction: Direction) Direction {
+  pub fn rotateCcw(direction: Direction) Direction {
     return switch (direction) {
       Direction.N => Direction.W,
       Direction.E => Direction.N,
@@ -73,7 +73,7 @@ pub const Vec2 = struct {
     return a.x == b.x and a.y == b.y;
   }
 
-  pub fn manhattan_distance(a: Vec2, b: Vec2) u32 {
+  pub fn manhattanDistance(a: Vec2, b: Vec2) u32 {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const adx = if (dx > 0) @intCast(u32, dx) else @intCast(u32, -dx);
