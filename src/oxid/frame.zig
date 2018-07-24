@@ -1,13 +1,11 @@
 const randomEnumValue = @import("../util.zig").randomEnumValue;
 const Math = @import("../math.zig");
-const boxes_overlap = @import("../boxes_overlap.zig").boxes_overlap;
 const Gbe = @import("../gbe.zig");
 const GbeSystem = @import("../gbe_system.zig");
 const SimpleAnim = @import("graphics_config.zig").SimpleAnim;
 const getSimpleAnim = @import("graphics_config.zig").getSimpleAnim;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
-const ComponentList = @import("game.zig").ComponentList;
 const GameSession = @import("game.zig").GameSession;
 const Constants = @import("constants.zig");
 const MonsterType = @import("init.zig").MonsterType;
@@ -236,11 +234,11 @@ const PickupCollideSystem = struct{
   fn collide(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
       const other_player = gs.gbe.find(event.other_id, C.Player) orelse continue;
-      Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
+      _ = Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
         .recipient_id = event.other_id,
         .pickup_type = self.pickup.pickup_type,
       });
-      Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
+      _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
         .player_controller_id = other_player.player_controller_id,
         .points = Constants.PickupGetPoints,
       });
@@ -267,7 +265,7 @@ const BulletCollideSystem = struct {
         .z_index = Constants.ZIndexSparks,
       });
       if (!Gbe.EntityId.isZero(event.other_id)) {
-        Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
+        _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
           .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
           .self_id = event.other_id,
           .amount = self.bullet.damage,
@@ -306,17 +304,17 @@ const CreatureTakeDamageSystem = struct{
         if (self.player) |self_player| {
           // player died
           self_player.dying_timer = 45;
-          Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
+          _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
             .player_controller_id = self_player.player_controller_id,
           });
           return true;
         } else {
           if (self.monster) |self_monster| {
-            Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{
+            _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{
               .unused = 0,
             });
             if (event.inflictor_player_controller_id) |player_controller_id| {
-              Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
+              _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
                 .player_controller_id = player_controller_id,
                 .points = self_monster.kill_points,
               });

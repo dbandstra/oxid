@@ -269,7 +269,7 @@ pub const MonsterTouchResponseSystem = struct{
           if (gs.gbe.find(event.other_id, C.Monster) == null) {
             // if it's a non-monster creature, inflict damage on it
             if (self.monster.spawning_timer == 0) {
-              Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
+              _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
                 .inflictor_player_controller_id = null,
                 .self_id = event.other_id,
                 .amount = 1,

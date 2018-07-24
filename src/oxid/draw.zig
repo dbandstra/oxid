@@ -6,11 +6,11 @@ const Math = @import("../math.zig");
 const Draw = @import("../draw.zig");
 const fontDrawString = @import("../platform/font.zig").fontDrawString;
 const PlatformDraw = @import("../platform/draw.zig");
-const GbeConstants = @import("../gbe_constants.zig");
 const Gbe = @import("../gbe.zig");
 const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
+const MaxDrawables = @import("game.zig").MaxDrawables;
 const Graphic = @import("graphics_config.zig").Graphic;
 const getSimpleAnim = @import("graphics_config.zig").getSimpleAnim;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
@@ -26,7 +26,7 @@ const SortItem = struct {
 pub fn drawGame(g: *GameState) void {
   const gs = &g.session;
   // sort drawables
-  var sortarray: [GbeConstants.MaxComponentsPerType]SortItem = undefined;
+  var sortarray: [MaxDrawables]SortItem = undefined;
   var num_drawables: usize = 0;
   var it = gs.gbe.iter(C.Drawable); while (it.next()) |object| {
     if (object.is_active) {

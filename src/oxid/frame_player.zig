@@ -66,7 +66,7 @@ pub const PlayerMovementSystem = struct{
           const dir_vec = Math.Direction.normal(self.phys.facing);
           const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
           const bullet_pos = Math.Vec2.add(pos, ofs);
-          slot.* = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+          if (Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
             .inflictor_player_controller_id = self.player.player_controller_id,
             .owner_id = self.id,
             .pos = bullet_pos,
@@ -77,7 +77,9 @@ pub const PlayerMovementSystem = struct{
               C.Player.AttackLevel.Two => u32(2),
               C.Player.AttackLevel.Three => u32(3),
             },
-          });
+          })) |bullet_entity_id| {
+            slot.* = bullet_entity_id;
+          } else |err| {}
           self.player.trigger_released = false;
         }
       }
@@ -202,7 +204,7 @@ pub const PlayerReactionSystem = struct{
           };
         },
         C.Pickup.Type.LifeUp => {
-          Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
+          _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
             .player_controller_id = self.player.player_controller_id,
           });
         },

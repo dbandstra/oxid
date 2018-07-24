@@ -12,7 +12,7 @@ const C = @import("components.zig");
 pub fn gameInit(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);
 
-  const player_controller_id = Prototypes.PlayerController.spawn(gs);
+  const player_controller_id = Prototypes.PlayerController.spawn(gs) catch unreachable;
 
   spawnPlayer(gs, player_controller_id);
 }

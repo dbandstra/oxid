@@ -28,10 +28,11 @@ const monster_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
 const pickup_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
 
 pub const GameController = struct{
-  pub fn spawn(gs: *GameSession) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.GameController{
+    try gs.gbe.addComponent(entity_id, C.GameController{
       .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
@@ -46,10 +47,11 @@ pub const GameController = struct{
 };
 
 pub const PlayerController = struct{
-  pub fn spawn(gs: *GameSession) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.PlayerController{
+    try gs.gbe.addComponent(entity_id, C.PlayerController{
       .lives = Constants.PlayerNumLives,
       .score = 0,
       .respawn_timer = 0,
@@ -65,14 +67,15 @@ pub const Player = struct{
     pos: Math.Vec2,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.PhysObject{
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = player_entity_bbox,
       .facing = Math.Direction.E,
@@ -85,18 +88,18 @@ pub const Player = struct{
       .internal = undefined,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Soldier,
       .z_index = Constants.ZIndexPlayer,
     });
 
-    gs.gbe.addComponent(entity_id, C.Creature{
+    try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
       .walk_speed = Constants.PlayerWalkSpeed1,
     });
 
-    gs.gbe.addComponent(entity_id, C.Player{
+    try gs.gbe.addComponent(entity_id, C.Player{
       .player_controller_id = params.player_controller_id,
       .trigger_released = true,
       .bullets = []?Gbe.EntityId{null} ** Constants.PlayerMaxBullets,
@@ -114,14 +117,15 @@ pub const Corpse = struct{
     pos: Math.Vec2,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.SoldierCorpse,
       .z_index = Constants.ZIndexCorpse,
     });
@@ -135,14 +139,15 @@ pub const Spider = struct{
     pos: Math.Vec2,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.PhysObject{
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -155,18 +160,18 @@ pub const Spider = struct{
       .internal = undefined,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Spider,
       .z_index = Constants.ZIndexEnemy,
     });
 
-    gs.gbe.addComponent(entity_id, C.Creature{
+    try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
       .hit_points = 1,
       .walk_speed = Constants.SpiderWalkSpeed,
     });
 
-    gs.gbe.addComponent(entity_id, C.Monster{
+    try gs.gbe.addComponent(entity_id, C.Monster{
       .spawning_timer = 60,
       .full_hit_points = Constants.SpiderHitPoints,
       .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
@@ -186,14 +191,15 @@ pub const Squid = struct{
     pos: Math.Vec2,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.PhysObject{
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -206,18 +212,18 @@ pub const Squid = struct{
       .internal = undefined,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Squid,
       .z_index = Constants.ZIndexEnemy,
     });
 
-    gs.gbe.addComponent(entity_id, C.Creature{
+    try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
       .hit_points = 1,
       .walk_speed = Constants.SquidWalkSpeed,
     });
 
-    gs.gbe.addComponent(entity_id, C.Monster{
+    try gs.gbe.addComponent(entity_id, C.Monster{
       .spawning_timer = 60,
       .full_hit_points = Constants.SquidHitPoints,
       .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
@@ -247,10 +253,11 @@ pub const Bullet = struct{
     cluster_size: u32,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
@@ -258,7 +265,7 @@ pub const Bullet = struct{
     const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
 
-    gs.gbe.addComponent(entity_id, C.PhysObject{
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
       .world_bbox = Math.BoundingBox{
         .mins = Math.Vec2.init(min, min),
         .maxs = Math.Vec2.init(max, max),
@@ -283,7 +290,7 @@ pub const Bullet = struct{
       .internal = undefined,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = switch (params.bullet_type) {
         BulletType.MonsterBullet => C.Drawable.Type.MonsterBullet,
         BulletType.PlayerBullet => switch (params.cluster_size) {
@@ -295,7 +302,7 @@ pub const Bullet = struct{
       .z_index = Constants.ZIndexBullet,
     });
 
-    gs.gbe.addComponent(entity_id, C.Bullet{
+    try gs.gbe.addComponent(entity_id, C.Bullet{
       .inflictor_player_controller_id = params.inflictor_player_controller_id,
       .damage = params.cluster_size,
     });
@@ -311,19 +318,20 @@ pub const Animation = struct{
     z_index: u32,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Animation,
       .z_index = params.z_index,
     });
 
-    gs.gbe.addComponent(entity_id, C.Animation{
+    try gs.gbe.addComponent(entity_id, C.Animation{
       .simple_anim = params.simple_anim,
       .frame_index = 0,
       .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -339,19 +347,20 @@ pub const Pickup = struct{
     pickup_type: C.Pickup.Type,
   };
 
-  pub fn spawn(gs: *GameSession, params: Params) Gbe.EntityId {
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
 
-    gs.gbe.addComponent(entity_id, C.Transform{
+    try gs.gbe.addComponent(entity_id, C.Transform{
       .pos = params.pos,
     });
 
-    gs.gbe.addComponent(entity_id, C.Drawable{
+    try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = C.Drawable.Type.Pickup,
       .z_index = Constants.ZIndexPickup,
     });
 
-    gs.gbe.addComponent(entity_id, C.PhysObject{
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
       .world_bbox = world_bbox,
       .entity_bbox = pickup_entity_bbox,
       .facing = Math.Direction.E,
@@ -364,7 +373,7 @@ pub const Pickup = struct{
       .internal = undefined,
     });
 
-    gs.gbe.addComponent(entity_id, C.Pickup{
+    try gs.gbe.addComponent(entity_id, C.Pickup{
       .pickup_type = params.pickup_type,
       .timer = 15*60, // will disappear in 15 seconds
     });
@@ -375,8 +384,13 @@ pub const Pickup = struct{
 
 fn Event(comptime T: type) type {
   return struct {
-    fn spawn(gs: *GameSession, body: T) void {
-      gs.gbe.addComponent(gs.gbe.spawn(), body);
+    fn spawn(gs: *GameSession, body: T) !Gbe.EntityId {
+      const entity_id = gs.gbe.spawn();
+      errdefer gs.gbe.undoSpawn(entity_id);
+
+      try gs.gbe.addComponent(entity_id, body);
+
+      return entity_id;
     }
   };
 }

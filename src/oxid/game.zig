@@ -27,7 +27,42 @@ const COMPONENT_TYPES = []const type{
   C.EventTakeDamage,
 };
 
-// FIXME - is there any way to generate this from COMPONENT_TYPES
+pub fn ComponentStorage(comptime T: type, comptime capacity: usize) type {
+  return struct{
+    objects: [capacity]Gbe.ComponentObject(T),
+  };
+}
+
+pub const MaxDrawables = 100;
+pub const MaxPhysObjects = 100;
+
+// FIXME - is there any way to generate this from COMPONENT_TYPES.
+// there is other code that assumes the type name is the same as the field name
+// so it's bad to write this out...
+pub const GameComponentStorage = struct {
+  Animation: ComponentStorage(C.Animation, 10),
+  Bullet: ComponentStorage(C.Bullet, 10),
+  Creature: ComponentStorage(C.Creature, 50),
+  Drawable: ComponentStorage(C.Drawable, MaxDrawables),
+  GameController: ComponentStorage(C.GameController, 1),
+  Monster: ComponentStorage(C.Monster, 50),
+  PhysObject: ComponentStorage(C.PhysObject, MaxPhysObjects),
+  Pickup: ComponentStorage(C.Pickup, 5),
+  Player: ComponentStorage(C.Player, 50),
+  PlayerController: ComponentStorage(C.PlayerController, 4),
+  Transform: ComponentStorage(C.Transform, 100),
+  EventAwardLife: ComponentStorage(C.EventAwardLife, 20),
+  EventAwardPoints: ComponentStorage(C.EventAwardPoints, 20),
+  EventCollide: ComponentStorage(C.EventCollide, 50),
+  EventConferBonus: ComponentStorage(C.EventConferBonus, 5),
+  EventMonsterDied: ComponentStorage(C.EventMonsterDied, 20),
+  EventPlayerDied: ComponentStorage(C.EventPlayerDied, 20),
+  EventTakeDamage: ComponentStorage(C.EventTakeDamage, 50),
+};
+
+// FIXME - is there any way to generate this from COMPONENT_TYPES.
+// there is other code that assumes the type name is the same as the field name
+// so it's bad to write this out...
 pub const GameComponentLists = struct {
   Animation: Gbe.ComponentList(C.Animation),
   Bullet: Gbe.ComponentList(C.Bullet),
@@ -50,6 +85,7 @@ pub const GameComponentLists = struct {
 };
 
 pub const GameSession = struct {
+  component_storage: GameComponentStorage,
   gbe: Gbe.Session(COMPONENT_TYPES[0..], GameComponentLists),
 
   god_mode: bool,
@@ -60,7 +96,7 @@ pub const GameSession = struct {
   in_shoot: bool,
 
   pub fn init(self: *GameSession, rand_seed: u32) void {
-    self.gbe.init(rand_seed);
+    self.gbe.init(&self.component_storage, rand_seed);
 
     self.god_mode = false;
     self.in_up = false;

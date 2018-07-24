@@ -2,9 +2,10 @@ const std = @import("std");
 const Math = @import("../math.zig");
 const absBoxesOverlap = @import("../boxes_overlap.zig").absBoxesOverlap;
 const boxesOverlap = @import("../boxes_overlap.zig").boxesOverlap;
-const GbeConstants = @import("../gbe_constants.zig");
 const Gbe = @import("../gbe.zig");
+const Constants = @import("constants.zig");
 const LEVEL = @import("level.zig").LEVEL;
+const MaxPhysObjects = @import("game.zig").MaxPhysObjects;
 const GameSession = @import("game.zig").GameSession;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
@@ -27,8 +28,8 @@ const MoveGroup = struct{
   is_active: bool,
 };
 
-var move_group_members: [GbeConstants.MaxComponentsPerType]MoveGroupMember = undefined;
-var move_groups: [GbeConstants.MaxComponentsPerType]MoveGroup = undefined;
+var move_group_members: [MaxPhysObjects]MoveGroupMember = undefined;
+var move_groups: [MaxPhysObjects]MoveGroup = undefined;
 
 pub fn physicsFrame(gs: *GameSession) void {
   // calculate move bboxes
@@ -202,7 +203,7 @@ pub fn physicsFrame(gs: *GameSession) void {
         var hit_something = false;
 
         if (physInWall(m.phys, new_pos)) {
-          Prototypes.EventCollide.spawn(gs, C.EventCollide{
+          _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
             .self_id = m.entity_id,
             .other_id = Gbe.EntityId{ .id = 0 },
             .propelled = true,
@@ -244,7 +245,7 @@ fn collide(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) void
   if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
     event_collide.propelled = true;
   } else {
-    Prototypes.EventCollide.spawn(gs, C.EventCollide{
+    _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
       .self_id = self_id,
       .other_id = other_id,
       .propelled = true,
@@ -252,7 +253,7 @@ fn collide(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) void
   }
 
   if (findCollisionEvent(gs, other_id, self_id) == null) {
-    Prototypes.EventCollide.spawn(gs, C.EventCollide{
+    _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
       .self_id = other_id,
       .other_id = self_id,
       .propelled = false,

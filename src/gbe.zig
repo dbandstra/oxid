@@ -30,7 +30,7 @@ pub fn ComponentObject(comptime T: type) type {
 
 pub fn ComponentList(comptime T: type) type {
   return struct {
-    objects: [GbeConstants.MaxComponentsPerType]ComponentObject(T),
+    objects: []ComponentObject(T),
     count: usize,
   };
 }
@@ -58,12 +58,13 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
 
     components: ComponentLists,
 
-    pub fn init(self: *Self, rand_seed: u32) void {
+    pub fn init(self: *Self, component_storage: var, rand_seed: u32) void {
       self.prng = std.rand.DefaultPrng.init(rand_seed);
       self.next_entity_id = 1;
       self.removals = undefined;
       self.num_removals = 0;
       inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        @field(&self.components, field.name).objects = @field(component_storage, field.name).objects[0..];
         @field(&self.components, field.name).count = 0;
       }
     }
@@ -105,9 +106,17 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
       return id;
     }
 
+    // this is only called in spawn functions, to clean up components of a
+    // partially constructed entity, when something goes wrong
+    pub fn undoSpawn(self: *Self, entity_id: EntityId) void {
+      inline for (ComponentTypes) |component_type| {
+        self.destroyComponent(entity_id, component_type);
+      }
+    }
+
     pub fn markEntityForRemoval(self: *Self, entity_id: EntityId) void {
       if (self.num_removals >= GbeConstants.MaxRemovalsPerFrame) {
-        unreachable;
+        @panic("markEntityForRemoval: no removal slots available");
       }
       self.removals[self.num_removals] = entity_id;
       self.num_removals += 1;
@@ -119,9 +128,10 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
     // (like c++ references). but with `var`, i don't think this is possible?
     // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
     // component to an entity twice?
-    // TODO - optional LRU reuse.
-    // (ok for non crucial entities. crucial ones should still crash)
-    pub fn addComponent(self: *Self, entity_id: EntityId, data: var) void {
+    // TODO - optional LRU reuse (whether this is used would be up to the
+    // ComponentStorage config, per component type. obviously, kicking out old
+    // entities to make room for new ones is not always the right choice)
+    pub fn addComponent(self: *Self, entity_id: EntityId, data: var) !void {
       const T: type = @typeOf(data);
       assert(@typeId(T) == builtin.TypeId.Struct);
       var list = &@field(&self.components, @typeName(T));
@@ -133,7 +143,7 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
             break :blk object;
           }
         }
-        if (list.count < GbeConstants.MaxComponentsPerType) {
+        if (list.count < list.objects.len) {
           i = list.count;
           list.count += 1;
           break :blk &list.objects[i];
@@ -145,7 +155,8 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
         object.data = data;
         object.entity_id = entity_id;
       } else {
-        @panic("no slots left to add component");
+        std.debug.warn("warning: no slots available for new `" ++ @typeName(T) ++ "` component\n");
+        return error.NoComponentSlotsAvailable;
       }
     }
 
