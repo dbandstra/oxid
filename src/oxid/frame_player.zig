@@ -191,6 +191,7 @@ pub const PlayerReactionSystem = struct{
             C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
             else => C.Player.AttackLevel.Three,
           };
+          self.player.last_pickup = C.Pickup.Type.PowerUp;
         },
         C.Pickup.Type.SpeedUp => {
           self.player.speed_level = switch (self.player.speed_level) {
@@ -202,6 +203,7 @@ pub const PlayerReactionSystem = struct{
             C.Player.SpeedLevel.Two => Constants.PlayerWalkSpeed2,
             C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
           };
+          self.player.last_pickup = C.Pickup.Type.SpeedUp;
         },
         C.Pickup.Type.LifeUp => {
           _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{

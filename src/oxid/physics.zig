@@ -220,7 +220,9 @@ pub fn physicsFrame(gs: *GameSession) void {
               other_transform.pos, o.phys.entity_bbox,
             )) {
               collide(gs, m.entity_id, o.entity_id);
-              hit_something = true;
+              if (!o.phys.illusory) {
+                hit_something = true;
+              }
             }
           }
         }
@@ -327,8 +329,10 @@ fn couldObjectsCollide(
 
 fn assertNoOverlaps(gs: *GameSession) void {
   var it = gs.gbe.iter(C.PhysObject); while (it.next()) |self| {
+    if (self.data.illusory) continue;
     const self_transform = gs.gbe.find(self.entity_id, C.Transform) orelse continue;
     var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |other| {
+      if (other.data.illusory) continue;
       if (!couldObjectsCollide(self.entity_id, &self.data, other.entity_id, &other.data)) {
         continue;
       }

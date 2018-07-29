@@ -309,6 +309,12 @@ const CreatureTakeDamageSystem = struct{
           _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
             .player_controller_id = self_player.player_controller_id,
           });
+          if (self_player.last_pickup) |pickup_type| {
+            _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
+              .pos = self.transform.pos,
+              .pickup_type = pickup_type,
+            });
+          }
           return true;
         } else {
           if (self.monster) |self_monster| {

@@ -7,7 +7,6 @@ GAMEPLAY:
 - what should happen if the player dies and respawns while an enemy is his spawn location? should the player be able to ghost through enemies during his blinking invulnerability phase?
 
 CODE:
-- when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - use a single hunk memory system, and print allocation amounts for debugging
@@ -15,6 +14,7 @@ CODE:
 - do the old state/new state page flipping thing for deterministic game code (think functions can only read old state of other entities)
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
 - get tests passing again
+- add tests for physics
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
 - move all drawing stuff into a file, all opengl stuff, with layer of abstraction so that a software renderer could be done (i probably won't bother to do one though)
 - as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.

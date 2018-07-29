@@ -76,6 +76,7 @@ pub const Player = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = false,
       .world_bbox = world_bbox,
       .entity_bbox = player_entity_bbox,
       .facing = Math.Direction.E,
@@ -106,6 +107,7 @@ pub const Player = struct{
       .attack_level = C.Player.AttackLevel.One,
       .speed_level = C.Player.SpeedLevel.One,
       .dying_timer = 0,
+      .last_pickup = null,
     });
 
     return entity_id;
@@ -148,6 +150,7 @@ pub const Spider = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = false,
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -200,6 +203,7 @@ pub const Squid = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = false,
       .world_bbox = world_bbox,
       .entity_bbox = monster_entity_bbox,
       .facing = Math.Direction.E,
@@ -266,6 +270,7 @@ pub const Bullet = struct{
     const max = min + bullet_size - 1;
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = false,
       .world_bbox = Math.BoundingBox{
         .mins = Math.Vec2.init(min, min),
         .maxs = Math.Vec2.init(max, max),
@@ -284,7 +289,9 @@ pub const Bullet = struct{
       .ignore_pits = true,
       .flags = C.PhysObject.FLAG_BULLET,
       .ignore_flags = C.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
+        // monster bullets ignore all monsters
         BulletType.MonsterBullet => C.PhysObject.FLAG_MONSTER,
+        // player bullets ignore only the player that shot it (via `owner_id`)
         BulletType.PlayerBullet => 0,
       },
       .internal = undefined,
@@ -361,6 +368,7 @@ pub const Pickup = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = true,
       .world_bbox = world_bbox,
       .entity_bbox = pickup_entity_bbox,
       .facing = Math.Direction.E,

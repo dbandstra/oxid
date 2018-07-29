@@ -71,6 +71,10 @@ pub const PhysObject = struct {
   pub const FLAG_BULLET: u32 = 1;
   pub const FLAG_MONSTER: u32 = 2;
 
+  // `illusory`: if true, this object is non-solid, but still causes 'collide'
+  // events when overlapped
+  illusory: bool,
+
   // bounding boxes are relative to transform position. the dimensions of the
   // box will be (maxs - mins + 1).
   // `world_bbox`: the bbox used to collide with the level.
@@ -145,6 +149,7 @@ pub const Player = struct {
   attack_level: AttackLevel,
   speed_level: SpeedLevel,
   dying_timer: u32,
+  last_pickup: ?Pickup.Type,
 };
 
 pub const Transform = struct {
