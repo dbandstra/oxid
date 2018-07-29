@@ -1,10 +1,10 @@
 GAMEPLAY:
-- if a monster starts to spawn where you're standing, you get stuck
 - enemies should start at faster speeds on later levels
 - you can't face a pit if there is no space
 - remove the pits
 - fast bug monsters
 - it looks too much like a glitch when the enemies freeze after you die
+- what should happen if the player dies and respawns while an enemy is his spawn location? should the player be able to ghost through enemies during his blinking invulnerability phase?
 
 CODE:
 - when player touches a pickup, he stops for one frame. pickup should not be solid at all (come up with something like "solid_trigger")
@@ -16,7 +16,6 @@ CODE:
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
 - get tests passing again
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
-- do something to avoid spawning monsters inside other monsters (or just make it possible to move out of something you're stuck in). sometimes a level begins with two monsters in the same spot. both monsters and pickups should be spawned away from the player and from each other
 - move all drawing stuff into a file, all opengl stuff, with layer of abstraction so that a software renderer could be done (i probably won't bother to do one though)
 - as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.
 

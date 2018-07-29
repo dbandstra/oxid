@@ -39,6 +39,7 @@ pub const ZIndexBullet: u32 = 50;
 pub const ZIndexPickup: u32 = 30;
 pub const ZIndexCorpse: u32 = 20;
 
+// FIXME - kind of silly to have the struct definition in this file
 pub const Wave = struct{
   spiders: u32,
   squids: u32,

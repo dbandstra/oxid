@@ -8,8 +8,7 @@ const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
 const Constants = @import("constants.zig");
-const MonsterType = @import("init.zig").MonsterType;
-const spawnMonsters = @import("init.zig").spawnMonsters;
+const spawnWave = @import("init.zig").spawnWave;
 const spawnPlayer = @import("init.zig").spawnPlayer;
 const spawnPickup = @import("init.zig").spawnPickup;
 const C = @import("components.zig");
@@ -92,12 +91,15 @@ const GameControllerSystem = struct{
       self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
       if (self.gc.wave_index - 1 < Constants.Waves.len) {
         const wave = &Constants.Waves[self.gc.wave_index - 1];
-        spawnMonsters(gs, wave.spiders, MonsterType.Spider);
-        spawnMonsters(gs, wave.squids, MonsterType.Squid);
+        spawnWave(gs, wave);
         self.gc.enemy_speed_level = wave.speed;
         self.gc.monster_count = wave.spiders + wave.squids;
       } else {
-        spawnMonsters(gs, 1, MonsterType.Spider);
+        spawnWave(gs, Constants.Wave{
+          .spiders = 1,
+          .squids = 0,
+          .speed = 0,
+        });
       }
     }
     if (decrementTimer(&self.gc.enemy_speed_timer)) {

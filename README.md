@@ -20,7 +20,6 @@ Controls:
 * backquote: fast forward
 * esc: quit
 * backspace: reset
-* return: spawn more monsters (debug command)
 * F2: toggle rendering of move boxes
 * F3: toggle god mode
 
