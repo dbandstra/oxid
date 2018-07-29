@@ -1,5 +1,3 @@
-use @import("platform/math3d.zig"); // FIXME
-const c = @import("platform/c.zig"); // FIXME
 const Platform = @import("platform/platform.zig");
 
 pub const Tileset = struct {
@@ -21,12 +19,20 @@ pub const Transform = enum {
   RotateCounterClockwise,
 };
 
+// FIXME - use the palette!
+pub const Color = struct {
+  r: u8,
+  g: u8,
+  b: u8,
+  a: u8,
+};
+
 pub const SolidParams = struct {
-  color: Vec4,
+  color: Color,
 };
 
 pub const OutlineParams = struct {
-  color: Vec4,
+  color: Color,
 };
 
 pub const RectStyle = union(enum) {

@@ -1,6 +1,4 @@
 const std = @import("std");
-const MemoryOutStream = @import("../../zigutils/src/MemoryOutStream.zig").MemoryOutStream;
-use @import("../platform/math3d.zig"); // FIXME
 const lessThanField = @import("../util.zig").lessThanField;
 const Math = @import("../math.zig");
 const Draw = @import("../draw.zig");
@@ -63,10 +61,12 @@ pub fn drawGame(g: *GameState) void {
   if (g.render_move_boxes) {
     var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
       const int = object.data.internal;
-      const R = @intCast(u8, 64 + ((int.group_index * 41) % 192));
-      const G = @intCast(u8, 64 + ((int.group_index * 901) % 192));
-      const B = @intCast(u8, 64 + ((int.group_index * 10031) % 192));
-      drawBox(g, int.move_bbox, R, G, B);
+      drawBox(g, int.move_bbox, Draw.Color{
+        .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
+        .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
+        .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
+        .a = 255,
+      });
     }
   }
 
@@ -218,23 +218,23 @@ pub fn drawHud(g: *GameState) void {
 
   PlatformDraw.rect(&g.platform_state, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
     .Solid = Draw.SolidParams{
-      .color = vec4(0, 0, 0, 1),
+      .color = Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
     },
   });
 
   if (pc_maybe) |pc| {
     var buffer: [40]u8 = undefined;
-    var dest = MemoryOutStream.init(buffer[0..]);
+    var dest = std.io.SliceOutStream.init(buffer[0..]);
     _ = dest.stream.print("Wave: {}", gc.wave_index);
-    fontDrawString(&g.platform_state, Math.Vec2.init(0, 0), dest.getSlice());
+    fontDrawString(&g.platform_state, Math.Vec2.init(0, 0), dest.getWritten());
     dest.reset();
     _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
-    fontDrawString(&g.platform_state, Math.Vec2.init(9*8, 0), dest.getSlice());
+    fontDrawString(&g.platform_state, Math.Vec2.init(9*8, 0), dest.getWritten());
     dest.reset();
     if (pc.lives > 0) {
       // show one less so that 0 is a life
       _ = dest.stream.print("Lives: {}", pc.lives - 1);
-      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 0), dest.getSlice());
+      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 0), dest.getWritten());
       dest.reset();
     } else {
       fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 0), "Lives: \x1F"); // skull
@@ -245,7 +245,7 @@ pub fn drawHud(g: *GameState) void {
       fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 8), "god mode");
     }
     _ = dest.stream.print("Score: {}", pc.score);
-    fontDrawString(&g.platform_state, Math.Vec2.init(29*8, 0), dest.getSlice());
+    fontDrawString(&g.platform_state, Math.Vec2.init(29*8, 0), dest.getWritten());
     dest.reset();
   }
 }
@@ -274,7 +274,7 @@ fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Tr
   );
 }
 
-fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void {
+fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
   const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
   const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, Math.SUBPIXELS));
@@ -283,12 +283,7 @@ fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void 
   const h = y1 - y0;
   PlatformDraw.rect(&g.platform_state, x0, y0, w, h, Draw.RectStyle{
     .Outline = Draw.OutlineParams{
-      .color = vec4(
-        @intToFloat(f32, R) / 255.0,
-        @intToFloat(f32, G) / 255.0,
-        @intToFloat(f32, B) / 255.0,
-        1,
-      ),
+      .color = color,
     },
   });
 }

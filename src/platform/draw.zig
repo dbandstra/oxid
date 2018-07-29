@@ -23,16 +23,25 @@ fn drawUntexturedRectMvp(ps: *Platform.State, mvp: *const Mat4x4, color: Vec4, o
   }
 }
 
+fn getColor(color: Draw.Color) Vec4 {
+  return vec4(
+    @intToFloat(f32, color.r) / 255.0,
+    @intToFloat(f32, color.g) / 255.0,
+    @intToFloat(f32, color.b) / 255.0,
+    @intToFloat(f32, color.a) / 255.0,
+  );
+}
+
 pub fn rect(ps: *Platform.State, x: f32, y: f32, w: f32, h: f32, style: Draw.RectStyle) void {
   const model = mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
   const mvp = ps.projection.mult(model);
 
   switch (style) {
     Draw.RectStyle.Solid => |params| {
-      drawUntexturedRectMvp(ps, mvp, params.color, false);
+      drawUntexturedRectMvp(ps, mvp, getColor(params.color), false);
     },
     Draw.RectStyle.Outline => |params| {
-      drawUntexturedRectMvp(ps, mvp, params.color, true);
+      drawUntexturedRectMvp(ps, mvp, getColor(params.color), true);
     },
   }
 }
