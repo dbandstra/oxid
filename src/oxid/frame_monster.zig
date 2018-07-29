@@ -264,19 +264,20 @@ pub const MonsterTouchResponseSystem = struct{
       if (Gbe.EntityId.isZero(event.other_id)) {
         hit_wall = true;
       } else {
-        if (gs.gbe.find(event.other_id, C.Creature)) |other_creature| {
-          if (event.propelled) {
-            hit_creature = true;
-          }
-          if (gs.gbe.find(event.other_id, C.Monster) == null) {
-            // if it's a non-monster creature, inflict damage on it
-            if (self.monster.spawning_timer == 0) {
-              _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
-                .inflictor_player_controller_id = null,
-                .self_id = event.other_id,
-                .amount = 1,
-              });
-            }
+        const other_creature = gs.gbe.find(event.other_id, C.Creature) orelse continue;
+        const other_phys = gs.gbe.find(event.other_id, C.PhysObject) orelse continue;
+
+        if (event.propelled and !self.phys.illusory and !other_phys.illusory) {
+          hit_creature = true;
+        }
+        if (gs.gbe.find(event.other_id, C.Monster) == null) {
+          // if it's a non-monster creature, inflict damage on it
+          if (self.monster.spawning_timer == 0) {
+            _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
+              .inflictor_player_controller_id = null,
+              .self_id = event.other_id,
+              .amount = 1,
+            });
           }
         }
       }

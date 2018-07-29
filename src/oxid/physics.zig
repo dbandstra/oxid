@@ -220,7 +220,7 @@ pub fn physicsFrame(gs: *GameSession) void {
               other_transform.pos, o.phys.entity_bbox,
             )) {
               collide(gs, m.entity_id, o.entity_id);
-              if (!o.phys.illusory) {
+              if (!m.phys.illusory and !o.phys.illusory) {
                 hit_something = true;
               }
             }

@@ -2,7 +2,6 @@ GAMEPLAY:
 - you can't face a pit if there is no space
 - remove the pits
 - it looks too much like a glitch when the enemies freeze after you die
-- what should happen if the player dies and respawns while an enemy is his spawn location? should the player be able to ghost through enemies during his blinking invulnerability phase?
 
 CODE:
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
