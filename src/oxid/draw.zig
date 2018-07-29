@@ -241,6 +241,9 @@ pub fn drawHud(g: *GameState) void {
       fontDrawString(&g.platform_state, Math.Vec2.init(18*8, 15*8), "GAME");
       fontDrawString(&g.platform_state, Math.Vec2.init(18*8, 16*8), "OVER");
     }
+    if (g.session.god_mode) {
+      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 8), "god mode");
+    }
     _ = dest.stream.print("Score: {}", pc.score);
     fontDrawString(&g.platform_state, Math.Vec2.init(29*8, 0), dest.getSlice());
     dest.reset();

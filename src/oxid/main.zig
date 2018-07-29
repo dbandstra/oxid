@@ -92,7 +92,6 @@ pub fn main() !void {
             },
             c.SDLK_F3 => {
               g.session.god_mode = !g.session.god_mode;
-              std.debug.warn("god mode {}\n", if (g.session.god_mode) "enabled" else "disabled");
             },
             c.SDLK_UP => gameInput(&g.session, InputEvent.Up, true),
             c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, true),

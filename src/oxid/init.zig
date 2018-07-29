@@ -59,6 +59,7 @@ pub fn spawnPickup(gs: *GameSession, pickup_type: C.Pickup.Type) void {
 
 // fill given slice with random grid positions, none of which is in a wall,
 // near a player, or colocating with another
+// TODO - also avoid spawning near pickups
 fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []Math.Vec2) void {
   // create a mask over all the grid cells - true means it's ok to spawn here.
   // start by setting true wherever there is a floor
