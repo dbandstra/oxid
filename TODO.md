@@ -1,5 +1,4 @@
 GAMEPLAY:
-- enemies should start at faster speeds on later levels
 - you can't face a pit if there is no space
 - remove the pits
 - it looks too much like a glitch when the enemies freeze after you die
