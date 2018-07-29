@@ -30,7 +30,9 @@ pub const MonsterMovementSystem = struct{
       self.phys.push_dir = null;
     } else {
       monsterMove(gs, self);
-      monsterShoot(gs, self);
+      if (self.monster.can_shoot) {
+        monsterShoot(gs, self);
+      }
     }
     return true;
   }
@@ -50,8 +52,8 @@ pub const MonsterMovementSystem = struct{
     }
 
     const speed
-      = self.creature.walk_speed
-      + self.creature.walk_speed * gc.enemy_speed_level / 2;
+      = self.creature.move_speed
+      + self.creature.move_speed * gc.enemy_speed_level / 2;
 
     // look ahead for corners
     const pos = self.transform.pos;

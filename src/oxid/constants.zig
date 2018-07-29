@@ -1,3 +1,8 @@
+const ConstantTypes = @import("constant_types.zig");
+const MonsterType = ConstantTypes.MonsterType;
+const MonsterValues = ConstantTypes.MonsterValues;
+const Wave = ConstantTypes.Wave;
+
 pub const EnemySpeedTicks = 12*60; // every 12 seconds, increase monster speed
 pub const MaxEnemySpeedLevel = 4;
 pub const PickupSpawnTime = 45*60; // spawn a new pickup every 45 seconds
@@ -11,13 +16,28 @@ pub const PlayerSlipThreshold = 12*16; // FIXME - use screen space
 pub const PlayerRespawnTime: u32 = 60; // 1 seconds
 pub const PlayerNumLives: u32 = 4; // 1 will be subtracted when drawing the hud
 
-pub const SpiderHitPoints: u32 = 1;
-pub const SpiderWalkSpeed: u31 = 8;
-pub const SpiderKillPoints: u32 = 10;
-
-pub const SquidHitPoints: u32 = 5;
-pub const SquidWalkSpeed: u31 = 6;
-pub const SquidKillPoints: u32 = 15;
+pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
+  return switch (monster_type) {
+    MonsterType.Spider => MonsterValues{
+      .hit_points = 1,
+      .move_speed = 8,
+      .kill_points = 10,
+      .can_shoot = true,
+    },
+    MonsterType.FastBug => MonsterValues{
+      .hit_points = 1,
+      .move_speed = 16,
+      .kill_points = 10,
+      .can_shoot = false,
+    },
+    MonsterType.Squid => MonsterValues{
+      .hit_points = 5,
+      .move_speed = 6,
+      .kill_points = 15,
+      .can_shoot = true,
+    },
+  };
+}
 
 pub const PickupGetPoints: u32 = 20;
 
@@ -27,9 +47,9 @@ pub const PlayerBulletSpeed: u31 = 72;
 pub const MonsterBulletSpeed: u31 = 28;
 
 pub const PlayerMaxBullets: usize = 2;
-pub const PlayerWalkSpeed1: u31 = 20;
-pub const PlayerWalkSpeed2: u31 = 24;
-pub const PlayerWalkSpeed3: u31 = 28;
+pub const PlayerMoveSpeed1: u31 = 20;
+pub const PlayerMoveSpeed2: u31 = 24;
+pub const PlayerMoveSpeed3: u31 = 28;
 
 pub const ZIndexSparks: u32 = 120;
 pub const ZIndexPlayer: u32 = 100;
@@ -39,20 +59,18 @@ pub const ZIndexBullet: u32 = 50;
 pub const ZIndexPickup: u32 = 30;
 pub const ZIndexCorpse: u32 = 20;
 
-// FIXME - kind of silly to have the struct definition in this file
-pub const Wave = struct{
-  spiders: u32,
-  squids: u32,
-  speed: u31,
-};
 pub const Waves = []Wave{
-  Wave{ .spiders = 8, .squids = 0, .speed = 0 }, // 1
-  Wave{ .spiders = 0, .squids = 8, .speed = 0 }, // 2
-  Wave{ .spiders = 12, .squids = 0, .speed = 0 }, // 3
-  Wave{ .spiders = 10, .squids = 4, .speed = 0 }, // 4
-  Wave{ .spiders = 20, .squids = 0, .speed = 0 }, // 5
-  Wave{ .spiders = 0, .squids = 14, .speed = 0 }, // 6
-  Wave{ .spiders = 8, .squids = 8, .speed = 1 }, // 7
-  Wave{ .spiders = 10, .squids = 10, .speed = 1 }, // 8
-  Wave{ .spiders = 15, .squids = 10, .speed = 2 }, // 9
+  Wave{ .spiders = 8, .fastbugs = 0, .squids = 0, .speed = 0 }, // 1
+  Wave{ .spiders = 0, .fastbugs = 0, .squids = 6, .speed = 0 }, // 2
+  Wave{ .spiders = 12, .fastbugs = 0, .squids = 0, .speed = 0 }, // 3
+  Wave{ .spiders = 0, .fastbugs = 8, .squids = 0, .speed = 0 }, // 4
+  Wave{ .spiders = 10, .fastbugs = 4, .squids = 0, .speed = 0 }, // 5
+  Wave{ .spiders = 20, .fastbugs = 0, .squids = 0, .speed = 0 }, // 6
+  Wave{ .spiders = 0, .fastbugs = 6, .squids = 6, .speed = 0 }, // 7
+  Wave{ .spiders = 4, .fastbugs = 10, .squids = 0, .speed = 1 }, // 8
+  Wave{ .spiders = 10, .fastbugs = 4, .squids = 10, .speed = 1 }, // 9
+  Wave{ .spiders = 15, .fastbugs = 4, .squids = 10, .speed = 2 }, // 10
 };
+
+// this is used after you pass the final wave. FIXME - do something better
+pub const DefaultWave = Wave{ .spiders = 1, .fastbugs = 0, .squids = 0, .speed = 0 };

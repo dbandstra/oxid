@@ -16,6 +16,7 @@ const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("input.zig").InputEvent;
 const gameInit = @import("init.zig").gameInit;
+const killAllMonsters = @import("init.zig").killAllMonsters;
 const gameFrame = @import("frame.zig").gameFrame;
 const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
@@ -86,6 +87,9 @@ pub fn main() !void {
             c.SDLK_BACKSPACE => {
               g.session.init(rand_seed);
               gameInit(&g.session);
+            },
+            c.SDLK_RETURN => {
+              killAllMonsters(&g.session);
             },
             c.SDLK_F2 => {
               g.render_move_boxes = !g.render_move_boxes;

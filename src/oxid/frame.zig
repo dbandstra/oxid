@@ -93,13 +93,9 @@ const GameControllerSystem = struct{
         const wave = &Constants.Waves[self.gc.wave_index - 1];
         spawnWave(gs, wave);
         self.gc.enemy_speed_level = wave.speed;
-        self.gc.monster_count = wave.spiders + wave.squids;
+        self.gc.monster_count = wave.spiders + wave.fastbugs + wave.squids;
       } else {
-        spawnWave(gs, Constants.Wave{
-          .spiders = 1,
-          .squids = 0,
-          .speed = 0,
-        });
+        spawnWave(gs, Constants.DefaultWave);
       }
     }
     if (decrementTimer(&self.gc.enemy_speed_timer)) {

@@ -17,6 +17,7 @@ pub const Drawable = struct {
     Soldier,
     SoldierCorpse,
     Spider,
+    FastBug,
     Squid,
     Animation,
     Pickup,
@@ -29,7 +30,7 @@ pub const Drawable = struct {
 pub const Creature = struct {
   invulnerability_timer: u32,
   hit_points: u32,
-  walk_speed: u31,
+  move_speed: u31,
 };
 
 pub const Monster = struct {
@@ -42,6 +43,7 @@ pub const Monster = struct {
   full_hit_points: u32,
   personality: Personality,
   kill_points: u32,
+  can_shoot: bool,
   next_shoot_timer: u32,
 };
 

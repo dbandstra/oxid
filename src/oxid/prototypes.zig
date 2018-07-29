@@ -5,6 +5,7 @@ const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const C = @import("components.zig");
 
@@ -97,7 +98,7 @@ pub const Player = struct{
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
-      .walk_speed = Constants.PlayerWalkSpeed1,
+      .move_speed = Constants.PlayerMoveSpeed1,
     });
 
     try gs.gbe.addComponent(entity_id, C.Player{
@@ -114,7 +115,7 @@ pub const Player = struct{
   }
 };
 
-pub const Corpse = struct{
+pub const PlayerCorpse = struct{
   pub const Params = struct{
     pos: Math.Vec2,
   };
@@ -136,12 +137,15 @@ pub const Corpse = struct{
   }
 };
 
-pub const Spider = struct{
+pub const Monster = struct{
   pub const Params = struct{
+    monster_type: ConstantTypes.MonsterType,
     pos: Math.Vec2,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
+    const monster_values = Constants.getMonsterValues(params.monster_type);
+
     const entity_id = gs.gbe.spawn();
     errdefer gs.gbe.undoSpawn(entity_id);
 
@@ -164,78 +168,34 @@ pub const Spider = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Spider,
+      .draw_type = switch (params.monster_type) {
+        ConstantTypes.MonsterType.Spider => C.Drawable.Type.Spider,
+        ConstantTypes.MonsterType.FastBug => C.Drawable.Type.FastBug,
+        ConstantTypes.MonsterType.Squid => C.Drawable.Type.Squid,
+      },
       .z_index = Constants.ZIndexEnemy,
     });
 
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
-      .hit_points = 1,
-      .walk_speed = Constants.SpiderWalkSpeed,
+      .hit_points = 1, // always one hit point while spawning
+      .move_speed = monster_values.move_speed,
     });
 
     try gs.gbe.addComponent(entity_id, C.Monster{
       .spawning_timer = 60,
-      .full_hit_points = Constants.SpiderHitPoints,
+      .full_hit_points = monster_values.hit_points,
       .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,
         else => C.Monster.Personality.Wander,
       },
-      .kill_points = Constants.SpiderKillPoints,
-      .next_shoot_timer = gs.gbe.getRand().range(u32, 75, 400),
-    });
-
-    return entity_id;
-  }
-};
-
-pub const Squid = struct{
-  pub const Params = struct{
-    pos: Math.Vec2,
-  };
-
-  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
-    const entity_id = gs.gbe.spawn();
-    errdefer gs.gbe.undoSpawn(entity_id);
-
-    try gs.gbe.addComponent(entity_id, C.Transform{
-      .pos = params.pos,
-    });
-
-    try gs.gbe.addComponent(entity_id, C.PhysObject{
-      .illusory = false,
-      .world_bbox = world_bbox,
-      .entity_bbox = monster_entity_bbox,
-      .facing = Math.Direction.E,
-      .speed = 0,
-      .push_dir = null,
-      .owner_id = Gbe.EntityId{ .id = 0 },
-      .ignore_pits = false,
-      .flags = C.PhysObject.FLAG_MONSTER,
-      .ignore_flags = 0,
-      .internal = undefined,
-    });
-
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Squid,
-      .z_index = Constants.ZIndexEnemy,
-    });
-
-    try gs.gbe.addComponent(entity_id, C.Creature{
-      .invulnerability_timer = 0,
-      .hit_points = 1,
-      .walk_speed = Constants.SquidWalkSpeed,
-    });
-
-    try gs.gbe.addComponent(entity_id, C.Monster{
-      .spawning_timer = 60,
-      .full_hit_points = Constants.SquidHitPoints,
-      .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
-        0 => C.Monster.Personality.Chase,
-        else => C.Monster.Personality.Wander,
-      },
-      .kill_points = Constants.SquidKillPoints,
-      .next_shoot_timer = gs.gbe.getRand().range(u32, 75, 400),
+      .kill_points = monster_values.kill_points,
+      .can_shoot = monster_values.can_shoot,
+      .next_shoot_timer =
+        if (monster_values.can_shoot)
+          gs.gbe.getRand().range(u32, 75, 400)
+        else
+          0,
     });
 
     return entity_id;

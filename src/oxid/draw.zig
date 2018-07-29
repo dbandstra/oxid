@@ -47,8 +47,9 @@ pub fn drawGame(g: *GameState) void {
     switch (object.data.draw_type) {
       C.Drawable.Type.Soldier => drawSoldier(g, object.entity_id),
       C.Drawable.Type.SoldierCorpse => drawSoldierCorpse(g, object.entity_id),
-      C.Drawable.Type.Spider => drawSpider(g, object.entity_id),
-      C.Drawable.Type.Squid => drawSquid(g, object.entity_id),
+      C.Drawable.Type.Spider => drawMonster(g, object.entity_id, Graphic.Spider1, Graphic.Spider2),
+      C.Drawable.Type.FastBug => drawMonster(g, object.entity_id, Graphic.FastBug1, Graphic.FastBug2),
+      C.Drawable.Type.Squid => drawMonster(g, object.entity_id, Graphic.Squid1, Graphic.Squid2),
       C.Drawable.Type.PlayerBullet => drawBullet(g, object.entity_id, Graphic.PlaBullet),
       C.Drawable.Type.PlayerBullet2 => drawBullet(g, object.entity_id, Graphic.PlaBullet2),
       C.Drawable.Type.PlayerBullet3 => drawBullet(g, object.entity_id, Graphic.PlaBullet3),
@@ -152,23 +153,13 @@ fn drawSoldierCorpse(g: *GameState, entity_id: Gbe.EntityId) void {
   drawBlock(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
 }
 
-fn drawSpider(g: *GameState, entity_id: Gbe.EntityId) void {
+fn drawMonster(g: *GameState, entity_id: Gbe.EntityId, graphic1: Graphic, graphic2: Graphic) void {
   const monster = g.session.gbe.find(entity_id, C.Monster) orelse return;
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = monster.spawning_timer,
-    .graphic1 = Graphic.Spider1,
-    .graphic2 = Graphic.Spider2,
-  });
-}
-
-fn drawSquid(g: *GameState, entity_id: Gbe.EntityId) void {
-  const monster = g.session.gbe.find(entity_id, C.Monster) orelse return;
-  DrawCreature.run(g, DrawCreature.Params{
-    .entity_id = entity_id,
-    .spawning_timer = monster.spawning_timer,
-    .graphic1 = Graphic.Squid1,
-    .graphic2 = Graphic.Squid2,
+    .graphic1 = graphic1,
+    .graphic2 = graphic2,
   });
 }
 

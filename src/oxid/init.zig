@@ -1,7 +1,7 @@
 const std = @import("std");
 const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
-const Constants = @import("constants.zig");
+const ConstantTypes = @import("constant_types.zig");
 const GameSession = @import("game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const TerrainType = @import("level.zig").TerrainType;
@@ -27,23 +27,42 @@ pub fn spawnPlayer(gs: *GameSession, player_controller_id: Gbe.EntityId) void {
   });
 }
 
-pub fn spawnWave(gs: *GameSession, wave: *const Constants.Wave) void {
-  const count = wave.spiders + wave.squids;
+pub fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
+  const count = wave.spiders + wave.fastbugs + wave.squids;
   std.debug.assert(count <= 100);
   var spawn_locs_buf: [100]Math.Vec2 = undefined;
   var spawn_locs = spawn_locs_buf[0..count];
   pickSpawnLocations(gs, spawn_locs);
   for (spawn_locs) |loc, i| {
-    const pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS);
-    if (i < wave.spiders) {
-      _ = Prototypes.Spider.spawn(gs, Prototypes.Spider.Params{
-        .pos = pos,
-      });
-    } else {
-      _ = Prototypes.Squid.spawn(gs, Prototypes.Squid.Params{
-        .pos = pos,
-      });
+    _ = Prototypes.Monster.spawn(gs, Prototypes.Monster.Params{
+      .pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
+      .monster_type =
+        if (i < wave.spiders)
+          ConstantTypes.MonsterType.Spider
+        else if (i < wave.spiders + wave.fastbugs)
+          ConstantTypes.MonsterType.FastBug
+        else
+          ConstantTypes.MonsterType.Squid,
+    });
+  }
+}
+
+// this is a cheat
+pub fn killAllMonsters(gs: *GameSession) void {
+  var num_monsters: usize = 0;
+  var it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
+    num_monsters += 1;
+  }
+
+  if (num_monsters > 0) {
+    it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
+      gs.gbe.markEntityForRemoval(object.entity_id);
     }
+    gs.gbe.applyRemovals();
+  }
+
+  if (gs.gbe.iter(C.GameController).next()) |object| {
+    object.data.next_wave_timer = 1;
   }
 }
 

@@ -15,7 +15,7 @@ const Prototypes = @import("prototypes.zig");
 // - self.phys.speed
 // - self.phys.push_dir
 // - self.phys.facing
-// that's it. the react system is also writing self.creature.walk_speed.
+// that's it. the react system is also writing self.creature.move_speed.
 // need an Event to set phys fields.
 
 pub const PlayerMovementSystem = struct{
@@ -31,7 +31,7 @@ pub const PlayerMovementSystem = struct{
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (decrementTimer(&self.player.dying_timer)) {
-      _ = Prototypes.Corpse.spawn(gs, Prototypes.Corpse.Params{
+      _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params{
         .pos = self.transform.pos,
       });
       return false;
@@ -106,7 +106,7 @@ pub const PlayerMovementSystem = struct{
 
       if (ymove == 0) {
         // only moving along x axis. try to slip around corners
-        tryPush(pos, dir, self.creature.walk_speed, self.phys);
+        tryPush(pos, dir, self.creature.move_speed, self.phys);
       } else {
         // trying to move diagonally.
         const secondary_dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
@@ -114,17 +114,17 @@ pub const PlayerMovementSystem = struct{
         // prefer to move on the x axis (arbitrary, but i had to pick something)
         if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(dir)))) {
           self.phys.facing = dir;
-          self.phys.speed = self.creature.walk_speed;
+          self.phys.speed = self.creature.move_speed;
         } else if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(secondary_dir)))) {
           self.phys.facing = secondary_dir;
-          self.phys.speed = self.creature.walk_speed;
+          self.phys.speed = self.creature.move_speed;
         }
       }
     } else if (ymove != 0) {
       // only moving along y axis. try to slip around corners
       const dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
-      tryPush(pos, dir, self.creature.walk_speed, self.phys);
+      tryPush(pos, dir, self.creature.move_speed, self.phys);
     }
   }
 
@@ -198,10 +198,10 @@ pub const PlayerReactionSystem = struct{
             C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
             else => C.Player.SpeedLevel.Three,
           };
-          self.creature.walk_speed = switch (self.player.speed_level) {
-            C.Player.SpeedLevel.One => Constants.PlayerWalkSpeed1,
-            C.Player.SpeedLevel.Two => Constants.PlayerWalkSpeed2,
-            C.Player.SpeedLevel.Three => Constants.PlayerWalkSpeed3,
+          self.creature.move_speed = switch (self.player.speed_level) {
+            C.Player.SpeedLevel.One => Constants.PlayerMoveSpeed1,
+            C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed2,
+            C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed3,
           };
           self.player.last_pickup = C.Pickup.Type.SpeedUp;
         },
