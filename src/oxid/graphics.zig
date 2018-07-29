@@ -55,9 +55,6 @@ pub fn loadGraphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void 
     const graphic = @intToEnum(Graphic, @intCast(@typeInfo(Graphic).Enum.tag_type, field.value));
     const config = getGraphicConfig(graphic);
     extractTile(tile, tileset, config.tx, config.ty);
-    if (config.fliph) {
-      image.flipHorizontal(tile);
-    }
     graphics.textures[field.value] = Platform.uploadTexture(tile);
   }
 }
