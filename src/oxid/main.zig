@@ -9,8 +9,7 @@ const image = @import("../../zigutils/src/image/image.zig");
 
 const Platform = @import("../platform/platform.zig");
 const Draw = @import("../draw.zig");
-const Graphics = @import("graphics.zig").Graphics;
-const loadGraphics = @import("graphics.zig").loadGraphics;
+const loadTileset = @import("graphics.zig").loadTileset;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("level.zig").LEVEL;
 const GameInput = @import("game.zig").GameInput;
@@ -40,7 +39,7 @@ const dsaf = &dsaf_;
 
 pub const GameState = struct {
   platform_state: Platform.State,
-  graphics: Graphics,
+  tileset: Draw.Tileset,
   session: GameSession,
   render_move_boxes: bool,
   paused: bool,
@@ -73,7 +72,7 @@ pub fn main() !void {
   g.session.init(rand_seed);
   gameInit(&g.session);
 
-  try loadGraphics(dsaf, &g.graphics);
+  try loadTileset(dsaf, &g.tileset);
 
   var quit = false;
   while (!quit) {

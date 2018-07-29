@@ -11,7 +11,7 @@ const PlatformDraw = @import("draw.zig");
 const Draw = @import("../draw.zig");
 
 // this platform file is for OpenGL + SDL2
-// TODO - split into two
+// TODO - split into two (as much as possible)
 
 pub const State = struct {
   initialized: bool,
@@ -214,12 +214,7 @@ pub fn postDraw(ps: *State) void {
   ps.projection = mat4x4_ortho(0, fw, fh, 0);
   c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
   c.glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
-  PlatformDraw.rect(ps, 0, 0, fw, fh, Draw.RectStyle{
-    .Textured = Draw.TexturedParams{
-      .tex_id = ps.rt,
-      .transform = Draw.Transform.FlipVertical,
-    },
-  });
+  PlatformDraw.drawTextured(ps, ps.rt, 0, 0, fw, fh, Draw.Transform.FlipVertical);
 
   c.SDL_GL_SwapWindow(ps.window);
 

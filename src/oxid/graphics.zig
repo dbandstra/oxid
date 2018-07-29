@@ -1,76 +1,126 @@
-const std = @import("std");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
-const image = @import("../../zigutils/src/image/image.zig");
-const pcx = @import("../../zig-comptime-pcx/pcx.zig");
 
-const Platform = @import("../platform/platform.zig");
+const Draw = @import("../draw.zig");
+const uploadPcx = @import("../platform/upload_pcx.zig").uploadPcx;
 
-const GRAPHICS_FILENAME = @import("graphics_config.zig").GRAPHICS_FILENAME;
-const TRANSPARENT_COLOR_INDEX = @import("graphics_config.zig").TRANSPARENT_COLOR_INDEX;
-const Graphic = @import("graphics_config.zig").Graphic;
-const getGraphicConfig = @import("graphics_config.zig").getGraphicConfig;
+const GRAPHICS_FILENAME = "../../assets/mytiles.pcx";
+const TRANSPARENT_COLOR_INDEX = 27;
 
-pub const Graphics = struct{
-  background_colour: image.Pixel,
-  textures: [@memberCount(Graphic)]Platform.Texture,
-
-  pub fn texture(self: *Graphics, graphic: Graphic) *Platform.Texture {
-    return &self.textures[@enumToInt(graphic)];
-  }
+pub const Graphic = enum{
+  Pit,
+  PlaBullet,
+  PlaBullet2,
+  PlaBullet3,
+  PlaSpark1,
+  PlaSpark2,
+  MonBullet,
+  MonSpark1,
+  MonSpark2,
+  Floor,
+  Man1,
+  Man2,
+  ManDying1,
+  ManDying2,
+  ManDying3,
+  ManDying4,
+  ManDying5,
+  ManDying6,
+  Wall,
+  Wall2,
+  Spider1,
+  Spider2,
+  Explode1,
+  Explode2,
+  Explode3,
+  Explode4,
+  Spawn1,
+  Spawn2,
+  Squid1,
+  Squid2,
+  PowerUp,
+  SpeedUp,
+  LifeUp,
 };
 
-// return an Image allocated in the low_allocator
-fn loadTileset(dsaf: *DoubleStackAllocatorFlat) !*image.Image {
-  const filedata = @embedFile(GRAPHICS_FILENAME);
-
-  var slice_stream = std.io.SliceInStream.init(filedata);
-  var stream = &slice_stream.stream;
-  const Loader = pcx.Loader(std.io.SliceInStream.Error);
-
-  // load pcx
-  const preloaded = try Loader.preload(stream);
-  const img = try image.createImage(&dsaf.low_allocator, image.Info{
-    .width = preloaded.width,
-    .height = preloaded.height,
-    .format = image.Format.RGBA,
-  });
-  try Loader.loadRGBA(stream, &preloaded, TRANSPARENT_COLOR_INDEX, img.pixels);
-
-  return img;
+pub fn getGraphicTile(graphic: Graphic) Draw.Tile {
+  return switch (graphic) {
+    Graphic.Pit        => Draw.Tile{ .tx = 1, .ty = 0 },
+    Graphic.Floor      => Draw.Tile{ .tx = 2, .ty = 0 },
+    Graphic.Wall,
+    Graphic.Wall2      => Draw.Tile{ .tx = 3, .ty = 0 },
+    Graphic.PlaBullet  => Draw.Tile{ .tx = 2, .ty = 1 },
+    Graphic.PlaBullet2 => Draw.Tile{ .tx = 3, .ty = 1 },
+    Graphic.PlaBullet3 => Draw.Tile{ .tx = 4, .ty = 1 },
+    Graphic.PlaSpark1  => Draw.Tile{ .tx = 1, .ty = 1 },
+    Graphic.PlaSpark2  => Draw.Tile{ .tx = 0, .ty = 1 },
+    Graphic.MonBullet  => Draw.Tile{ .tx = 2, .ty = 3 },
+    Graphic.MonSpark1  => Draw.Tile{ .tx = 1, .ty = 3 },
+    Graphic.MonSpark2  => Draw.Tile{ .tx = 0, .ty = 3 },
+    Graphic.Man1       => Draw.Tile{ .tx = 6, .ty = 1 },
+    Graphic.Man2       => Draw.Tile{ .tx = 7, .ty = 1 },
+    Graphic.ManDying1  => Draw.Tile{ .tx = 0, .ty = 4 },
+    Graphic.ManDying2  => Draw.Tile{ .tx = 1, .ty = 4 },
+    Graphic.ManDying3  => Draw.Tile{ .tx = 2, .ty = 4 },
+    Graphic.ManDying4  => Draw.Tile{ .tx = 3, .ty = 4 },
+    Graphic.ManDying5  => Draw.Tile{ .tx = 4, .ty = 4 },
+    Graphic.ManDying6  => Draw.Tile{ .tx = 5, .ty = 4 },
+    Graphic.Spider1    => Draw.Tile{ .tx = 3, .ty = 2 },
+    Graphic.Spider2    => Draw.Tile{ .tx = 4, .ty = 2 },
+    Graphic.Explode1   => Draw.Tile{ .tx = 0, .ty = 5 },
+    Graphic.Explode2   => Draw.Tile{ .tx = 1, .ty = 5 },
+    Graphic.Explode3   => Draw.Tile{ .tx = 2, .ty = 5 },
+    Graphic.Explode4   => Draw.Tile{ .tx = 3, .ty = 5 },
+    Graphic.Spawn1     => Draw.Tile{ .tx = 2, .ty = 2 },
+    Graphic.Spawn2     => Draw.Tile{ .tx = 1, .ty = 2 },
+    Graphic.Squid1     => Draw.Tile{ .tx = 3, .ty = 3 },
+    Graphic.Squid2     => Draw.Tile{ .tx = 4, .ty = 3 },
+    Graphic.LifeUp     => Draw.Tile{ .tx = 4, .ty = 5 },
+    Graphic.PowerUp    => Draw.Tile{ .tx = 6, .ty = 5 },
+    Graphic.SpeedUp    => Draw.Tile{ .tx = 5, .ty = 5 },
+  };
 }
 
-pub fn loadGraphics(dsaf: *DoubleStackAllocatorFlat, graphics: *Graphics) !void {
-  const low_mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(low_mark);
+pub const SimpleAnim = enum{
+  PlaSparks,
+  MonSparks,
+  Explosion,
+};
 
-  const tileset = try loadTileset(dsaf);
+pub const SimpleAnimConfig = struct{
+  frames: []const Graphic,
+  ticks_per_frame: u32,
+};
 
-  const tile = try image.createImage(&dsaf.low_allocator, image.Info{
-    .width = 16,
-    .height = 16,
-    .format = image.Format.RGBA,
-  });
-
-  for (@typeInfo(Graphic).Enum.fields) |field| {
-    const graphic = @intToEnum(Graphic, @intCast(@typeInfo(Graphic).Enum.tag_type, field.value));
-    const config = getGraphicConfig(graphic);
-    extractTile(tile, tileset, config.tx, config.ty);
-    graphics.textures[field.value] = Platform.uploadTexture(tile);
-  }
-}
-
-fn extractTile(dest: *image.Image, source: *const image.Image, tx: u32, ty: u32) void {
-  var y: u32 = 0;
-  while (y < dest.info.height) : (y += 1) {
-    var x: u32 = 0;
-    while (x < dest.info.width) : (x += 1) {
-      const px = tx * dest.info.width + x;
-      const py = ty * dest.info.height + y;
-      if (image.getPixel(source, px, py)) |pixel| {
-        image.setPixel(dest, x, y, pixel);
-      } else {
-        image.setPixel(dest, x, y, image.Pixel{ .r = 0, .g = 0, .b = 0, .a = 0 });
-      }
+pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
+  return switch (simpleAnim) {
+    SimpleAnim.PlaSparks => SimpleAnimConfig{
+      .frames = ([2]Graphic{
+        Graphic.PlaSpark1,
+        Graphic.PlaSpark2,
+      })[0..],
+      .ticks_per_frame = 4,
+    },
+    SimpleAnim.MonSparks => SimpleAnimConfig{
+      .frames = ([2]Graphic{
+        Graphic.MonSpark1,
+        Graphic.MonSpark2,
+      })[0..],
+      .ticks_per_frame = 4,
+    },
+    SimpleAnim.Explosion => SimpleAnimConfig{
+      .frames = ([4]Graphic{
+        Graphic.Explode1,
+        Graphic.Explode2,
+        Graphic.Explode3,
+        Graphic.Explode4,
+      })[0..],
+      .ticks_per_frame = 4,
     }
-  }
+  };
+}
+
+pub fn loadTileset(dsaf: *DoubleStackAllocatorFlat, out_tileset: *Draw.Tileset) !void {
+  out_tileset.texture = try uploadPcx(dsaf, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+  out_tileset.xtiles = 8;
+  out_tileset.ytiles = 8;
 }

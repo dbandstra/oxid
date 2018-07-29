@@ -11,8 +11,9 @@ const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
 const MaxDrawables = @import("game.zig").MaxDrawables;
-const Graphic = @import("graphics_config.zig").Graphic;
-const getSimpleAnim = @import("graphics_config.zig").getSimpleAnim;
+const Graphic = @import("graphics.zig").Graphic;
+const getGraphicTile = @import("graphics.zig").getGraphicTile;
+const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
@@ -262,12 +263,12 @@ fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Tr
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
-  PlatformDraw.rect(&g.platform_state, x, y, w, h, Draw.RectStyle{
-    .Textured = Draw.TexturedParams{
-      .tex_id = g.graphics.texture(graphic).handle,
-      .transform = transform,
-    },
-  });
+  PlatformDraw.drawTile(
+    &g.platform_state,
+    &g.tileset,
+    getGraphicTile(graphic),
+    x, y, w, h, transform,
+  );
 }
 
 fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, R: u8, G: u8, B: u8) void {
