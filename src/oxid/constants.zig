@@ -1,7 +1,7 @@
 pub const EnemySpeedTicks = 12*60; // every 12 seconds, increase monster speed
 pub const MaxEnemySpeedLevel = 4;
 pub const PickupSpawnTime = 45*60; // spawn a new pickup every 45 seconds
-pub const NextWaveTime = 90; // next wave will begin 1.5 seconds after the last monster dies
+pub const NextWaveTime = 30; // next wave will begin 0.5 seconds after the last monster dies
 pub const MonsterFreezeTimer = 3*60; // monsters freeze for 3 seconds when player dies
 
 // if you push into a wall but there is corner within this distance, move
