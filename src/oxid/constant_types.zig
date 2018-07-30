@@ -16,4 +16,5 @@ pub const Wave = struct{
   fastbugs: u32,
   squids: u32,
   speed: u31,
+  coins: u32,
 };

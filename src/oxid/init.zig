@@ -43,6 +43,8 @@ pub fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
           ConstantTypes.MonsterType.FastBug
         else
           ConstantTypes.MonsterType.Squid,
+      // TODO - distribute coins randomly across monster types?
+      .has_coin = i < wave.coins,
     });
   }
 }

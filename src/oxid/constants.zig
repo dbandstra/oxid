@@ -39,7 +39,8 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
   };
 }
 
-pub const PickupGetPoints: u32 = 20;
+pub const CoinGetPoints: u32 = 10;
+pub const PowerupGetPoints: u32 = 20;
 
 pub const InvulnerabilityTime: u32 = 120; // 2 seconds
 
@@ -60,17 +61,17 @@ pub const ZIndexPickup: u32 = 30;
 pub const ZIndexCorpse: u32 = 20;
 
 pub const Waves = []Wave{
-  Wave{ .spiders = 8, .fastbugs = 0, .squids = 0, .speed = 0 }, // 1
-  Wave{ .spiders = 0, .fastbugs = 0, .squids = 6, .speed = 0 }, // 2
-  Wave{ .spiders = 12, .fastbugs = 0, .squids = 0, .speed = 0 }, // 3
-  Wave{ .spiders = 0, .fastbugs = 8, .squids = 0, .speed = 0 }, // 4
-  Wave{ .spiders = 10, .fastbugs = 4, .squids = 0, .speed = 0 }, // 5
-  Wave{ .spiders = 20, .fastbugs = 0, .squids = 0, .speed = 0 }, // 6
-  Wave{ .spiders = 0, .fastbugs = 6, .squids = 6, .speed = 0 }, // 7
-  Wave{ .spiders = 4, .fastbugs = 10, .squids = 0, .speed = 1 }, // 8
-  Wave{ .spiders = 10, .fastbugs = 4, .squids = 10, .speed = 1 }, // 9
-  Wave{ .spiders = 15, .fastbugs = 4, .squids = 10, .speed = 2 }, // 10
+  Wave{ .spiders = 8, .fastbugs = 0, .squids = 0, .speed = 0, .coins = 3 }, // 1
+  Wave{ .spiders = 0, .fastbugs = 0, .squids = 6, .speed = 0, .coins = 0 }, // 2
+  Wave{ .spiders = 12, .fastbugs = 0, .squids = 0, .speed = 0, .coins = 4 }, // 3
+  Wave{ .spiders = 0, .fastbugs = 8, .squids = 0, .speed = 0, .coins = 2 }, // 4
+  Wave{ .spiders = 10, .fastbugs = 4, .squids = 0, .speed = 0, .coins = 3 }, // 5
+  Wave{ .spiders = 20, .fastbugs = 0, .squids = 0, .speed = 0, .coins = 6 }, // 6
+  Wave{ .spiders = 0, .fastbugs = 6, .squids = 6, .speed = 0, .coins = 2 }, // 7
+  Wave{ .spiders = 4, .fastbugs = 10, .squids = 0, .speed = 1, .coins = 2 }, // 8
+  Wave{ .spiders = 10, .fastbugs = 4, .squids = 10, .speed = 1, .coins = 5 }, // 9
+  Wave{ .spiders = 15, .fastbugs = 4, .squids = 10, .speed = 2, .coins = 8 }, // 10
 };
 
 // this is used after you pass the final wave. FIXME - do something better
-pub const DefaultWave = Wave{ .spiders = 1, .fastbugs = 0, .squids = 0, .speed = 0 };
+pub const DefaultWave = Wave{ .spiders = 1, .fastbugs = 0, .squids = 0, .speed = 0, .coins = 0 };

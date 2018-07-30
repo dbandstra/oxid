@@ -210,6 +210,7 @@ pub const PlayerReactionSystem = struct{
             .player_controller_id = self.player.player_controller_id,
           });
         },
+        C.Pickup.Type.Coin => {},
       }
     }
     return true;

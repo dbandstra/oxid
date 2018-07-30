@@ -27,6 +27,10 @@ pub const Graphic = enum{
   ManDying6,
   Wall,
   Wall2,
+  EvilWallTL,
+  EvilWallTR,
+  EvilWallBL,
+  EvilWallBR,
   Spider1,
   Spider2,
   FastBug1,
@@ -42,14 +46,19 @@ pub const Graphic = enum{
   PowerUp,
   SpeedUp,
   LifeUp,
+  Coin,
 };
 
 pub fn getGraphicTile(graphic: Graphic) Draw.Tile {
   return switch (graphic) {
     Graphic.Pit        => Draw.Tile{ .tx = 1, .ty = 0 },
     Graphic.Floor      => Draw.Tile{ .tx = 2, .ty = 0 },
-    Graphic.Wall,
-    Graphic.Wall2      => Draw.Tile{ .tx = 3, .ty = 0 },
+    Graphic.Wall       => Draw.Tile{ .tx = 3, .ty = 0 },
+    Graphic.Wall2      => Draw.Tile{ .tx = 4, .ty = 0 },
+    Graphic.EvilWallTL => Draw.Tile{ .tx = 0, .ty = 6 },
+    Graphic.EvilWallTR => Draw.Tile{ .tx = 1, .ty = 6 },
+    Graphic.EvilWallBL => Draw.Tile{ .tx = 0, .ty = 7 },
+    Graphic.EvilWallBR => Draw.Tile{ .tx = 1, .ty = 7 },
     Graphic.PlaBullet  => Draw.Tile{ .tx = 2, .ty = 1 },
     Graphic.PlaBullet2 => Draw.Tile{ .tx = 3, .ty = 1 },
     Graphic.PlaBullet3 => Draw.Tile{ .tx = 4, .ty = 1 },
@@ -81,6 +90,7 @@ pub fn getGraphicTile(graphic: Graphic) Draw.Tile {
     Graphic.LifeUp     => Draw.Tile{ .tx = 4, .ty = 5 },
     Graphic.PowerUp    => Draw.Tile{ .tx = 6, .ty = 5 },
     Graphic.SpeedUp    => Draw.Tile{ .tx = 5, .ty = 5 },
+    Graphic.Coin       => Draw.Tile{ .tx = 4, .ty = 6 },
   };
 }
 

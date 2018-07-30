@@ -107,20 +107,24 @@ pub const LEVEL = Level(20, 14).init(blk: {
   const O = 0x80;
   const U = 0x81;
   const x = 0x82; // pit
+  const A = 0x83;
+  const B = 0x84;
+  const C = 0x85;
+  const D = 0x86;
 
   break :blk []const u8{
     O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
     O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_,_,_,O,
-    O,_,O,O,_,O,U,_,U,U,O,_,U,_,U,_,O,O,_,O,
-    O,_,U,U,_,O,_,_,_,_,O,_,_,_,_,_,U,U,_,O,
+    O,_,A,B,_,O,U,_,U,U,O,_,U,_,U,_,A,B,_,O,
+    O,_,C,D,_,O,_,_,_,_,O,_,_,_,_,_,C,D,_,O,
     O,_,_,_,_,U,_,U,U,_,U,_,U,U,O,_,_,_,_,O,
     O,O,_,U,_,_,_,_,_,_,_,_,_,_,U,_,U,U,_,O,
     O,U,_,x,x,x,_,O,_,O,O,_,O,_,_,_,_,_,_,O,
     O,_,_,_,_,_,_,U,_,U,U,_,U,_,U,U,O,_,O,O,
     O,_,x,x,_,x,_,_,_,_,_,_,_,_,_,_,U,_,U,O,
     O,_,_,_,_,U,U,U,_,O,_,U,U,_,O,_,_,_,_,O,
-    O,_,O,O,_,_,_,_,_,O,_,_,_,_,O,_,O,O,_,O,
-    O,_,U,U,_,U,_,O,_,U,U,U,_,U,U,_,U,U,_,O,
+    O,_,A,B,_,_,_,_,_,O,_,_,_,_,O,_,A,B,_,O,
+    O,_,C,D,_,U,_,O,_,U,U,U,_,U,U,_,C,D,_,O,
     O,_,_,_,_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,
     O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
   };

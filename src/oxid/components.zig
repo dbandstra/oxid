@@ -45,6 +45,7 @@ pub const Monster = struct {
   kill_points: u32,
   can_shoot: bool,
   next_shoot_timer: u32,
+  has_coin: bool,
 };
 
 pub const GameController = struct {
@@ -126,6 +127,7 @@ pub const Pickup = struct {
     PowerUp,
     SpeedUp,
     LifeUp,
+    Coin,
   };
 
   pickup_type: Type,

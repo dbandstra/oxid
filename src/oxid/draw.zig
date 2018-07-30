@@ -179,6 +179,7 @@ pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
     C.Pickup.Type.PowerUp => Graphic.PowerUp,
     C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
     C.Pickup.Type.LifeUp => Graphic.LifeUp,
+    C.Pickup.Type.Coin => Graphic.Coin,
   };
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
@@ -194,6 +195,10 @@ pub fn drawMap(g: *GameState) void {
         0x80 => Graphic.Wall,
         0x81 => Graphic.Wall2,
         0x82 => Graphic.Pit,
+        0x83 => Graphic.EvilWallTL,
+        0x84 => Graphic.EvilWallTR,
+        0x85 => Graphic.EvilWallBL,
+        0x86 => Graphic.EvilWallBR,
         else => null,
       }) |graphic| {
         const size = GRIDSIZE_SUBPIXELS;

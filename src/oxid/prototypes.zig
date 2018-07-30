@@ -143,6 +143,7 @@ pub const Monster = struct{
   pub const Params = struct{
     monster_type: ConstantTypes.MonsterType,
     pos: Math.Vec2,
+    has_coin: bool,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
@@ -198,6 +199,7 @@ pub const Monster = struct{
           gs.gbe.getRand().range(u32, 75, 400)
         else
           0,
+      .has_coin = params.has_coin,
     });
 
     return entity_id;
@@ -232,7 +234,7 @@ pub const Bullet = struct{
     const max = min + bullet_size - 1;
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
-      .illusory = false,
+      .illusory = true,
       .world_bbox = Math.BoundingBox{
         .mins = Math.Vec2.init(min, min),
         .maxs = Math.Vec2.init(max, max),

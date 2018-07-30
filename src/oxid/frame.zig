@@ -1,4 +1,3 @@
-const randomEnumValue = @import("../util.zig").randomEnumValue;
 const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
 const GbeSystem = @import("../gbe_system.zig");
@@ -105,7 +104,11 @@ const GameControllerSystem = struct{
       self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
     }
     if (decrementTimer(&self.gc.next_pickup_timer)) {
-      const pickup_type = randomEnumValue(C.Pickup.Type, gs.gbe.getRand());
+      const pickup_type = switch (gs.gbe.getRand().range(u32, 0, 2)) {
+        0 => C.Pickup.Type.SpeedUp,
+        1 => C.Pickup.Type.PowerUp,
+        else => C.Pickup.Type.LifeUp,
+      };
       spawnPickup(gs, pickup_type);
       self.gc.next_pickup_timer = Constants.PickupSpawnTime;
     }
@@ -238,7 +241,12 @@ const PickupCollideSystem = struct{
       });
       _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
         .player_controller_id = other_player.player_controller_id,
-        .points = Constants.PickupGetPoints,
+        .points = switch (self.pickup.pickup_type) {
+          C.Pickup.Type.Coin => Constants.CoinGetPoints,
+          C.Pickup.Type.LifeUp => 0,
+          C.Pickup.Type.SpeedUp,
+          C.Pickup.Type.PowerUp => Constants.PowerupGetPoints,
+        },
       });
       return false;
     }
@@ -321,6 +329,12 @@ const CreatureTakeDamageSystem = struct{
               _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
                 .player_controller_id = player_controller_id,
                 .points = self_monster.kill_points,
+              });
+            }
+            if (self_monster.has_coin) {
+              _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
+                .pos = self.transform.pos,
+                .pickup_type = C.Pickup.Type.Coin,
               });
             }
           }
