@@ -1,5 +1,6 @@
 const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
+const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 
@@ -56,6 +57,7 @@ pub const GameController = struct {
   next_wave_timer: u32,
   next_pickup_timer: u32,
   freeze_monsters_timer: u32,
+  extra_lives_spawned: u32,
 };
 
 pub const PlayerController = struct {
@@ -123,15 +125,9 @@ pub const PhysObjectInternal = struct {
 };
 
 pub const Pickup = struct {
-  const Type = enum{
-    PowerUp,
-    SpeedUp,
-    LifeUp,
-    Coin,
-  };
-
-  pickup_type: Type,
+  pickup_type: ConstantTypes.PickupType,
   timer: u32,
+  get_points: u32,
 };
 
 pub const Player = struct {
@@ -153,7 +149,7 @@ pub const Player = struct {
   attack_level: AttackLevel,
   speed_level: SpeedLevel,
   dying_timer: u32,
-  last_pickup: ?Pickup.Type,
+  last_pickup: ?ConstantTypes.PickupType,
 };
 
 pub const Transform = struct {
@@ -172,7 +168,7 @@ pub const EventCollide = struct {
 
 pub const EventConferBonus = struct {
   recipient_id: Gbe.EntityId,
-  pickup_type: Pickup.Type,
+  pickup_type: ConstantTypes.PickupType,
 };
 
 pub const EventAwardLife = struct {

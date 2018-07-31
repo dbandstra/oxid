@@ -11,6 +11,18 @@ pub const MonsterValues = struct{
   can_shoot: bool,
 };
 
+pub const PickupType = enum{
+  Coin,
+  LifeUp,
+  PowerUp,
+  SpeedUp,
+};
+
+pub const PickupValues = struct{
+  lifetime: u32,
+  get_points: u32,
+};
+
 pub const Wave = struct{
   spiders: u32,
   fastbugs: u32,

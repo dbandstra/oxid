@@ -8,6 +8,7 @@ const Gbe = @import("../gbe.zig");
 const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
+const ConstantTypes = @import("constant_types.zig");
 const MaxDrawables = @import("game.zig").MaxDrawables;
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
@@ -176,10 +177,10 @@ pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
   const pickup = g.session.gbe.find(entity_id, C.Pickup) orelse return;
   const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   const graphic = switch (pickup.pickup_type) {
-    C.Pickup.Type.PowerUp => Graphic.PowerUp,
-    C.Pickup.Type.SpeedUp => Graphic.SpeedUp,
-    C.Pickup.Type.LifeUp => Graphic.LifeUp,
-    C.Pickup.Type.Coin => Graphic.Coin,
+    ConstantTypes.PickupType.PowerUp => Graphic.PowerUp,
+    ConstantTypes.PickupType.SpeedUp => Graphic.SpeedUp,
+    ConstantTypes.PickupType.LifeUp => Graphic.LifeUp,
+    ConstantTypes.PickupType.Coin => Graphic.Coin,
   };
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }

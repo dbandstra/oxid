@@ -41,6 +41,7 @@ pub const GameController = struct{
       .next_wave_timer = 90,
       .next_pickup_timer = 15*60,
       .freeze_monsters_timer = 0,
+      .extra_lives_spawned = 0,
     });
 
     return entity_id;
@@ -315,10 +316,12 @@ pub const Animation = struct{
 pub const Pickup = struct{
   pub const Params = struct{
     pos: Math.Vec2,
-    pickup_type: C.Pickup.Type,
+    pickup_type: ConstantTypes.PickupType,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
+    const pickup_values = Constants.getPickupValues(params.pickup_type);
+
     const entity_id = gs.gbe.spawn();
     errdefer gs.gbe.undoSpawn(entity_id);
 
@@ -347,7 +350,8 @@ pub const Pickup = struct{
 
     try gs.gbe.addComponent(entity_id, C.Pickup{
       .pickup_type = params.pickup_type,
-      .timer = 15*60, // will disappear in 15 seconds
+      .timer = pickup_values.lifetime,
+      .get_points = pickup_values.get_points,
     });
 
     return entity_id;

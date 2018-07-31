@@ -1,6 +1,7 @@
 const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
 const GbeSystem = @import("../gbe_system.zig");
+const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const GameSession = @import("game.zig").GameSession;
@@ -186,14 +187,14 @@ pub const PlayerReactionSystem = struct{
   fn playerReact(gs: *GameSession, self: SystemData) bool {
     var it = gs.gbe.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
       switch (event.pickup_type) {
-        C.Pickup.Type.PowerUp => {
+        ConstantTypes.PickupType.PowerUp => {
           self.player.attack_level = switch (self.player.attack_level) {
             C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
             else => C.Player.AttackLevel.Three,
           };
-          self.player.last_pickup = C.Pickup.Type.PowerUp;
+          self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
         },
-        C.Pickup.Type.SpeedUp => {
+        ConstantTypes.PickupType.SpeedUp => {
           self.player.speed_level = switch (self.player.speed_level) {
             C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
             else => C.Player.SpeedLevel.Three,
@@ -203,14 +204,14 @@ pub const PlayerReactionSystem = struct{
             C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed2,
             C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed3,
           };
-          self.player.last_pickup = C.Pickup.Type.SpeedUp;
+          self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
         },
-        C.Pickup.Type.LifeUp => {
+        ConstantTypes.PickupType.LifeUp => {
           _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
             .player_controller_id = self.player.player_controller_id,
           });
         },
-        C.Pickup.Type.Coin => {},
+        ConstantTypes.PickupType.Coin => {},
       }
     }
     return true;

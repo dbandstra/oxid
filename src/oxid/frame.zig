@@ -6,6 +6,7 @@ const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
+const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const spawnWave = @import("init.zig").spawnWave;
 const spawnPlayer = @import("init.zig").spawnPlayer;
@@ -104,16 +105,34 @@ const GameControllerSystem = struct{
       self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
     }
     if (decrementTimer(&self.gc.next_pickup_timer)) {
-      const pickup_type = switch (gs.gbe.getRand().range(u32, 0, 2)) {
-        0 => C.Pickup.Type.SpeedUp,
-        1 => C.Pickup.Type.PowerUp,
-        else => C.Pickup.Type.LifeUp,
-      };
+      const pickup_type =
+        if ((gs.gbe.getRand().scalar(u32) & 1) == 0)
+          ConstantTypes.PickupType.SpeedUp
+        else
+          ConstantTypes.PickupType.PowerUp;
       spawnPickup(gs, pickup_type);
       self.gc.next_pickup_timer = Constants.PickupSpawnTime;
     }
     _ = decrementTimer(&self.gc.freeze_monsters_timer);
+    if (getPlayerScore(gs)) |score| {
+      const i  = self.gc.extra_lives_spawned;
+      if (i < Constants.ExtraLifeScoreThresholds.len) {
+        const threshold = Constants.ExtraLifeScoreThresholds[i];
+        if (score >= threshold) {
+          spawnPickup(gs, ConstantTypes.PickupType.LifeUp);
+          self.gc.extra_lives_spawned += 1;
+        }
+      }
+    }
     return true;
+  }
+
+  fn getPlayerScore(gs: *GameSession) ?u32 {
+    // FIXME - what if there is multiplayer?
+    var it = gs.gbe.iter(C.PlayerController); while (it.next()) |object| {
+      return object.data.score;
+    }
+    return null;
   }
 
   fn countMonsters(gs: *GameSession) u32 {
@@ -241,12 +260,7 @@ const PickupCollideSystem = struct{
       });
       _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
         .player_controller_id = other_player.player_controller_id,
-        .points = switch (self.pickup.pickup_type) {
-          C.Pickup.Type.Coin => Constants.CoinGetPoints,
-          C.Pickup.Type.LifeUp => 0,
-          C.Pickup.Type.SpeedUp,
-          C.Pickup.Type.PowerUp => Constants.PowerupGetPoints,
-        },
+        .points = self.pickup.get_points,
       });
       return false;
     }
@@ -334,7 +348,7 @@ const CreatureTakeDamageSystem = struct{
             if (self_monster.has_coin) {
               _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
                 .pos = self.transform.pos,
-                .pickup_type = C.Pickup.Type.Coin,
+                .pickup_type = ConstantTypes.PickupType.Coin,
               });
             }
           }

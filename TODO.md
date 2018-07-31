@@ -2,10 +2,13 @@ GAMEPLAY:
 - sound
 - you can't face a pit if there is no space
 - remove the pits
+- alternate spider type
+- slow down monster bullets
+- speed up everything in general a bit
 - it looks too much like a glitch when the enemies freeze after you die
-- spawn 1up at fixed point intervals. remove 1up item from random pickup rotation
 
 CODE:
+- remove the framerate limit!!! and retweak the values to play well at 60fps
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - use a single hunk memory system, and print allocation amounts for debugging

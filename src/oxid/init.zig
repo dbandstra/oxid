@@ -68,7 +68,7 @@ pub fn killAllMonsters(gs: *GameSession) void {
   }
 }
 
-pub fn spawnPickup(gs: *GameSession, pickup_type: C.Pickup.Type) void {
+pub fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
   var spawn_locs: [1]Math.Vec2 = undefined;
   pickSpawnLocations(gs, spawn_locs[0..]);
   const pos = Math.Vec2.scale(spawn_locs[0], GRIDSIZE_SUBPIXELS);

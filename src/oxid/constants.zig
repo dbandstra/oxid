@@ -1,6 +1,8 @@
 const ConstantTypes = @import("constant_types.zig");
 const MonsterType = ConstantTypes.MonsterType;
 const MonsterValues = ConstantTypes.MonsterValues;
+const PickupType = ConstantTypes.PickupType;
+const PickupValues = ConstantTypes.PickupValues;
 const Wave = ConstantTypes.Wave;
 
 pub const EnemySpeedTicks = 12*60; // every 12 seconds, increase monster speed
@@ -13,7 +15,7 @@ pub const MonsterFreezeTimer = 3*60; // monsters freeze for 3 seconds when playe
 // around the corner.
 pub const PlayerSlipThreshold = 12*16; // FIXME - use screen space
 
-pub const PlayerRespawnTime: u32 = 60; // 1 seconds
+pub const PlayerRespawnTime: u32 = 60; // 1 second
 pub const PlayerNumLives: u32 = 4; // 1 will be subtracted when drawing the hud
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
@@ -39,10 +41,25 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
   };
 }
 
-pub const CoinGetPoints: u32 = 10;
-pub const PowerupGetPoints: u32 = 20;
+pub fn getPickupValues(pickup_type: PickupType) PickupValues {
+  return switch (pickup_type) {
+    PickupType.Coin => PickupValues{
+      .lifetime = 6*60,
+      .get_points = 20,
+    },
+    PickupType.LifeUp => PickupValues{
+      .lifetime = 10*60,
+      .get_points = 0,
+    },
+    PickupType.PowerUp,
+    PickupType.SpeedUp => PickupValues{
+      .lifetime = 8*60,
+      .get_points = 0,
+    },
+  };
+}
 
-pub const InvulnerabilityTime: u32 = 120; // 2 seconds
+pub const InvulnerabilityTime: u32 = 2*60;
 
 pub const PlayerBulletSpeed: u31 = 72;
 pub const MonsterBulletSpeed: u31 = 28;
@@ -59,6 +76,13 @@ pub const ZIndexEnemy: u32 = 80;
 pub const ZIndexBullet: u32 = 50;
 pub const ZIndexPickup: u32 = 30;
 pub const ZIndexCorpse: u32 = 20;
+
+// these values need testing
+pub const ExtraLifeScoreThresholds = []u32{
+  1000,
+  3000,
+  6000,
+};
 
 pub const Waves = []Wave{
   Wave{ .spiders = 8, .fastbugs = 0, .squids = 0, .speed = 0, .coins = 3 }, // 1
