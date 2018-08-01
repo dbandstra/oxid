@@ -218,6 +218,6 @@ pub fn postDraw(ps: *State) void {
 
   c.SDL_GL_SwapWindow(ps.window);
 
-  // FIXME - don't delay if vsync is enabled
-  c.SDL_Delay(17);
+  // FIXME - try to detect if vsync is enabled...
+  // c.SDL_Delay(17);
 }

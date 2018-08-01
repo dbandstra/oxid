@@ -18,6 +18,7 @@ pub const Drawable = struct {
     Soldier,
     SoldierCorpse,
     Spider,
+    Knight,
     FastBug,
     Squid,
     Animation,
@@ -31,7 +32,6 @@ pub const Drawable = struct {
 pub const Creature = struct {
   invulnerability_timer: u32,
   hit_points: u32,
-  move_speed: u31,
 };
 
 pub const Monster = struct {
@@ -40,6 +40,7 @@ pub const Monster = struct {
     Wander,
   };
 
+  monster_type: ConstantTypes.MonsterType,
   spawning_timer: u32,
   full_hit_points: u32,
   personality: Personality,

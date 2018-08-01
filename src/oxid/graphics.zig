@@ -43,6 +43,8 @@ pub const Graphic = enum{
   Spawn2,
   Squid1,
   Squid2,
+  Knight1,
+  Knight2,
   PowerUp,
   SpeedUp,
   LifeUp,
@@ -87,6 +89,8 @@ pub fn getGraphicTile(graphic: Graphic) Draw.Tile {
     Graphic.Spawn2     => Draw.Tile{ .tx = 1, .ty = 2 },
     Graphic.Squid1     => Draw.Tile{ .tx = 3, .ty = 3 },
     Graphic.Squid2     => Draw.Tile{ .tx = 4, .ty = 3 },
+    Graphic.Knight1    => Draw.Tile{ .tx = 5, .ty = 3 },
+    Graphic.Knight2    => Draw.Tile{ .tx = 6, .ty = 3 },
     Graphic.LifeUp     => Draw.Tile{ .tx = 4, .ty = 5 },
     Graphic.PowerUp    => Draw.Tile{ .tx = 6, .ty = 5 },
     Graphic.SpeedUp    => Draw.Tile{ .tx = 5, .ty = 5 },
@@ -112,14 +116,14 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
         Graphic.PlaSpark1,
         Graphic.PlaSpark2,
       })[0..],
-      .ticks_per_frame = 4,
+      .ticks_per_frame = 6,
     },
     SimpleAnim.MonSparks => SimpleAnimConfig{
       .frames = ([2]Graphic{
         Graphic.MonSpark1,
         Graphic.MonSpark2,
       })[0..],
-      .ticks_per_frame = 4,
+      .ticks_per_frame = 6,
     },
     SimpleAnim.Explosion => SimpleAnimConfig{
       .frames = ([4]Graphic{
@@ -128,7 +132,7 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
         Graphic.Explode3,
         Graphic.Explode4,
       })[0..],
-      .ticks_per_frame = 4,
+      .ticks_per_frame = 6,
     }
   };
 }

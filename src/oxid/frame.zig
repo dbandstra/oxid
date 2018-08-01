@@ -93,7 +93,7 @@ const GameControllerSystem = struct{
         const wave = &Constants.Waves[self.gc.wave_index - 1];
         spawnWave(gs, wave);
         self.gc.enemy_speed_level = wave.speed;
-        self.gc.monster_count = wave.spiders + wave.fastbugs + wave.squids;
+        self.gc.monster_count = wave.spiders + wave.knights + wave.fastbugs + wave.squids;
       } else {
         spawnWave(gs, Constants.DefaultWave);
       }
@@ -150,7 +150,7 @@ const GameControllerReactSystem = struct{
 
   fn think(gs: *GameSession, self: SystemData) bool {
     if (gs.gbe.iter(C.EventPlayerDied).next() != null) {
-      self.gc.freeze_monsters_timer = Constants.MonsterFreezeTimer;
+      self.gc.freeze_monsters_timer = Constants.MonsterFreezeTime;
     }
     var it = gs.gbe.iter(C.EventMonsterDied); while (it.next()) |object| {
       if (self.gc.monster_count > 0) {
@@ -323,7 +323,7 @@ const CreatureTakeDamageSystem = struct{
         self.creature.hit_points = 0;
         if (self.player) |self_player| {
           // player died
-          self_player.dying_timer = 45;
+          self_player.dying_timer = Constants.PlayerDeathAnimTime;
           _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
             .player_controller_id = self_player.player_controller_id,
           });

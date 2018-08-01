@@ -28,7 +28,8 @@ pub fn spawnPlayer(gs: *GameSession, player_controller_id: Gbe.EntityId) void {
 }
 
 pub fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
-  const count = wave.spiders + wave.fastbugs + wave.squids;
+  const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids;
+  const coins = (wave.spiders + wave.knights) / 3;
   std.debug.assert(count <= 100);
   var spawn_locs_buf: [100]Math.Vec2 = undefined;
   var spawn_locs = spawn_locs_buf[0..count];
@@ -39,12 +40,14 @@ pub fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
       .monster_type =
         if (i < wave.spiders)
           ConstantTypes.MonsterType.Spider
-        else if (i < wave.spiders + wave.fastbugs)
+        else if (i < wave.spiders + wave.knights)
+          ConstantTypes.MonsterType.Knight
+        else if (i < wave.spiders + wave.knights + wave.fastbugs)
           ConstantTypes.MonsterType.FastBug
         else
           ConstantTypes.MonsterType.Squid,
       // TODO - distribute coins randomly across monster types?
-      .has_coin = i < wave.coins,
+      .has_coin = i < coins,
     });
   }
 }

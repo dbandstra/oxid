@@ -90,6 +90,12 @@ pub const PlayerMovementSystem = struct{
   }
 
   fn playerMove(gs: *GameSession, self: SystemData) void {
+    const move_speed = switch (self.player.speed_level) {
+      C.Player.SpeedLevel.One => Constants.PlayerMoveSpeed[0],
+      C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed[1],
+      C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed[2],
+    };
+    
     var xmove: i32 = 0;
     var ymove: i32 = 0;
     if (gs.in_right) { xmove += 1; }
@@ -107,7 +113,7 @@ pub const PlayerMovementSystem = struct{
 
       if (ymove == 0) {
         // only moving along x axis. try to slip around corners
-        tryPush(pos, dir, self.creature.move_speed, self.phys);
+        tryPush(pos, dir, move_speed, self.phys);
       } else {
         // trying to move diagonally.
         const secondary_dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
@@ -115,17 +121,17 @@ pub const PlayerMovementSystem = struct{
         // prefer to move on the x axis (arbitrary, but i had to pick something)
         if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(dir)))) {
           self.phys.facing = dir;
-          self.phys.speed = self.creature.move_speed;
+          self.phys.speed = move_speed;
         } else if (!physInWall(self.phys, Math.Vec2.add(pos, Math.Direction.normal(secondary_dir)))) {
           self.phys.facing = secondary_dir;
-          self.phys.speed = self.creature.move_speed;
+          self.phys.speed = move_speed;
         }
       }
     } else if (ymove != 0) {
       // only moving along y axis. try to slip around corners
       const dir = if (ymove < 0) Math.Direction.N else Math.Direction.S;
 
-      tryPush(pos, dir, self.creature.move_speed, self.phys);
+      tryPush(pos, dir, move_speed, self.phys);
     }
   }
 
@@ -198,11 +204,6 @@ pub const PlayerReactionSystem = struct{
           self.player.speed_level = switch (self.player.speed_level) {
             C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
             else => C.Player.SpeedLevel.Three,
-          };
-          self.creature.move_speed = switch (self.player.speed_level) {
-            C.Player.SpeedLevel.One => Constants.PlayerMoveSpeed1,
-            C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed2,
-            C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed3,
           };
           self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
         },

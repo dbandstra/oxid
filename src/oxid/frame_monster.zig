@@ -8,6 +8,7 @@ const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("frame.zig").decrementTimer;
 const physInWall = @import("physics.zig").physInWall;
+const Constants = @import("constants.zig");
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
@@ -51,9 +52,12 @@ pub const MonsterMovementSystem = struct{
       self.monster.personality = C.Monster.Personality.Chase;
     }
 
-    const speed
-      = self.creature.move_speed
-      + self.creature.move_speed * gc.enemy_speed_level / 2;
+    const monster_values = Constants.getMonsterValues(self.monster.monster_type);
+    const move_speed =
+      if (gc.enemy_speed_level < monster_values.move_speed.len)
+        monster_values.move_speed[gc.enemy_speed_level]
+      else
+        monster_values.move_speed[monster_values.move_speed.len - 1];
 
     // look ahead for corners
     const pos = self.transform.pos;
@@ -73,7 +77,7 @@ pub const MonsterMovementSystem = struct{
     }
 
     var i: u31 = 0;
-    while (i < speed) : (i += 1) {
+    while (i < move_speed) : (i += 1) {
       const new_pos = Math.Vec2.add(pos, Math.Vec2.scale(fwd, i));
       const left_pos = Math.Vec2.add(new_pos, left_normal);
       const right_pos = Math.Vec2.add(new_pos, right_normal);
@@ -95,7 +99,7 @@ pub const MonsterMovementSystem = struct{
 
     // TODO - sometimes randomly stop/change direction
 
-    self.phys.speed = @intCast(i32, speed);
+    self.phys.speed = @intCast(i32, move_speed);
   }
 
   fn monsterShoot(gs: *GameSession, self: SystemData) void {

@@ -101,7 +101,6 @@ pub const Player = struct{
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
-      .move_speed = Constants.PlayerMoveSpeed1,
     });
 
     try gs.gbe.addComponent(entity_id, C.Player{
@@ -174,6 +173,7 @@ pub const Monster = struct{
     try gs.gbe.addComponent(entity_id, C.Drawable{
       .draw_type = switch (params.monster_type) {
         ConstantTypes.MonsterType.Spider => C.Drawable.Type.Spider,
+        ConstantTypes.MonsterType.Knight => C.Drawable.Type.Knight,
         ConstantTypes.MonsterType.FastBug => C.Drawable.Type.FastBug,
         ConstantTypes.MonsterType.Squid => C.Drawable.Type.Squid,
       },
@@ -182,12 +182,12 @@ pub const Monster = struct{
 
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
-      .hit_points = 1, // always one hit point while spawning
-      .move_speed = monster_values.move_speed,
+      .hit_points = 999, // invulnerable while spawning
     });
 
     try gs.gbe.addComponent(entity_id, C.Monster{
-      .spawning_timer = 60,
+      .monster_type = params.monster_type,
+      .spawning_timer = Constants.MonsterSpawnTime,
       .full_hit_points = monster_values.hit_points,
       .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
         0 => C.Monster.Personality.Chase,

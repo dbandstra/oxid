@@ -49,6 +49,7 @@ pub fn drawGame(g: *GameState) void {
       C.Drawable.Type.Soldier => drawSoldier(g, object.entity_id),
       C.Drawable.Type.SoldierCorpse => drawSoldierCorpse(g, object.entity_id),
       C.Drawable.Type.Spider => drawMonster(g, object.entity_id, Graphic.Spider1, Graphic.Spider2),
+      C.Drawable.Type.Knight => drawMonster(g, object.entity_id, Graphic.Knight1, Graphic.Knight2),
       C.Drawable.Type.FastBug => drawMonster(g, object.entity_id, Graphic.FastBug1, Graphic.FastBug2),
       C.Drawable.Type.Squid => drawMonster(g, object.entity_id, Graphic.Squid1, Graphic.Squid2),
       C.Drawable.Type.PlayerBullet => drawBullet(g, object.entity_id, Graphic.PlaBullet),
@@ -96,12 +97,12 @@ const DrawCreature = struct{
     const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
 
     if (params.spawning_timer > 0) {
-      const graphic = if (alternation(u32, params.spawning_timer, 4)) Graphic.Spawn1 else Graphic.Spawn2;
+      const graphic = if (alternation(u32, params.spawning_timer, 8)) Graphic.Spawn1 else Graphic.Spawn2;
       drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
       return;
     }
     if (creature.invulnerability_timer > 0) {
-      if (alternation(u32, creature.invulnerability_timer, 1)) {
+      if (alternation(u32, creature.invulnerability_timer, 2)) {
         return;
       }
     }
@@ -112,8 +113,8 @@ const DrawCreature = struct{
     };
     const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
-    // animate legs every 4 screen pixels
-    const graphic = if (alternation(i32, sxpos, 4)) params.graphic1 else params.graphic2;
+    // animate legs every 6 screen pixels
+    const graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2;
 
     drawBlock(g, transform.pos, graphic, getDirTransform(phys.facing));
   }
@@ -129,12 +130,12 @@ fn drawSoldier(g: *GameState, entity_id: Gbe.EntityId) void {
   const player = g.session.gbe.find(entity_id, C.Player) orelse return;
   const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   if (player.dying_timer > 0) {
-    if (player.dying_timer > 15) {
+    if (player.dying_timer > 30) {
       const graphic = if (alternation(u32, player.dying_timer, 2)) Graphic.ManDying1 else Graphic.ManDying2;
       drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
-    } else if (player.dying_timer > 10) {
+    } else if (player.dying_timer > 20) {
       drawBlock(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
-    } else if (player.dying_timer > 5) {
+    } else if (player.dying_timer > 10) {
       drawBlock(g, transform.pos, Graphic.ManDying4, Draw.Transform.Identity);
     } else {
       drawBlock(g, transform.pos, Graphic.ManDying5, Draw.Transform.Identity);
