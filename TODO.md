@@ -7,7 +7,6 @@ GAMEPLAY:
 
 CODE:
 - sound: figure out how to start sounds at an offset into the mixing buffer
-- sound: don't call Audio.playSample() in the middle of think code. design this better (see also the giant FIXME where i'm passing `samples` pointer to GameSession)
 - sound: get rid of global 'chunks' in platform.zig (put them in a struct)
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - figure out how to refactor the component lists in game.zig so i only have to list them once

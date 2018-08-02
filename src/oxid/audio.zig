@@ -1,6 +1,7 @@
 const std = @import("std");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const Platform = @import("../platform/platform.zig");
+const GameSession = @import("game.zig").GameSession;
 
 pub const Sample = enum{
   Coin,

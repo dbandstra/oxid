@@ -2,6 +2,7 @@ const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
+const Audio = @import("audio.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 
 pub const Bullet = struct {
@@ -187,6 +188,10 @@ pub const EventMonsterDied = struct {
 
 pub const EventPlayerDied = struct {
   player_controller_id: Gbe.EntityId,
+};
+
+pub const EventSound = struct {
+  sample: Audio.Sample,
 };
 
 pub const EventTakeDamage = struct {

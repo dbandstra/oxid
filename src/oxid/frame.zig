@@ -38,7 +38,7 @@ fn removeAll(gs: *GameSession, comptime T: type) void {
   }
 }
 
-pub fn gameFrame(gs: *GameSession) void {
+pub fn gameFrame(gs: *GameSession, ls: *Audio.LoadedSamples) void {
   GameControllerSystem.run(gs);
   PlayerControllerSystem.run(gs);
   AnimationSystem.run(gs);
@@ -66,12 +66,17 @@ pub fn gameFrame(gs: *GameSession) void {
   // player controller reacts to 'player died' event
   PlayerControllerReactSystem.run(gs);
 
+  var it = gs.gbe.iter(C.EventSound); while (it.next()) |object| {
+    Audio.playSample(ls, object.data.sample);
+  }
+
   removeAll(gs, C.EventAwardLife);
   removeAll(gs, C.EventAwardPoints);
   removeAll(gs, C.EventCollide);
   removeAll(gs, C.EventConferBonus);
   removeAll(gs, C.EventMonsterDied);
   removeAll(gs, C.EventPlayerDied);
+  removeAll(gs, C.EventSound);
   removeAll(gs, C.EventTakeDamage);
 
   gs.gbe.applyRemovals();
@@ -87,7 +92,9 @@ const GameControllerSystem = struct{
       self.gc.next_wave_timer = Constants.NextWaveTime;
     }
     if (decrementTimer(&self.gc.next_wave_timer)) {
-      Audio.playSample(gs.samples, Audio.Sample.WaveBegin);
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+        .sample = Audio.Sample.WaveBegin,
+      });
       self.gc.wave_index += 1;
       self.gc.enemy_speed_level = 0;
       self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
@@ -320,14 +327,20 @@ const CreatureTakeDamageSystem = struct{
     var it = gs.gbe.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
       const amount = event.amount;
       if (self.creature.hit_points > amount) {
-        Audio.playSample(gs.samples, Audio.Sample.MonsterImpact);
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+          .sample = Audio.Sample.MonsterImpact,
+        });
         self.creature.hit_points -= amount;
       } else if (self.creature.hit_points > 0) {
         self.creature.hit_points = 0;
         if (self.player) |self_player| {
           // player died
-          Audio.playSample(gs.samples, Audio.Sample.PlayerScream);
-          Audio.playSample(gs.samples, Audio.Sample.PlayerDeath);
+          _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+            .sample = Audio.Sample.PlayerScream,
+          });
+          _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+            .sample = Audio.Sample.PlayerDeath,
+          });
           self_player.dying_timer = Constants.PlayerDeathAnimTime;
           _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
             .player_controller_id = self_player.player_controller_id,
@@ -341,8 +354,12 @@ const CreatureTakeDamageSystem = struct{
           return true;
         } else {
           if (self.monster) |self_monster| {
-            Audio.playSample(gs.samples, Audio.Sample.MonsterImpact);
-            Audio.playSample(gs.samples, Audio.Sample.MonsterDeath);
+            _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+              .sample = Audio.Sample.MonsterImpact,
+            });
+            _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+              .sample = Audio.Sample.MonsterDeath,
+            });
             _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{
               .unused = 0,
             });

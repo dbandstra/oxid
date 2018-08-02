@@ -375,4 +375,5 @@ pub const EventCollide = Event(C.EventCollide);
 pub const EventConferBonus = Event(C.EventConferBonus);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
+pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);

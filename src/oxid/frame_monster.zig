@@ -111,7 +111,9 @@ pub const MonsterMovementSystem = struct{
     if (self.monster.next_shoot_timer > 0) {
       self.monster.next_shoot_timer -= 1;
     } else {
-      Audio.playSample(gs.samples, Audio.Sample.MonsterShot);
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+        .sample = Audio.Sample.MonsterShot,
+      });
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
       const dir_vec = Math.Direction.normal(self.phys.facing);

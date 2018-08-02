@@ -61,7 +61,6 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
     pub fn init(self: *Self, component_storage: var, rand_seed: u32) void {
       self.prng = std.rand.DefaultPrng.init(rand_seed);
       self.next_entity_id = 1;
-      self.removals = undefined;
       self.num_removals = 0;
       inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         @field(&self.components, field.name).objects = @field(component_storage, field.name).objects[0..];

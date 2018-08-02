@@ -24,6 +24,7 @@ const COMPONENT_TYPES = []const type{
   C.EventConferBonus,
   C.EventMonsterDied,
   C.EventPlayerDied,
+  C.EventSound,
   C.EventTakeDamage,
 };
 
@@ -57,6 +58,7 @@ pub const GameComponentStorage = struct {
   EventConferBonus: ComponentStorage(C.EventConferBonus, 5),
   EventMonsterDied: ComponentStorage(C.EventMonsterDied, 20),
   EventPlayerDied: ComponentStorage(C.EventPlayerDied, 20),
+  EventSound: ComponentStorage(C.EventSound, 20),
   EventTakeDamage: ComponentStorage(C.EventTakeDamage, 50),
 };
 
@@ -81,12 +83,11 @@ pub const GameComponentLists = struct {
   EventConferBonus: Gbe.ComponentList(C.EventConferBonus),
   EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied),
+  EventSound: Gbe.ComponentList(C.EventSound),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage),
 };
 
 pub const GameSession = struct {
-  samples: *@import("audio.zig").LoadedSamples, // FIXME!!!!!!!!!!!!!!!!!!
-
   component_storage: GameComponentStorage,
   gbe: Gbe.Session(COMPONENT_TYPES[0..], GameComponentLists),
 

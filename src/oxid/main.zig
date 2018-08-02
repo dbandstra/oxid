@@ -73,7 +73,6 @@ pub fn main() !void {
   g.paused = false;
   g.fast_forward = false;
   g.session.init(rand_seed);
-  g.session.samples = &g.samples; // FIXME!!!!!!
   gameInit(&g.session);
 
   try loadTileset(dsaf, &g.tileset);
@@ -140,7 +139,7 @@ pub fn main() !void {
       const n = if (g.fast_forward) u32(4) else u32(1);
       var i: u32 = 0;
       while (i < n) : (i += 1) {
-        gameFrame(&g.session);
+        gameFrame(&g.session, &g.samples);
       }
     }
 
