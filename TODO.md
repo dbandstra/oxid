@@ -2,7 +2,6 @@ GAMEPLAY:
 - sound
 - you can't face a pit if there is no space
 - remove the pits
-- spawning monsters should be solid, not illusory
 
 CODE:
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)

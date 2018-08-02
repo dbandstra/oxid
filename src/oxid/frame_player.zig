@@ -40,10 +40,17 @@ pub const PlayerMovementSystem = struct{
       self.phys.speed = 0;
       self.phys.push_dir = null;
     } else {
+      playerUpdate(gs, self);
       playerMove(gs, self);
       playerShoot(gs, self);
     }
     return true;
+  }
+
+  fn playerUpdate(gs: *GameSession, self: SystemData) void {
+    if (self.creature.invulnerability_timer == 0) {
+      self.phys.illusory = false;
+    }
   }
 
   fn playerShoot(gs: *GameSession, self: SystemData) void {

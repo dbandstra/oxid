@@ -78,9 +78,7 @@ pub const Player = struct{
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
-      // player is always illusory. this is needed during his invulnerability
-      // phase, but it seems to behave fine even after that
-      .illusory = true,
+      .illusory = true, // illusory during invulnerability stage
       .world_bbox = world_bbox,
       .entity_bbox = player_entity_bbox,
       .facing = Math.Direction.E,
