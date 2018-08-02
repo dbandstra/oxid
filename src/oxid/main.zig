@@ -67,7 +67,7 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
-  Audio.loadSamples(dsaf, &g.samples);
+  Audio.loadSamples(dsaf, &g.platform_state, &g.samples);
 
   g.render_move_boxes = false;
   g.paused = false;
@@ -139,7 +139,7 @@ pub fn main() !void {
       const n = if (g.fast_forward) u32(4) else u32(1);
       var i: u32 = 0;
       while (i < n) : (i += 1) {
-        gameFrame(&g.session, &g.samples);
+        gameFrame(g);
       }
     }
 

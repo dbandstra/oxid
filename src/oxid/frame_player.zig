@@ -38,6 +38,11 @@ pub const PlayerMovementSystem = struct{
       });
       return false;
     } else if (self.player.dying_timer > 0) {
+      if (self.player.dying_timer == 30) { // yeesh
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+          .sample = Audio.Sample.PlayerCrumble,
+        });
+      }
       self.phys.speed = 0;
       self.phys.push_dir = null;
     } else {

@@ -1,7 +1,6 @@
 const std = @import("std");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const Platform = @import("../platform/platform.zig");
-const GameSession = @import("game.zig").GameSession;
 
 pub const Sample = enum{
   Coin,
@@ -37,7 +36,7 @@ pub const LoadedSamples = struct{
   handles: [@memberCount(Sample)]u32,
 };
 
-fn loadSample(dsaf: *DoubleStackAllocatorFlat, filename: []const u8) u32 {
+fn loadSample(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, filename: []const u8) u32 {
   const low_mark = dsaf.get_low_mark();
   defer dsaf.free_to_low_mark(low_mark);
 
@@ -46,21 +45,21 @@ fn loadSample(dsaf: *DoubleStackAllocatorFlat, filename: []const u8) u32 {
     return 0;
   };
 
-  return Platform.loadSound(contents);
+  return Platform.loadSound(ps, contents);
 }
 
-pub fn loadSamples(dsaf: *DoubleStackAllocatorFlat, ls: *LoadedSamples) void {
+pub fn loadSamples(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, ls: *LoadedSamples) void {
   var i: usize = 0;
   while (i < @memberCount(Sample)) : (i += 1) {
     const e = @intCast(@TagType(Sample), i);
     const sample = @intToEnum(Sample, e);
     const filename = getSampleFilename(sample);
-    ls.handles[i] = loadSample(dsaf, filename);
+    ls.handles[i] = loadSample(dsaf, ps, filename);
   }
 }
 
-pub fn playSample(ls: *LoadedSamples, sample: Sample) void {
+pub fn playSample(ps: *Platform.State, ls: *LoadedSamples, sample: Sample) void {
   const i = @enumToInt(sample);
   const handle = ls.handles[i];
-  Platform.playSound(handle);
+  Platform.playSound(ps, handle);
 }

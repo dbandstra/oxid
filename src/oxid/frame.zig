@@ -19,6 +19,7 @@ const MonsterMovementSystem = @import("frame_monster.zig").MonsterMovementSystem
 const MonsterTouchResponseSystem = @import("frame_monster.zig").MonsterTouchResponseSystem;
 const PlayerMovementSystem = @import("frame_player.zig").PlayerMovementSystem;
 const PlayerReactionSystem = @import("frame_player.zig").PlayerReactionSystem;
+const GameState = @import("main.zig").GameState;
 
 // decrements the timer. return true if it just hit zero (but not if it was
 // already at zero
@@ -38,7 +39,9 @@ fn removeAll(gs: *GameSession, comptime T: type) void {
   }
 }
 
-pub fn gameFrame(gs: *GameSession, ls: *Audio.LoadedSamples) void {
+pub fn gameFrame(g: *GameState) void {
+  const gs = &g.session;
+
   GameControllerSystem.run(gs);
   PlayerControllerSystem.run(gs);
   AnimationSystem.run(gs);
@@ -66,8 +69,11 @@ pub fn gameFrame(gs: *GameSession, ls: *Audio.LoadedSamples) void {
   // player controller reacts to 'player died' event
   PlayerControllerReactSystem.run(gs);
 
+  // FIXME - move this somewhere else... gameFrame should just take a
+  // *GameSession, not *GameState (which contains all kind of stuff like
+  // low-level graphics stuff)
   var it = gs.gbe.iter(C.EventSound); while (it.next()) |object| {
-    Audio.playSample(ls, object.data.sample);
+    Audio.playSample(&g.platform_state, &g.samples, object.data.sample);
   }
 
   removeAll(gs, C.EventAwardLife);

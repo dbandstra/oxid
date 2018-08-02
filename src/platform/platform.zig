@@ -13,6 +13,8 @@ const Draw = @import("../draw.zig");
 // this platform file is for OpenGL + SDL2
 // TODO - split into two (as much as possible)
 
+const MAX_CHUNKS = 20;
+
 pub const State = struct {
   initialized: bool,
   window: *c.SDL_Window,
@@ -27,6 +29,8 @@ pub const State = struct {
   static_geometry: static_geometry.StaticGeometry,
   projection: Mat4x4,
   font: Font,
+  chunks: [MAX_CHUNKS][*]c.Mix_Chunk,
+  num_chunks: u32,
 };
 
 pub const Texture = struct{
@@ -92,14 +96,10 @@ pub const InitParams = struct{
   dsaf: *DoubleStackAllocatorFlat,
 };
 
-const MAX_CHUNKS = 20;
-var chunks: [MAX_CHUNKS][*]c.Mix_Chunk = undefined;
-var num_chunks: u32 = 0;
-
 // note: handle 0 is null/empty.
 // handle 1 refers to chunks[0], etc.
-pub fn loadSound(contents: []const u8) u32 {
-  if (num_chunks == MAX_CHUNKS) {
+pub fn loadSound(ps: *State, contents: []const u8) u32 {
+  if (ps.num_chunks == MAX_CHUNKS) {
     c.SDL_Log(c"no slots free to load sound");
     return 0;
   }
@@ -109,17 +109,17 @@ pub fn loadSound(contents: []const u8) u32 {
     c.SDL_Log(c"Mix_LoadWAV failed: ", c.Mix_GetError());
     return 0;
   };
-  chunks[num_chunks] = chunk;
-  num_chunks += 1;
-  return num_chunks;
+  ps.chunks[ps.num_chunks] = chunk;
+  ps.num_chunks += 1;
+  return ps.num_chunks;
 }
 
-pub fn playSound(handle: u32) void {
+pub fn playSound(ps: *State, handle: u32) void {
   const channel = -1;
   const loops = 0;
   const ticks = -1;
-  if (handle > 0 and handle <= num_chunks) {
-    const chunk = chunks[handle - 1];
+  if (handle > 0 and handle <= ps.num_chunks) {
+    const chunk = ps.chunks[handle - 1];
     _ = c.Mix_PlayChannelTimed(channel, chunk, loops, ticks);
   }
 }
@@ -226,7 +226,7 @@ pub fn destroy(ps: *State) void {
   ps.static_geometry.destroy();
   ps.shaders.destroy();
   c.SDL_GL_DeleteContext(ps.glcontext);
-  for (chunks[0..num_chunks]) |chunk| {
+  for (ps.chunks[0..ps.num_chunks]) |chunk| {
     c.Mix_FreeChunk(chunk);
   }
   c.Mix_CloseAudio();
