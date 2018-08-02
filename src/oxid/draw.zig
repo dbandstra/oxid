@@ -10,6 +10,7 @@ const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
 const ConstantTypes = @import("constant_types.zig");
 const MaxDrawables = @import("game.zig").MaxDrawables;
+const Audio = @import("audio.zig");
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
@@ -134,6 +135,9 @@ fn drawSoldier(g: *GameState, entity_id: Gbe.EntityId) void {
       const graphic = if (alternation(u32, player.dying_timer, 2)) Graphic.ManDying1 else Graphic.ManDying2;
       drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
     } else if (player.dying_timer > 20) {
+      if (player.dying_timer == 29) {
+        Audio.playSample(&g.samples, Audio.Sample.PlayerCrumble);
+      }
       drawBlock(g, transform.pos, Graphic.ManDying3, Draw.Transform.Identity);
     } else if (player.dying_timer > 10) {
       drawBlock(g, transform.pos, Graphic.ManDying4, Draw.Transform.Identity);

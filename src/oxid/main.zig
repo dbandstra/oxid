@@ -20,6 +20,7 @@ const killAllMonsters = @import("init.zig").killAllMonsters;
 const gameFrame = @import("frame.zig").gameFrame;
 const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
+const Audio = @import("audio.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
@@ -38,6 +39,7 @@ const dsaf = &dsaf_;
 
 pub const GameState = struct {
   platform_state: Platform.State,
+  samples: Audio.LoadedSamples,
   tileset: Draw.Tileset,
   session: GameSession,
   render_move_boxes: bool,
@@ -65,10 +67,13 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
+  Audio.loadSamples(dsaf, &g.samples);
+
   g.render_move_boxes = false;
   g.paused = false;
   g.fast_forward = false;
   g.session.init(rand_seed);
+  g.session.samples = &g.samples; // FIXME!!!!!!
   gameInit(&g.session);
 
   try loadTileset(dsaf, &g.tileset);

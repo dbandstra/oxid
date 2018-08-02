@@ -85,6 +85,8 @@ pub const GameComponentLists = struct {
 };
 
 pub const GameSession = struct {
+  samples: *@import("audio.zig").LoadedSamples, // FIXME!!!!!!!!!!!!!!!!!!
+
   component_storage: GameComponentStorage,
   gbe: Gbe.Session(COMPONENT_TYPES[0..], GameComponentLists),
 

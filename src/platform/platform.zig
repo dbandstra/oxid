@@ -92,10 +92,42 @@ pub const InitParams = struct{
   dsaf: *DoubleStackAllocatorFlat,
 };
 
+const MAX_CHUNKS = 20;
+var chunks: [MAX_CHUNKS][*]c.Mix_Chunk = undefined;
+var num_chunks: u32 = 0;
+
+// note: handle 0 is null/empty.
+// handle 1 refers to chunks[0], etc.
+pub fn loadSound(contents: []const u8) u32 {
+  if (num_chunks == MAX_CHUNKS) {
+    c.SDL_Log(c"no slots free to load sound");
+    return 0;
+  }
+  const ptr = @ptrCast(*const c_void, contents.ptr);
+  const rwops = c.SDL_RWFromConstMem(ptr, @intCast(c_int, contents.len));
+  const chunk = c.Mix_LoadWAV_RW(rwops, 1) orelse {
+    c.SDL_Log(c"Mix_LoadWAV failed: ", c.Mix_GetError());
+    return 0;
+  };
+  chunks[num_chunks] = chunk;
+  num_chunks += 1;
+  return num_chunks;
+}
+
+pub fn playSound(handle: u32) void {
+  const channel = -1;
+  const loops = 0;
+  const ticks = -1;
+  if (handle > 0 and handle <= num_chunks) {
+    const chunk = chunks[handle - 1];
+    _ = c.Mix_PlayChannelTimed(channel, chunk, loops, ticks);
+  }
+}
+
 pub fn init(ps: *State, params: *const InitParams) !void {
   ps.initialized = false;
 
-  if (c.SDL_Init(c.SDL_INIT_VIDEO) != 0) {
+  if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {
     c.SDL_Log(c"Unable to initialize SDL: %s", c.SDL_GetError());
     return error.SDLInitializationFailed;
   }
@@ -121,6 +153,13 @@ pub fn init(ps: *State, params: *const InitParams) !void {
     return error.SDLInitializationFailed;
   };
   errdefer c.SDL_DestroyWindow(window);
+
+  // 4096
+  if (c.Mix_OpenAudio(22050, c.MIX_DEFAULT_FORMAT, 1, 1024) == -1) {
+    c.SDL_Log(c"Mix_OpenAudio failed: %s", c.Mix_GetError());
+    return error.SDLInitializationFailed;
+  }
+  errdefer c.Mix_CloseAudio();
 
   const glcontext = c.SDL_GL_CreateContext(window) orelse {
     c.SDL_Log(c"SDL_GL_CreateContext failed: %s", c.SDL_GetError());
@@ -187,6 +226,10 @@ pub fn destroy(ps: *State) void {
   ps.static_geometry.destroy();
   ps.shaders.destroy();
   c.SDL_GL_DeleteContext(ps.glcontext);
+  for (chunks[0..num_chunks]) |chunk| {
+    c.Mix_FreeChunk(chunk);
+  }
+  c.Mix_CloseAudio();
   c.SDL_DestroyWindow(ps.window);
   c.SDL_Quit();
   ps.initialized = false;

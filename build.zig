@@ -12,6 +12,7 @@ pub fn build(b: *Builder) void {
   var exe = b.addExecutable("oxid", "src/oxid/main.zig");
   exe.setBuildMode(mode);
   exe.linkSystemLibrary("SDL2");
+  exe.linkSystemLibrary("SDL2_mixer");
   exe.linkSystemLibrary("epoxy");
   exe.linkSystemLibrary("c");
 

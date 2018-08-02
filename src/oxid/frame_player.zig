@@ -4,6 +4,7 @@ const GbeSystem = @import("../gbe_system.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const Audio = @import("audio.zig");
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("frame.zig").decrementTimer;
 const physInWall = @import("physics.zig").physInWall;
@@ -69,6 +70,7 @@ pub const PlayerMovementSystem = struct{
             break slot;
           }
         } else null) |slot| {
+          Audio.playSample(gs.samples, Audio.Sample.PlayerShot);
           // spawn the bullet one quarter of a grid cell in front of the player
           const pos = self.transform.pos;
           const dir_vec = Math.Direction.normal(self.phys.facing);
@@ -201,6 +203,7 @@ pub const PlayerReactionSystem = struct{
     var it = gs.gbe.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
       switch (event.pickup_type) {
         ConstantTypes.PickupType.PowerUp => {
+          Audio.playSample(gs.samples, Audio.Sample.PowerUp);
           self.player.attack_level = switch (self.player.attack_level) {
             C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
             else => C.Player.AttackLevel.Three,
@@ -208,6 +211,7 @@ pub const PlayerReactionSystem = struct{
           self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
         },
         ConstantTypes.PickupType.SpeedUp => {
+          Audio.playSample(gs.samples, Audio.Sample.PowerUp);
           self.player.speed_level = switch (self.player.speed_level) {
             C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
             else => C.Player.SpeedLevel.Three,
@@ -215,11 +219,14 @@ pub const PlayerReactionSystem = struct{
           self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
         },
         ConstantTypes.PickupType.LifeUp => {
+          Audio.playSample(gs.samples, Audio.Sample.ExtraLife);
           _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
             .player_controller_id = self.player.player_controller_id,
           });
         },
-        ConstantTypes.PickupType.Coin => {},
+        ConstantTypes.PickupType.Coin => {
+          Audio.playSample(gs.samples, Audio.Sample.Coin);
+        },
       }
     }
     return true;

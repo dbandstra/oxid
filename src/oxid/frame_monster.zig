@@ -5,6 +5,7 @@ const Gbe = @import("../gbe.zig");
 const GbeSystem = @import("../gbe_system.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
+const Audio = @import("audio.zig");
 const GameSession = @import("game.zig").GameSession;
 const decrementTimer = @import("frame.zig").decrementTimer;
 const physInWall = @import("physics.zig").physInWall;
@@ -110,6 +111,7 @@ pub const MonsterMovementSystem = struct{
     if (self.monster.next_shoot_timer > 0) {
       self.monster.next_shoot_timer -= 1;
     } else {
+      Audio.playSample(gs.samples, Audio.Sample.MonsterShot);
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
       const dir_vec = Math.Direction.normal(self.phys.facing);
