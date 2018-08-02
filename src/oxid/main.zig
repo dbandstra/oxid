@@ -17,7 +17,8 @@ const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("input.zig").InputEvent;
 const gameInit = @import("init.zig").gameInit;
 const killAllMonsters = @import("init.zig").killAllMonsters;
-const gameFrame = @import("frame.zig").gameFrame;
+const gamePreFrame = @import("frame.zig").gamePreFrame;
+const gamePostFrame = @import("frame.zig").gamePostFrame;
 const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
@@ -139,12 +140,24 @@ pub fn main() !void {
       const n = if (g.fast_forward) u32(4) else u32(1);
       var i: u32 = 0;
       while (i < n) : (i += 1) {
-        gameFrame(g);
+        gamePreFrame(&g.session);
+        playSounds(g);
+        gamePostFrame(&g.session);
       }
     }
 
     Platform.preDraw(&g.platform_state);
     drawGame(g);
     Platform.postDraw(&g.platform_state);
+  }
+}
+
+// "middleware"
+
+const C = @import("components.zig");
+
+fn playSounds(g: *GameState) void {
+  var it = g.session.gbe.iter(C.EventSound); while (it.next()) |object| {
+    Audio.playSample(&g.platform_state, &g.samples, object.data.sample);
   }
 }
