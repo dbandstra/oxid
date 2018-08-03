@@ -71,34 +71,43 @@ pub fn RWops(comptime ReadError: type) type {
       return @intCast(i64, pos);
     }
 
-    extern fn readFn(context: ?[*]c.SDL_RWops, ptr_: ?*c_void, size: usize, maxnum: usize) usize {
+    extern fn readFn(context: ?[*]c.SDL_RWops, ptr: ?*c_void, size: usize, maxnum: usize) usize {
       var in_stream = getInStream(context);
-
-      const ptr = ptr_ orelse return 0;
 
       const num_bytes = size * maxnum;
 
-      var ptr2 = @ptrCast([*]u8, ptr);
-      var slice = ptr2[0..num_bytes];
+      var slice = @ptrCast([*]u8, ptr)[0..num_bytes];
+      var bytes_read: usize = 0;
 
-      if (in_stream.read(slice)) |n| {
-        // FIXME!!! this function is supposed to return number of elements (a
-        // multiple of `size`).
-        // the in_stream.read may return an incomplete read (e.g. if it's
-        // coming from a buffered instream), but because it only cares about
-        // bytes, not "elements", it could stop in the middle of an element...
-        // i guess i should detect that and then seek back to the beginning of
-        // the fragmented element? not sure what else i could do other than
-        // holding an at-least-one-element-big buffer in this object
-        if (n != num_bytes) {
-          @panic("FIXME!!!!"); // FIXME!!!!
+      // fill the entire output buffer. since we have to return the number of
+      // elements read, not the number of bytes, we can't stop reading in the
+      // middle of an element. so just keep reading. the only edge case we need
+      // to handle is if we hit EOF in the middle of an element
+      while (bytes_read < num_bytes) {
+        if (in_stream.read(slice[bytes_read..])) |n| {
+          if (n == 0) {
+            // hit the end of the stream - the caller was trying to read more
+            // than was in the file.
+            // return the number of whole elements read, and rewind any extra
+            // bytes read (part of the next element).
+            // warning: this code is untested
+            const num_elements_read = bytes_read / maxnum;
+            const remainder = bytes_read % maxnum;
+
+            const seekable = getSeekable(context);
+            const pos = seekable.getPos() catch return 0;
+            seekable.seekTo(pos - remainder) catch return 0;
+
+            return num_elements_read;
+          }
+          bytes_read += n;
+        } else |_| {
+          // the read failed
+          return 0;
         }
-        return maxnum;
-      } else |err| {
-        std.debug.warn("bye {}\n", err);
-        // TODO call SDL_SetError
-        return 0;
       }
+
+      return maxnum;
     }
 
     extern fn writeFn(context: ?[*]c.SDL_RWops, ptr_: ?*const c_void, size: usize, num: usize) usize {
