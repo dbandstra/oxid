@@ -1,5 +1,6 @@
 const std = @import("std");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const SeekableFileInStream = @import("../../zigutils/src/FileInStream.zig").SeekableFileInStream;
 const Platform = @import("../platform/platform.zig");
 
 pub const Sample = enum{
@@ -40,12 +41,17 @@ fn loadSample(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, filename: []
   const low_mark = dsaf.get_low_mark();
   defer dsaf.free_to_low_mark(low_mark);
 
-  const contents = std.io.readFileAlloc(&dsaf.low_allocator, filename) catch |err| {
+  var file = std.os.File.openRead(&dsaf.low_allocator, filename) catch |err| {
     std.debug.warn("couldn\'t open file {}\n", filename);
     return 0;
   };
+  defer file.close();
 
-  return Platform.loadSound(ps, contents);
+  var file_stream = SeekableFileInStream.init(&file);
+  var stream = &file_stream.stream;
+  var seekable = &file_stream.seekable;
+
+  return Platform.loadSound(ps, SeekableFileInStream.ReadError, stream, seekable);
 }
 
 pub fn loadSamples(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, ls: *LoadedSamples) void {

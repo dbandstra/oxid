@@ -1,8 +1,11 @@
+const std = @import("std");
 const c = @import("c.zig");
 const image = @import("../../zigutils/src/image/image.zig");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 const debug_gl = @import("debug_gl.zig");
 use @import("math3d.zig");
+const RWops = @import("rwops.zig").RWops;
 const all_shaders = @import("all_shaders.zig");
 const static_geometry = @import("static_geometry.zig");
 const Font = @import("font.zig").Font;
@@ -98,15 +101,20 @@ pub const InitParams = struct{
 
 // note: handle 0 is null/empty.
 // handle 1 refers to chunks[0], etc.
-pub fn loadSound(ps: *State, contents: []const u8) u32 {
+pub fn loadSound(
+  ps: *State,
+  comptime ReadError: type,
+  stream: *std.io.InStream(ReadError),
+  seekable: *Seekable,
+) u32 {
   if (ps.num_chunks == MAX_CHUNKS) {
     c.SDL_Log(c"no slots free to load sound");
     return 0;
   }
-  const ptr = @ptrCast(*const c_void, contents.ptr);
-  const rwops = c.SDL_RWFromConstMem(ptr, @intCast(c_int, contents.len));
-  const chunk = c.Mix_LoadWAV_RW(rwops, 1) orelse {
-    c.SDL_Log(c"Mix_LoadWAV failed: ", c.Mix_GetError());
+  var rwops = RWops(ReadError).create(stream, seekable);
+  var rwops_ptr = @ptrCast([*]c.SDL_RWops, &rwops);
+  const chunk = c.Mix_LoadWAV_RW(rwops_ptr, 0) orelse {
+    c.SDL_Log(c"Mix_LoadWAV failed: %s", c.Mix_GetError());
     return 0;
   };
   ps.chunks[ps.num_chunks] = chunk;
