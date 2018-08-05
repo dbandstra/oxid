@@ -103,7 +103,7 @@ pub fn Level(comptime w: u31, comptime h: u31) type {
 }
 
 pub const LEVEL = Level(20, 14).init(blk: {
-  const _ = 0x00;
+  const e = 0x00;
   const O = 0x80;
   const U = 0x81;
   const x = 0x82; // pit
@@ -114,18 +114,18 @@ pub const LEVEL = Level(20, 14).init(blk: {
 
   break :blk []const u8{
     O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
-    O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_,_,_,O,
-    O,_,A,B,_,O,U,_,U,U,O,_,U,_,U,_,A,B,_,O,
-    O,_,C,D,_,O,_,_,_,_,O,_,_,_,_,_,C,D,_,O,
-    O,_,_,_,_,U,_,U,U,_,U,_,U,U,O,_,_,_,_,O,
-    O,O,_,U,_,_,_,_,_,_,_,_,_,_,U,_,U,U,_,O,
-    O,U,_,x,x,x,_,O,_,O,O,_,O,_,_,_,_,_,_,O,
-    O,_,_,_,_,_,_,U,_,U,U,_,U,_,U,U,O,_,O,O,
-    O,_,x,x,_,x,_,_,_,_,_,_,_,_,_,_,U,_,U,O,
-    O,_,_,_,_,U,U,U,_,O,_,U,U,_,O,_,_,_,_,O,
-    O,_,A,B,_,_,_,_,_,O,_,_,_,_,O,_,A,B,_,O,
-    O,_,C,D,_,U,_,O,_,U,U,U,_,U,U,_,C,D,_,O,
-    O,_,_,_,_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,
+    O,e,e,e,e,e,e,e,e,e,e,e,O,e,e,e,e,e,e,O,
+    O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,
+    O,e,C,D,e,O,e,e,e,e,O,e,e,e,e,e,C,D,e,O,
+    O,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,e,e,e,O,
+    O,O,e,U,e,e,e,e,e,e,e,e,e,e,U,e,U,U,e,O,
+    O,U,e,x,x,x,e,O,e,O,O,e,O,e,e,e,e,e,e,O,
+    O,e,e,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,O,O,
+    O,e,x,x,e,x,e,e,e,e,e,e,e,e,e,e,U,e,U,O,
+    O,e,e,e,e,U,U,U,e,O,e,U,U,e,O,e,e,e,e,O,
+    O,e,A,B,e,e,e,e,e,O,e,e,e,e,O,e,A,B,e,O,
+    O,e,C,D,e,U,e,O,e,U,U,U,e,U,U,e,C,D,e,O,
+    O,e,e,e,e,e,e,O,e,e,e,e,e,e,e,e,e,e,e,O,
     O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
   };
 });
