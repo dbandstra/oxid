@@ -38,37 +38,19 @@ pub fn RWops(comptime ReadError: type) type {
 
     extern fn sizeFn(context: ?[*]c.SDL_RWops) i64 {
       var seekable = getSeekable(context);
-      const size = seekable.getEndPos() catch return -1;
-      return @intCast(i64, size);
+      const pos = seekable.seek(0, Seekable.Whence.Current) catch return -1;
+      const end_pos = seekable.seek(0, Seekable.Whence.End) catch return -1;
+      _ = seekable.seek(pos, Seekable.Whence.Start) catch return -1;
+      return end_pos;
     }
 
     extern fn seekFn(context: ?[*]c.SDL_RWops, offset: i64, whence: c_int) i64 {
-      var seekable = getSeekable(context);
-
-      switch (whence) {
-        c.RW_SEEK_SET => {
-          if (offset < 0) return -1;
-          const uofs = @intCast(usize, offset);
-          seekable.seekTo(uofs) catch return -1;
-        },
-        c.RW_SEEK_CUR => {
-          const pos = seekable.getPos() catch return -1;
-          const new_ofs = @intCast(i64, pos) + offset;
-          const new_ofs2 = @intCast(usize, new_ofs);
-          seekable.seekTo(new_ofs2) catch return -1;
-        },
-        c.RW_SEEK_END => {
-          if (offset < 0) return -1;
-          const end = seekable.getEndPos() catch return -1;
-          const uofs = @intCast(usize, offset);
-          seekable.seekTo(end - uofs) catch return -1;
-        },
-        else => {
-          return -1;
-        },
-      }
-      const pos = seekable.getPos() catch return -1;
-      return @intCast(i64, pos);
+      return getSeekable(context).seek(offset, switch (whence) {
+        c.RW_SEEK_SET => Seekable.Whence.Start,
+        c.RW_SEEK_CUR => Seekable.Whence.Current,
+        c.RW_SEEK_END => Seekable.Whence.End,
+        else => return -1,
+      }) catch return -1;
     }
 
     extern fn readFn(context: ?[*]c.SDL_RWops, ptr: ?*c_void, size: usize, maxnum: usize) usize {
@@ -94,9 +76,7 @@ pub fn RWops(comptime ReadError: type) type {
             const num_elements_read = bytes_read / maxnum;
             const remainder = bytes_read % maxnum;
 
-            const seekable = getSeekable(context);
-            const pos = seekable.getPos() catch return 0;
-            seekable.seekTo(pos - remainder) catch return 0;
+            _ = getSeekable(context).seek(-@intCast(i64, remainder), Seekable.Whence.Current) catch return 0;
 
             return num_elements_read;
           }

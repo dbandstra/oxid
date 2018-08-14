@@ -61,7 +61,7 @@ pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     },
     PickupType.PowerUp,
     PickupType.SpeedUp => PickupValues{
-      .lifetime = 10*60,
+      .lifetime = 12*60,
       .get_points = 0,
     },
   };
