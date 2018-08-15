@@ -56,7 +56,7 @@ pub const PlayerController = struct{
     try gs.gbe.addComponent(entity_id, C.PlayerController{
       .lives = Constants.PlayerNumLives,
       .score = 0,
-      .respawn_timer = 0,
+      .respawn_timer = 1,
     });
 
     return entity_id;

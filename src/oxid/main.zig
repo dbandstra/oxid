@@ -15,8 +15,8 @@ const LEVEL = @import("level.zig").LEVEL;
 const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("input.zig").InputEvent;
-const gameInit = @import("init.zig").gameInit;
-const killAllMonsters = @import("init.zig").killAllMonsters;
+const killAllMonsters = @import("functions/kill_all_monsters.zig").killAllMonsters;
+const gameInit = @import("frame.zig").gameInit;
 const gamePreFrame = @import("frame.zig").gamePreFrame;
 const gamePostFrame = @import("frame.zig").gamePostFrame;
 const gameInput = @import("input.zig").gameInput;
@@ -73,6 +73,7 @@ pub fn main() !void {
   g.render_move_boxes = false;
   g.paused = false;
   g.fast_forward = false;
+
   g.session.init(rand_seed);
   gameInit(&g.session);
 
