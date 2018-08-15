@@ -22,6 +22,7 @@ const gamePostFrame = @import("frame.zig").gamePostFrame;
 const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
+const perf = @import("perf.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
@@ -44,6 +45,7 @@ pub const GameState = struct {
   tileset: Draw.Tileset,
   session: GameSession,
   render_move_boxes: bool,
+  perf_spam: bool,
   paused: bool,
   fast_forward: bool,
 };
@@ -71,6 +73,7 @@ pub fn main() !void {
   Audio.loadSamples(dsaf, &g.platform_state, &g.samples);
 
   g.render_move_boxes = false;
+  g.perf_spam = false;
   g.paused = false;
   g.fast_forward = false;
 
@@ -78,6 +81,8 @@ pub fn main() !void {
   gameInit(&g.session);
 
   try loadTileset(dsaf, &g.tileset);
+
+  perf.init();
 
   var quit = false;
   while (!quit) {
@@ -102,6 +107,9 @@ pub fn main() !void {
             },
             c.SDLK_F3 => {
               g.session.god_mode = !g.session.god_mode;
+            },
+            c.SDLK_F4 => {
+              g.perf_spam = !g.perf_spam;
             },
             c.SDLK_UP => gameInput(&g.session, InputEvent.Up, true),
             c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, true),
@@ -138,6 +146,8 @@ pub fn main() !void {
     }
 
     if (!g.paused) {
+      perf.begin(&perf.timers.Frame);
+
       const n = if (g.fast_forward) u32(4) else u32(1);
       var i: u32 = 0;
       while (i < n) : (i += 1) {
@@ -145,10 +155,14 @@ pub fn main() !void {
         playSounds(g);
         gamePostFrame(&g.session);
       }
+
+      perf.end(&perf.timers.Frame, g.perf_spam);
     }
 
     Platform.preDraw(&g.platform_state);
+    perf.begin(&perf.timers.Draw);
     drawGame(g);
+    perf.end(&perf.timers.Draw, g.perf_spam);
     Platform.postDraw(&g.platform_state);
   }
 }

@@ -23,6 +23,7 @@ Controls:
 * enter/return: skip to next wave (cheat)
 * F2: toggle rendering of move boxes (debug feature)
 * F3: toggle god mode (cheat)
+* F4: toggle profiling spam (debug feature)
 
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.

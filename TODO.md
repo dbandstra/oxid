@@ -18,7 +18,6 @@ CODE:
 - move all drawing stuff into a file, all opengl stuff, with layer of abstraction so that a software renderer could be done (i probably won't bother to do one though)
 - as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.
 - (may not be a priority for this game) need a solution for spawning a non-illusory phys object in a spot overlapping other objects. for now i've just players and bullets illusory
-- write a interactive profiling thing. the game is running laggy, probably because of the collision detection
 
 paging system:
 - after running a system (which can only write to one component type), flip the page for that component type? is that efficient...? it makes sense for Transform, but what else?

@@ -17,6 +17,7 @@ const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
 const C = @import("components.zig");
+const perf = @import("perf.zig");
 
 const SortItem = struct {
   object: *Gbe.ComponentObject(C.Drawable),
@@ -25,7 +26,9 @@ const SortItem = struct {
 
 pub fn drawGame(g: *GameState) void {
   const gs = &g.session;
+
   // sort drawables
+  perf.begin(&perf.timers.DrawSort);
   var sortarray: [MaxDrawables]SortItem = undefined;
   var num_drawables: usize = 0;
   var it = gs.gbe.iter(C.Drawable); while (it.next()) |object| {
@@ -39,10 +42,14 @@ pub fn drawGame(g: *GameState) void {
   }
   var sortslice = sortarray[0..num_drawables];
   std.sort.sort(SortItem, sortslice, lessThanField(SortItem, "z_index"));
+  perf.end(&perf.timers.DrawSort, g.perf_spam);
 
   // actually draw
+  perf.begin(&perf.timers.DrawMap);
   drawMap(g);
+  perf.end(&perf.timers.DrawMap, g.perf_spam);
 
+  perf.begin(&perf.timers.DrawEntities);
   for (sortslice) |sort_item| {
     const object = sort_item.object;
     switch (object.data.draw_type) {
@@ -60,6 +67,7 @@ pub fn drawGame(g: *GameState) void {
       C.Drawable.Type.Pickup => drawPickup(g, object.entity_id),
     }
   }
+  perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
   if (g.render_move_boxes) {
     var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
@@ -73,7 +81,9 @@ pub fn drawGame(g: *GameState) void {
     }
   }
 
+  perf.begin(&perf.timers.DrawHud);
   drawHud(g);
+  perf.end(&perf.timers.DrawHud, g.perf_spam);
 }
 
 // helper
