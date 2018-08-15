@@ -166,7 +166,7 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
     }
 
     pub fn applyRemovals(self: *Self) void {
-      for (self.removals) |entity_id| {
+      for (self.removals[0..self.num_removals]) |entity_id| {
         inline for (ComponentTypes) |component_type| {
           self.destroyComponent(entity_id, component_type);
         }
