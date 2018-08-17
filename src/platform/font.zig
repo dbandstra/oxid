@@ -36,7 +36,7 @@ pub fn fontDrawString(ps: *Platform.State, pos: Math.Vec2, string: []const u8) v
       .tx = char % FONT_NUM_COLS,
       .ty = char / FONT_NUM_COLS,
     };
-    PlatformDraw.drawTile(ps, &ps.font.tileset, tile, fx, fy, w, h, Draw.Transform.Identity);
+    PlatformDraw.tile(ps, &ps.font.tileset, tile, fx, fy, w, h, Draw.Transform.Identity);
     x += FONT_CHAR_WIDTH;
   }
 }

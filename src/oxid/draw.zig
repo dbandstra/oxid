@@ -45,6 +45,8 @@ pub fn drawGame(g: *GameState) void {
   perf.end(&perf.timers.DrawSort, g.perf_spam);
 
   // actually draw
+  PlatformDraw.begin(&g.platform_state, g.tileset.texture.handle);
+
   perf.begin(&perf.timers.DrawMap);
   drawMap(g);
   perf.end(&perf.timers.DrawMap, g.perf_spam);
@@ -68,6 +70,8 @@ pub fn drawGame(g: *GameState) void {
     }
   }
   perf.end(&perf.timers.DrawEntities, g.perf_spam);
+
+  PlatformDraw.end(&g.platform_state);
 
   if (g.render_move_boxes) {
     var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
@@ -213,8 +217,7 @@ pub fn drawMap(g: *GameState) void {
         0x86 => Graphic.EvilWallBR,
         else => null,
       }) |graphic| {
-        const size = GRIDSIZE_SUBPIXELS;
-        drawBlock(g, Math.Vec2.scale(gridpos, size), graphic, Draw.Transform.Identity);
+        mapTile(g, Math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS), graphic);
       }
     }
   }
@@ -224,11 +227,14 @@ pub fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
-  PlatformDraw.rect(&g.platform_state, 0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT), Draw.RectStyle{
-    .Solid = Draw.SolidParams{
-      .color = Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
-    },
-  });
+  PlatformDraw.untexturedRect(
+    &g.platform_state,
+    0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
+    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    false,
+  );
+
+  PlatformDraw.begin(&g.platform_state, g.platform_state.font.tileset.texture.handle);
 
   if (pc_maybe) |pc| {
     var buffer: [40]u8 = undefined;
@@ -256,6 +262,8 @@ pub fn drawHud(g: *GameState) void {
     fontDrawString(&g.platform_state, Math.Vec2.init(29*8, 0), dest.getWritten());
     dest.reset();
   }
+
+  PlatformDraw.end(&g.platform_state);
 }
 
 ///////////////////////////////////////////////////////////
@@ -274,7 +282,7 @@ fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Tr
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
-  PlatformDraw.drawTile(
+  PlatformDraw.tile(
     &g.platform_state,
     &g.tileset,
     getGraphicTile(graphic),
@@ -289,9 +297,23 @@ fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
   const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = x1 - x0;
   const h = y1 - y0;
-  PlatformDraw.rect(&g.platform_state, x0, y0, w, h, Draw.RectStyle{
-    .Outline = Draw.OutlineParams{
-      .color = color,
-    },
-  });
+  PlatformDraw.untexturedRect(
+    &g.platform_state,
+    x0, y0, w, h,
+    color,
+    true,
+  );
+}
+
+fn mapTile(g: *GameState, pos: Math.Vec2, graphic: Graphic) void {
+  const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
+  const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
+  const w = GRIDSIZE_PIXELS;
+  const h = GRIDSIZE_PIXELS;
+  PlatformDraw.tile(
+    &g.platform_state,
+    &g.tileset,
+    getGraphicTile(graphic),
+    x, y, w, h, Draw.Transform.Identity,
+  );
 }

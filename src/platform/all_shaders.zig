@@ -17,8 +17,6 @@ pub const AllShaders = struct {
     texture_attrib_position: c.GLint,
     texture_uniform_mvp: c.GLint,
     texture_uniform_tex: c.GLint,
-    texture_uniform_region_pos: c.GLint,
-    texture_uniform_region_dims: c.GLint,
 
     pub fn destroy(as: *AllShaders) void {
         as.primitive.destroy();
@@ -158,12 +156,10 @@ pub fn createAllShaders() !AllShaders {
         \\out vec4 FragColor;
         \\
         \\uniform sampler2D Tex;
-        \\uniform vec2 RegionPos;
-        \\uniform vec2 RegionDims;
         \\
         \\void main(void)
         \\{
-        \\    FragColor = texture(Tex, RegionPos + FragTexCoord * RegionDims);
+        \\    FragColor = texture(Tex, FragTexCoord);
         \\}
     , null);
 
@@ -171,8 +167,6 @@ pub fn createAllShaders() !AllShaders {
     as.texture_attrib_position = as.texture.attribLocation(c"VertexPosition");
     as.texture_uniform_mvp = as.texture.uniformLocation(c"MVP");
     as.texture_uniform_tex = as.texture.uniformLocation(c"Tex");
-    as.texture_uniform_region_pos = as.texture.uniformLocation(c"RegionPos");
-    as.texture_uniform_region_dims = as.texture.uniformLocation(c"RegionDims");
 
     debug_gl.assertNoError();
 

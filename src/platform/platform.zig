@@ -30,6 +30,7 @@ pub const State = struct {
   virtual_window_height: u32,
   shaders: all_shaders.AllShaders,
   static_geometry: static_geometry.StaticGeometry,
+  draw_buffer: PlatformDraw.DrawBuffer,
   projection: Mat4x4,
   font: Font,
   chunks: [MAX_CHUNKS][*]c.Mix_Chunk,
@@ -223,6 +224,7 @@ pub fn init(ps: *State, params: *const InitParams) !void {
   ps.virtual_window_height = params.virtual_window_height;
   ps.window = window;
   ps.glcontext = glcontext;
+  ps.draw_buffer.num_vertices = 0;
   ps.fb = fb;
   ps.rt = rt;
 }
@@ -258,14 +260,10 @@ pub fn preDraw(ps: *State) void {
 }
 
 pub fn postDraw(ps: *State) void {
-  const w = ps.window_width;
-  const h = ps.window_height;
-  const fw = @intToFloat(f32, w);
-  const fh = @intToFloat(f32, h);
-  ps.projection = mat4x4_ortho(0, fw, fh, 0);
+  ps.projection = mat4x4_ortho(0, 1, 1, 0);
   c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-  c.glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
-  PlatformDraw.drawTextured(ps, ps.rt, 0, 0, fw, fh, Draw.Transform.FlipVertical);
+  c.glViewport(0, 0, @intCast(c_int, ps.window_width), @intCast(c_int, ps.window_height));
+  PlatformDraw.blit(ps, ps.rt);
 
   c.SDL_GL_SwapWindow(ps.window);
 
