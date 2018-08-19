@@ -32,6 +32,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .sample = Audio.Sample.MonsterImpact,
       });
       self.creature.hit_points -= amount;
+      self.creature.flinch_timer = 4;
     } else if (self.creature.hit_points > 0) {
       self.creature.hit_points = 0;
       if (self.player) |self_player| {

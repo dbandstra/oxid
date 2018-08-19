@@ -11,6 +11,7 @@ pub const MonsterValues = struct{
   move_speed: [4]u31,
   kill_points: u32,
   can_shoot: bool,
+  can_drop_webs: bool,
 };
 
 pub const PickupType = enum{

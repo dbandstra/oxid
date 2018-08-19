@@ -1,4 +1,5 @@
 const Math = @import("../../math.zig");
+const boxesOverlap = @import("../../boxes_overlap.zig").boxesOverlap;
 const Gbe = @import("../../gbe.zig");
 const GbeSystem = @import("../../gbe_system.zig");
 const Constants = @import("../constants.zig");
@@ -104,12 +105,32 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
   }
 }
 
+fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
+  var it = gs.gbe.iter(C.Web); while (it.next()) |object| {
+    const transform = gs.gbe.find(object.entity_id, C.Transform) orelse continue;
+    const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+
+    if (boxesOverlap(
+      self.transform.pos, self.phys.entity_bbox,
+      transform.pos, phys.entity_bbox,
+    )) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 fn playerMove(gs: *GameSession, self: SystemData) void {
-  const move_speed = switch (self.player.speed_level) {
+  var move_speed = switch (self.player.speed_level) {
     C.Player.SpeedLevel.One => Constants.PlayerMoveSpeed[0],
     C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed[1],
     C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed[2],
   };
+
+  if (isTouchingWeb(gs, self)) {
+    move_speed /= 2;
+  }
 
   var xmove: i32 = 0;
   var ymove: i32 = 0;

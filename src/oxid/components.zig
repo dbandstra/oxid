@@ -23,6 +23,7 @@ pub const Drawable = struct {
     FastBug,
     Squid,
     Juggernaut,
+    Web,
     Animation,
     Pickup,
   };
@@ -34,6 +35,7 @@ pub const Drawable = struct {
 pub const Creature = struct {
   invulnerability_timer: u32,
   hit_points: u32,
+  flinch_timer: u32,
 };
 
 pub const Monster = struct {
@@ -48,8 +50,13 @@ pub const Monster = struct {
   personality: Personality,
   kill_points: u32,
   can_shoot: bool,
-  next_shoot_timer: u32,
+  can_drop_webs: bool,
+  next_attack_timer: u32,
   has_coin: bool,
+};
+
+pub const Web = struct {
+  unused: u32, // TODO remove
 };
 
 pub const GameController = struct {
@@ -78,6 +85,7 @@ pub const Animation = struct {
 pub const PhysObject = struct {
   pub const FLAG_BULLET: u32 = 1;
   pub const FLAG_MONSTER: u32 = 2;
+  pub const FLAG_WEB: u32 = 4;
 
   // `illusory`: if true, this object is non-solid, but still causes 'collide'
   // events when overlapped

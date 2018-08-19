@@ -66,6 +66,7 @@ pub fn drawGame(g: *GameState) void {
       C.Drawable.Type.PlayerBullet2 => drawBullet(g, object.entity_id, Graphic.PlaBullet2),
       C.Drawable.Type.PlayerBullet3 => drawBullet(g, object.entity_id, Graphic.PlaBullet3),
       C.Drawable.Type.MonsterBullet => drawBullet(g, object.entity_id, Graphic.MonBullet),
+      C.Drawable.Type.Web => drawWeb(g, object.entity_id),
       C.Drawable.Type.Animation => drawAnimation(g, object.entity_id),
       C.Drawable.Type.Pickup => drawPickup(g, object.entity_id),
     }
@@ -185,7 +186,18 @@ fn drawMonster(g: *GameState, entity_id: Gbe.EntityId, graphic1: Graphic, graphi
   });
 }
 
-pub fn drawAnimation(g: *GameState, entity_id: Gbe.EntityId) void {
+fn drawWeb(g: *GameState, entity_id: Gbe.EntityId) void {
+  const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
+  const creature = g.session.gbe.find(entity_id, C.Creature) orelse return;
+  const graphic =
+    if (creature.flinch_timer > 0)
+      Graphic.Web2
+    else
+      Graphic.Web1;
+  drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
+}
+
+fn drawAnimation(g: *GameState, entity_id: Gbe.EntityId) void {
   const animation = g.session.gbe.find(entity_id, C.Animation) orelse return;
   const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   const animcfg = getSimpleAnim(animation.simple_anim);
@@ -194,7 +206,7 @@ pub fn drawAnimation(g: *GameState, entity_id: Gbe.EntityId) void {
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
 
-pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
+fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
   const pickup = g.session.gbe.find(entity_id, C.Pickup) orelse return;
   const transform = g.session.gbe.find(entity_id, C.Transform) orelse return;
   const graphic = switch (pickup.pickup_type) {
@@ -206,7 +218,7 @@ pub fn drawPickup(g: *GameState, entity_id: Gbe.EntityId) void {
   drawBlock(g, transform.pos, graphic, Draw.Transform.Identity);
 }
 
-pub fn drawMap(g: *GameState) void {
+fn drawMap(g: *GameState) void {
   var y: u31 = 0;
   while (y < LEVEL.h) : (y += 1) {
     var x: u31 = 0;
@@ -229,7 +241,7 @@ pub fn drawMap(g: *GameState) void {
   }
 }
 
-pub fn drawHud(g: *GameState) void {
+fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 

@@ -1,5 +1,13 @@
 GAMEPLAY:
-- big guys should drop webs
+- change squids to be spiders
+- add little text messages when waves begin
+- still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
+- more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
+- "kill all monsters" should not kill juggernauts. do this cleanly (add a "persistent" flag to monsters or something) instead of an if check looking for juggernaut type
+- multiple explosions when squid is killed
+- sound effects for web?
+- monsters (juggernaut and squid) should stop for a frame or two when shot
+- add a button to toggle muting audio
 
 CODE:
 - come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
@@ -20,9 +28,13 @@ CODE:
 paging system:
 - after running a system (which can only write to one component type), flip the page for that component type? is that efficient...? it makes sense for Transform, but what else?
 
+- there should be a way for an object to query all of the illusory physobjects it is intersecting. or actually, all physobjects period. sometimes illusory objects are supposed to provide a continuous effect (e.g. the webs that slow you down), which the event-collide system is not suited for.
+  - however this is not a subpixel perfect solution for webs slowing the player down. you might cross the boundary of a web halfway through a move. the only perfect solution would be to build speed damping into the physics system itself. so maybe my above idea is actually bad.
+
 GAMEPLAY IDEAS:
 - enemy with a shield that deflects your bullets back at you
 - exploding enemy
 - enemy that multiplies (like mantra)
 - flying enemy that can move over pits
 - enemy that usually wanders, but occasionally chases, and increases speed when chasing (rushes at player)
+- pits (implemented but not used in the map. one problem is that because the player is the same size as the corridors, he doesn't have space to face a pit that is to his side)

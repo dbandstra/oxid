@@ -27,8 +27,8 @@ fn monsterCollide(gs: *GameSession, self: SystemData) bool {
       if (event.propelled and !self.phys.illusory and !other_phys.illusory) {
         hit_creature = true;
       }
-      if (gs.gbe.find(event.other_id, C.Monster) == null) {
-        // if it's a non-monster creature, inflict damage on it
+      if (gs.gbe.find(event.other_id, C.Player) != null) {
+        // if it's a player creature, inflict damage on it
         if (self.monster.spawning_timer == 0) {
           _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
             .inflictor_player_controller_id = null,

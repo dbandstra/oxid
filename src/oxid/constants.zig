@@ -27,30 +27,35 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .move_speed = [4]u31{ 6, 9, 12, 15 },
       .kill_points = 10,
       .can_shoot = false,
+      .can_drop_webs = false,
     },
     MonsterType.Knight => MonsterValues{
       .hit_points = 1,
       .move_speed = [4]u31{ 6, 9, 12, 15 },
       .kill_points = 20,
       .can_shoot = true,
+      .can_drop_webs = false,
     },
     MonsterType.FastBug => MonsterValues{
       .hit_points = 1,
       .move_speed = [4]u31{ 12, 16, 20, 24 },
       .kill_points = 10,
       .can_shoot = false,
+      .can_drop_webs = false,
     },
     MonsterType.Squid => MonsterValues{
       .hit_points = 5,
       .move_speed = [4]u31{ 3, 4, 6, 8 },
       .kill_points = 80,
       .can_shoot = false,
+      .can_drop_webs = true,
     },
     MonsterType.Juggernaut => MonsterValues{
       .hit_points = 9999,
       .move_speed = [4]u31{ 4, 4, 4, 4 },
       .kill_points = 0,
       .can_shoot = false,
+      .can_drop_webs = false,
     },
   };
 }
@@ -87,6 +92,7 @@ pub const ZIndexExplosion: u32 = 81;
 pub const ZIndexEnemy: u32 = 80;
 pub const ZIndexBullet: u32 = 50;
 pub const ZIndexPickup: u32 = 30;
+pub const ZIndexWeb: u32 = 25;
 pub const ZIndexCorpse: u32 = 20;
 
 // these values need testing

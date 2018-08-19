@@ -99,6 +99,7 @@ pub const Player = struct{
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
+      .flinch_timer = 0,
     });
 
     try gs.gbe.addComponent(entity_id, C.Player{
@@ -182,6 +183,7 @@ pub const Monster = struct{
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = 0,
       .hit_points = 999, // invulnerable while spawning
+      .flinch_timer = 0,
     });
 
     try gs.gbe.addComponent(entity_id, C.Monster{
@@ -198,12 +200,59 @@ pub const Monster = struct{
           },
       .kill_points = monster_values.kill_points,
       .can_shoot = monster_values.can_shoot,
-      .next_shoot_timer =
-        if (monster_values.can_shoot)
+      .can_drop_webs = monster_values.can_drop_webs,
+      .next_attack_timer =
+        if (monster_values.can_shoot or monster_values.can_drop_webs)
           gs.gbe.getRand().range(u32, 75, 400)
         else
           0,
       .has_coin = params.has_coin,
+    });
+
+    return entity_id;
+  }
+};
+
+pub const Web = struct{
+  pub const Params = struct{
+    pos: Math.Vec2,
+  };
+
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
+    const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
+
+    try gs.gbe.addComponent(entity_id, C.Transform{
+      .pos = params.pos,
+    });
+
+    try gs.gbe.addComponent(entity_id, C.PhysObject{
+      .illusory = true,
+      .world_bbox = world_bbox,
+      .entity_bbox = monster_entity_bbox,
+      .facing = Math.Direction.E,
+      .speed = 0,
+      .push_dir = null,
+      .owner_id = Gbe.EntityId{ .id = 0 },
+      .ignore_pits = false,
+      .flags = C.PhysObject.FLAG_WEB,
+      .ignore_flags = 0,
+      .internal = undefined,
+    });
+
+    try gs.gbe.addComponent(entity_id, C.Web{
+      .unused = 0,
+    });
+
+    try gs.gbe.addComponent(entity_id, C.Creature{
+      .invulnerability_timer = 0,
+      .hit_points = 3,
+      .flinch_timer = 0,
+    });
+
+    try gs.gbe.addComponent(entity_id, C.Drawable{
+      .draw_type = C.Drawable.Type.Web,
+      .z_index = Constants.ZIndexWeb,
     });
 
     return entity_id;
@@ -257,8 +306,8 @@ pub const Bullet = struct{
       .ignore_pits = true,
       .flags = C.PhysObject.FLAG_BULLET,
       .ignore_flags = C.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
-        // monster bullets ignore all monsters
-        BulletType.MonsterBullet => C.PhysObject.FLAG_MONSTER,
+        // monster bullets ignore all monsters and webs
+        BulletType.MonsterBullet => C.PhysObject.FLAG_MONSTER | C.PhysObject.FLAG_WEB,
         // player bullets ignore only the player that shot it (via `owner_id`)
         BulletType.PlayerBullet => 0,
       },

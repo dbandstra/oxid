@@ -12,5 +12,6 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   _ = GameUtil.decrementTimer(&self.creature.invulnerability_timer);
+  _ = GameUtil.decrementTimer(&self.creature.flinch_timer);
   return true;
 }

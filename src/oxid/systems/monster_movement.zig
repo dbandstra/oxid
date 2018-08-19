@@ -30,8 +30,8 @@ fn think(gs: *GameSession, self: SystemData) bool {
     self.phys.push_dir = null;
   } else {
     monsterMove(gs, self);
-    if (self.monster.can_shoot) {
-      monsterShoot(gs, self);
+    if (self.monster.can_shoot or self.monster.can_drop_webs) {
+      monsterAttack(gs, self);
     }
   }
   return true;
@@ -101,31 +101,37 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
   self.phys.speed = @intCast(i32, move_speed);
 }
 
-fn monsterShoot(gs: *GameSession, self: SystemData) void {
+fn monsterAttack(gs: *GameSession, self: SystemData) void {
   const gc = gs.getGameController();
   if (gc.freeze_monsters_timer > 0) {
     return;
   }
-  if (self.monster.next_shoot_timer > 0) {
-    self.monster.next_shoot_timer -= 1;
+  if (self.monster.next_attack_timer > 0) {
+    self.monster.next_attack_timer -= 1;
   } else {
-    _ = Prototypes.EventSound.spawn(gs, C.EventSound{
-      .sample = Audio.Sample.MonsterShot,
-    });
-    // spawn the bullet one quarter of a grid cell in front of the monster
-    const pos = self.transform.pos;
-    const dir_vec = Math.Direction.normal(self.phys.facing);
-    const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
-    const bullet_pos = Math.Vec2.add(pos, ofs);
-    _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
-      .inflictor_player_controller_id = null,
-      .owner_id = self.id,
-      .pos = bullet_pos,
-      .facing = self.phys.facing,
-      .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
-      .cluster_size = 1,
-    });
-    self.monster.next_shoot_timer = gs.gbe.getRand().range(u32, 75, 400);
+    if (self.monster.can_shoot) {
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+        .sample = Audio.Sample.MonsterShot,
+      });
+      // spawn the bullet one quarter of a grid cell in front of the monster
+      const pos = self.transform.pos;
+      const dir_vec = Math.Direction.normal(self.phys.facing);
+      const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+      const bullet_pos = Math.Vec2.add(pos, ofs);
+      _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+        .inflictor_player_controller_id = null,
+        .owner_id = self.id,
+        .pos = bullet_pos,
+        .facing = self.phys.facing,
+        .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
+        .cluster_size = 1,
+      });
+    } else if (self.monster.can_drop_webs) {
+      _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
+        .pos = self.transform.pos,
+      });
+    }
+    self.monster.next_attack_timer = gs.gbe.getRand().range(u32, 75, 400);
   }
 }
 
