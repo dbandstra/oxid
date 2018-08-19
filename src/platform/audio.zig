@@ -58,3 +58,7 @@ pub fn playSound(ps: *Platform.State, handle: u32) void {
     _ = c.Mix_PlayChannelTimed(channel, chunk, loops, ticks);
   }
 }
+
+pub fn setMute(ps: *Platform.State, mute: bool) void {
+  _ = c.Mix_Volume(-1, if (mute) c_int(0) else c_int(128));
+}

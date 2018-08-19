@@ -17,6 +17,7 @@ Game controls:
 * tab: pause
 * esc: quit
 * backspace: reset
+* m: toggle sound muting
 
 Debug/cheat controls:
 * backquote: fast forward

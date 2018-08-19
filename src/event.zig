@@ -12,6 +12,7 @@ pub const Key = enum {
   Space,
   Tab,
   Backquote,
+  M,
 };
 
 pub const Event = union(enum) {

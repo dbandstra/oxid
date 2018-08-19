@@ -48,6 +48,7 @@ pub const GameState = struct {
   perf_spam: bool,
   paused: bool,
   fast_forward: bool,
+  mute: bool,
 };
 pub var game_state: GameState = undefined;
 
@@ -109,6 +110,10 @@ pub fn main() !void {
           },
           Key.F4 => {
             g.perf_spam = !g.perf_spam;
+          },
+          Key.M => {
+            g.mute = !g.mute;
+            Platform.setMute(&g.platform_state, g.mute);
           },
           Key.Up => gameInput(&g.session, InputEvent.Up, true),
           Key.Down => gameInput(&g.session, InputEvent.Down, true),

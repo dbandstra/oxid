@@ -22,3 +22,4 @@ pub const uploadTexture = texture.uploadTexture;
 
 pub const loadSound = audio.loadSound;
 pub const playSound = audio.playSound;
+pub const setMute = audio.setMute;

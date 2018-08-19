@@ -6,7 +6,6 @@ GAMEPLAY:
 - "kill all monsters" should not kill juggernauts. do this cleanly (add a "persistent" flag to monsters or something) instead of an if check looking for juggernaut type
 - multiple explosions when squid is killed
 - sound effects for web?
-- add a button to toggle muting audio
 
 CODE:
 - come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types

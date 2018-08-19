@@ -17,6 +17,7 @@ fn getKey(sym: c.SDL_Keycode) ?Key {
     c.SDLK_SPACE => Key.Space,
     c.SDLK_TAB => Key.Tab,
     c.SDLK_BACKQUOTE => Key.Backquote,
+    c.SDLK_m => Key.M,
     else => null,
   };
 }
