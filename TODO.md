@@ -1,6 +1,5 @@
 GAMEPLAY:
 - change squids to be spiders
-- add little text messages when waves begin
 - still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - "kill all monsters" should not kill juggernauts. do this cleanly (add a "persistent" flag to monsters or something) instead of an if check looking for juggernaut type

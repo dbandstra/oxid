@@ -37,11 +37,12 @@ pub const GameController = struct{
       .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
-      .wave_index = 0,
+      .wave_number = 0,
       .next_wave_timer = 90,
       .next_pickup_timer = 15*60,
       .freeze_monsters_timer = 0,
       .extra_lives_spawned = 0,
+      .wave_message_timer = 0,
     });
 
     return entity_id;

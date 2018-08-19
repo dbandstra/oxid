@@ -63,11 +63,12 @@ pub const GameController = struct {
   monster_count: u32,
   enemy_speed_level: u31,
   enemy_speed_timer: u32,
-  wave_index: u32,
+  wave_number: u32,
   next_wave_timer: u32,
   next_pickup_timer: u32,
   freeze_monsters_timer: u32,
   extra_lives_spawned: u32,
+  wave_message_timer: u32,
 };
 
 pub const PlayerController = struct {

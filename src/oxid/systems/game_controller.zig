@@ -23,15 +23,17 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (self.gc.next_wave_timer == 0 and countMonsters(gs) == 0) {
     self.gc.next_wave_timer = Constants.NextWaveTime;
   }
+  _ = GameUtil.decrementTimer(&self.gc.wave_message_timer);
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
     _ = Prototypes.EventSound.spawn(gs, C.EventSound{
       .sample = Audio.Sample.WaveBegin,
     });
-    self.gc.wave_index += 1;
+    self.gc.wave_number += 1;
+    self.gc.wave_message_timer = 180;
     self.gc.enemy_speed_level = 0;
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
-    if (self.gc.wave_index - 1 < Constants.Waves.len) {
-      const wave = &Constants.Waves[self.gc.wave_index - 1];
+    if (self.gc.wave_number - 1 < Constants.Waves.len) {
+      const wave = &Constants.Waves[self.gc.wave_number - 1];
       spawnWave(gs, wave);
       self.gc.enemy_speed_level = wave.speed;
       // note: juggernaut does not count towards the monster count

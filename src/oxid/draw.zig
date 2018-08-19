@@ -9,6 +9,7 @@ const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
 const ConstantTypes = @import("constant_types.zig");
+const Constants = @import("constants.zig");
 const MaxDrawables = @import("game.zig").MaxDrawables;
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
@@ -257,7 +258,7 @@ fn drawHud(g: *GameState) void {
   if (pc_maybe) |pc| {
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
-    _ = dest.stream.print("Wave: {}", gc.wave_index);
+    _ = dest.stream.print("Wave: {}", gc.wave_number);
     fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
     dest.reset();
     _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
@@ -279,6 +280,13 @@ fn drawHud(g: *GameState) void {
     _ = dest.stream.print("Score: {}", pc.score);
     fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
     dest.reset();
+  }
+
+  if (gc.wave_message_timer > 0 and gc.wave_number > 0 and gc.wave_number <= Constants.Waves.len) {
+    if (Constants.Waves[gc.wave_number - 1].message) |message| {
+      const x = 320 / 2 - message.len * 8 / 2;
+      fontDrawString(&g.platform_state, &g.font, @intCast(i32, x), 28*8, message);
+    }
   }
 
   Platform.drawEnd(&g.platform_state);

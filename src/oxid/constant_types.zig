@@ -33,4 +33,5 @@ pub const Wave = struct{
   squids: u32,
   juggernauts: u32,
   speed: u31,
+  message: ?[]const u8,
 };

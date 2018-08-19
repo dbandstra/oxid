@@ -18,7 +18,7 @@ pub fn loadFont(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
   const low_mark = dsaf.get_low_mark();
   defer dsaf.free_to_low_mark(low_mark);
 
-  const img = try loadPcx(dsaf, FONT_FILENAME, null);
+  const img = try loadPcx(dsaf, FONT_FILENAME, 0);
 
   font.tileset = Draw.Tileset{
     .texture = Platform.uploadTexture(img),
