@@ -11,17 +11,19 @@ Oxid is written in the [Zig](https://ziglang.org) programming language.
 * Depending on your version of Git, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
 * `zig build play`
 
-Controls:
+Game controls:
 * arrow keys: move
 * space: shoot
 * tab: pause
-* backquote: fast forward
 * esc: quit
 * backspace: reset
-* enter/return: skip to next wave (cheat)
-* F2: toggle rendering of move boxes (debug feature)
-* F3: toggle god mode (cheat)
-* F4: toggle profiling spam (debug feature)
+
+Debug/cheat controls:
+* backquote: fast forward
+* return: skip to next wave
+* F2: toggle rendering of move boxes
+* F3: toggle invulnerability
+* F4: toggle profiling spam
 
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
