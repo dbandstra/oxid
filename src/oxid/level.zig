@@ -106,7 +106,7 @@ pub const LEVEL = Level(20, 14).init(blk: {
   const e = 0x00;
   const O = 0x80;
   const U = 0x81;
-  const x = 0x82; // pit
+  // const x = 0x82; // pit
   const A = 0x83;
   const B = 0x84;
   const C = 0x85;
@@ -118,10 +118,10 @@ pub const LEVEL = Level(20, 14).init(blk: {
     O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,
     O,e,C,D,e,O,e,e,e,e,O,e,e,e,e,e,C,D,e,O,
     O,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,e,e,e,O,
-    O,O,e,U,e,e,e,e,e,e,e,e,e,e,U,e,U,U,e,O,
-    O,U,e,x,x,x,e,O,e,O,O,e,O,e,e,e,e,e,e,O,
+    O,O,e,O,e,e,e,e,e,e,e,e,e,e,U,e,U,U,e,O,
+    O,U,e,U,U,U,e,O,e,O,O,e,O,e,e,e,e,e,e,O,
     O,e,e,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,O,O,
-    O,e,x,x,e,x,e,e,e,e,e,e,e,e,e,e,U,e,U,O,
+    O,e,U,U,e,O,e,e,e,e,e,e,e,e,e,e,U,e,U,O,
     O,e,e,e,e,U,U,U,e,O,e,U,U,e,O,e,e,e,e,O,
     O,e,A,B,e,e,e,e,e,O,e,e,e,e,O,e,A,B,e,O,
     O,e,C,D,e,U,e,O,e,U,U,U,e,U,U,e,C,D,e,O,
