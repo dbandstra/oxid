@@ -36,8 +36,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       const wave = &Constants.Waves[self.gc.wave_number - 1];
       spawnWave(gs, wave);
       self.gc.enemy_speed_level = wave.speed;
-      // note: juggernaut does not count towards the monster count
-      self.gc.monster_count = wave.spiders + wave.knights + wave.fastbugs + wave.squids;
+      self.gc.monster_count = countNonPersistentMonsters(gs);
     } else {
       spawnWave(gs, Constants.DefaultWave);
     }
