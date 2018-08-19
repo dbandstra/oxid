@@ -42,7 +42,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
 
   self.phys.push_dir = null;
 
-  if (gc.freeze_monsters_timer > 0) {
+  if (gc.freeze_monsters_timer > 0 or self.creature.flinch_timer > 0) {
     self.phys.speed = 0;
     return;
   }

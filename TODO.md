@@ -6,7 +6,6 @@ GAMEPLAY:
 - "kill all monsters" should not kill juggernauts. do this cleanly (add a "persistent" flag to monsters or something) instead of an if check looking for juggernaut type
 - multiple explosions when squid is killed
 - sound effects for web?
-- monsters (juggernaut and squid) should stop for a frame or two when shot
 - add a button to toggle muting audio
 
 CODE:
