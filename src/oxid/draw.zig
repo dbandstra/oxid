@@ -2,8 +2,8 @@ const std = @import("std");
 const lessThanField = @import("../util.zig").lessThanField;
 const Math = @import("../math.zig");
 const Draw = @import("../draw.zig");
-const fontDrawString = @import("../platform/font.zig").fontDrawString;
-const PlatformDraw = @import("../platform/draw.zig");
+const fontDrawString = @import("../font.zig").fontDrawString;
+const Platform = @import("../platform/index.zig");
 const Gbe = @import("../gbe.zig");
 const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
@@ -45,7 +45,7 @@ pub fn drawGame(g: *GameState) void {
   perf.end(&perf.timers.DrawSort, g.perf_spam);
 
   // actually draw
-  PlatformDraw.begin(&g.platform_state, g.tileset.texture.handle);
+  Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
 
   perf.begin(&perf.timers.DrawMap);
   drawMap(g);
@@ -71,7 +71,7 @@ pub fn drawGame(g: *GameState) void {
   }
   perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
-  PlatformDraw.end(&g.platform_state);
+  Platform.drawEnd(&g.platform_state);
 
   if (g.render_move_boxes) {
     var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
@@ -227,43 +227,43 @@ pub fn drawHud(g: *GameState) void {
   const gc = g.session.getGameController();
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
-  PlatformDraw.untexturedRect(
+  Platform.drawUntexturedRect(
     &g.platform_state,
     0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
     Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
     false,
   );
 
-  PlatformDraw.begin(&g.platform_state, g.platform_state.font.tileset.texture.handle);
+  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
 
   if (pc_maybe) |pc| {
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
     _ = dest.stream.print("Wave: {}", gc.wave_index);
-    fontDrawString(&g.platform_state, Math.Vec2.init(0, 0), dest.getWritten());
+    fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
     dest.reset();
     _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
-    fontDrawString(&g.platform_state, Math.Vec2.init(9*8, 0), dest.getWritten());
+    fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
     dest.reset();
     if (pc.lives > 0) {
       // show one less so that 0 is a life
       _ = dest.stream.print("Lives: {}", pc.lives - 1);
-      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 0), dest.getWritten());
+      fontDrawString(&g.platform_state, &g.font, 19*8, 0, dest.getWritten());
       dest.reset();
     } else {
-      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 0), "Lives: \x1F"); // skull
-      fontDrawString(&g.platform_state, Math.Vec2.init(18*8, 15*8), "GAME");
-      fontDrawString(&g.platform_state, Math.Vec2.init(18*8, 16*8), "OVER");
+      fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives: \x1F"); // skull
+      fontDrawString(&g.platform_state, &g.font, 18*8, 15*8, "GAME");
+      fontDrawString(&g.platform_state, &g.font, 18*8, 16*8, "OVER");
     }
     if (g.session.god_mode) {
-      fontDrawString(&g.platform_state, Math.Vec2.init(19*8, 8), "god mode");
+      fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
     }
     _ = dest.stream.print("Score: {}", pc.score);
-    fontDrawString(&g.platform_state, Math.Vec2.init(29*8, 0), dest.getWritten());
+    fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
     dest.reset();
   }
 
-  PlatformDraw.end(&g.platform_state);
+  Platform.drawEnd(&g.platform_state);
 }
 
 ///////////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Tr
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
-  PlatformDraw.tile(
+  Platform.drawTile(
     &g.platform_state,
     &g.tileset,
     getGraphicTile(graphic),
@@ -297,7 +297,7 @@ fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
   const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = x1 - x0;
   const h = y1 - y0;
-  PlatformDraw.untexturedRect(
+  Platform.drawUntexturedRect(
     &g.platform_state,
     x0, y0, w, h,
     color,
@@ -310,7 +310,7 @@ fn mapTile(g: *GameState, pos: Math.Vec2, graphic: Graphic) void {
   const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
   const w = GRIDSIZE_PIXELS;
   const h = GRIDSIZE_PIXELS;
-  PlatformDraw.tile(
+  Platform.drawTile(
     &g.platform_state,
     &g.tileset,
     getGraphicTile(graphic),

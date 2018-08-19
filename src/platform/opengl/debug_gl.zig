@@ -1,4 +1,4 @@
-const c = @import("c.zig");
+const c = @import("../c.zig");
 const os = @import("std").os;
 const builtin = @import("builtin");
 

@@ -1,14 +1,13 @@
 const std = @import("std");
-const assert = std.debug.assert;
-const c = @import("../platform/c.zig");
-const all_shaders = @import("../platform/all_shaders.zig");
-const static_geometry = @import("../platform/static_geometry.zig");
-
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 const image = @import("../../zigutils/src/image/image.zig");
 
-const Platform = @import("../platform/platform.zig");
+const Platform = @import("../platform/index.zig");
+const Event = @import("../event.zig").Event;
+const Key = @import("../event.zig").Key;
 const Draw = @import("../draw.zig");
+const Font = @import("../font.zig").Font;
+const loadFont = @import("../font.zig").loadFont;
 const loadTileset = @import("graphics.zig").loadTileset;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("level.zig").LEVEL;
@@ -43,6 +42,7 @@ pub const GameState = struct {
   platform_state: Platform.State,
   samples: Audio.LoadedSamples,
   tileset: Draw.Tileset,
+  font: Font,
   session: GameSession,
   render_move_boxes: bool,
   perf_spam: bool,
@@ -54,13 +54,16 @@ pub var game_state: GameState = undefined;
 pub fn main() !void {
   const g = &game_state;
   try Platform.init(&g.platform_state, Platform.InitParams{
+    .window_title = "Oxid",
     .window_width = WINDOW_W,
     .window_height = WINDOW_H,
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
+    .audio_frequency = 22050,
+    .audio_buffer_size = 1024, // 4096,
     .dsaf = dsaf,
   });
-  defer Platform.destroy(&g.platform_state);
+  defer Platform.deinit(&g.platform_state);
 
   const rand_seed = blk: {
     var seed_bytes: [4]u8 = undefined;
@@ -80,65 +83,58 @@ pub fn main() !void {
   g.session.init(rand_seed);
   gameInit(&g.session);
 
+  try loadFont(dsaf, &g.font);
   try loadTileset(dsaf, &g.tileset);
 
   perf.init();
 
   var quit = false;
   while (!quit) {
-    var event: c.SDL_Event = undefined;
-    while (Platform.pollEvent(&g.platform_state, &event)) {
-      switch (event.type) {
-        c.SDL_KEYDOWN => {
-          if (event.key.repeat != 0) {
-            break;
-          }
-          switch (event.key.keysym.sym) {
-            c.SDLK_ESCAPE => return,
-            c.SDLK_BACKSPACE => {
-              g.session.init(rand_seed);
-              gameInit(&g.session);
-            },
-            c.SDLK_RETURN => {
-              killAllMonsters(&g.session);
-            },
-            c.SDLK_F2 => {
-              g.render_move_boxes = !g.render_move_boxes;
-            },
-            c.SDLK_F3 => {
-              g.session.god_mode = !g.session.god_mode;
-            },
-            c.SDLK_F4 => {
-              g.perf_spam = !g.perf_spam;
-            },
-            c.SDLK_UP => gameInput(&g.session, InputEvent.Up, true),
-            c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, true),
-            c.SDLK_LEFT => gameInput(&g.session, InputEvent.Left, true),
-            c.SDLK_RIGHT => gameInput(&g.session, InputEvent.Right, true),
-            c.SDLK_SPACE => gameInput(&g.session, InputEvent.Shoot, true),
-            c.SDLK_TAB => {
-              g.paused = !g.paused;
-            },
-            c.SDLK_BACKQUOTE => {
-              g.fast_forward = true;
-            },
-            else => {},
-          }
+    while (Platform.pollEvent(&g.platform_state)) |event| {
+      switch (event) {
+        Event.KeyDown => |key| switch (key) {
+          Key.Escape => return,
+          Key.Backspace => {
+            g.session.init(rand_seed);
+            gameInit(&g.session);
+          },
+          Key.Return => {
+            killAllMonsters(&g.session);
+          },
+          Key.F2 => {
+            g.render_move_boxes = !g.render_move_boxes;
+          },
+          Key.F3 => {
+            g.session.god_mode = !g.session.god_mode;
+          },
+          Key.F4 => {
+            g.perf_spam = !g.perf_spam;
+          },
+          Key.Up => gameInput(&g.session, InputEvent.Up, true),
+          Key.Down => gameInput(&g.session, InputEvent.Down, true),
+          Key.Left => gameInput(&g.session, InputEvent.Left, true),
+          Key.Right => gameInput(&g.session, InputEvent.Right, true),
+          Key.Space => gameInput(&g.session, InputEvent.Shoot, true),
+          Key.Tab => {
+            g.paused = !g.paused;
+          },
+          Key.Backquote => {
+            g.fast_forward = true;
+          },
+          else => {},
         },
-        c.SDL_KEYUP => {
-          switch (event.key.keysym.sym) {
-            c.SDLK_UP => gameInput(&g.session, InputEvent.Up, false),
-            c.SDLK_DOWN => gameInput(&g.session, InputEvent.Down, false),
-            c.SDLK_LEFT => gameInput(&g.session, InputEvent.Left, false),
-            c.SDLK_RIGHT => gameInput(&g.session, InputEvent.Right, false),
-            c.SDLK_SPACE => gameInput(&g.session, InputEvent.Shoot, false),
-            c.SDLK_BACKQUOTE => {
-              g.fast_forward = false;
-            },
-            else => {},
-          }
+        Event.KeyUp => |key| switch (key) {
+          Key.Up => gameInput(&g.session, InputEvent.Up, false),
+          Key.Down => gameInput(&g.session, InputEvent.Down, false),
+          Key.Left => gameInput(&g.session, InputEvent.Left, false),
+          Key.Right => gameInput(&g.session, InputEvent.Right, false),
+          Key.Space => gameInput(&g.session, InputEvent.Shoot, false),
+          Key.Backquote => {
+            g.fast_forward = false;
+          },
+          else => {},
         },
-        c.SDL_QUIT => {
+        Event.Quit => {
           quit = true;
         },
         else => {},
@@ -159,11 +155,13 @@ pub fn main() !void {
       perf.end(&perf.timers.Frame, g.perf_spam);
     }
 
+    perf.begin(&perf.timers.WholeDraw);
     Platform.preDraw(&g.platform_state);
     perf.begin(&perf.timers.Draw);
     drawGame(g);
     perf.end(&perf.timers.Draw, g.perf_spam);
     Platform.postDraw(&g.platform_state);
+    perf.end(&perf.timers.WholeDraw, g.perf_spam);
   }
 }
 

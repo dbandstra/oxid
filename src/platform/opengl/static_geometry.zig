@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("c.zig");
+const c = @import("../c.zig");
 
 pub const BUFFER_VERTICES = 4*512; // render up to 512 quads at once
 

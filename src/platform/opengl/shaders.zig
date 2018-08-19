@@ -1,9 +1,7 @@
 const os = @import("std").os;
-const c = @import("c.zig");
+const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
-const Vec4 = math3d.Vec4;
-const Mat4x4 = math3d.Mat4x4;
 const c_allocator = @import("std").heap.c_allocator;
 
 pub const AllShaders = struct {
@@ -70,19 +68,19 @@ pub const ShaderProgram = struct {
         }
     }
 
-    pub fn setUniformVec3(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const math3d.Vec3) void {
+    pub fn setUniformVec3(sp: *const ShaderProgram, uniform_id: c.GLint, x: f32, y: f32, z: f32) void {
         if (uniform_id != -1) {
-            c.glUniform3fv(uniform_id, 1, value.data[0..].ptr);
+            c.glUniform3f(uniform_id, x, y, z);
         }
     }
 
-    pub fn setUniformVec4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Vec4) void {
+    pub fn setUniformVec4(sp: *const ShaderProgram, uniform_id: c.GLint, x: f32, y: f32, z: f32, w: f32) void {
         if (uniform_id != -1) {
-            c.glUniform4fv(uniform_id, 1, value.data[0..].ptr);
+            c.glUniform4f(uniform_id, x, y, z, w);
         }
     }
 
-    pub fn setUniformMat4x4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const Mat4x4) void {
+    pub fn setUniformMat4x4(sp: *const ShaderProgram, uniform_id: c.GLint, value: *const math3d.Mat4x4) void {
         if (uniform_id != -1) {
             c.glUniformMatrix4fv(uniform_id, 1, c.GL_FALSE, value.data[0][0..].ptr);
         }

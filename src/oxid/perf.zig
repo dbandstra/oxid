@@ -14,6 +14,7 @@ pub const Timers = struct {
   DrawMap: Timer,
   DrawHud: Timer,
   DrawEntities: Timer,
+  WholeDraw: Timer,
 };
 
 pub var timers: Timers = undefined;
@@ -51,6 +52,12 @@ pub fn init() void {
   };
   timers.DrawHud = Timer{
     .label = "DrawHud",
+    .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+    .samples = [1]u64{0} ** 60,
+    .cursor = 0,
+  };
+  timers.WholeDraw = Timer{
+    .label = "WholeDraw",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
     .samples = [1]u64{0} ** 60,
     .cursor = 0,

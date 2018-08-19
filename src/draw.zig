@@ -1,4 +1,4 @@
-const Platform = @import("platform/platform.zig");
+const Platform = @import("platform/index.zig");
 
 pub const Tileset = struct {
   texture: Platform.Texture,

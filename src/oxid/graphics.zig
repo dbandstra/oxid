@@ -1,9 +1,10 @@
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 
+const Platform = @import("../platform/index.zig");
+const loadPcx = @import("../load_pcx.zig").loadPcx;
 const Draw = @import("../draw.zig");
-const uploadPcx = @import("../platform/upload_pcx.zig").uploadPcx;
 
-const GRAPHICS_FILENAME = "../../assets/mytiles.pcx";
+const GRAPHICS_FILENAME = "../assets/mytiles.pcx";
 const TRANSPARENT_COLOR_INDEX = 27;
 
 pub const Graphic = enum{
@@ -138,7 +139,12 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 }
 
 pub fn loadTileset(dsaf: *DoubleStackAllocatorFlat, out_tileset: *Draw.Tileset) !void {
-  out_tileset.texture = try uploadPcx(dsaf, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+  const low_mark = dsaf.get_low_mark();
+  defer dsaf.free_to_low_mark(low_mark);
+
+  const img = try loadPcx(dsaf, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+
+  out_tileset.texture = Platform.uploadTexture(img);
   out_tileset.xtiles = 8;
   out_tileset.ytiles = 8;
 }
