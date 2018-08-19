@@ -151,7 +151,7 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: Draw.Co
   if (ds.shaders.primitive_attrib_position >= 0) { // ?
     c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
     c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.primitive_attrib_position));
-    c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.primitive_attrib_position), 3, c.GL_FLOAT, c.GL_FALSE, 0, null);
+    c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.primitive_attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
   }
 
   if (outline) {
