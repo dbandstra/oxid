@@ -34,6 +34,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       const wave = &Constants.Waves[self.gc.wave_index - 1];
       spawnWave(gs, wave);
       self.gc.enemy_speed_level = wave.speed;
+      // note: juggernaut does not count towards the monster count
       self.gc.monster_count = wave.spiders + wave.knights + wave.fastbugs + wave.squids;
     } else {
       spawnWave(gs, Constants.DefaultWave);
@@ -78,14 +79,16 @@ fn getPlayerScore(gs: *GameSession) ?u32 {
 
 fn countMonsters(gs: *GameSession) u32 {
   var count: u32 = 0;
-  var it = gs.gbe.iter(C.Monster); while (it.next()) |_| {
-    count += 1;
+  var it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
+    if (object.data.monster_type != ConstantTypes.MonsterType.Juggernaut) {
+      count += 1;
+    }
   }
   return count;
 }
 
 fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
-  const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids;
+  const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
   const coins = (wave.spiders + wave.knights) / 3;
   std.debug.assert(count <= 100);
   var spawn_locs_buf: [100]Math.Vec2 = undefined;
@@ -101,8 +104,10 @@ fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
           ConstantTypes.MonsterType.Knight
         else if (i < wave.spiders + wave.knights + wave.fastbugs)
           ConstantTypes.MonsterType.FastBug
+        else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
+          ConstantTypes.MonsterType.Squid
         else
-          ConstantTypes.MonsterType.Squid,
+          ConstantTypes.MonsterType.Juggernaut,
       // TODO - distribute coins randomly across monster types?
       .has_coin = i < coins,
     });

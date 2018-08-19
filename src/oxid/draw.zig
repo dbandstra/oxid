@@ -57,10 +57,11 @@ pub fn drawGame(g: *GameState) void {
     switch (object.data.draw_type) {
       C.Drawable.Type.Soldier => drawSoldier(g, object.entity_id),
       C.Drawable.Type.SoldierCorpse => drawSoldierCorpse(g, object.entity_id),
-      C.Drawable.Type.Spider => drawMonster(g, object.entity_id, Graphic.Spider1, Graphic.Spider2),
-      C.Drawable.Type.Knight => drawMonster(g, object.entity_id, Graphic.Knight1, Graphic.Knight2),
-      C.Drawable.Type.FastBug => drawMonster(g, object.entity_id, Graphic.FastBug1, Graphic.FastBug2),
-      C.Drawable.Type.Squid => drawMonster(g, object.entity_id, Graphic.Squid1, Graphic.Squid2),
+      C.Drawable.Type.Spider => drawMonster(g, object.entity_id, Graphic.Spider1, Graphic.Spider2, true),
+      C.Drawable.Type.Knight => drawMonster(g, object.entity_id, Graphic.Knight1, Graphic.Knight2, true),
+      C.Drawable.Type.FastBug => drawMonster(g, object.entity_id, Graphic.FastBug1, Graphic.FastBug2, true),
+      C.Drawable.Type.Squid => drawMonster(g, object.entity_id, Graphic.Squid1, Graphic.Squid2, true),
+      C.Drawable.Type.Juggernaut => drawMonster(g, object.entity_id, Graphic.Juggernaut, Graphic.Juggernaut, false),
       C.Drawable.Type.PlayerBullet => drawBullet(g, object.entity_id, Graphic.PlaBullet),
       C.Drawable.Type.PlayerBullet2 => drawBullet(g, object.entity_id, Graphic.PlaBullet2),
       C.Drawable.Type.PlayerBullet3 => drawBullet(g, object.entity_id, Graphic.PlaBullet3),
@@ -102,6 +103,7 @@ const DrawCreature = struct{
     spawning_timer: u32,
     graphic1: Graphic,
     graphic2: Graphic,
+    rotates: bool,
   };
 
   fn run(g: *GameState, params: Params) void {
@@ -127,10 +129,12 @@ const DrawCreature = struct{
     };
     const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
-    // animate legs every 6 screen pixels
-    const graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2;
-
-    drawBlock(g, transform.pos, graphic, getDirTransform(phys.facing));
+    drawBlock(g,
+      transform.pos,
+      // animate legs every 6 screen pixels
+      if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,
+      if (params.rotates) getDirTransform(phys.facing) else Draw.Transform.Identity,
+    );
   }
 };
 
@@ -161,6 +165,7 @@ fn drawSoldier(g: *GameState, entity_id: Gbe.EntityId) void {
     .spawning_timer = 0,
     .graphic1 = Graphic.Man1,
     .graphic2 = Graphic.Man2,
+    .rotates = true,
   });
 }
 
@@ -169,13 +174,14 @@ fn drawSoldierCorpse(g: *GameState, entity_id: Gbe.EntityId) void {
   drawBlock(g, transform.pos, Graphic.ManDying6, Draw.Transform.Identity);
 }
 
-fn drawMonster(g: *GameState, entity_id: Gbe.EntityId, graphic1: Graphic, graphic2: Graphic) void {
+fn drawMonster(g: *GameState, entity_id: Gbe.EntityId, graphic1: Graphic, graphic2: Graphic, rotates: bool) void {
   const monster = g.session.gbe.find(entity_id, C.Monster) orelse return;
   DrawCreature.run(g, DrawCreature.Params{
     .entity_id = entity_id,
     .spawning_timer = monster.spawning_timer,
     .graphic1 = graphic1,
     .graphic2 = graphic2,
+    .rotates = rotates,
   });
 }
 

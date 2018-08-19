@@ -22,6 +22,7 @@ pub const Drawable = struct {
     Knight,
     FastBug,
     Squid,
+    Juggernaut,
     Animation,
     Pickup,
   };
@@ -86,7 +87,7 @@ pub const PhysObject = struct {
   // box will be (maxs - mins + 1).
   // `world_bbox`: the bbox used to collide with the level.
   world_bbox: Math.BoundingBox,
-  
+
   // `entity_bbox`: the bbox used to collide with other entities. this may be a
   // bit smaller than the world bbox
   entity_bbox: Math.BoundingBox,

@@ -1,10 +1,10 @@
 GAMEPLAY:
 - big guys should drop webs
-- juggernaut
 - you can't face a pit if there is no space
 - remove the pits
 
 CODE:
+- come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
 - sound: figure out how to start sounds at an offset into the mixing buffer
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - figure out how to refactor the component lists in game.zig so i only have to list them once

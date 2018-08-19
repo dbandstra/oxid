@@ -3,6 +3,7 @@ pub const MonsterType = enum{
   Knight,
   FastBug,
   Squid,
+  Juggernaut,
 };
 
 pub const MonsterValues = struct{
@@ -29,5 +30,6 @@ pub const Wave = struct{
   knights: u32,
   fastbugs: u32,
   squids: u32,
+  juggernauts: u32,
   speed: u31,
 };

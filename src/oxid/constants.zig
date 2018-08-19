@@ -46,6 +46,12 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 80,
       .can_shoot = false,
     },
+    MonsterType.Juggernaut => MonsterValues{
+      .hit_points = 9999,
+      .move_speed = [4]u31{ 4, 4, 4, 4 },
+      .kill_points = 0,
+      .can_shoot = false,
+    },
   };
 }
 
@@ -91,25 +97,25 @@ pub const ExtraLifeScoreThresholds = []u32{
 };
 
 pub const Waves = []Wave{
-  Wave{ .spiders = 6, .knights = 0, .fastbugs = 0, .squids = 0, .speed = 0 }, // 1
-  Wave{ .spiders = 6, .knights = 2, .fastbugs = 0, .squids = 0, .speed = 0 }, // 2
-  Wave{ .spiders = 8, .knights = 4, .fastbugs = 0, .squids = 0, .speed = 0 }, // 3
-  Wave{ .spiders = 6, .knights = 0, .fastbugs = 0, .squids = 2, .speed = 0 }, // 4
-  Wave{ .spiders = 6, .knights = 4, .fastbugs = 0, .squids = 0, .speed = 0 }, // 5
-  Wave{ .spiders = 0, .knights = 0, .fastbugs = 6, .squids = 0, .speed = 0 }, // 6
-  Wave{ .spiders = 8, .knights = 6, .fastbugs = 0, .squids = 2, .speed = 1 }, // 7
-  Wave{ .spiders = 0, .knights = 5, .fastbugs = 8, .squids = 0, .speed = 0 }, // 8
-  Wave{ .spiders = 0, .knights = 6, .fastbugs = 0, .squids = 0, .speed = 1 }, // 9
-  Wave{ .spiders = 4, .knights = 6, .fastbugs = 0, .squids = 0, .speed = 1 }, // 10
-  Wave{ .spiders = 7, .knights = 0, .fastbugs = 0, .squids = 0, .speed = 2 }, // 11 juggernaut
-  Wave{ .spiders = 7, .knights = 2, .fastbugs = 0, .squids = 0, .speed = 2 }, // 12
-  Wave{ .spiders = 8, .knights = 5, .fastbugs = 0, .squids = 0, .speed = 2 }, // 13
-  Wave{ .spiders = 6, .knights = 1, .fastbugs = 0, .squids = 2, .speed = 2 }, // 14
-  Wave{ .spiders = 7, .knights = 4, .fastbugs = 0, .squids = 0, .speed = 2 }, // 15
-  Wave{ .spiders = 0, .knights = 0, .fastbugs = 7, .squids = 0, .speed = 2 }, // 16
-  Wave{ .spiders = 8, .knights = 6, .fastbugs = 0, .squids = 2, .speed = 2 }, // 17
-  Wave{ .spiders = 0, .knights = 6, .fastbugs = 9, .squids = 0, .speed = 2 }, // 18
+  Wave{ .spiders = 6, .knights = 0, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 0 }, // 1
+  Wave{ .spiders = 6, .knights = 2, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 0 }, // 2
+  Wave{ .spiders = 8, .knights = 4, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 0 }, // 3
+  Wave{ .spiders = 6, .knights = 0, .fastbugs = 0, .squids = 2, .juggernauts = 0, .speed = 0 }, // 4
+  Wave{ .spiders = 6, .knights = 4, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 0 }, // 5
+  Wave{ .spiders = 0, .knights = 0, .fastbugs = 6, .squids = 0, .juggernauts = 0, .speed = 0 }, // 6
+  Wave{ .spiders = 8, .knights = 6, .fastbugs = 0, .squids = 2, .juggernauts = 0, .speed = 1 }, // 7
+  Wave{ .spiders = 0, .knights = 5, .fastbugs = 8, .squids = 0, .juggernauts = 0, .speed = 0 }, // 8
+  Wave{ .spiders = 0, .knights = 6, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 1 }, // 9
+  Wave{ .spiders = 4, .knights = 6, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 1 }, // 10
+  Wave{ .spiders = 7, .knights = 0, .fastbugs = 0, .squids = 0, .juggernauts = 1, .speed = 2 }, // 11
+  Wave{ .spiders = 7, .knights = 2, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 2 }, // 12
+  Wave{ .spiders = 8, .knights = 5, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 2 }, // 13
+  Wave{ .spiders = 6, .knights = 1, .fastbugs = 0, .squids = 2, .juggernauts = 0, .speed = 2 }, // 14
+  Wave{ .spiders = 7, .knights = 4, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 2 }, // 15
+  Wave{ .spiders = 0, .knights = 0, .fastbugs = 7, .squids = 0, .juggernauts = 0, .speed = 2 }, // 16
+  Wave{ .spiders = 8, .knights = 6, .fastbugs = 0, .squids = 2, .juggernauts = 0, .speed = 2 }, // 17
+  Wave{ .spiders = 0, .knights = 6, .fastbugs = 9, .squids = 0, .juggernauts = 0, .speed = 2 }, // 18
 };
 
 // this is used after you pass the final wave. FIXME - do something better
-pub const DefaultWave = Wave{ .spiders = 1, .knights = 0, .fastbugs = 0, .squids = 0, .speed = 0 };
+pub const DefaultWave = Wave{ .spiders = 1, .knights = 0, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 0 };

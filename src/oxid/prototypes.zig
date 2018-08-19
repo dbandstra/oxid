@@ -174,6 +174,7 @@ pub const Monster = struct{
         ConstantTypes.MonsterType.Knight => C.Drawable.Type.Knight,
         ConstantTypes.MonsterType.FastBug => C.Drawable.Type.FastBug,
         ConstantTypes.MonsterType.Squid => C.Drawable.Type.Squid,
+        ConstantTypes.MonsterType.Juggernaut => C.Drawable.Type.Juggernaut,
       },
       .z_index = Constants.ZIndexEnemy,
     });
@@ -187,10 +188,14 @@ pub const Monster = struct{
       .monster_type = params.monster_type,
       .spawning_timer = Constants.MonsterSpawnTime,
       .full_hit_points = monster_values.hit_points,
-      .personality = switch (gs.gbe.getRand().range(u32, 0, 2)) {
-        0 => C.Monster.Personality.Chase,
-        else => C.Monster.Personality.Wander,
-      },
+      .personality =
+        if (params.monster_type == ConstantTypes.MonsterType.Juggernaut)
+          C.Monster.Personality.Chase
+        else
+          switch (gs.gbe.getRand().range(u32, 0, 2)) {
+            0 => C.Monster.Personality.Chase,
+            else => C.Monster.Personality.Wander,
+          },
       .kill_points = monster_values.kill_points,
       .can_shoot = monster_values.can_shoot,
       .next_shoot_timer =
