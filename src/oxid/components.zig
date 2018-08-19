@@ -53,6 +53,7 @@ pub const Monster = struct {
   can_drop_webs: bool,
   next_attack_timer: u32,
   has_coin: bool,
+  persistent: bool,
 };
 
 pub const Web = struct {

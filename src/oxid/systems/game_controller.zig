@@ -19,8 +19,8 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  // if all monsters are dead, prepare next wave
-  if (self.gc.next_wave_timer == 0 and countMonsters(gs) == 0) {
+  // if all non-persistent monsters are dead, prepare next wave
+  if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
     self.gc.next_wave_timer = Constants.NextWaveTime;
   }
   _ = GameUtil.decrementTimer(&self.gc.wave_message_timer);
@@ -79,10 +79,10 @@ fn getPlayerScore(gs: *GameSession) ?u32 {
   return null;
 }
 
-fn countMonsters(gs: *GameSession) u32 {
+fn countNonPersistentMonsters(gs: *GameSession) u32 {
   var count: u32 = 0;
   var it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
-    if (object.data.monster_type != ConstantTypes.MonsterType.Juggernaut) {
+    if (!object.data.persistent) {
       count += 1;
     }
   }

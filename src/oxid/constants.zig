@@ -28,6 +28,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 10,
       .can_shoot = false,
       .can_drop_webs = false,
+      .persistent = false,
     },
     MonsterType.Knight => MonsterValues{
       .hit_points = 1,
@@ -35,6 +36,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 20,
       .can_shoot = true,
       .can_drop_webs = false,
+      .persistent = false,
     },
     MonsterType.FastBug => MonsterValues{
       .hit_points = 1,
@@ -42,6 +44,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 10,
       .can_shoot = false,
       .can_drop_webs = false,
+      .persistent = false,
     },
     MonsterType.Squid => MonsterValues{
       .hit_points = 5,
@@ -49,6 +52,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 80,
       .can_shoot = false,
       .can_drop_webs = true,
+      .persistent = false,
     },
     MonsterType.Juggernaut => MonsterValues{
       .hit_points = 9999,
@@ -56,6 +60,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .kill_points = 0,
       .can_shoot = false,
       .can_drop_webs = false,
+      .persistent = true,
     },
   };
 }

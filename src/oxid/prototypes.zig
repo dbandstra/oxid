@@ -208,6 +208,7 @@ pub const Monster = struct{
         else
           0,
       .has_coin = params.has_coin,
+      .persistent = monster_values.persistent,
     });
 
     return entity_id;
