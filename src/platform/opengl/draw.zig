@@ -180,8 +180,6 @@ pub fn begin(ps: *State, tex_id: c.GLuint) void {
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord));
 
-  c.glBindBuffer(c.GL_ELEMENT_ARRAY_BUFFER, ds.static_geometry.quad_index_buffer);
-
   c.glActiveTexture(c.GL_TEXTURE0);
   c.glBindTexture(c.GL_TEXTURE_2D, tex_id);
 
@@ -269,10 +267,7 @@ fn flush(ds: *DrawState) void {
   updateVbo(ds.static_geometry.dyn_texcoord_buffer, ds.draw_buffer.texcoord2f[0..]);
   c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
 
-  // each quad is 4 vertices but 6 elements (because they're drawn as triangles)
-  const num_elements = ds.draw_buffer.num_vertices / 4 * 6;
-
-  c.glDrawElements(c.GL_TRIANGLES, @intCast(c_int, num_elements), c.GL_UNSIGNED_INT, null);
+  c.glDrawArrays(c.GL_QUADS, 0, @intCast(c_int, ds.draw_buffer.num_vertices));
 
   ds.draw_buffer.num_vertices = 0;
 }

@@ -7,14 +7,12 @@ pub const StaticGeometry = struct {
     rect_2d_vertex_buffer: c.GLuint,
     rect_2d_blit_texcoord_buffer: c.GLuint,
 
-    quad_index_buffer: c.GLuint,
     dyn_vertex_buffer: c.GLuint,
     dyn_texcoord_buffer: c.GLuint,
 
     pub fn destroy(sg: *StaticGeometry) void {
         c.glDeleteBuffers(1, c.ptr(&sg.rect_2d_vertex_buffer));
         c.glDeleteBuffers(1, c.ptr(&sg.rect_2d_blit_texcoord_buffer));
-        c.glDeleteBuffers(1, c.ptr(&sg.quad_index_buffer));
         c.glDeleteBuffers(1, c.ptr(&sg.dyn_vertex_buffer));
         c.glDeleteBuffers(1, c.ptr(&sg.dyn_texcoord_buffer));
     }
@@ -35,26 +33,6 @@ pub fn updateVbo(vbo: c.GLuint, maybe_data2f: ?[]f32) void {
 
 pub fn createStaticGeometry() StaticGeometry {
     var sg: StaticGeometry = undefined;
-
-    var INDICES: [BUFFER_VERTICES * 6]c.GLuint = undefined;
-    var i: c.GLuint = 0;
-    while (i < BUFFER_VERTICES) : (i += 1) {
-        INDICES[i*6+0] = i * 4 + 0;
-        INDICES[i*6+1] = i * 4 + 1;
-        INDICES[i*6+2] = i * 4 + 2;
-        INDICES[i*6+3] = i * 4 + 0;
-        INDICES[i*6+4] = i * 4 + 2;
-        INDICES[i*6+5] = i * 4 + 3;
-    }
-
-    c.glGenBuffers(1, c.ptr(&sg.quad_index_buffer));
-    c.glBindBuffer(c.GL_ELEMENT_ARRAY_BUFFER, sg.quad_index_buffer);
-    c.glBufferData(
-        c.GL_ELEMENT_ARRAY_BUFFER,
-        BUFFER_VERTICES * 6 * @sizeOf(c.GLuint),
-        @ptrCast(*const c_void, &INDICES[0]),
-        c.GL_STATIC_DRAW,
-    );
 
     c.glGenBuffers(1, c.ptr(&sg.dyn_vertex_buffer));
     updateVbo(sg.dyn_vertex_buffer, null);
