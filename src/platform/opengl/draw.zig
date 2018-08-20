@@ -87,7 +87,7 @@ pub fn deinit(ds: *DrawState) void {
   ds.shaders.destroy();
 }
 
-pub fn preDraw(ds: *DrawState) void {
+pub fn preDraw(ds: *DrawState, clear_screen: bool) void {
   const w = ds.virtual_window_width;
   const h = ds.virtual_window_height;
   const fw = @intToFloat(f32, w);
@@ -95,6 +95,10 @@ pub fn preDraw(ds: *DrawState) void {
   ds.projection = math3d.mat4x4_ortho(0, fw, fh, 0);
   c.glBindFramebuffer(c.GL_FRAMEBUFFER, ds.fb);
   c.glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
+  if (clear_screen) {
+    c.glClearColor(0, 0, 0, 0);
+    c.glClear(c.GL_COLOR_BUFFER_BIT);
+  }
 }
 
 pub fn postDraw(ds: *DrawState) void {
@@ -209,10 +213,20 @@ pub fn tile(
   if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles) {
     return;
   }
-  const s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
-  const t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
-  const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
-  const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
+  var s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
+  var t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
+  var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
+  var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
+
+  if (ps.glitch_mode == 1) {
+    // draw the whole tileset scaled down. with transparency this leads to
+    // smearing. it's interesting how the level itself is "hidden" to begin
+    // with
+    s0 = 0;
+    t0 = 0;
+    s1 = 1;
+    t1 = 1;
+  }
 
   if (ds.draw_buffer.num_vertices + 4 > BUFFER_VERTICES) {
     flush(ds);

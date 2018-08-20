@@ -25,6 +25,7 @@ Debug/cheat controls:
 * F2: toggle rendering of move boxes
 * F3: toggle invulnerability
 * F4: toggle profiling spam
+* F5: cycle through preserved graphics glitches
 
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.

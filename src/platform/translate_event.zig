@@ -10,6 +10,7 @@ fn getKey(sym: c.SDL_Keycode) ?Key {
     c.SDLK_F2 => Key.F2,
     c.SDLK_F3 => Key.F3,
     c.SDLK_F4 => Key.F4,
+    c.SDLK_F5 => Key.F5,
     c.SDLK_UP => Key.Up,
     c.SDLK_DOWN => Key.Down,
     c.SDLK_LEFT => Key.Left,

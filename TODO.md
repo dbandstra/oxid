@@ -1,5 +1,6 @@
 GAMEPLAY:
 - change squids to be spiders?
+- red guys shouldn't shoot for the first few maps. and add the "fire knights" wave message when they do start shooting
 - still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - monsters should sometimes randomly stop/change direction

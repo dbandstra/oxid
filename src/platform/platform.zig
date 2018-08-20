@@ -13,6 +13,8 @@ const translateEvent = @import("translate_event.zig").translateEvent;
 
 pub const State = struct {
   initialized: bool,
+  glitch_mode: u32,
+  clear_screen: bool,
   window: *c.SDL_Window,
   glcontext: c.SDL_GLContext,
   window_width: u32,
@@ -114,6 +116,8 @@ pub fn init(ps: *State, params: *const InitParams) !void {
   errdefer PlatformAudio.deinit(&ps.audio_state);
 
   ps.initialized = true;
+  ps.glitch_mode = 0;
+  ps.clear_screen = true;
   ps.window_width = params.window_width;
   ps.window_height = params.window_height;
   ps.window = window;
@@ -144,7 +148,8 @@ pub fn pollEvent(ps: *State) ?Event {
 }
 
 pub fn preDraw(ps: *State) void {
-  PlatformDraw.preDraw(&ps.draw_state);
+  PlatformDraw.preDraw(&ps.draw_state, ps.clear_screen);
+  ps.clear_screen = false;
 }
 
 pub fn postDraw(ps: *State) void {

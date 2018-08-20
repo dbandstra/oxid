@@ -111,6 +111,14 @@ pub fn main() !void {
           Key.F4 => {
             g.perf_spam = !g.perf_spam;
           },
+          Key.F5 => {
+            if (g.platform_state.glitch_mode < 1) {
+              g.platform_state.glitch_mode += 1;
+            } else {
+              g.platform_state.glitch_mode = 0;
+            }
+            g.platform_state.clear_screen = true;
+          },
           Key.M => {
             g.mute = !g.mute;
             Platform.setMute(&g.platform_state, g.mute);

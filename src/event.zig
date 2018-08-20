@@ -5,6 +5,7 @@ pub const Key = enum {
   F2,
   F3,
   F4,
+  F5,
   Up,
   Down,
   Left,
