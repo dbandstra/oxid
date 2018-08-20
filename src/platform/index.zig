@@ -13,6 +13,7 @@ pub const pollEvent = platform.pollEvent;
 pub const preDraw = platform.preDraw;
 pub const postDraw = platform.postDraw;
 
+pub const cycleGlitchMode = draw.cycleGlitchMode;
 pub const drawBegin = draw.begin;
 pub const drawEnd = draw.end;
 pub const drawTile = draw.tile;

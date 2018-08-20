@@ -13,7 +13,7 @@ const translateEvent = @import("translate_event.zig").translateEvent;
 
 pub const State = struct {
   initialized: bool,
-  glitch_mode: u32,
+  glitch_mode: PlatformDraw.GlitchMode,
   clear_screen: bool,
   window: *c.SDL_Window,
   glcontext: c.SDL_GLContext,
@@ -116,7 +116,7 @@ pub fn init(ps: *State, params: *const InitParams) !void {
   errdefer PlatformAudio.deinit(&ps.audio_state);
 
   ps.initialized = true;
-  ps.glitch_mode = 0;
+  ps.glitch_mode = PlatformDraw.GlitchMode.Normal;
   ps.clear_screen = true;
   ps.window_width = params.window_width;
   ps.window_height = params.window_height;

@@ -10,6 +10,22 @@ const State = @import("../platform.zig").State;
 const InitParams = @import("../platform.zig").InitParams;
 const Draw = @import("../../draw.zig");
 
+pub const GlitchMode = enum {
+  Normal,
+  QuadStrips,
+  WholeTilesets,
+};
+
+pub fn cycleGlitchMode(ps: *State) void {
+  const i = @enumToInt(ps.glitch_mode);
+  const count = @memberCount(GlitchMode);
+  ps.glitch_mode =
+    if (i + 1 < count)
+      @intToEnum(GlitchMode, i + 1)
+    else
+      @intToEnum(GlitchMode, 0);
+}
+
 const DrawBuffer = struct {
   active: bool,
   vertex2f: [2 * BUFFER_VERTICES]c.GLfloat,
@@ -191,7 +207,7 @@ pub fn end(ps: *State) void {
 
   std.debug.assert(ds.draw_buffer.active);
 
-  flush(ds);
+  flush(ps);
 
   ds.draw_buffer.active = false;
 }
@@ -216,7 +232,7 @@ pub fn tile(
   var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
   var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-  if (ps.glitch_mode == 1) {
+  if (ps.glitch_mode == GlitchMode.WholeTilesets) {
     // draw the whole tileset scaled down. with transparency this leads to
     // smearing. it's interesting how the level itself is "hidden" to begin
     // with
@@ -227,20 +243,23 @@ pub fn tile(
   }
 
   if (ds.draw_buffer.num_vertices + 4 > BUFFER_VERTICES) {
-    flush(ds);
+    flush(ps);
   }
   const num_vertices = ds.draw_buffer.num_vertices;
   std.debug.assert(num_vertices + 4 <= BUFFER_VERTICES);
 
+  const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + 4) * 2];
+  const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + 4) * 2];
+
   // top left, bottom left, bottom right, top right
   std.mem.copy(
     c.GLfloat,
-    ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + 4) * 2],
+    vertex2f,
     [8]c.GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
   );
   std.mem.copy(
     c.GLfloat,
-    ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + 4) * 2],
+    texcoord2f,
     switch (transform) {
       Draw.Transform.Identity =>
         [8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
@@ -254,10 +273,23 @@ pub fn tile(
         [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
     },
   );
+
+  if (ps.glitch_mode == GlitchMode.QuadStrips) {
+    // swap last two vertices so that the order becomes top left, bottom left,
+    // top right, bottom right (suitable for quad strips rather than individual
+    // quads)
+    std.mem.swap(c.GLfloat, &vertex2f[4], &vertex2f[6]);
+    std.mem.swap(c.GLfloat, &vertex2f[5], &vertex2f[7]);
+    std.mem.swap(c.GLfloat, &texcoord2f[4], &texcoord2f[6]);
+    std.mem.swap(c.GLfloat, &texcoord2f[5], &texcoord2f[7]);
+  }
+
   ds.draw_buffer.num_vertices = num_vertices + 4;
 }
 
-fn flush(ds: *DrawState) void {
+fn flush(ps: *State) void {
+  const ds = &ps.draw_state;
+
   if (ds.draw_buffer.num_vertices == 0) {
     return;
   }
@@ -267,7 +299,14 @@ fn flush(ds: *DrawState) void {
   updateVbo(ds.static_geometry.dyn_texcoord_buffer, ds.draw_buffer.texcoord2f[0..]);
   c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
 
-  c.glDrawArrays(c.GL_QUADS, 0, @intCast(c_int, ds.draw_buffer.num_vertices));
+  c.glDrawArrays(
+    if (ps.glitch_mode == GlitchMode.QuadStrips)
+      c.GLenum(c.GL_QUAD_STRIP)
+    else
+      c.GLenum(c.GL_QUADS),
+    0,
+    @intCast(c_int, ds.draw_buffer.num_vertices),
+  );
 
   ds.draw_buffer.num_vertices = 0;
 }

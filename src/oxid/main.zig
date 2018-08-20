@@ -112,11 +112,7 @@ pub fn main() !void {
             g.perf_spam = !g.perf_spam;
           },
           Key.F5 => {
-            if (g.platform_state.glitch_mode < 1) {
-              g.platform_state.glitch_mode += 1;
-            } else {
-              g.platform_state.glitch_mode = 0;
-            }
+            Platform.cycleGlitchMode(&g.platform_state);
             g.platform_state.clear_screen = true;
           },
           Key.M => {

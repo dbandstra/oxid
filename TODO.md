@@ -31,6 +31,10 @@ paging system:
 - there should be a way for an object to query all of the illusory physobjects it is intersecting. or actually, all physobjects period. sometimes illusory objects are supposed to provide a continuous effect (e.g. the webs that slow you down), which the event-collide system is not suited for.
   - however this is not a subpixel perfect solution for webs slowing the player down. you might cross the boundary of a web halfway through a move. the only perfect solution would be to build speed damping into the physics system itself. so maybe my above idea is actually bad.
 
+GLITCHES:
+- WholeTilesets looked better when the tileset image had less stuff in it (more blank transparent areas)...
+- for QuadStrips glitch, would be crazier if GL_CULL_FACE were disabled, but then i should probably disable the glitch when rendering the level
+
 GAMEPLAY IDEAS:
 - enemy with a shield that deflects your bullets back at you
 - exploding enemy
