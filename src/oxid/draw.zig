@@ -86,6 +86,26 @@ pub fn drawGame(g: *GameState) void {
         .a = 255,
       });
     }
+    var it3 = gs.gbe.iter(C.Player); while (it3.next()) |object| {
+      if (object.data.line_of_fire) |box| {
+        drawBox(g, box, Draw.Color{
+          .r = 0,
+          .g = 0,
+          .b = 0,
+          .a = 255,
+        });
+      }
+    }
+    var it4 = gs.gbe.iter(C.Bullet); while (it4.next()) |object| {
+      if (object.data.line_of_fire) |box| {
+        drawBox(g, box, Draw.Color{
+          .r = 0,
+          .g = 0,
+          .b = 0,
+          .a = 255,
+        });
+      }
+    }
   }
 
   perf.begin(&perf.timers.DrawHud);

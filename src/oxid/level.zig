@@ -55,13 +55,13 @@ pub fn Level(comptime w: u31, comptime h: u31) type {
         (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
     }
 
-    pub fn boxInWall(self: *const Self, pos: Math.Vec2, bbox: Math.BoundingBox, ignore_pits: bool) bool {
+    pub fn absBoxInWall(self: *const Self, bbox: Math.BoundingBox, ignore_pits: bool) bool {
       assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
 
-      const gx0 = @divFloor(pos.x + bbox.mins.x, GRIDSIZE_SUBPIXELS);
-      const gy0 = @divFloor(pos.y + bbox.mins.y, GRIDSIZE_SUBPIXELS);
-      const gx1 = @divFloor(pos.x + bbox.maxs.x, GRIDSIZE_SUBPIXELS);
-      const gy1 = @divFloor(pos.y + bbox.maxs.y, GRIDSIZE_SUBPIXELS);
+      const gx0 = @divFloor(bbox.mins.x, GRIDSIZE_SUBPIXELS);
+      const gy0 = @divFloor(bbox.mins.y, GRIDSIZE_SUBPIXELS);
+      const gx1 = @divFloor(bbox.maxs.x, GRIDSIZE_SUBPIXELS);
+      const gy1 = @divFloor(bbox.maxs.y, GRIDSIZE_SUBPIXELS);
 
       var gy: i32 = gy0;
       while (gy <= gy1) : (gy += 1) {
@@ -77,6 +77,10 @@ pub fn Level(comptime w: u31, comptime h: u31) type {
       }
 
       return false;
+    }
+
+    pub fn boxInWall(self: *const Self, pos: Math.Vec2, bbox: Math.BoundingBox, ignore_pits: bool) bool {
+      return absBoxInWall(self, Math.BoundingBox.move(bbox, pos), ignore_pits);
     }
 
     pub fn getGridValue(self: *const Self, pos: Math.Vec2) ?u8 {

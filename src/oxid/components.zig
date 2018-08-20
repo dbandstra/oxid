@@ -8,6 +8,7 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 pub const Bullet = struct {
   inflictor_player_controller_id: ?Gbe.EntityId,
   damage: u32,
+  line_of_fire: ?Math.BoundingBox,
 };
 
 pub const Drawable = struct {
@@ -163,6 +164,7 @@ pub const Player = struct {
   speed_level: SpeedLevel,
   dying_timer: u32,
   last_pickup: ?ConstantTypes.PickupType,
+  line_of_fire: ?Math.BoundingBox,
 };
 
 pub const Transform = struct {

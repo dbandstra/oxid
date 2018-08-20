@@ -25,8 +25,18 @@ const world_bbox = make_bbox(GRIDSIZE_SUBPIXELS);
 const player_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
 // monster's ent-vs-ent bbox is 75% size
 const monster_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
-// pickups are 50% size
-const pickup_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
+// pickups are 75% size
+const pickup_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
+
+pub const bullet_bbox = blk: {
+  const bullet_size = 4 * GRIDSIZE_PIXELS;
+  const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
+  const max = min + bullet_size - 1;
+  break :blk Math.BoundingBox{
+    .mins = Math.Vec2.init(min, min),
+    .maxs = Math.Vec2.init(max, max),
+  };
+};
 
 pub const GameController = struct{
   pub fn spawn(gs: *GameSession) !Gbe.EntityId {
@@ -111,6 +121,7 @@ pub const Player = struct{
       .speed_level = C.Player.SpeedLevel.One,
       .dying_timer = 0,
       .last_pickup = null,
+      .line_of_fire = null,
     });
 
     return entity_id;
@@ -284,20 +295,10 @@ pub const Bullet = struct{
       .pos = params.pos,
     });
 
-    const bullet_size = 4 * GRIDSIZE_PIXELS;
-    const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
-    const max = min + bullet_size - 1;
-
     try gs.gbe.addComponent(entity_id, C.PhysObject{
       .illusory = true,
-      .world_bbox = Math.BoundingBox{
-        .mins = Math.Vec2.init(min, min),
-        .maxs = Math.Vec2.init(max, max),
-      },
-      .entity_bbox = Math.BoundingBox{
-        .mins = Math.Vec2.init(min, min),
-        .maxs = Math.Vec2.init(max, max),
-      },
+      .world_bbox = bullet_bbox,
+      .entity_bbox = bullet_bbox,
       .facing = params.facing,
       .speed = switch (params.bullet_type) {
         BulletType.MonsterBullet => Constants.MonsterBulletSpeed,
@@ -331,6 +332,7 @@ pub const Bullet = struct{
     try gs.gbe.addComponent(entity_id, C.Bullet{
       .inflictor_player_controller_id = params.inflictor_player_controller_id,
       .damage = params.cluster_size,
+      .line_of_fire = null,
     });
 
     return entity_id;

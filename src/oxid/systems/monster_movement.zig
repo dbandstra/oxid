@@ -1,6 +1,7 @@
 const std = @import("std");
 const lessThanField = @import("../../util.zig").lessThanField;
 const Math = @import("../../math.zig");
+const absBoxesOverlap = @import("../../boxes_overlap.zig").absBoxesOverlap;
 const Gbe = @import("../../gbe.zig");
 const GbeSystem = @import("../../gbe_system.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
@@ -66,9 +67,9 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
   const left_normal = Math.Direction.normal(left);
   const right_normal = Math.Direction.normal(right);
 
-  var wall_in_front = false;
-  var left_corner = false;
-  var right_corner = false;
+  var can_go_forward = true;
+  var can_go_left = false;
+  var can_go_right = false;
 
   if (physInWall(self.phys, pos)) {
     // stuck in a wall
@@ -82,21 +83,43 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     const right_pos = Math.Vec2.add(new_pos, right_normal);
 
     if (i > 0 and physInWall(self.phys, new_pos)) {
-      wall_in_front = true;
+      can_go_forward = false;
     }
     if (!physInWall(self.phys, left_pos)) {
-      left_corner = true;
+      can_go_left = true;
     }
     if (!physInWall(self.phys, right_pos)) {
-      right_corner = true;
+      can_go_right = true;
     }
   }
 
-  if (chooseTurn(gs, self.monster.personality, pos, self.phys.facing, !wall_in_front, left_corner, right_corner)) |dir| {
-    self.phys.push_dir = dir;
+  // if monster is in a player's line of fire, try to get out of the way
+  if (isInLineOfFire(gs, self)) |bullet_dir| {
+    const bullet_x_axis = switch (bullet_dir) {
+      Math.Direction.N, Math.Direction.S => false,
+      Math.Direction.W, Math.Direction.E => true,
+    };
+    const self_x_axis = switch (self.phys.facing) {
+      Math.Direction.N, Math.Direction.S => false,
+      Math.Direction.W, Math.Direction.E => true,
+    };
+    if (bullet_x_axis == self_x_axis) {
+      // bullet is travelling along the same axis as me. prefer to make a turn
+      if (can_go_left or can_go_right) {
+        can_go_forward = false;
+      }
+    } else {
+      // bullet is travelling on a perpendicular axis. prefer to go forward
+      if (can_go_forward) {
+        can_go_left = false;
+        can_go_right = false;
+      }
+    }
   }
 
-  // TODO - sometimes randomly stop/change direction
+  if (chooseTurn(gs, self.monster.personality, pos, self.phys.facing, can_go_forward, can_go_left, can_go_right)) |dir| {
+    self.phys.push_dir = dir;
+  }
 
   self.phys.speed = @intCast(i32, move_speed);
 }
@@ -211,12 +234,42 @@ fn chooseTurn(
     }
     break :blk total;
   };
-  var r = gs.gbe.getRand().range(u32, 0, total_score);
-  for (choices.choices[0..choices.num_choices]) |choice| {
-    if (r < choice.score) {
-      return choice.direction;
-    } else {
-      r -= choice.score;
+  if (total_score > 0) {
+    var r = gs.gbe.getRand().range(u32, 0, total_score);
+    for (choices.choices[0..choices.num_choices]) |choice| {
+      if (r < choice.score) {
+        return choice.direction;
+      } else {
+        r -= choice.score;
+      }
+    }
+  }
+
+  return null;
+}
+
+// return the direction a bullet would be fired, or null if not in the line of
+// fire
+fn isInLineOfFire(
+  gs: *GameSession,
+  self: SystemData,
+) ?Math.Direction {
+  const self_absbox = Math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
+
+  var it = gs.gbe.iter(C.Player); while (it.next()) |object| {
+    if (object.data.line_of_fire) |box| {
+      if (absBoxesOverlap(self_absbox, box)) {
+        const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+        return phys.facing;
+      }
+    }
+  }
+  var it2 = gs.gbe.iter(C.Bullet); while (it2.next()) |object| {
+    if (object.data.line_of_fire) |box| {
+      if (absBoxesOverlap(self_absbox, box)) {
+        const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+        return phys.facing;
+      }
     }
   }
 

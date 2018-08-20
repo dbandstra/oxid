@@ -5,6 +5,7 @@ const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
 const AnimationSystem = @import("systems/animation.zig");
+const BulletSystem = @import("systems/bullet.zig");
 const BulletCollideSystem = @import("systems/bullet_collide.zig");
 const CreatureSystem = @import("systems/creature.zig");
 const CreatureTakeDamageSystem = @import("systems/creature_take_damage.zig");
@@ -30,6 +31,7 @@ pub fn gamePreFrame(gs: *GameSession) void {
   AnimationSystem.run(gs);
   PlayerMovementSystem.run(gs);
   MonsterMovementSystem.run(gs);
+  BulletSystem.run(gs);
   CreatureSystem.run(gs);
   PickupSystem.run(gs);
 

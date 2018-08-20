@@ -4,10 +4,12 @@ const Gbe = @import("../../gbe.zig");
 const GbeSystem = @import("../../gbe_system.zig");
 const Constants = @import("../constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
+const LEVEL = @import("../level.zig").LEVEL;
 const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
+const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
@@ -44,11 +46,12 @@ fn think(gs: *GameSession, self: SystemData) bool {
     }
     self.phys.speed = 0;
     self.phys.push_dir = null;
+    self.player.line_of_fire = null;
   } else {
-    // says fine once then is gone?!
     playerUpdate(gs, self);
     playerMove(gs, self);
     playerShoot(gs, self);
+    playerUpdateLineOfFire(gs, self);
   }
   return true;
 }
@@ -212,4 +215,19 @@ fn tryPush(pos: Math.Vec2, dir: Math.Direction, speed: i32, self_phys: *C.PhysOb
     self_phys.speed = speed;
     self_phys.push_dir = dir;
   }
+}
+
+fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
+  // create a box that represents the path of a bullet fired by the player in
+  // the current frame, ignoring monsters.
+  // certain monster behaviours will use this in order to try to get out of the
+  // way
+  // TODO - do this before calling playerShoot. give bullets a line_of_fire as
+  // well, and make monsters avoid those too
+  const pos = self.transform.pos;
+  const dir_vec = Math.Direction.normal(self.phys.facing);
+  const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+  const bullet_pos = Math.Vec2.add(pos, ofs);
+
+  self.player.line_of_fire = getLineOfFire(bullet_pos, Prototypes.bullet_bbox, self.phys.facing);
 }
