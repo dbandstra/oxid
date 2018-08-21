@@ -5,6 +5,7 @@ const Platform = @import("../platform/index.zig");
 
 pub const Sample = enum{
   Coin,
+  DropWeb,
   ExtraLife,
   PlayerShot,
   PlayerScream,
@@ -20,6 +21,7 @@ pub const Sample = enum{
 fn getSampleFilename(sample: Sample) []const u8 {
   return switch (sample) {
     Sample.Coin => "assets/sfx_coin_double7.wav",
+    Sample.DropWeb => "assets/sfx_sounds_interaction5.wav",
     Sample.ExtraLife => "assets/sfx_sounds_powerup4.wav",
     Sample.PlayerShot => "assets/sfx_wpn_laser8.wav",
     Sample.PlayerScream => "assets/sfx_deathscream_human2.wav",

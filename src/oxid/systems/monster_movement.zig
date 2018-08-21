@@ -150,6 +150,9 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       });
     } else if (self.monster.can_drop_webs) {
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+        .sample = Audio.Sample.DropWeb,
+      });
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
       });

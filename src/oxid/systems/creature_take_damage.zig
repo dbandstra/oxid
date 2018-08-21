@@ -55,13 +55,8 @@ fn think(gs: *GameSession, self: SystemData) bool {
         }
         return true;
       } else {
+        // something other than a player died
         if (self.monster) |self_monster| {
-          _ = Prototypes.EventSound.spawn(gs, C.EventSound{
-            .sample = Audio.Sample.MonsterImpact,
-          });
-          _ = Prototypes.EventSound.spawn(gs, C.EventSound{
-            .sample = Audio.Sample.MonsterDeath,
-          });
           _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{
             .unused = 0,
           });
@@ -78,7 +73,12 @@ fn think(gs: *GameSession, self: SystemData) bool {
             });
           }
         }
-        // something other than a player died
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+          .sample = Audio.Sample.MonsterImpact,
+        });
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+          .sample = Audio.Sample.MonsterDeath,
+        });
         _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
           .pos = self.transform.pos,
           .simple_anim = SimpleAnim.Explosion,

@@ -5,7 +5,6 @@ GAMEPLAY:
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
-- sound effects for web?
 - sound effect when monsters speed up
 - (maybe) come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
 
