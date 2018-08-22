@@ -39,11 +39,8 @@ pub const LoadedSamples = struct{
   handles: [@memberCount(Sample)]u32,
 };
 
-fn loadSample(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, filename: []const u8) u32 {
-  const low_mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(low_mark);
-
-  var file = std.os.File.openRead(&dsaf.low_allocator, filename) catch |err| {
+fn loadSample(ps: *Platform.State, filename: []const u8) u32 {
+  var file = std.os.File.openRead(filename) catch |err| {
     std.debug.warn("couldn\'t open file {}\n", filename);
     return 0;
   };
@@ -56,13 +53,13 @@ fn loadSample(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, filename: []
   return Platform.loadSound(ps, SeekableFileInStream.ReadError, stream, seekable);
 }
 
-pub fn loadSamples(dsaf: *DoubleStackAllocatorFlat, ps: *Platform.State, ls: *LoadedSamples) void {
+pub fn loadSamples(ps: *Platform.State, ls: *LoadedSamples) void {
   var i: usize = 0;
   while (i < @memberCount(Sample)) : (i += 1) {
     const e = @intCast(@TagType(Sample), i);
     const sample = @intToEnum(Sample, e);
     const filename = getSampleFilename(sample);
-    ls.handles[i] = loadSample(dsaf, ps, filename);
+    ls.handles[i] = loadSample(ps, filename);
   }
 }
 

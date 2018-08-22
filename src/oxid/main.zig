@@ -74,7 +74,7 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
-  Audio.loadSamples(dsaf, &g.platform_state, &g.samples);
+  Audio.loadSamples(&g.platform_state, &g.samples);
 
   g.render_move_boxes = false;
   g.perf_spam = false;
