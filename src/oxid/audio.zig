@@ -4,6 +4,7 @@ const SeekableFileInStream = @import("../../zigutils/src/FileInStream.zig").Seek
 const Platform = @import("../platform/index.zig");
 
 pub const Sample = enum{
+  Accelerate,
   Coin,
   DropWeb,
   ExtraLife,
@@ -20,6 +21,7 @@ pub const Sample = enum{
 
 fn getSampleFilename(sample: Sample) []const u8 {
   return switch (sample) {
+    Sample.Accelerate => "assets/null.wav",
     Sample.Coin => "assets/sfx_coin_double7.wav",
     Sample.DropWeb => "assets/sfx_sounds_interaction5.wav",
     Sample.ExtraLife => "assets/sfx_sounds_powerup4.wav",

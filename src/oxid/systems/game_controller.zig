@@ -44,6 +44,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
     if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
       self.gc.enemy_speed_level += 1;
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
+        .sample = Audio.Sample.Accelerate,
+      });
     }
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
   }
