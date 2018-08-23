@@ -18,7 +18,7 @@ const SystemData = struct{
   creature: *C.Creature,
   phys: *C.PhysObject,
   monster: *C.Monster,
-  transform: *C.Transform,
+  transform: *const C.Transform,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, think);

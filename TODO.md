@@ -7,8 +7,9 @@ GAMEPLAY:
 - multiple explosions when squid is killed
 - sound effect when monsters speed up
 - (maybe) come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
+- (maybe) random maze generation
 
-i have implement monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
+i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
 
 CODE:
 - sound: figure out how to start sounds at an offset into the mixing buffer. this becomes more important the larger the mix buffer is

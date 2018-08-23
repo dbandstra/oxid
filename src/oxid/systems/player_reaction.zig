@@ -8,10 +8,10 @@ const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
   id: Gbe.EntityId,
-  creature: *C.Creature,
-  phys: *C.PhysObject,
+  creature: *const C.Creature,
+  phys: *const C.PhysObject,
   player: *C.Player,
-  transform: *C.Transform,
+  transform: *const C.Transform,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, playerReact);

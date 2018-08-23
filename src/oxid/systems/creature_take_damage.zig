@@ -11,8 +11,8 @@ const Prototypes = @import("../prototypes.zig");
 const SystemData = struct{
   id: Gbe.EntityId,
   creature: *C.Creature,
-  transform: *C.Transform,
-  monster: ?*C.Monster,
+  transform: *const C.Transform,
+  monster: ?*const C.Monster,
   player: ?*C.Player,
 };
 

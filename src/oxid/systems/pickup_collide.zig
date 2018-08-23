@@ -6,7 +6,7 @@ const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
   id: Gbe.EntityId,
-  pickup: *C.Pickup,
+  pickup: *const C.Pickup,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, collide);

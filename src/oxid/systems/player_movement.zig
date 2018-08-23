@@ -13,21 +13,12 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-// TODO - system should be able to read all of these, but only write to them
-// one (player)...
-// right now, other than player fields, it's writing:
-// - self.phys.speed
-// - self.phys.push_dir
-// - self.phys.facing
-// that's it. the react system is also writing self.creature.move_speed.
-// need an Event to set phys fields.
-
 const SystemData = struct{
   id: Gbe.EntityId,
-  creature: *C.Creature,
+  creature: *const C.Creature,
   phys: *C.PhysObject,
   player: *C.Player,
-  transform: *C.Transform,
+  transform: *const C.Transform,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, think);

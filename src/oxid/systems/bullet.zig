@@ -4,8 +4,8 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 const C = @import("../components.zig");
 
 const SystemData = struct{
-  transform: *C.Transform,
-  phys: *C.PhysObject,
+  transform: *const C.Transform,
+  phys: *const C.PhysObject,
   bullet: *C.Bullet,
 };
 

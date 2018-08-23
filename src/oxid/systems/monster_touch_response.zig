@@ -8,7 +8,7 @@ const Prototypes = @import("../prototypes.zig");
 const SystemData = struct{
   id: Gbe.EntityId,
   phys: *C.PhysObject,
-  monster: *C.Monster,
+  monster: *const C.Monster,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, monsterCollide);

@@ -19,7 +19,12 @@ pub fn build(
   assert(@typeId(SelfType) == builtin.TypeId.Struct);
 
   const Impl = struct{
-    fn runOne(gs: *SessionType, self_id: Gbe.EntityId, comptime MainComponentType: type, main_component: *MainComponentType) bool {
+    fn runOne(
+      gs: *SessionType,
+      self_id: Gbe.EntityId,
+      comptime MainComponentType: type,
+      main_component: *MainComponentType,
+    ) bool {
       // fill in the fields of the `self` structure
       var self: SelfType = undefined;
       inline for (@typeInfo(SelfType).Struct.fields) |field| {
@@ -44,7 +49,10 @@ pub fn build(
       return think(gs, self);
     }
 
-    fn runAll(gs: *SessionType, comptime MainComponentType: type) void {
+    fn runAll(
+      gs: *SessionType,
+      comptime MainComponentType: type,
+    ) void {
       var it = gs.gbe.iter(MainComponentType); while (it.next()) |object| {
         if (!runOne(gs, object.entity_id, MainComponentType, &object.data)) {
           gs.gbe.markEntityForRemoval(object.entity_id);

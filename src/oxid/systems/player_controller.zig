@@ -15,7 +15,6 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  // @import("std").debug.warn("{}\n", self.pc.respawn_timer);
   if (GameUtil.decrementTimer(&self.pc.respawn_timer)) {
     spawnPlayer(gs, self.id);
   }
