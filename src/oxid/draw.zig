@@ -285,8 +285,7 @@ fn drawHud(g: *GameState) void {
     fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
     dest.reset();
     if (pc.lives > 0) {
-      // show one less so that 0 is a life
-      _ = dest.stream.print("Lives: {}", pc.lives - 1);
+      _ = dest.stream.print("Lives: {}", pc.lives);
       fontDrawString(&g.platform_state, &g.font, 19*8, 0, dest.getWritten());
       dest.reset();
     } else {

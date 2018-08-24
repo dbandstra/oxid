@@ -18,7 +18,7 @@ pub const PlayerSlipThreshold = 12*16; // FIXME - use screen space
 
 pub const PlayerDeathAnimTime: u32 = 90; // 1.5 seconds
 pub const PlayerRespawnTime: u32 = 150; // 2.5 seconds
-pub const PlayerNumLives: u32 = 4; // 1 will be subtracted when drawing the hud
+pub const PlayerNumLives: u32 = 3;
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
   return switch (monster_type) {
