@@ -284,12 +284,12 @@ fn drawHud(g: *GameState) void {
     _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
     fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
     dest.reset();
-    if (pc.lives > 0) {
-      _ = dest.stream.print("Lives: {}", pc.lives);
-      fontDrawString(&g.platform_state, &g.font, 19*8, 0, dest.getWritten());
-      dest.reset();
-    } else {
-      fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives: \x1F"); // skull
+    fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
+    var i: u31 = 0; while (i < pc.lives) : (i += 1) {
+      fontDrawString(&g.platform_state, &g.font, (25+i)*8, 0, "\x1E"); // heart
+    }
+    if (pc.lives == 0) {
+      fontDrawString(&g.platform_state, &g.font, 25*8, 0, "\x1F"); // skull
       fontDrawString(&g.platform_state, &g.font, 18*8, 15*8, "GAME");
       fontDrawString(&g.platform_state, &g.font, 18*8, 16*8, "OVER");
     }

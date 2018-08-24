@@ -11,6 +11,7 @@ GAMEPLAY:
 i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
 
 CODE:
+- font image should be pure b&w. in game code, remember palette. then allow rendering font using any colour from the palette
 - sound: figure out how to start sounds at an offset into the mixing buffer. this becomes more important the larger the mix buffer is
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - figure out how to refactor the component lists in game.zig so i only have to list them once
