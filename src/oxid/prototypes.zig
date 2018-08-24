@@ -152,6 +152,7 @@ pub const PlayerCorpse = struct{
 
 pub const Monster = struct{
   pub const Params = struct{
+    wave_number: u32,
     monster_type: ConstantTypes.MonsterType,
     pos: Math.Vec2,
     has_coin: bool,
@@ -198,6 +199,12 @@ pub const Monster = struct{
       .flinch_timer = 0,
     });
 
+    const can_shoot =
+      if (monster_values.first_shooting_level) |first_level|
+        params.wave_number >= first_level
+      else
+        false;
+
     try gs.gbe.addComponent(entity_id, C.Monster{
       .monster_type = params.monster_type,
       .spawning_timer = Constants.MonsterSpawnTime,
@@ -211,10 +218,10 @@ pub const Monster = struct{
             else => C.Monster.Personality.Wander,
           },
       .kill_points = monster_values.kill_points,
-      .can_shoot = monster_values.can_shoot,
+      .can_shoot = can_shoot,
       .can_drop_webs = monster_values.can_drop_webs,
       .next_attack_timer =
-        if (monster_values.can_shoot or monster_values.can_drop_webs)
+        if (can_shoot or monster_values.can_drop_webs)
           gs.gbe.getRand().range(u32, 75, 400)
         else
           0,

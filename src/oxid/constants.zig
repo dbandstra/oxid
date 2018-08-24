@@ -26,15 +26,15 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .hit_points = 1,
       .move_speed = [4]u31{ 6, 9, 12, 15 },
       .kill_points = 10,
-      .can_shoot = false,
+      .first_shooting_level = null,
       .can_drop_webs = false,
       .persistent = false,
     },
     MonsterType.Knight => MonsterValues{
-      .hit_points = 1,
+      .hit_points = 2,
       .move_speed = [4]u31{ 6, 9, 12, 15 },
       .kill_points = 20,
-      .can_shoot = true,
+      .first_shooting_level = 9,
       .can_drop_webs = false,
       .persistent = false,
     },
@@ -42,7 +42,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .hit_points = 1,
       .move_speed = [4]u31{ 12, 16, 20, 24 },
       .kill_points = 10,
-      .can_shoot = false,
+      .first_shooting_level = null,
       .can_drop_webs = false,
       .persistent = false,
     },
@@ -50,7 +50,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .hit_points = 5,
       .move_speed = [4]u31{ 3, 4, 6, 8 },
       .kill_points = 80,
-      .can_shoot = false,
+      .first_shooting_level = null,
       .can_drop_webs = true,
       .persistent = false,
     },
@@ -58,7 +58,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
       .hit_points = 9999,
       .move_speed = [4]u31{ 4, 4, 4, 4 },
       .kill_points = 0,
-      .can_shoot = false,
+      .first_shooting_level = null,
       .can_drop_webs = false,
       .persistent = true,
     },
@@ -116,7 +116,7 @@ pub const Waves = []Wave{
   Wave{ .spiders = 0, .knights = 0, .fastbugs = 6, .squids = 0, .juggernauts = 0, .speed = 0, .message = null }, // 6
   Wave{ .spiders = 8, .knights = 6, .fastbugs = 0, .squids = 2, .juggernauts = 0, .speed = 1, .message = null }, // 7
   Wave{ .spiders = 0, .knights = 5, .fastbugs = 8, .squids = 0, .juggernauts = 0, .speed = 0, .message = null }, // 8
-  Wave{ .spiders = 0, .knights = 6, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 1, .message = null }, // 9
+  Wave{ .spiders = 0, .knights = 6, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 1, .message = "FIRE BUGS" }, // 9
   Wave{ .spiders = 4, .knights = 6, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 1, .message = null }, // 10
   Wave{ .spiders = 7, .knights = 0, .fastbugs = 0, .squids = 0, .juggernauts = 1, .speed = 2, .message = "DREADNAUT!" }, // 11
   Wave{ .spiders = 7, .knights = 2, .fastbugs = 0, .squids = 0, .juggernauts = 0, .speed = 2, .message = null }, // 12

@@ -10,7 +10,7 @@ pub const MonsterValues = struct{
   hit_points: u32,
   move_speed: [4]u31,
   kill_points: u32,
-  can_shoot: bool,
+  first_shooting_level: ?u32,
   can_drop_webs: bool,
   persistent: bool,
 };

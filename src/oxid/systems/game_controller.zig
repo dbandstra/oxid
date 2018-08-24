@@ -34,11 +34,11 @@ fn think(gs: *GameSession, self: SystemData) bool {
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
     if (self.gc.wave_number - 1 < Constants.Waves.len) {
       const wave = &Constants.Waves[self.gc.wave_number - 1];
-      spawnWave(gs, wave);
+      spawnWave(gs, self.gc.wave_number, wave);
       self.gc.enemy_speed_level = wave.speed;
       self.gc.monster_count = countNonPersistentMonsters(gs);
     } else {
-      spawnWave(gs, Constants.DefaultWave);
+      spawnWave(gs, 0, Constants.DefaultWave);
     }
   }
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
@@ -91,7 +91,7 @@ fn countNonPersistentMonsters(gs: *GameSession) u32 {
   return count;
 }
 
-fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
+fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave) void {
   const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
   const coins = (wave.spiders + wave.knights) / 3;
   std.debug.assert(count <= 100);
@@ -100,6 +100,7 @@ fn spawnWave(gs: *GameSession, wave: *const ConstantTypes.Wave) void {
   pickSpawnLocations(gs, spawn_locs);
   for (spawn_locs) |loc, i| {
     _ = Prototypes.Monster.spawn(gs, Prototypes.Monster.Params{
+      .wave_number = wave_number,
       .pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
       .monster_type =
         if (i < wave.spiders)
