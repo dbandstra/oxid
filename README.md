@@ -27,6 +27,9 @@ Debug/cheat controls:
 * F4: toggle profiling spam
 * F5: cycle through preserved graphics glitches
 
+## Screenshot
+![Screenshot](screenshot.png)
+
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
 
