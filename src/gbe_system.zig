@@ -61,46 +61,61 @@ pub fn build(
     }
 
     fn run(gs: *SessionType) void {
-      // choose which component type to do the outermost iteration over.
-      // (TODO - pick the component type with the lowest amount of active
-      // entities)
-      // var best: usize = @maxValue(usize);
-      // var which: ?usize = null;
-      comptime var i: usize = 0;
-      inline while (i < @typeInfo(SelfType).Struct.fields.len) : (i += 1) {
-        comptime const field = @typeInfo(SelfType).Struct.fields[i];
+      // only if all fields are optional will we consider optional fields when
+      // determining the best component type
+      var all_fields_optional = true;
+
+      inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
+        if (field.field_type != Gbe.EntityId and
+            @typeId(field.field_type) != builtin.TypeId.Optional) {
+          all_fields_optional = false;
+        }
+      }
+
+      // decide which component type to do the outermost iteration over.
+      // choose the component type with the lowest amount of active entities.
+      var best: usize = @maxValue(usize);
+      var which: ?usize = null;
+
+      // go through the fields in the SelfType struct (where each field is
+      // either an EntityId or a pointer to a component)
+      inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
         if (field.field_type == Gbe.EntityId) {
           continue;
         }
+        if (@typeId(field.field_type) == builtin.TypeId.Optional and
+            !all_fields_optional) {
+          continue;
+        }
         comptime const field_type = unpackComponentType(field.field_type);
-        // FIXME - this commented out code doesn't work... everything seems
-        // fine, except that the player's bullets don't hurt the monsters (the
-        // monsters' bullets do hurt the player).
-        // // if (@field(&gs.gbe.components, @typeName(field_type)).count < best) {
-        // //   best = @field(&gs.gbe.components, @typeName(field_type)).count;
-        // //   which = i;
-        // // }
-        runAll(gs, field_type);
-        return;
+        if (@field(&gs.gbe.components, @typeName(field_type)).count < best) {
+          best = @field(&gs.gbe.components, @typeName(field_type)).count;
+          which = i;
+        }
       }
-      // // run the iteration
-      // if (which) |which_index| {
-      //   i = 0;
-      //   inline while (i < @typeInfo(SelfType).Struct.fields.len) : (i += 1) {
-      //     comptime const field = @typeInfo(SelfType).Struct.fields[i];
-      //     if (field.field_type == Gbe.EntityId) {
-      //       continue;
-      //     }
-      //     comptime const field_type = unpackComponentType(field.field_type);
-      //     if (i == which_index) {
-      //       runAll(gs, field_type);
-      //       return;
-      //     }
-      //   }
-      //   @panic("something didn't work");
-      // } else {
-      //   @panic("no matches");
-      // }
+
+      // run the iteration
+      // note: i can't just look up `which_index` in Struct.fields because of a
+      // compiler bug https://github.com/ziglang/zig/issues/1435
+      if (which) |which_index| {
+        inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
+          if (field.field_type == Gbe.EntityId) {
+            continue;
+          }
+          if (@typeId(field.field_type) == builtin.TypeId.Optional and
+              !all_fields_optional) {
+            continue;
+          }
+          comptime const field_type = unpackComponentType(field.field_type);
+          if (i == which_index) {
+            runAll(gs, field_type);
+            return;
+          }
+        }
+        unreachable;
+      } else {
+        std.debug.panic("no matches");
+      }
     }
 
     fn unpackComponentType(comptime field_type: type) type {
