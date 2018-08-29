@@ -58,7 +58,7 @@ pub const Monster = struct {
 };
 
 pub const Web = struct {
-  unused: u32, // TODO remove
+  unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
 pub const GameController = struct {
