@@ -17,7 +17,6 @@ CODE:
 - figure out how to refactor the component lists in game.zig so i only have to list them once
 - use a single hunk memory system, and print allocation amounts for debugging
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
-- get tests passing again
 - add tests for physics
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
 - as for the "events".. maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.

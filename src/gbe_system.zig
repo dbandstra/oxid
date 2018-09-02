@@ -1,6 +1,5 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const assert = std.debug.assert;
 const Gbe = @import("gbe.zig");
 
 // `SessionType` param to these functions must have have a field called `gbe`
@@ -9,14 +8,12 @@ const Gbe = @import("gbe.zig");
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
 
-// TODO - write tests for this stuff
-
 pub fn build(
   comptime SessionType: type,
   comptime SelfType: type,
   comptime think: fn(*SessionType, SelfType)bool,
 ) fn(*SessionType)void {
-  assert(@typeId(SelfType) == builtin.TypeId.Struct);
+  std.debug.assert(@typeId(SelfType) == builtin.TypeId.Struct);
 
   const Impl = struct{
     fn runOne(
@@ -36,11 +33,10 @@ pub fn build(
         // otherwise, it must be a pointer to a component, or an optional
         // pointer to a component
         comptime const ComponentType = unpackComponentType(field.field_type);
-        comptime const is_optional = @typeId(field.field_type) == builtin.TypeId.Optional;
         @field(self, field.name) =
           if (ComponentType == MainComponentType)
             main_component
-          else if (is_optional)
+          else if (@typeId(field.field_type) == builtin.TypeId.Optional)
             gs.gbe.find(self_id, ComponentType)
           else
             gs.gbe.find(self_id, ComponentType) orelse return true;
@@ -60,31 +56,43 @@ pub fn build(
       }
     }
 
+    // variant of `run` that is simpler (definitely) but slower (probably). but
+    // the effect should be exactly the same
+    fn runSimple(gs: *SessionType) void {
+      inline for (@typeInfo(SelfType).Struct.fields) |field| {
+        if (field.field_type == Gbe.EntityId) {
+          continue;
+        }
+        runAll(gs, unpackComponentType(field.field_type));
+        return;
+      }
+    }
+
     fn run(gs: *SessionType) void {
       // only if all fields are optional will we consider optional fields when
       // determining the best component type
-      var all_fields_optional = true;
+      comptime var all_fields_optional = true;
 
-      inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
+      inline for (@typeInfo(SelfType).Struct.fields) |field| {
         if (field.field_type != Gbe.EntityId and
             @typeId(field.field_type) != builtin.TypeId.Optional) {
           all_fields_optional = false;
         }
       }
 
-      // decide which component type to do the outermost iteration over.
-      // choose the component type with the lowest amount of active entities.
+      // go through the fields in the SelfType struct (where each field is
+      // either an EntityId or a pointer to a component). decide which
+      // component type to do the outermost iteration over. choose the
+      // component type with the lowest amount of active entities.
       var best: usize = @maxValue(usize);
       var which: ?usize = null;
 
-      // go through the fields in the SelfType struct (where each field is
-      // either an EntityId or a pointer to a component)
       inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
         if (field.field_type == Gbe.EntityId) {
           continue;
         }
-        if (@typeId(field.field_type) == builtin.TypeId.Optional and
-            !all_fields_optional) {
+        // skip optional fields, unless all fields are optional
+        if (@typeId(field.field_type) == builtin.TypeId.Optional and !all_fields_optional) {
           continue;
         }
         comptime const field_type = unpackComponentType(field.field_type);
@@ -99,22 +107,16 @@ pub fn build(
       // compiler bug https://github.com/ziglang/zig/issues/1435
       if (which) |which_index| {
         inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
-          if (field.field_type == Gbe.EntityId) {
-            continue;
-          }
-          if (@typeId(field.field_type) == builtin.TypeId.Optional and
-              !all_fields_optional) {
-            continue;
-          }
-          comptime const field_type = unpackComponentType(field.field_type);
           if (i == which_index) {
-            runAll(gs, field_type);
+            if (field.field_type == Gbe.EntityId) {
+              // this actually avoids the compile error in unpackComponentType
+              unreachable;
+            }
+            runAll(gs, unpackComponentType(field.field_type));
             return;
           }
         }
         unreachable;
-      } else {
-        std.debug.panic("no matches");
       }
     }
 
@@ -132,5 +134,6 @@ pub fn build(
     }
   };
 
+  // return Impl.runSimple;
   return Impl.run;
 }

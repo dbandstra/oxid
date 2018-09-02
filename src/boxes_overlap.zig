@@ -22,23 +22,26 @@ pub fn boxesOverlap(
   );
 }
 
-test "boxes_overlap" {
-  const dims = Vec2.init(16, 16);
+test "boxesOverlap" {
+  const bbox = Math.BoundingBox{
+    .mins = Math.Vec2.init(0, 0),
+    .maxs = Math.Vec2.init(15, 15),
+  };
 
   assert(!boxesOverlap(
-    Vec2.init(0, 0), dims,
-    Vec2.init(16, 0), dims,
+    Math.Vec2.init(0, 0), bbox,
+    Math.Vec2.init(16, 0), bbox,
   ));
   assert(boxesOverlap(
-    Vec2.init(0, 0), dims,
-    Vec2.init(15, 0), dims,
+    Math.Vec2.init(0, 0), bbox,
+    Math.Vec2.init(15, 0), bbox,
   ));
   assert(!boxesOverlap(
-    Vec2.init(0, 0), dims,
-    Vec2.init(-16, 0), dims,
+    Math.Vec2.init(0, 0), bbox,
+    Math.Vec2.init(-16, 0), bbox,
   ));
   assert(boxesOverlap(
-    Vec2.init(0, 0), dims,
-    Vec2.init(-15, 0), dims,
+    Math.Vec2.init(0, 0), bbox,
+    Math.Vec2.init(-15, 0), bbox,
   ));
 }
