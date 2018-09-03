@@ -1,4 +1,5 @@
 const std = @import("std");
+const Draw = @import("../draw.zig");
 const Math = @import("../math.zig");
 const lessThanField = @import("../util.zig").lessThanField;
 
@@ -14,6 +15,15 @@ pub fn decrementTimer(timer: *u32) bool {
     }
   }
   return false;
+}
+
+pub fn getDirTransform(direction: Math.Direction) Draw.Transform {
+  return switch (direction) {
+    Math.Direction.N => Draw.Transform.RotateCounterClockwise,
+    Math.Direction.E => Draw.Transform.Identity,
+    Math.Direction.S => Draw.Transform.RotateClockwise,
+    Math.Direction.W => Draw.Transform.FlipHorizontal,
+  };
 }
 
 pub const Choice = struct{

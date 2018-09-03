@@ -1,9 +1,11 @@
 const Math = @import("../math.zig");
+const Draw = @import("../draw.zig");
 const Gbe = @import("../gbe.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const Audio = @import("audio.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
+const Graphic = @import("graphics.zig").Graphic;
 
 pub const Bullet = struct {
   inflictor_player_controller_id: ?Gbe.EntityId,
@@ -12,24 +14,9 @@ pub const Bullet = struct {
 };
 
 pub const Drawable = struct {
-  pub const Type = enum{
-    PlayerBullet,
-    PlayerBullet2,
-    PlayerBullet3,
-    MonsterBullet,
-    Soldier,
-    SoldierCorpse,
-    Spider,
-    Knight,
-    FastBug,
-    Squid,
-    Juggernaut,
-    Web,
-    Animation,
-    Pickup,
-  };
-
-  draw_type: Type,
+  pos: Math.Vec2,
+  graphic: Graphic,
+  transform: Draw.Transform,
   z_index: u32,
 };
 
@@ -83,6 +70,13 @@ pub const Animation = struct {
   simple_anim: SimpleAnim,
   frame_index: u32,
   frame_timer: u32,
+  z_index: u32,
+};
+
+pub const SimpleGraphic = struct {
+  graphic: Graphic,
+  z_index: u32,
+  directional: bool,
 };
 
 pub const PhysObject = struct {

@@ -1,5 +1,6 @@
 const Math = @import("../math.zig");
 const Gbe = @import("../gbe.zig");
+const Graphic = @import("graphics.zig").Graphic;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
@@ -102,11 +103,6 @@ pub const Player = struct{
       .internal = undefined,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Soldier,
-      .z_index = Constants.ZIndexPlayer,
-    });
-
     try gs.gbe.addComponent(entity_id, C.Creature{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
@@ -141,9 +137,10 @@ pub const PlayerCorpse = struct{
       .pos = params.pos,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.SoldierCorpse,
+    try gs.gbe.addComponent(entity_id, C.SimpleGraphic{
+      .graphic = Graphic.ManDying6,
       .z_index = Constants.ZIndexCorpse,
+      .directional = false,
     });
 
     return entity_id;
@@ -180,17 +177,6 @@ pub const Monster = struct{
       .flags = C.PhysObject.FLAG_MONSTER,
       .ignore_flags = 0,
       .internal = undefined,
-    });
-
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = switch (params.monster_type) {
-        ConstantTypes.MonsterType.Spider => C.Drawable.Type.Spider,
-        ConstantTypes.MonsterType.Knight => C.Drawable.Type.Knight,
-        ConstantTypes.MonsterType.FastBug => C.Drawable.Type.FastBug,
-        ConstantTypes.MonsterType.Squid => C.Drawable.Type.Squid,
-        ConstantTypes.MonsterType.Juggernaut => C.Drawable.Type.Juggernaut,
-      },
-      .z_index = Constants.ZIndexEnemy,
     });
 
     try gs.gbe.addComponent(entity_id, C.Creature{
@@ -270,11 +256,6 @@ pub const Web = struct{
       .flinch_timer = 0,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Web,
-      .z_index = Constants.ZIndexWeb,
-    });
-
     return entity_id;
   }
 };
@@ -324,22 +305,23 @@ pub const Bullet = struct{
       .internal = undefined,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = switch (params.bullet_type) {
-        BulletType.MonsterBullet => C.Drawable.Type.MonsterBullet,
-        BulletType.PlayerBullet => switch (params.cluster_size) {
-          1 => C.Drawable.Type.PlayerBullet,
-          2 => C.Drawable.Type.PlayerBullet2,
-          else => C.Drawable.Type.PlayerBullet3,
-        },
-      },
-      .z_index = Constants.ZIndexBullet,
-    });
-
     try gs.gbe.addComponent(entity_id, C.Bullet{
       .inflictor_player_controller_id = params.inflictor_player_controller_id,
       .damage = params.cluster_size,
       .line_of_fire = null,
+    });
+
+    try gs.gbe.addComponent(entity_id, C.SimpleGraphic{
+      .graphic = switch (params.bullet_type) {
+        BulletType.MonsterBullet => Graphic.MonBullet,
+        BulletType.PlayerBullet => switch (params.cluster_size) {
+          1 => Graphic.PlaBullet,
+          2 => Graphic.PlaBullet2,
+          else => Graphic.PlaBullet3,
+        },
+      },
+      .z_index = Constants.ZIndexBullet,
+      .directional = true,
     });
 
     return entity_id;
@@ -361,15 +343,11 @@ pub const Animation = struct{
       .pos = params.pos,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Animation,
-      .z_index = params.z_index,
-    });
-
     try gs.gbe.addComponent(entity_id, C.Animation{
       .simple_anim = params.simple_anim,
       .frame_index = 0,
       .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
+      .z_index = params.z_index,
     });
 
     return entity_id;
@@ -392,9 +370,15 @@ pub const Pickup = struct{
       .pos = params.pos,
     });
 
-    try gs.gbe.addComponent(entity_id, C.Drawable{
-      .draw_type = C.Drawable.Type.Pickup,
+    try gs.gbe.addComponent(entity_id, C.SimpleGraphic{
+      .graphic = switch (params.pickup_type) {
+        ConstantTypes.PickupType.PowerUp => Graphic.PowerUp,
+        ConstantTypes.PickupType.SpeedUp => Graphic.SpeedUp,
+        ConstantTypes.PickupType.LifeUp => Graphic.LifeUp,
+        ConstantTypes.PickupType.Coin => Graphic.Coin,
+      },
       .z_index = Constants.ZIndexPickup,
+      .directional = false,
     });
 
     try gs.gbe.addComponent(entity_id, C.PhysObject{
@@ -416,6 +400,17 @@ pub const Pickup = struct{
       .timer = pickup_values.lifetime,
       .get_points = pickup_values.get_points,
     });
+
+    return entity_id;
+  }
+};
+
+pub const Drawable = struct{
+  pub fn spawn(gs: *GameSession, drawable: C.Drawable) !Gbe.EntityId {
+    const entity_id = gs.gbe.spawn();
+    errdefer gs.gbe.undoSpawn(entity_id);
+
+    try gs.gbe.addComponent(entity_id, drawable);
 
     return entity_id;
   }

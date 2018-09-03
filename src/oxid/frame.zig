@@ -5,9 +5,11 @@ const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
 const AnimationSystem = @import("systems/animation.zig");
+const AnimationDrawSystem = @import("systems/animation_draw.zig");
 const BulletSystem = @import("systems/bullet.zig");
 const BulletCollideSystem = @import("systems/bullet_collide.zig");
 const CreatureSystem = @import("systems/creature.zig");
+const CreatureDrawSystem = @import("systems/creature_draw.zig");
 const CreatureTakeDamageSystem = @import("systems/creature_take_damage.zig");
 const GameControllerReactSystem = @import("systems/game_controller_react.zig");
 const GameControllerSystem = @import("systems/game_controller.zig");
@@ -19,6 +21,7 @@ const PlayerControllerReactSystem = @import("systems/player_controller_react.zig
 const PlayerControllerSystem = @import("systems/player_controller.zig");
 const PlayerMovementSystem = @import("systems/player_movement.zig");
 const PlayerReactionSystem = @import("systems/player_reaction.zig");
+const SimpleGraphicDrawSystem = @import("systems/simple_graphic_draw.zig");
 
 pub fn gameInit(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);
@@ -65,7 +68,13 @@ pub fn gamePostFrame(gs: *GameSession) void {
   removeAll(gs, C.EventSound);
   removeAll(gs, C.EventTakeDamage);
 
+  removeAll(gs, C.Drawable);
+
   gs.gbe.applyRemovals();
+
+  AnimationDrawSystem.run(gs);
+  CreatureDrawSystem.run(gs);
+  SimpleGraphicDrawSystem.run(gs);
 }
 
 fn removeAll(gs: *GameSession, comptime T: type) void {
