@@ -68,6 +68,8 @@ pub const GameSession = struct {
   gbe: Gbe.Session(GameComponentLists),
 
   god_mode: bool,
+  paused: bool,
+  fast_forward: bool,
   render_move_boxes: bool,
   in_left: bool,
   in_right: bool,
@@ -79,6 +81,8 @@ pub const GameSession = struct {
     self.gbe.init(&self.component_storage, rand_seed);
 
     self.god_mode = false;
+    self.paused = false;
+    self.fast_forward = false;
     self.render_move_boxes = false;
     self.in_up = false;
     self.in_down = false;

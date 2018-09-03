@@ -16,8 +16,8 @@ const GameSession = @import("game.zig").GameSession;
 const InputEvent = @import("input.zig").InputEvent;
 const killAllMonsters = @import("functions/kill_all_monsters.zig").killAllMonsters;
 const gameInit = @import("frame.zig").gameInit;
-const gamePreFrame = @import("frame.zig").gamePreFrame;
-const gamePostFrame = @import("frame.zig").gamePostFrame;
+const gameFrame = @import("frame.zig").gameFrame;
+const gameFrameCleanup = @import("frame.zig").gameFrameCleanup;
 const gameInput = @import("input.zig").gameInput;
 const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
@@ -45,8 +45,6 @@ pub const GameState = struct {
   font: Font,
   session: GameSession,
   perf_spam: bool,
-  paused: bool,
-  fast_forward: bool,
   mute: bool,
 };
 pub var game_state: GameState = undefined;
@@ -76,8 +74,7 @@ pub fn main() !void {
   Audio.loadSamples(&g.platform_state, &g.samples);
 
   g.perf_spam = false;
-  g.paused = false;
-  g.fast_forward = false;
+  g.mute = false;
 
   g.session.init(rand_seed);
   gameInit(&g.session);
@@ -123,10 +120,10 @@ pub fn main() !void {
           Key.Right => gameInput(&g.session, InputEvent.Right, true),
           Key.Space => gameInput(&g.session, InputEvent.Shoot, true),
           Key.Tab => {
-            g.paused = !g.paused;
+            g.session.paused = !g.session.paused;
           },
           Key.Backquote => {
-            g.fast_forward = true;
+            g.session.fast_forward = true;
           },
           else => {},
         },
@@ -137,7 +134,7 @@ pub fn main() !void {
           Key.Right => gameInput(&g.session, InputEvent.Right, false),
           Key.Space => gameInput(&g.session, InputEvent.Shoot, false),
           Key.Backquote => {
-            g.fast_forward = false;
+            g.session.fast_forward = false;
           },
           else => {},
         },
@@ -148,27 +145,14 @@ pub fn main() !void {
       }
     }
 
-    if (!g.paused) {
-      perf.begin(&perf.timers.Frame);
+    perf.begin(&perf.timers.Frame);
+    gameFrame(&g.session);
+    perf.end(&perf.timers.Frame, g.perf_spam);
 
-      const n = if (g.fast_forward) u32(4) else u32(1);
-      var i: u32 = 0;
-      while (i < n) : (i += 1) {
-        gamePreFrame(&g.session);
-        playSounds(g);
-        gamePostFrame(&g.session);
-      }
+    playSounds(g);
+    draw(g);
 
-      perf.end(&perf.timers.Frame, g.perf_spam);
-    }
-
-    perf.begin(&perf.timers.WholeDraw);
-    Platform.preDraw(&g.platform_state);
-    perf.begin(&perf.timers.Draw);
-    drawGame(g);
-    perf.end(&perf.timers.Draw, g.perf_spam);
-    Platform.postDraw(&g.platform_state);
-    perf.end(&perf.timers.WholeDraw, g.perf_spam);
+    gameFrameCleanup(&g.session);
   }
 }
 
@@ -180,4 +164,14 @@ fn playSounds(g: *GameState) void {
   var it = g.session.gbe.iter(C.EventSound); while (it.next()) |object| {
     Audio.playSample(&g.platform_state, &g.samples, object.data.sample);
   }
+}
+
+fn draw(g: *GameState) void {
+  perf.begin(&perf.timers.WholeDraw);
+  Platform.preDraw(&g.platform_state);
+  perf.begin(&perf.timers.Draw);
+  drawGame(g);
+  perf.end(&perf.timers.Draw, g.perf_spam);
+  Platform.postDraw(&g.platform_state);
+  perf.end(&perf.timers.WholeDraw, g.perf_spam);
 }
