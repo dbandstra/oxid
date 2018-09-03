@@ -22,7 +22,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (self.creature.invulnerability_timer > 0) {
     return true;
   }
-  if (gs.god_mode and self.player != null) {
+  if (self.creature.god_mode) {
     return true;
   }
   var it = gs.gbe.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {

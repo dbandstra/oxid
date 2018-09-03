@@ -18,6 +18,7 @@ pub const Creature = struct {
   invulnerability_timer: u32,
   hit_points: u32,
   flinch_timer: u32,
+  god_mode: bool,
 };
 
 pub const Monster = struct {
@@ -55,6 +56,7 @@ pub const GameController = struct {
 };
 
 pub const PlayerController = struct {
+  player_id: ?Gbe.EntityId,
   lives: u32,
   score: u32,
   respawn_timer: u32,

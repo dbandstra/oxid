@@ -13,6 +13,7 @@ const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
 const SystemData = struct{
   player: *C.Player,
+  creature: *C.Creature,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, think);
@@ -35,6 +36,12 @@ fn think(gs: *GameSession, self: SystemData) bool {
       input.Command.Shoot => {
         self.player.in_shoot = event.data.down;
       },
+      input.Command.ToggleGodMode => {
+        if (event.data.down) {
+          self.creature.god_mode = !self.creature.god_mode;
+        }
+      },
+      else => {},
     }
   }
   return true;

@@ -16,17 +16,19 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.pc.respawn_timer)) {
-    spawnPlayer(gs, self.id);
+    spawnPlayer(gs, self);
   }
   return true;
 }
 
-fn spawnPlayer(gs: *GameSession, player_controller_id: Gbe.EntityId) void {
-  _ = Prototypes.Player.spawn(gs, Prototypes.Player.Params{
-    .player_controller_id = player_controller_id,
+fn spawnPlayer(gs: *GameSession, self: SystemData) void {
+  if (Prototypes.Player.spawn(gs, Prototypes.Player.Params{
+    .player_controller_id = self.id,
     .pos = Math.Vec2.init(
       9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
       5 * GRIDSIZE_SUBPIXELS,
     ),
-  });
+  })) |player_id| {
+    self.pc.player_id = player_id;
+  } else |_| {}
 }

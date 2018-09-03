@@ -108,9 +108,6 @@ pub fn main() !void {
             Key.F2 => {
               g.session.render_move_boxes = !g.session.render_move_boxes;
             },
-            Key.F3 => {
-              g.session.god_mode = !g.session.god_mode;
-            },
             Key.F4 => {
               g.perf_spam = !g.perf_spam;
             },

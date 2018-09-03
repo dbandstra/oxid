@@ -42,7 +42,7 @@ pub const LoadedSamples = struct{
 };
 
 fn loadSample(ps: *Platform.State, filename: []const u8) u32 {
-  var file = std.os.File.openRead(filename) catch |err| {
+  var file = std.os.File.openRead(filename) catch |_| {
     std.debug.warn("couldn\'t open file {}\n", filename);
     return 0;
   };

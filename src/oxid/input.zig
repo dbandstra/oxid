@@ -6,6 +6,7 @@ pub const Command = enum {
   Up,
   Down,
   Shoot,
+  ToggleGodMode,
 };
 
 // TODO - multiple input profiles
@@ -17,6 +18,7 @@ pub fn getCommandForKey(key: Key) ?Command {
     Key.Left => Command.Left,
     Key.Right => Command.Right,
     Key.Space => Command.Shoot,
+    Key.F3 => Command.ToggleGodMode,
     else => null,
   };
 }

@@ -142,6 +142,12 @@ fn drawHud(g: *GameState) void {
   Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
 
   if (pc_maybe) |pc| {
+    const maybe_player_creature =
+      if (pc.player_id) |player_id|
+        g.session.gbe.find(player_id, C.Creature)
+      else
+        null;
+
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
     _ = dest.stream.print("Wave: {}", gc.wave_number);
@@ -159,8 +165,10 @@ fn drawHud(g: *GameState) void {
       fontDrawString(&g.platform_state, &g.font, 18*8, 15*8, "GAME");
       fontDrawString(&g.platform_state, &g.font, 18*8, 16*8, "OVER");
     }
-    if (g.session.god_mode) {
-      fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
+    if (maybe_player_creature) |player_creature| {
+      if (player_creature.god_mode) {
+        fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
+      }
     }
     _ = dest.stream.print("Score: {}", pc.score);
     fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());

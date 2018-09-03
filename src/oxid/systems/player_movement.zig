@@ -90,7 +90,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           },
         })) |bullet_entity_id| {
           slot.* = bullet_entity_id;
-        } else |err| {}
+        } else |_| {}
         self.player.trigger_released = false;
       }
     }

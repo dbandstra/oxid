@@ -66,6 +66,7 @@ pub const PlayerController = struct{
     errdefer gs.gbe.undoSpawn(entity_id);
 
     try gs.gbe.addComponent(entity_id, C.PlayerController{
+      .player_id = null,
       .lives = Constants.PlayerNumLives,
       .score = 0,
       .respawn_timer = 1,
@@ -107,6 +108,7 @@ pub const Player = struct{
       .invulnerability_timer = Constants.InvulnerabilityTime,
       .hit_points = 1,
       .flinch_timer = 0,
+      .god_mode = false,
     });
 
     try gs.gbe.addComponent(entity_id, C.Player{
@@ -188,6 +190,7 @@ pub const Monster = struct{
       .invulnerability_timer = 0,
       .hit_points = 999, // invulnerable while spawning
       .flinch_timer = 0,
+      .god_mode = false,
     });
 
     const can_shoot =
@@ -259,6 +262,7 @@ pub const Web = struct{
       .invulnerability_timer = 0,
       .hit_points = 3,
       .flinch_timer = 0,
+      .god_mode = false,
     });
 
     return entity_id;
