@@ -6,29 +6,6 @@ const Gbe = @import("../gbe.zig");
 const Constants = @import("constants.zig");
 const C = @import("components.zig");
 
-const COMPONENT_TYPES = []const type{
-  C.Animation,
-  C.Bullet,
-  C.Creature,
-  C.Drawable,
-  C.GameController,
-  C.Monster,
-  C.PhysObject,
-  C.Pickup,
-  C.Player,
-  C.PlayerController,
-  C.Transform,
-  C.Web,
-  C.EventAwardLife,
-  C.EventAwardPoints,
-  C.EventCollide,
-  C.EventConferBonus,
-  C.EventMonsterDied,
-  C.EventPlayerDied,
-  C.EventSound,
-  C.EventTakeDamage,
-};
-
 pub fn ComponentStorage(comptime T: type, comptime capacity: usize) type {
   return struct{
     objects: [capacity]Gbe.ComponentObject(T),
@@ -38,9 +15,6 @@ pub fn ComponentStorage(comptime T: type, comptime capacity: usize) type {
 pub const MaxDrawables = 100;
 pub const MaxPhysObjects = 100;
 
-// FIXME - is there any way to generate this from COMPONENT_TYPES.
-// there is other code that assumes the type name is the same as the field name
-// so it's bad to write this out...
 pub const GameComponentStorage = struct {
   Animation: ComponentStorage(C.Animation, 10),
   Bullet: ComponentStorage(C.Bullet, 10),
@@ -64,9 +38,6 @@ pub const GameComponentStorage = struct {
   EventTakeDamage: ComponentStorage(C.EventTakeDamage, 50),
 };
 
-// FIXME - is there any way to generate this from COMPONENT_TYPES.
-// there is other code that assumes the type name is the same as the field name
-// so it's bad to write this out...
 pub const GameComponentLists = struct {
   Animation: Gbe.ComponentList(C.Animation),
   Bullet: Gbe.ComponentList(C.Bullet),
@@ -92,7 +63,7 @@ pub const GameComponentLists = struct {
 
 pub const GameSession = struct {
   component_storage: GameComponentStorage,
-  gbe: Gbe.Session(COMPONENT_TYPES[0..], GameComponentLists),
+  gbe: Gbe.Session(GameComponentLists),
 
   god_mode: bool,
   in_left: bool,

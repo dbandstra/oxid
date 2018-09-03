@@ -30,12 +30,14 @@ pub fn ComponentObject(comptime T: type) type {
 
 pub fn ComponentList(comptime T: type) type {
   return struct {
+    const ComponentType = T;
+
     objects: []ComponentObject(T),
     count: usize,
   };
 }
 
-pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: type) type {
+pub fn Session(comptime ComponentLists: type) type {
   assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
   inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
     // ?! is it possible to assert that a type == ComponentList(X)?
@@ -108,8 +110,8 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
     // this is only called in spawn functions, to clean up components of a
     // partially constructed entity, when something goes wrong
     pub fn undoSpawn(self: *Self, entity_id: EntityId) void {
-      inline for (ComponentTypes) |component_type| {
-        self.destroyComponent(entity_id, component_type);
+      inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        self.destroyComponent(entity_id, field.field_type.ComponentType);
       }
     }
 
@@ -167,8 +169,8 @@ pub fn Session(comptime ComponentTypes: []const type, comptime ComponentLists: t
 
     pub fn applyRemovals(self: *Self) void {
       for (self.removals[0..self.num_removals]) |entity_id| {
-        inline for (ComponentTypes) |component_type| {
-          self.destroyComponent(entity_id, component_type);
+        inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+          self.destroyComponent(entity_id, field.field_type.ComponentType);
         }
       }
       self.num_removals = 0;

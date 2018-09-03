@@ -5,8 +5,6 @@ GAMEPLAY:
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
 - sound effect when monsters speed up
-- (maybe) come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
-- (maybe) random maze generation
 
 i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
 
@@ -35,6 +33,8 @@ GLITCHES:
 - for QuadStrips glitch, would be crazier if GL_CULL_FACE were disabled, but then i should probably disable the glitch when rendering the level
 
 GAMEPLAY IDEAS:
+- (maybe) come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
+- (maybe) random maze generation
 - enemy with a shield that deflects your bullets back at you
 - exploding enemy
 - enemy that multiplies (like mantra)

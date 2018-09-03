@@ -7,13 +7,6 @@ const Monster = struct{ chasing: bool };
 const Player = struct{ attack_level: u32 };
 const Transform = struct{ x: i32, y: i32 };
 
-const COMPONENT_TYPES = []const type{
-  Creature,
-  Monster,
-  Player,
-  Transform,
-};
-
 const GameComponentLists = struct {
   Creature: Gbe.ComponentList(Creature),
   Monster: Gbe.ComponentList(Monster),
@@ -36,7 +29,7 @@ const GameComponentStorage = struct {
 
 const MockGameSession = struct {
   component_storage: GameComponentStorage,
-  gbe: Gbe.Session(COMPONENT_TYPES[0..], GameComponentLists),
+  gbe: Gbe.Session(GameComponentLists),
 
   fn init(self: *MockGameSession, rand_seed: u32) void {
     self.gbe.init(&self.component_storage, rand_seed);
