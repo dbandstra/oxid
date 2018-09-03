@@ -1,4 +1,3 @@
-const Gbe = @import("../gbe.zig");
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const C = @import("components.zig");
