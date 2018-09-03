@@ -18,6 +18,8 @@ pub fn gameFrame(gs: *GameSession) void {
       u32(1);
 
   var i: u32 = 0; while (i < num_frames) : (i += 1) {
+    @import("systems/player_input.zig").run(gs);
+
     @import("systems/game_controller.zig").run(gs);
     @import("systems/player_controller.zig").run(gs);
     @import("systems/animation.zig").run(gs);

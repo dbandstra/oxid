@@ -18,7 +18,8 @@ const killAllMonsters = @import("functions/kill_all_monsters.zig").killAllMonste
 const gameInit = @import("frame.zig").gameInit;
 const gameFrame = @import("frame.zig").gameFrame;
 const gameFrameCleanup = @import("frame.zig").gameFrameCleanup;
-const gameInput = @import("input.zig").gameInput;
+const input = @import("input.zig");
+const Prototypes = @import("prototypes.zig");
 const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
 const perf = @import("perf.zig");
@@ -88,55 +89,61 @@ pub fn main() !void {
   while (!quit) {
     while (Platform.pollEvent(&g.platform_state)) |event| {
       switch (event) {
-        Event.KeyDown => |key| switch (key) {
-          Key.Escape => return,
-          Key.Backspace => {
-            g.session.init(rand_seed);
-            gameInit(&g.session);
-          },
-          Key.Return => {
-            killAllMonsters(&g.session);
-          },
-          Key.F2 => {
-            g.session.render_move_boxes = !g.session.render_move_boxes;
-          },
-          Key.F3 => {
-            g.session.god_mode = !g.session.god_mode;
-          },
-          Key.F4 => {
-            g.perf_spam = !g.perf_spam;
-          },
-          Key.F5 => {
-            Platform.cycleGlitchMode(&g.platform_state);
-            g.platform_state.clear_screen = true;
-          },
-          Key.M => {
-            g.mute = !g.mute;
-            Platform.setMute(&g.platform_state, g.mute);
-          },
-          Key.Up => gameInput(&g.session, InputEvent.Up, true),
-          Key.Down => gameInput(&g.session, InputEvent.Down, true),
-          Key.Left => gameInput(&g.session, InputEvent.Left, true),
-          Key.Right => gameInput(&g.session, InputEvent.Right, true),
-          Key.Space => gameInput(&g.session, InputEvent.Shoot, true),
-          Key.Tab => {
-            g.session.paused = !g.session.paused;
-          },
-          Key.Backquote => {
-            g.session.fast_forward = true;
-          },
-          else => {},
+        Event.KeyDown => |key| {
+          if (input.getCommandForKey(key)) |command| {
+            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
+              .command = command,
+              .down = true,
+            });
+          }
+          switch (key) {
+            Key.Escape => return,
+            Key.Backspace => {
+              g.session.init(rand_seed);
+              gameInit(&g.session);
+            },
+            Key.Return => {
+              killAllMonsters(&g.session);
+            },
+            Key.F2 => {
+              g.session.render_move_boxes = !g.session.render_move_boxes;
+            },
+            Key.F3 => {
+              g.session.god_mode = !g.session.god_mode;
+            },
+            Key.F4 => {
+              g.perf_spam = !g.perf_spam;
+            },
+            Key.F5 => {
+              Platform.cycleGlitchMode(&g.platform_state);
+              g.platform_state.clear_screen = true;
+            },
+            Key.M => {
+              g.mute = !g.mute;
+              Platform.setMute(&g.platform_state, g.mute);
+            },
+            Key.Tab => {
+              g.session.paused = !g.session.paused;
+            },
+            Key.Backquote => {
+              g.session.fast_forward = true;
+            },
+            else => {},
+          }
         },
-        Event.KeyUp => |key| switch (key) {
-          Key.Up => gameInput(&g.session, InputEvent.Up, false),
-          Key.Down => gameInput(&g.session, InputEvent.Down, false),
-          Key.Left => gameInput(&g.session, InputEvent.Left, false),
-          Key.Right => gameInput(&g.session, InputEvent.Right, false),
-          Key.Space => gameInput(&g.session, InputEvent.Shoot, false),
-          Key.Backquote => {
-            g.session.fast_forward = false;
-          },
-          else => {},
+        Event.KeyUp => |key| {
+          if (input.getCommandForKey(key)) |command| {
+            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
+              .command = command,
+              .down = false,
+            });
+          }
+          switch (key) {
+            Key.Backquote => {
+              g.session.fast_forward = false;
+            },
+            else => {},
+          }
         },
         Event.Quit => {
           quit = true;

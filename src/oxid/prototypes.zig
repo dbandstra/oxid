@@ -118,6 +118,11 @@ pub const Player = struct{
       .dying_timer = 0,
       .last_pickup = null,
       .line_of_fire = null,
+      .in_left = false,
+      .in_right = false,
+      .in_up = false,
+      .in_down = false,
+      .in_shoot = false,
     });
 
     return entity_id;
@@ -424,6 +429,7 @@ pub const EventCollide = Event(C.EventCollide);
 pub const EventConferBonus = Event(C.EventConferBonus);
 pub const EventDraw = Event(C.EventDraw);
 pub const EventDrawBox = Event(C.EventDrawBox);
+pub const EventInput = Event(C.EventInput);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
 pub const EventSound = Event(C.EventSound);

@@ -1,6 +1,6 @@
-const GameSession = @import("game.zig").GameSession;
+const Key = @import("../event.zig").Key;
 
-pub const InputEvent = enum {
+pub const Command = enum {
   Left,
   Right,
   Up,
@@ -8,22 +8,15 @@ pub const InputEvent = enum {
   Shoot,
 };
 
-pub fn gameInput(gs: *GameSession, event: InputEvent, down: bool) void {
-  switch (event) {
-    InputEvent.Left => {
-      gs.in_left = down;
-    },
-    InputEvent.Right => {
-      gs.in_right = down;
-    },
-    InputEvent.Up => {
-      gs.in_up = down;
-    },
-    InputEvent.Down => {
-      gs.in_down = down;
-    },
-    InputEvent.Shoot => {
-      gs.in_shoot = down;
-    },
-  }
+// TODO - multiple input profiles
+// TODO - user-configurable
+pub fn getCommandForKey(key: Key) ?Command {
+  return switch (key) {
+    Key.Up => Command.Up,
+    Key.Down => Command.Down,
+    Key.Left => Command.Left,
+    Key.Right => Command.Right,
+    Key.Space => Command.Shoot,
+    else => null,
+  };
 }

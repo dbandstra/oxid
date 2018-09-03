@@ -32,6 +32,7 @@ pub const GameComponentStorage = struct {
   EventConferBonus: ComponentStorage(C.EventConferBonus, 5),
   EventDraw: ComponentStorage(C.EventDraw, MaxDrawables),
   EventDrawBox: ComponentStorage(C.EventDrawBox, 100),
+  EventInput: ComponentStorage(C.EventInput, 20),
   EventMonsterDied: ComponentStorage(C.EventMonsterDied, 20),
   EventPlayerDied: ComponentStorage(C.EventPlayerDied, 20),
   EventSound: ComponentStorage(C.EventSound, 20),
@@ -57,6 +58,7 @@ pub const GameComponentLists = struct {
   EventConferBonus: Gbe.ComponentList(C.EventConferBonus),
   EventDraw: Gbe.ComponentList(C.EventDraw),
   EventDrawBox: Gbe.ComponentList(C.EventDrawBox),
+  EventInput: Gbe.ComponentList(C.EventInput),
   EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied),
   EventSound: Gbe.ComponentList(C.EventSound),
@@ -71,11 +73,6 @@ pub const GameSession = struct {
   paused: bool,
   fast_forward: bool,
   render_move_boxes: bool,
-  in_left: bool,
-  in_right: bool,
-  in_up: bool,
-  in_down: bool,
-  in_shoot: bool,
 
   pub fn init(self: *GameSession, rand_seed: u32) void {
     self.gbe.init(&self.component_storage, rand_seed);
@@ -84,11 +81,6 @@ pub const GameSession = struct {
     self.paused = false;
     self.fast_forward = false;
     self.render_move_boxes = false;
-    self.in_up = false;
-    self.in_down = false;
-    self.in_left = false;
-    self.in_right = false;
-    self.in_shoot = false;
   }
 
   pub fn markAllEventsForRemoval(self: *GameSession) void {

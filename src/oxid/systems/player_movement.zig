@@ -54,7 +54,7 @@ fn playerUpdate(gs: *GameSession, self: SystemData) void {
 }
 
 fn playerShoot(gs: *GameSession, self: SystemData) void {
-  if (gs.in_shoot) {
+  if (self.player.in_shoot) {
     if (self.player.trigger_released) {
       // the player can only have a certain amount of bullets in play at a
       // time.
@@ -128,10 +128,10 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
 
   var xmove: i32 = 0;
   var ymove: i32 = 0;
-  if (gs.in_right) { xmove += 1; }
-  if (gs.in_left) { xmove -= 1; }
-  if (gs.in_down) { ymove += 1; }
-  if (gs.in_up) { ymove -= 1; }
+  if (self.player.in_right) { xmove += 1; }
+  if (self.player.in_left) { xmove -= 1; }
+  if (self.player.in_down) { ymove += 1; }
+  if (self.player.in_up) { ymove -= 1; }
 
   self.phys.speed = 0;
   self.phys.push_dir = null;

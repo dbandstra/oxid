@@ -6,6 +6,7 @@ const Constants = @import("constants.zig");
 const Audio = @import("audio.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
+const input = @import("input.zig");
 
 pub const Bullet = struct {
   inflictor_player_controller_id: ?Gbe.EntityId,
@@ -152,6 +153,11 @@ pub const Player = struct {
   dying_timer: u32,
   last_pickup: ?ConstantTypes.PickupType,
   line_of_fire: ?Math.BoundingBox,
+  in_left: bool,
+  in_right: bool,
+  in_up: bool,
+  in_down: bool,
+  in_shoot: bool,
 };
 
 pub const Transform = struct {
@@ -192,6 +198,11 @@ pub const EventDraw = struct {
 pub const EventDrawBox = struct {
   box: Math.BoundingBox,
   color: Draw.Color,
+};
+
+pub const EventInput = struct {
+  command: input.Command,
+  down: bool,
 };
 
 pub const EventMonsterDied = struct {
