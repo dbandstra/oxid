@@ -18,76 +18,41 @@ const LEVEL = @import("level.zig").LEVEL;
 const C = @import("components.zig");
 const perf = @import("perf.zig");
 
-pub fn drawGame(g: *GameState) void {
-  const gs = &g.session;
-
-  // sort drawables
+fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.Drawable) []*const C.Drawable {
   perf.begin(&perf.timers.DrawSort);
-  var sortarray: [MaxDrawables]*const C.Drawable = undefined;
-  var num_drawents: usize = 0;
-  var it = gs.gbe.iter(C.Drawable); while (it.next()) |object| {
+  defer perf.end(&perf.timers.DrawSort, g.perf_spam);
+
+  var num_drawables: usize = 0;
+  var it = g.session.gbe.iter(C.Drawable); while (it.next()) |object| {
     if (object.is_active) {
-      sortarray[num_drawents] = object.data;
-      num_drawents += 1;
+      sort_buffer[num_drawables] = &object.data;
+      num_drawables += 1;
     }
   }
-  var sortslice = sortarray[0..num_drawents];
-  std.sort.sort(*const C.Drawable, sortslice, lessThanField(*const C.Drawable, "z_index"));
-  perf.end(&perf.timers.DrawSort, g.perf_spam);
+  var sorted_drawables = sort_buffer[0..num_drawables];
+  std.sort.sort(*const C.Drawable, sorted_drawables, lessThanField(*const C.Drawable, "z_index"));
+  return sorted_drawables;
+}
 
-  // actually draw
+pub fn drawGame(g: *GameState) void {
+  var sort_buffer: [MaxDrawables]*const C.Drawable = undefined;
+  const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+
   Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
-
-  perf.begin(&perf.timers.DrawMap);
   drawMap(g);
-  perf.end(&perf.timers.DrawMap, g.perf_spam);
-
-  perf.begin(&perf.timers.DrawEntities);
-  for (sortslice) |drawable| {
-    drawBlock(g, drawable.pos, drawable.graphic, drawable.transform);
-  }
-  perf.end(&perf.timers.DrawEntities, g.perf_spam);
-
+  drawEntities(g, sorted_drawables);
   Platform.drawEnd(&g.platform_state);
 
   if (g.render_move_boxes) {
-    var it2 = gs.gbe.iter(C.PhysObject); while (it2.next()) |object| {
-      const int = object.data.internal;
-      drawBox(g, int.move_bbox, Draw.Color{
-        .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
-        .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
-        .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
-        .a = 255,
-      });
-    }
-    var it3 = gs.gbe.iter(C.Player); while (it3.next()) |object| {
-      if (object.data.line_of_fire) |box| {
-        drawBox(g, box, Draw.Color{
-          .r = 0,
-          .g = 0,
-          .b = 0,
-          .a = 255,
-        });
-      }
-    }
-    var it4 = gs.gbe.iter(C.Bullet); while (it4.next()) |object| {
-      if (object.data.line_of_fire) |box| {
-        drawBox(g, box, Draw.Color{
-          .r = 0,
-          .g = 0,
-          .b = 0,
-          .a = 255,
-        });
-      }
-    }
+    drawMoveBoxes(g);
   }
-
-  perf.begin(&perf.timers.DrawHud);
   drawHud(g);
-  perf.end(&perf.timers.DrawHud, g.perf_spam);
 }
 
 fn drawMap(g: *GameState) void {
+  perf.begin(&perf.timers.DrawMap);
+  defer perf.end(&perf.timers.DrawMap, g.perf_spam);
+
   var y: u31 = 0;
   while (y < LEVEL.h) : (y += 1) {
     var x: u31 = 0;
@@ -104,13 +69,46 @@ fn drawMap(g: *GameState) void {
         0x86 => Graphic.EvilWallBR,
         else => null,
       }) |graphic| {
-        mapTile(g, Math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS), graphic);
+        const pos = Math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS);
+        const dx = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
+        const dy = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
+        const dw = GRIDSIZE_PIXELS;
+        const dh = GRIDSIZE_PIXELS;
+        Platform.drawTile(
+          &g.platform_state,
+          &g.tileset,
+          getGraphicTile(graphic),
+          dx, dy, dw, dh,
+          Draw.Transform.Identity,
+        );
       }
     }
   }
 }
 
+fn drawEntities(g: *GameState, sorted_drawables: []*const C.Drawable) void {
+  perf.begin(&perf.timers.DrawEntities);
+  defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
+
+  for (sorted_drawables) |drawable| {
+    const x = @intToFloat(f32, @divFloor(drawable.pos.x, Math.SUBPIXELS));
+    const y = @intToFloat(f32, @divFloor(drawable.pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
+    const w = GRIDSIZE_PIXELS;
+    const h = GRIDSIZE_PIXELS;
+    Platform.drawTile(
+      &g.platform_state,
+      &g.tileset,
+      getGraphicTile(drawable.graphic),
+      x, y, w, h,
+      drawable.transform,
+    );
+  }
+}
+
 fn drawHud(g: *GameState) void {
+  perf.begin(&perf.timers.DrawHud);
+  defer perf.end(&perf.timers.DrawHud, g.perf_spam);
+
   const gc = g.session.getGameController();
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
@@ -161,19 +159,6 @@ fn drawHud(g: *GameState) void {
 
 ///////////////////////////////////////////////////////////
 
-fn drawBlock(g: *GameState, pos: Math.Vec2, graphic: Graphic, transform: Draw.Transform) void {
-  const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
-  const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
-  const w = GRIDSIZE_PIXELS;
-  const h = GRIDSIZE_PIXELS;
-  Platform.drawTile(
-    &g.platform_state,
-    &g.tileset,
-    getGraphicTile(graphic),
-    x, y, w, h, transform,
-  );
-}
-
 fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
   const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
   const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS)) + HUD_HEIGHT;
@@ -189,15 +174,35 @@ fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
   );
 }
 
-fn mapTile(g: *GameState, pos: Math.Vec2, graphic: Graphic) void {
-  const x = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
-  const y = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
-  const w = GRIDSIZE_PIXELS;
-  const h = GRIDSIZE_PIXELS;
-  Platform.drawTile(
-    &g.platform_state,
-    &g.tileset,
-    getGraphicTile(graphic),
-    x, y, w, h, Draw.Transform.Identity,
-  );
+fn drawMoveBoxes(g: *GameState) void {
+  const gs = &g.session;
+  var it1 = gs.gbe.iter(C.PhysObject); while (it1.next()) |object| {
+    const int = object.data.internal;
+    drawBox(g, int.move_bbox, Draw.Color{
+      .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
+      .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
+      .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
+      .a = 255,
+    });
+  }
+  var it2 = gs.gbe.iter(C.Player); while (it2.next()) |object| {
+    if (object.data.line_of_fire) |box| {
+      drawBox(g, box, Draw.Color{
+        .r = 0,
+        .g = 0,
+        .b = 0,
+        .a = 255,
+      });
+    }
+  }
+  var it3 = gs.gbe.iter(C.Bullet); while (it3.next()) |object| {
+    if (object.data.line_of_fire) |box| {
+      drawBox(g, box, Draw.Color{
+        .r = 0,
+        .g = 0,
+        .b = 0,
+        .a = 255,
+      });
+    }
+  }
 }
