@@ -1,6 +1,4 @@
-const builtin = @import("builtin");
 const std = @import("std");
-const assert = std.debug.assert;
 
 const Gbe = @import("../gbe.zig");
 const Constants = @import("constants.zig");
@@ -87,6 +85,17 @@ pub const GameSession = struct {
     self.in_left = false;
     self.in_right = false;
     self.in_shoot = false;
+  }
+
+  pub fn markAllEventsForRemoval(self: *GameSession) void {
+    inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+      const ComponentType = field.field_type.ComponentType;
+      if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+        var it = self.gbe.iter(ComponentType); while (it.next()) |object| {
+          self.gbe.markEntityForRemoval(object.entity_id);
+        }
+      }
+    }
   }
 
   pub fn getGameController(self: *GameSession) *C.GameController {

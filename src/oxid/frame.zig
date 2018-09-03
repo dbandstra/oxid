@@ -61,17 +61,7 @@ pub fn gamePreFrame(gs: *GameSession) void {
 }
 
 pub fn gamePostFrame(gs: *GameSession) void {
-  removeAll(gs, C.EventAwardLife);
-  removeAll(gs, C.EventAwardPoints);
-  removeAll(gs, C.EventCollide);
-  removeAll(gs, C.EventConferBonus);
-  removeAll(gs, C.EventDraw);
-  removeAll(gs, C.EventDrawBox);
-  removeAll(gs, C.EventMonsterDied);
-  removeAll(gs, C.EventPlayerDied);
-  removeAll(gs, C.EventSound);
-  removeAll(gs, C.EventTakeDamage);
-
+  gs.markAllEventsForRemoval();
   gs.gbe.applyRemovals();
 
   AnimationDrawSystem.run(gs);
@@ -82,11 +72,5 @@ pub fn gamePostFrame(gs: *GameSession) void {
     BulletDrawBoxSystem.run(gs);
     PhysObjectDrawBoxSystem.run(gs);
     PlayerDrawBoxSystem.run(gs);
-  }
-}
-
-fn removeAll(gs: *GameSession, comptime T: type) void {
-  var it = gs.gbe.iter(T); while (it.next()) |object| {
-    gs.gbe.markEntityForRemoval(object.entity_id);
   }
 }
