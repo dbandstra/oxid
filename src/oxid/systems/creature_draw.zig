@@ -35,7 +35,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (self.player) |player| {
     if (player.dying_timer > 0) {
       // death animation?
-      _ = Prototypes.Drawable.spawn(gs, C.Drawable{
+      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
         .pos = self.transform.pos,
         .graphic =
           if (player.dying_timer > 30)
@@ -64,7 +64,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   // if monster is spawning, show the spawning effect
   if (self.monster) |monster| {
     if (monster.spawning_timer > 0) {
-      _ = Prototypes.Drawable.spawn(gs, C.Drawable{
+      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
         .pos = self.transform.pos,
         .graphic =
           if (alternation(u32, monster.spawning_timer, 8))
@@ -137,7 +137,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   const r = rotates orelse return true;
   const z = z_index orelse return true;
 
-  _ = Prototypes.Drawable.spawn(gs, C.Drawable{
+  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
     .pos = self.transform.pos,
     // animate legs every 6 screen pixels
     .graphic = if (alternation(i32, sxpos, 6)) g1 else g2,

@@ -63,12 +63,11 @@ pub fn gamePostFrame(gs: *GameSession) void {
   removeAll(gs, C.EventAwardPoints);
   removeAll(gs, C.EventCollide);
   removeAll(gs, C.EventConferBonus);
+  removeAll(gs, C.EventDraw);
   removeAll(gs, C.EventMonsterDied);
   removeAll(gs, C.EventPlayerDied);
   removeAll(gs, C.EventSound);
   removeAll(gs, C.EventTakeDamage);
-
-  removeAll(gs, C.Drawable);
 
   gs.gbe.applyRemovals();
 

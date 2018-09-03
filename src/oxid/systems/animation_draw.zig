@@ -20,7 +20,7 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
   const animcfg = getSimpleAnim(self.animation.simple_anim);
   std.debug.assert(self.animation.frame_index < animcfg.frames.len);
-  _ = Prototypes.Drawable.spawn(gs, C.Drawable{
+  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
     .pos = self.transform.pos,
     .graphic = animcfg.frames[self.animation.frame_index],
     .transform = Draw.Transform.Identity,

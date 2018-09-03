@@ -18,24 +18,24 @@ const LEVEL = @import("level.zig").LEVEL;
 const C = @import("components.zig");
 const perf = @import("perf.zig");
 
-fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.Drawable) []*const C.Drawable {
+fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const C.EventDraw {
   perf.begin(&perf.timers.DrawSort);
   defer perf.end(&perf.timers.DrawSort, g.perf_spam);
 
   var num_drawables: usize = 0;
-  var it = g.session.gbe.iter(C.Drawable); while (it.next()) |object| {
+  var it = g.session.gbe.iter(C.EventDraw); while (it.next()) |object| {
     if (object.is_active) {
       sort_buffer[num_drawables] = &object.data;
       num_drawables += 1;
     }
   }
   var sorted_drawables = sort_buffer[0..num_drawables];
-  std.sort.sort(*const C.Drawable, sorted_drawables, lessThanField(*const C.Drawable, "z_index"));
+  std.sort.sort(*const C.EventDraw, sorted_drawables, lessThanField(*const C.EventDraw, "z_index"));
   return sorted_drawables;
 }
 
 pub fn drawGame(g: *GameState) void {
-  var sort_buffer: [MaxDrawables]*const C.Drawable = undefined;
+  var sort_buffer: [MaxDrawables]*const C.EventDraw = undefined;
   const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
   Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
@@ -86,7 +86,7 @@ fn drawMap(g: *GameState) void {
   }
 }
 
-fn drawEntities(g: *GameState, sorted_drawables: []*const C.Drawable) void {
+fn drawEntities(g: *GameState, sorted_drawables: []*const C.EventDraw) void {
   perf.begin(&perf.timers.DrawEntities);
   defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 

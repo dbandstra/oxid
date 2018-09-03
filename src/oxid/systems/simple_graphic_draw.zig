@@ -17,7 +17,7 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  _ = Prototypes.Drawable.spawn(gs, C.Drawable{
+  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
     .pos = self.transform.pos,
     .graphic = self.simple_graphic.graphic,
     .transform =

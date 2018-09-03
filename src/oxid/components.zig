@@ -13,13 +13,6 @@ pub const Bullet = struct {
   line_of_fire: ?Math.BoundingBox,
 };
 
-pub const Drawable = struct {
-  pos: Math.Vec2,
-  graphic: Graphic,
-  transform: Draw.Transform,
-  z_index: u32,
-};
-
 pub const Creature = struct {
   invulnerability_timer: u32,
   hit_points: u32,
@@ -165,6 +158,15 @@ pub const Transform = struct {
   pos: Math.Vec2,
 };
 
+pub const EventAwardLife = struct {
+  player_controller_id: Gbe.EntityId,
+};
+
+pub const EventAwardPoints = struct {
+  player_controller_id: Gbe.EntityId,
+  points: u32,
+};
+
 pub const EventCollide = struct {
   self_id: Gbe.EntityId,
   other_id: Gbe.EntityId, // 0 = wall
@@ -180,13 +182,11 @@ pub const EventConferBonus = struct {
   pickup_type: ConstantTypes.PickupType,
 };
 
-pub const EventAwardLife = struct {
-  player_controller_id: Gbe.EntityId,
-};
-
-pub const EventAwardPoints = struct {
-  player_controller_id: Gbe.EntityId,
-  points: u32,
+pub const EventDraw = struct {
+  pos: Math.Vec2,
+  graphic: Graphic,
+  transform: Draw.Transform,
+  z_index: u32,
 };
 
 pub const EventMonsterDied = struct {

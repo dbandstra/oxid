@@ -405,17 +405,6 @@ pub const Pickup = struct{
   }
 };
 
-pub const Drawable = struct{
-  pub fn spawn(gs: *GameSession, drawable: C.Drawable) !Gbe.EntityId {
-    const entity_id = gs.gbe.spawn();
-    errdefer gs.gbe.undoSpawn(entity_id);
-
-    try gs.gbe.addComponent(entity_id, drawable);
-
-    return entity_id;
-  }
-};
-
 fn Event(comptime T: type) type {
   return struct {
     fn spawn(gs: *GameSession, body: T) !Gbe.EntityId {
@@ -433,6 +422,7 @@ pub const EventAwardLife = Event(C.EventAwardLife);
 pub const EventAwardPoints = Event(C.EventAwardPoints);
 pub const EventCollide = Event(C.EventCollide);
 pub const EventConferBonus = Event(C.EventConferBonus);
+pub const EventDraw = Event(C.EventDraw);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
 pub const EventSound = Event(C.EventSound);
