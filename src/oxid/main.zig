@@ -44,7 +44,6 @@ pub const GameState = struct {
   tileset: Draw.Tileset,
   font: Font,
   session: GameSession,
-  render_move_boxes: bool,
   perf_spam: bool,
   paused: bool,
   fast_forward: bool,
@@ -76,7 +75,6 @@ pub fn main() !void {
 
   Audio.loadSamples(&g.platform_state, &g.samples);
 
-  g.render_move_boxes = false;
   g.perf_spam = false;
   g.paused = false;
   g.fast_forward = false;
@@ -103,7 +101,7 @@ pub fn main() !void {
             killAllMonsters(&g.session);
           },
           Key.F2 => {
-            g.render_move_boxes = !g.render_move_boxes;
+            g.session.render_move_boxes = !g.session.render_move_boxes;
           },
           Key.F3 => {
             g.session.god_mode = !g.session.god_mode;

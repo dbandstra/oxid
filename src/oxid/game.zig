@@ -33,6 +33,7 @@ pub const GameComponentStorage = struct {
   EventCollide: ComponentStorage(C.EventCollide, 50),
   EventConferBonus: ComponentStorage(C.EventConferBonus, 5),
   EventDraw: ComponentStorage(C.EventDraw, MaxDrawables),
+  EventDrawBox: ComponentStorage(C.EventDrawBox, 100),
   EventMonsterDied: ComponentStorage(C.EventMonsterDied, 20),
   EventPlayerDied: ComponentStorage(C.EventPlayerDied, 20),
   EventSound: ComponentStorage(C.EventSound, 20),
@@ -57,6 +58,7 @@ pub const GameComponentLists = struct {
   EventCollide: Gbe.ComponentList(C.EventCollide),
   EventConferBonus: Gbe.ComponentList(C.EventConferBonus),
   EventDraw: Gbe.ComponentList(C.EventDraw),
+  EventDrawBox: Gbe.ComponentList(C.EventDrawBox),
   EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied),
   EventSound: Gbe.ComponentList(C.EventSound),
@@ -68,6 +70,7 @@ pub const GameSession = struct {
   gbe: Gbe.Session(GameComponentLists),
 
   god_mode: bool,
+  render_move_boxes: bool,
   in_left: bool,
   in_right: bool,
   in_up: bool,
@@ -78,6 +81,7 @@ pub const GameSession = struct {
     self.gbe.init(&self.component_storage, rand_seed);
 
     self.god_mode = false;
+    self.render_move_boxes = false;
     self.in_up = false;
     self.in_down = false;
     self.in_left = false;

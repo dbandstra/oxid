@@ -8,6 +8,7 @@ const AnimationSystem = @import("systems/animation.zig");
 const AnimationDrawSystem = @import("systems/animation_draw.zig");
 const BulletSystem = @import("systems/bullet.zig");
 const BulletCollideSystem = @import("systems/bullet_collide.zig");
+const BulletDrawBoxSystem = @import("systems/bullet_draw_box.zig");
 const CreatureSystem = @import("systems/creature.zig");
 const CreatureDrawSystem = @import("systems/creature_draw.zig");
 const CreatureTakeDamageSystem = @import("systems/creature_take_damage.zig");
@@ -15,10 +16,12 @@ const GameControllerReactSystem = @import("systems/game_controller_react.zig");
 const GameControllerSystem = @import("systems/game_controller.zig");
 const MonsterMovementSystem = @import("systems/monster_movement.zig");
 const MonsterTouchResponseSystem = @import("systems/monster_touch_response.zig");
+const PhysObjectDrawBoxSystem = @import("systems/physobject_draw_box.zig");
 const PickupCollideSystem = @import("systems/pickup_collide.zig");
 const PickupSystem = @import("systems/pickup.zig");
 const PlayerControllerReactSystem = @import("systems/player_controller_react.zig");
 const PlayerControllerSystem = @import("systems/player_controller.zig");
+const PlayerDrawBoxSystem = @import("systems/player_draw_box.zig");
 const PlayerMovementSystem = @import("systems/player_movement.zig");
 const PlayerReactionSystem = @import("systems/player_reaction.zig");
 const SimpleGraphicDrawSystem = @import("systems/simple_graphic_draw.zig");
@@ -64,6 +67,7 @@ pub fn gamePostFrame(gs: *GameSession) void {
   removeAll(gs, C.EventCollide);
   removeAll(gs, C.EventConferBonus);
   removeAll(gs, C.EventDraw);
+  removeAll(gs, C.EventDrawBox);
   removeAll(gs, C.EventMonsterDied);
   removeAll(gs, C.EventPlayerDied);
   removeAll(gs, C.EventSound);
@@ -74,6 +78,12 @@ pub fn gamePostFrame(gs: *GameSession) void {
   AnimationDrawSystem.run(gs);
   CreatureDrawSystem.run(gs);
   SimpleGraphicDrawSystem.run(gs);
+
+  if (gs.render_move_boxes) {
+    BulletDrawBoxSystem.run(gs);
+    PhysObjectDrawBoxSystem.run(gs);
+    PlayerDrawBoxSystem.run(gs);
+  }
 }
 
 fn removeAll(gs: *GameSession, comptime T: type) void {

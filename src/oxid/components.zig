@@ -189,6 +189,11 @@ pub const EventDraw = struct {
   z_index: u32,
 };
 
+pub const EventDrawBox = struct {
+  box: Math.BoundingBox,
+  color: Draw.Color,
+};
+
 pub const EventMonsterDied = struct {
   unused: u32, // FIXME
 };

@@ -18,6 +18,21 @@ const LEVEL = @import("level.zig").LEVEL;
 const C = @import("components.zig");
 const perf = @import("perf.zig");
 
+pub fn drawGame(g: *GameState) void {
+  var sort_buffer: [MaxDrawables]*const C.EventDraw = undefined;
+  const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+
+  Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
+  drawMap(g);
+  drawEntities(g, sorted_drawables);
+  Platform.drawEnd(&g.platform_state);
+
+  drawBoxes(g);
+  drawHud(g);
+}
+
+///////////////////////////////////////
+
 fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const C.EventDraw {
   perf.begin(&perf.timers.DrawSort);
   defer perf.end(&perf.timers.DrawSort, g.perf_spam);
@@ -32,21 +47,6 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const
   var sorted_drawables = sort_buffer[0..num_drawables];
   std.sort.sort(*const C.EventDraw, sorted_drawables, lessThanField(*const C.EventDraw, "z_index"));
   return sorted_drawables;
-}
-
-pub fn drawGame(g: *GameState) void {
-  var sort_buffer: [MaxDrawables]*const C.EventDraw = undefined;
-  const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
-
-  Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
-  drawMap(g);
-  drawEntities(g, sorted_drawables);
-  Platform.drawEnd(&g.platform_state);
-
-  if (g.render_move_boxes) {
-    drawMoveBoxes(g);
-  }
-  drawHud(g);
 }
 
 fn drawMap(g: *GameState) void {
@@ -105,6 +105,26 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const C.EventDraw) void {
   }
 }
 
+fn drawBoxes(g: *GameState) void {
+  var it = g.session.gbe.iter(C.EventDrawBox); while (it.next()) |object| {
+    if (object.is_active) {
+      const abs_bbox = object.data.box;
+      const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
+      const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS)) + HUD_HEIGHT;
+      const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, Math.SUBPIXELS));
+      const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS)) + HUD_HEIGHT;
+      const w = x1 - x0;
+      const h = y1 - y0;
+      Platform.drawUntexturedRect(
+        &g.platform_state,
+        x0, y0, w, h,
+        object.data.color,
+        true,
+      );
+    }
+  }
+}
+
 fn drawHud(g: *GameState) void {
   perf.begin(&perf.timers.DrawHud);
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
@@ -155,54 +175,4 @@ fn drawHud(g: *GameState) void {
   }
 
   Platform.drawEnd(&g.platform_state);
-}
-
-///////////////////////////////////////////////////////////
-
-fn drawBox(g: *GameState, abs_bbox: Math.BoundingBox, color: Draw.Color) void {
-  const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
-  const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, Math.SUBPIXELS)) + HUD_HEIGHT;
-  const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, Math.SUBPIXELS));
-  const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, Math.SUBPIXELS)) + HUD_HEIGHT;
-  const w = x1 - x0;
-  const h = y1 - y0;
-  Platform.drawUntexturedRect(
-    &g.platform_state,
-    x0, y0, w, h,
-    color,
-    true,
-  );
-}
-
-fn drawMoveBoxes(g: *GameState) void {
-  const gs = &g.session;
-  var it1 = gs.gbe.iter(C.PhysObject); while (it1.next()) |object| {
-    const int = object.data.internal;
-    drawBox(g, int.move_bbox, Draw.Color{
-      .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
-      .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
-      .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
-      .a = 255,
-    });
-  }
-  var it2 = gs.gbe.iter(C.Player); while (it2.next()) |object| {
-    if (object.data.line_of_fire) |box| {
-      drawBox(g, box, Draw.Color{
-        .r = 0,
-        .g = 0,
-        .b = 0,
-        .a = 255,
-      });
-    }
-  }
-  var it3 = gs.gbe.iter(C.Bullet); while (it3.next()) |object| {
-    if (object.data.line_of_fire) |box| {
-      drawBox(g, box, Draw.Color{
-        .r = 0,
-        .g = 0,
-        .b = 0,
-        .a = 255,
-      });
-    }
-  }
 }

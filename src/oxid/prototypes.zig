@@ -423,6 +423,7 @@ pub const EventAwardPoints = Event(C.EventAwardPoints);
 pub const EventCollide = Event(C.EventCollide);
 pub const EventConferBonus = Event(C.EventConferBonus);
 pub const EventDraw = Event(C.EventDraw);
+pub const EventDrawBox = Event(C.EventDrawBox);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
 pub const EventSound = Event(C.EventSound);
