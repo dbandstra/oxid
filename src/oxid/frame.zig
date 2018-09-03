@@ -3,74 +3,52 @@ const physicsFrame = @import("physics.zig").physicsFrame;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
-const AnimationSystem = @import("systems/animation.zig");
-const AnimationDrawSystem = @import("systems/animation_draw.zig");
-const BulletSystem = @import("systems/bullet.zig");
-const BulletCollideSystem = @import("systems/bullet_collide.zig");
-const BulletDrawBoxSystem = @import("systems/bullet_draw_box.zig");
-const CreatureSystem = @import("systems/creature.zig");
-const CreatureDrawSystem = @import("systems/creature_draw.zig");
-const CreatureTakeDamageSystem = @import("systems/creature_take_damage.zig");
-const GameControllerReactSystem = @import("systems/game_controller_react.zig");
-const GameControllerSystem = @import("systems/game_controller.zig");
-const MonsterMovementSystem = @import("systems/monster_movement.zig");
-const MonsterTouchResponseSystem = @import("systems/monster_touch_response.zig");
-const PhysObjectDrawBoxSystem = @import("systems/physobject_draw_box.zig");
-const PickupCollideSystem = @import("systems/pickup_collide.zig");
-const PickupSystem = @import("systems/pickup.zig");
-const PlayerControllerReactSystem = @import("systems/player_controller_react.zig");
-const PlayerControllerSystem = @import("systems/player_controller.zig");
-const PlayerDrawBoxSystem = @import("systems/player_draw_box.zig");
-const PlayerMovementSystem = @import("systems/player_movement.zig");
-const PlayerReactionSystem = @import("systems/player_reaction.zig");
-const SimpleGraphicDrawSystem = @import("systems/simple_graphic_draw.zig");
-
 pub fn gameInit(gs: *GameSession) void {
   _ = Prototypes.GameController.spawn(gs);
   _ = Prototypes.PlayerController.spawn(gs);
 }
 
 pub fn gamePreFrame(gs: *GameSession) void {
-  GameControllerSystem.run(gs);
-  PlayerControllerSystem.run(gs);
-  AnimationSystem.run(gs);
-  PlayerMovementSystem.run(gs);
-  MonsterMovementSystem.run(gs);
-  BulletSystem.run(gs);
-  CreatureSystem.run(gs);
-  PickupSystem.run(gs);
+  @import("systems/game_controller.zig").run(gs);
+  @import("systems/player_controller.zig").run(gs);
+  @import("systems/animation.zig").run(gs);
+  @import("systems/player_movement.zig").run(gs);
+  @import("systems/monster_movement.zig").run(gs);
+  @import("systems/bullet.zig").run(gs);
+  @import("systems/creature.zig").run(gs);
+  @import("systems/pickup.zig").run(gs);
 
   physicsFrame(gs);
 
   // pickups react to event_collide, spawn event_confer_bonus
-  PickupCollideSystem.run(gs);
+  @import("systems/pickup_collide.zig").run(gs);
   // bullets react to event_collide, spawn event_take_damage
-  BulletCollideSystem.run(gs);
+  @import("systems/bullet_collide.zig").run(gs);
   // monsters react to event_collide, damage others
-  MonsterTouchResponseSystem.run(gs);
+  @import("systems/monster_touch_response.zig").run(gs);
   // player reacts to event_confer_bonus, gets bonus effect
-  PlayerReactionSystem.run(gs);
+  @import("systems/player_reaction.zig").run(gs);
 
   // creatures react to event_take_damage, die
-  CreatureTakeDamageSystem.run(gs);
+  @import("systems/creature_take_damage.zig").run(gs);
 
   // game controller reacts to 'player died' event
-  GameControllerReactSystem.run(gs);
+  @import("systems/game_controller_react.zig").run(gs);
   // player controller reacts to 'player died' event
-  PlayerControllerReactSystem.run(gs);
+  @import("systems/player_controller_react.zig").run(gs);
 }
 
 pub fn gamePostFrame(gs: *GameSession) void {
   gs.markAllEventsForRemoval();
   gs.gbe.applyRemovals();
 
-  AnimationDrawSystem.run(gs);
-  CreatureDrawSystem.run(gs);
-  SimpleGraphicDrawSystem.run(gs);
+  @import("systems/animation_draw.zig").run(gs);
+  @import("systems/creature_draw.zig").run(gs);
+  @import("systems/simple_graphic_draw.zig").run(gs);
 
   if (gs.render_move_boxes) {
-    BulletDrawBoxSystem.run(gs);
-    PhysObjectDrawBoxSystem.run(gs);
-    PlayerDrawBoxSystem.run(gs);
+    @import("systems/bullet_draw_box.zig").run(gs);
+    @import("systems/physobject_draw_box.zig").run(gs);
+    @import("systems/player_draw_box.zig").run(gs);
   }
 }
