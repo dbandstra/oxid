@@ -48,8 +48,10 @@ pub fn gameFrame(gs: *GameSession) void {
     // player controller reacts to 'player died' event
     @import("systems/player_controller_react.zig").run(gs);
 
-    gs.markAllEventsForRemoval();
-    gs.gbe.applyRemovals();
+    if (i < num_frames - 1) {
+      gs.markAllEventsForRemoval();
+      gs.gbe.applyRemovals();
+    }
   }
 
   // send draw commands (as events)
