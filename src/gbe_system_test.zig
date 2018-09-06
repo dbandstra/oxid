@@ -39,12 +39,14 @@ fn prepareGs(gs: *MockGameSession) !void {
 
 var g_count: u32 = undefined;
 
-const SystemData = struct{
+///////////////////////////////////////
+
+const SystemData1 = struct{
   creature: *Creature,
   transform: *Transform,
 };
 
-fn think(gs: *MockGameSession, self: SystemData) bool {
+fn think1(gs: *MockGameSession, self: SystemData1) bool {
   std.debug.assert(self.transform.x == 0);
   std.debug.assert(self.transform.y == 0);
   std.debug.assert(self.creature.hit_points == 8 or self.creature.hit_points == 16);
@@ -52,13 +54,17 @@ fn think(gs: *MockGameSession, self: SystemData) bool {
   return true;
 }
 
+const run1 = GbeSystem.build(MockGameSession, SystemData1, think1);
+
 test "GbeSystem basic test" {
-  var the_gs: MockGameSession = undefined;
-  try prepareGs(&the_gs);
+  var gs: MockGameSession = undefined;
+  try prepareGs(&gs);
   g_count = 0;
-  GbeSystem.build(MockGameSession, SystemData, think)(&the_gs);
+  run1(&gs);
   std.debug.assert(g_count == 16);
 }
+
+///////////////////////////////////////
 
 const SystemData2 = struct{
   transform: *Transform,
@@ -73,13 +79,17 @@ fn think2(gs: *MockGameSession, self: SystemData2) bool {
   return true;
 }
 
+const run2 = GbeSystem.build(MockGameSession, SystemData2, think2);
+
 test "GbeSystem works with one optional and one required component" {
-  var the_gs: MockGameSession = undefined;
-  try prepareGs(&the_gs);
+  var gs: MockGameSession = undefined;
+  try prepareGs(&gs);
   g_count = 0;
-  GbeSystem.build(MockGameSession, SystemData2, think2)(&the_gs);
+  run2(&gs);
   std.debug.assert(g_count == 16);
 }
+
+///////////////////////////////////////
 
 const SystemData3 = struct{
   transform: ?*Transform,
@@ -94,11 +104,13 @@ fn think3(gs: *MockGameSession, self: SystemData3) bool {
   return true;
 }
 
+const run3 = GbeSystem.build(MockGameSession, SystemData3, think3);
+
 test "GbeSystem works if all components are optional" {
-  var the_gs: MockGameSession = undefined;
-  try prepareGs(&the_gs);
+  var gs: MockGameSession = undefined;
+  try prepareGs(&gs);
   g_count = 0;
-  GbeSystem.build(MockGameSession, SystemData3, think3)(&the_gs);
+  run3(&gs);
   std.debug.assert(g_count == 16);
 }
 
