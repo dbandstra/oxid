@@ -72,7 +72,7 @@ pub fn Session(comptime ComponentLists: type) type {
       }
     }
 
-    fn getCapacity(comptime T: type) usize {
+    pub fn getCapacity(comptime T: type) usize {
       comptime var capacity: usize = 0;
       inline for (@typeInfo(ComponentLists).Struct.fields) |sfield| {
         if (std.mem.eql(u8, sfield.name, @typeName(T))) {

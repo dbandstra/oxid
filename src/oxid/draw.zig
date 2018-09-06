@@ -9,7 +9,7 @@ const VWIN_W = @import("main.zig").VWIN_W;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
 const Constants = @import("constants.zig");
-const MaxDrawables = @import("game.zig").MaxDrawables;
+const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
@@ -19,7 +19,8 @@ const C = @import("components.zig");
 const perf = @import("perf.zig");
 
 pub fn drawGame(g: *GameState) void {
-  var sort_buffer: [MaxDrawables]*const C.EventDraw = undefined;
+  const max_drawables = comptime GameSession.GbeSessionType.getCapacity(C.EventDraw);
+  var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
   const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
   Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);

@@ -5,7 +5,6 @@ const boxesOverlap = @import("../boxes_overlap.zig").boxesOverlap;
 const Gbe = @import("../gbe.zig");
 const Constants = @import("constants.zig");
 const LEVEL = @import("level.zig").LEVEL;
-const MaxPhysObjects = @import("game.zig").MaxPhysObjects;
 const GameSession = @import("game.zig").GameSession;
 const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
@@ -28,8 +27,10 @@ const MoveGroup = struct{
   is_active: bool,
 };
 
-var move_group_members: [MaxPhysObjects]MoveGroupMember = undefined;
-var move_groups: [MaxPhysObjects]MoveGroup = undefined;
+const max_phys_objects = comptime GameSession.GbeSessionType.getCapacity(C.PhysObject);
+
+var move_group_members: [max_phys_objects]MoveGroupMember = undefined;
+var move_groups: [max_phys_objects]MoveGroup = undefined;
 
 pub fn physicsFrame(gs: *GameSession) void {
   // calculate move bboxes
