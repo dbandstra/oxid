@@ -30,11 +30,11 @@ Debug/cheat controls:
 
 ## Code
 Oxid uses a minimalistic Entity Component System. Here are the main gameplay-related files:
-* `src/oxid/components.zig` - struct definitions of each component type
-* `src/oxid/frame.zig` - calls into systems
-* `src/oxid/game.zig` - component type registration
-* `src/oxid/prototypes.zig` - entity spawning functions
-* `src/oxid/systems/*.zig` - all of the systems (i.e. think functions)
+* [src/oxid/components.zig](src/oxid/components.zig) - struct definitions of each component type
+* [src/oxid/frame.zig](src/oxid/frame.zig) - calls into systems
+* [src/oxid/game.zig](src/oxid/game.zig) - component type registration
+* [src/oxid/prototypes.zig](src/oxid/prototypes.zig) - entity spawning functions
+* [src/oxid/systems/*.zig](src/oxid/systems/) - all of the systems (i.e. think functions)
 
 The ECS framework itself is located at `src/gbe*.zig`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
 
