@@ -10,7 +10,6 @@ const GameUtil = @import("../util.zig");
 const input = @import("../input.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
-const killAllMonsters = @import("../functions/kill_all_monsters.zig").killAllMonsters;
 
 const SystemData = struct{
   gc: *C.GameController,
@@ -43,4 +42,16 @@ fn think(gs: *GameSession, self: SystemData) bool {
     }
   }
   return true;
+}
+
+pub fn killAllMonsters(gs: *GameSession) void {
+  var it = gs.iter(C.Monster); while (it.next()) |object| {
+    if (!object.data.persistent) {
+      gs.markEntityForRemoval(object.entity_id);
+    }
+  }
+
+  if (gs.iter(C.GameController).next()) |object| {
+    object.data.next_wave_timer = 1;
+  }
 }
