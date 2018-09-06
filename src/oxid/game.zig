@@ -33,6 +33,8 @@ pub const GameComponentLists = struct {
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
 };
 
+// TODO - try to get rid of this struct completely and just move the fields
+// into C.GameController
 pub const GameSession = struct {
   gbe: Gbe.Session(GameComponentLists),
 

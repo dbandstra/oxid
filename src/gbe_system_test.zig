@@ -8,36 +8,18 @@ const Player = struct{ attack_level: u32 };
 const Transform = struct{ x: i32, y: i32 };
 
 const GameComponentLists = struct {
-  Creature: Gbe.ComponentList(Creature),
-  Monster: Gbe.ComponentList(Monster),
-  Player: Gbe.ComponentList(Player),
-  Transform: Gbe.ComponentList(Transform),
-};
-
-fn ComponentStorage(comptime T: type, comptime capacity: usize) type {
-  return struct{
-    objects: [capacity]Gbe.ComponentObject(T),
-  };
-}
-
-const GameComponentStorage = struct {
-  Creature: ComponentStorage(Creature, 50),
-  Monster: ComponentStorage(Monster, 50),
-  Player: ComponentStorage(Player, 50),
-  Transform: ComponentStorage(Transform, 50),
+  Creature: Gbe.ComponentList(Creature, 50),
+  Monster: Gbe.ComponentList(Monster, 50),
+  Player: Gbe.ComponentList(Player, 50),
+  Transform: Gbe.ComponentList(Transform, 50),
 };
 
 const MockGameSession = struct {
-  component_storage: GameComponentStorage,
   gbe: Gbe.Session(GameComponentLists),
-
-  fn init(self: *MockGameSession, rand_seed: u32) void {
-    self.gbe.init(&self.component_storage, rand_seed);
-  }
 };
 
 fn prepareGs(gs: *MockGameSession) !void {
-  gs.init(0);
+  gs.gbe.init(0);
 
   var i: usize = undefined;
 
