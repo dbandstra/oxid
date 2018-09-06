@@ -6,14 +6,14 @@ const C = @import("../components.zig");
 
 // this is a cheat
 pub fn killAllMonsters(gs: *GameSession) void {
-  var it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
+  var it = gs.iter(C.Monster); while (it.next()) |object| {
     if (!object.data.persistent) {
-      gs.gbe.markEntityForRemoval(object.entity_id);
+      gs.markEntityForRemoval(object.entity_id);
     }
   }
-  gs.gbe.applyRemovals();
+  gs.applyRemovals();
 
-  if (gs.gbe.iter(C.GameController).next()) |object| {
+  if (gs.iter(C.GameController).next()) |object| {
     object.data.next_wave_timer = 1;
   }
 }

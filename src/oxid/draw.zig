@@ -19,7 +19,7 @@ const C = @import("components.zig");
 const perf = @import("perf.zig");
 
 pub fn drawGame(g: *GameState) void {
-  const max_drawables = comptime GameSession.GbeSessionType.getCapacity(C.EventDraw);
+  const max_drawables = comptime GameSession.getCapacity(C.EventDraw);
   var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
   const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
@@ -39,7 +39,7 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const
   defer perf.end(&perf.timers.DrawSort, g.perf_spam);
 
   var num_drawables: usize = 0;
-  var it = g.session.gbe.iter(C.EventDraw); while (it.next()) |object| {
+  var it = g.session.iter(C.EventDraw); while (it.next()) |object| {
     if (object.is_active) {
       sort_buffer[num_drawables] = &object.data;
       num_drawables += 1;
@@ -107,7 +107,7 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const C.EventDraw) void {
 }
 
 fn drawBoxes(g: *GameState) void {
-  var it = g.session.gbe.iter(C.EventDrawBox); while (it.next()) |object| {
+  var it = g.session.iter(C.EventDrawBox); while (it.next()) |object| {
     if (object.is_active) {
       const abs_bbox = object.data.box;
       const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, Math.SUBPIXELS));
@@ -130,8 +130,8 @@ fn drawHud(g: *GameState) void {
   perf.begin(&perf.timers.DrawHud);
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
-  const gc = g.session.gbe.findFirst(C.GameController).?;
-  const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
+  const gc = g.session.findFirst(C.GameController).?;
+  const pc_maybe = if (g.session.iter(C.PlayerController).next()) |object| &object.data else null;
 
   Platform.drawUntexturedRect(
     &g.platform_state,
@@ -145,7 +145,7 @@ fn drawHud(g: *GameState) void {
   if (pc_maybe) |pc| {
     const maybe_player_creature =
       if (pc.player_id) |player_id|
-        g.session.gbe.find(player_id, C.Creature)
+        g.session.find(player_id, C.Creature)
       else
         null;
 

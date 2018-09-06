@@ -39,7 +39,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {
-  const gc = gs.gbe.findFirst(C.GameController).?;
+  const gc = gs.findFirst(C.GameController).?;
 
   self.phys.push_dir = null;
 
@@ -125,7 +125,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
 }
 
 fn monsterAttack(gs: *GameSession, self: SystemData) void {
-  const gc = gs.gbe.findFirst(C.GameController).?;
+  const gc = gs.findFirst(C.GameController).?;
   if (gc.freeze_monsters_timer > 0) {
     return;
   }
@@ -157,15 +157,15 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .pos = self.transform.pos,
       });
     }
-    self.monster.next_attack_timer = gs.gbe.getRand().range(u32, 75, 400);
+    self.monster.next_attack_timer = gs.getRand().range(u32, 75, 400);
   }
 }
 
 // this function needs more args if this is going to be any good
 fn getChaseTarget(gs: *GameSession) ?Math.Vec2 {
   // chase the first player in the entity list
-  if (gs.gbe.iter(C.Player).next()) |player| {
-    if (gs.gbe.find(player.entity_id, C.Transform)) |player_transform| {
+  if (gs.iter(C.Player).next()) |player| {
+    if (gs.find(player.entity_id, C.Transform)) |player_transform| {
       return player_transform.pos;
     }
   }
@@ -238,7 +238,7 @@ fn chooseTurn(
     break :blk total;
   };
   if (total_score > 0) {
-    var r = gs.gbe.getRand().range(u32, 0, total_score);
+    var r = gs.getRand().range(u32, 0, total_score);
     for (choices.choices[0..choices.num_choices]) |choice| {
       if (r < choice.score) {
         return choice.direction;
@@ -259,18 +259,18 @@ fn isInLineOfFire(
 ) ?Math.Direction {
   const self_absbox = Math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
-  var it = gs.gbe.iter(C.Player); while (it.next()) |object| {
+  var it = gs.iter(C.Player); while (it.next()) |object| {
     if (object.data.line_of_fire) |box| {
       if (absBoxesOverlap(self_absbox, box)) {
-        const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+        const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
         return phys.facing;
       }
     }
   }
-  var it2 = gs.gbe.iter(C.Bullet); while (it2.next()) |object| {
+  var it2 = gs.iter(C.Bullet); while (it2.next()) |object| {
     if (object.data.line_of_fire) |box| {
       if (absBoxesOverlap(self_absbox, box)) {
-        const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+        const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
         return phys.facing;
       }
     }

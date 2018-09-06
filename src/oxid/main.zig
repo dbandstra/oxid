@@ -144,7 +144,7 @@ pub fn main() !void {
 const C = @import("components.zig");
 
 fn playSounds(g: *GameState) void {
-  var it = g.session.gbe.iter(C.EventSound); while (it.next()) |object| {
+  var it = g.session.iter(C.EventSound); while (it.next()) |object| {
     Audio.playSample(&g.platform_state, &g.samples, object.data.sample);
   }
 }

@@ -16,7 +16,7 @@ pub fn gameFrame(gs: *GameSession) void {
   @import("systems/player_input.zig").run(gs);
 
   const num_frames = blk: {
-    const gc = gs.gbe.findFirst(C.GameController).?;
+    const gc = gs.findFirst(C.GameController).?;
 
     if (gc.paused) {
       break :blk u32(0);
@@ -58,7 +58,7 @@ pub fn gameFrame(gs: *GameSession) void {
 
     if (i < num_frames - 1) {
       markAllEventsForRemoval(gs);
-      gs.gbe.applyRemovals();
+      gs.applyRemovals();
     }
   }
 
@@ -67,7 +67,7 @@ pub fn gameFrame(gs: *GameSession) void {
   @import("systems/creature_draw.zig").run(gs);
   @import("systems/simple_graphic_draw.zig").run(gs);
 
-  if (gs.gbe.findFirst(C.GameController).?.render_move_boxes) {
+  if (gs.findFirst(C.GameController).?.render_move_boxes) {
     @import("systems/bullet_draw_box.zig").run(gs);
     @import("systems/physobject_draw_box.zig").run(gs);
     @import("systems/player_draw_box.zig").run(gs);
@@ -78,15 +78,15 @@ pub fn gameFrame(gs: *GameSession) void {
 pub fn gameFrameCleanup(gs: *GameSession) void {
   // clean up the draw events
   markAllEventsForRemoval(gs);
-  gs.gbe.applyRemovals();
+  gs.applyRemovals();
 }
 
 fn markAllEventsForRemoval(gs: *GameSession) void {
   inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
     const ComponentType = field.field_type.ComponentType;
     if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
-      var it = gs.gbe.iter(ComponentType); while (it.next()) |object| {
-        gs.gbe.markEntityForRemoval(object.entity_id);
+      var it = gs.iter(ComponentType); while (it.next()) |object| {
+        gs.markEntityForRemoval(object.entity_id);
       }
     }
   }

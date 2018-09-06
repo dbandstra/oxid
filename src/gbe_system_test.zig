@@ -14,26 +14,24 @@ const GameComponentLists = struct {
   Transform: Gbe.ComponentList(Transform, 50),
 };
 
-const MockGameSession = struct {
-  gbe: Gbe.Session(GameComponentLists),
-};
+const MockGameSession = Gbe.Session(GameComponentLists);
 
 fn prepareGs(gs: *MockGameSession) !void {
-  gs.gbe.init(0);
+  gs.init(0);
 
   var i: usize = undefined;
 
   i = 0; while (i < 8) : (i += 1) {
-    const entity_id = gs.gbe.spawn();
-    try gs.gbe.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-    try gs.gbe.addComponent(entity_id, Creature{ .hit_points = 8 });
-    try gs.gbe.addComponent(entity_id, Monster{ .chasing = true });
+    const entity_id = gs.spawn();
+    try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
+    try gs.addComponent(entity_id, Creature{ .hit_points = 8 });
+    try gs.addComponent(entity_id, Monster{ .chasing = true });
   }
   i = 0; while (i < 8) : (i += 1) {
-    const entity_id = gs.gbe.spawn();
-    try gs.gbe.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-    try gs.gbe.addComponent(entity_id, Creature{ .hit_points = 16 });
-    try gs.gbe.addComponent(entity_id, Player{ .attack_level = 0 });
+    const entity_id = gs.spawn();
+    try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
+    try gs.addComponent(entity_id, Creature{ .hit_points = 16 });
+    try gs.addComponent(entity_id, Player{ .attack_level = 0 });
   }
 }
 

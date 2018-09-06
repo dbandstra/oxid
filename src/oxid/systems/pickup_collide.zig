@@ -12,8 +12,8 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, collide);
 
 fn collide(gs: *GameSession, self: SystemData) bool {
-  var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
-    const other_player = gs.gbe.find(event.other_id, C.Player) orelse continue;
+  var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
+    const other_player = gs.find(event.other_id, C.Player) orelse continue;
     _ = Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
       .recipient_id = event.other_id,
       .pickup_type = self.pickup.pickup_type,

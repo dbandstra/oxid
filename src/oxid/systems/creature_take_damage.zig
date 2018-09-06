@@ -25,7 +25,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (self.creature.god_mode) {
     return true;
   }
-  var it = gs.gbe.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
+  var it = gs.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
     const amount = event.amount;
     if (self.creature.hit_points > amount) {
       _ = Prototypes.EventSound.spawn(gs, C.EventSound{

@@ -1,7 +1,4 @@
-const std = @import("std");
-
 const Gbe = @import("../gbe.zig");
-const Constants = @import("constants.zig");
 const C = @import("components.zig");
 
 pub const GameComponentLists = struct {
@@ -30,14 +27,4 @@ pub const GameComponentLists = struct {
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
 };
 
-// TODO - try to get rid of this struct completely and just move the fields
-// into C.GameController
-pub const GameSession = struct {
-  const GbeSessionType = Gbe.Session(GameComponentLists);
-
-  gbe: GbeSessionType,
-
-  pub fn init(self: *GameSession, rand_seed: u32) void {
-    self.gbe.init(rand_seed);
-  }
-};
+pub const GameSession = Gbe.Session(GameComponentLists);

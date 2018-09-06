@@ -13,10 +13,10 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  if (gs.gbe.iter(C.EventPlayerDied).next() != null) {
+  if (gs.iter(C.EventPlayerDied).next() != null) {
     self.gc.freeze_monsters_timer = Constants.MonsterFreezeTime;
   }
-  var it = gs.gbe.iter(C.EventMonsterDied); while (it.next()) |object| {
+  var it = gs.iter(C.EventMonsterDied); while (it.next()) |object| {
     if (self.gc.monster_count > 0) {
       self.gc.monster_count -= 1;
       if (self.gc.monster_count == 4 and self.gc.enemy_speed_level < 1) {

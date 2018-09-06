@@ -17,7 +17,7 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, playerReact);
 
 fn playerReact(gs: *GameSession, self: SystemData) bool {
-  var it = gs.gbe.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
+  var it = gs.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
     switch (event.pickup_type) {
       ConstantTypes.PickupType.PowerUp => {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{

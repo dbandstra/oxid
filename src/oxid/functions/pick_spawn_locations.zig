@@ -11,8 +11,8 @@ const PickSpawnLocations = struct{
   gridmask: [LEVEL.w * LEVEL.h]bool,
 
   fn avoidObject(self: *PickSpawnLocations, gs: *GameSession, entity_id: Gbe.EntityId) void {
-    if (gs.gbe.find(entity_id, C.Transform)) |transform| {
-      if (gs.gbe.find(entity_id, C.PhysObject)) |phys| {
+    if (gs.find(entity_id, C.Transform)) |transform| {
+      if (gs.find(entity_id, C.PhysObject)) |phys| {
         const pad = 16 * Math.SUBPIXELS;
         const mins_x = transform.pos.x + phys.entity_bbox.mins.x - pad;
         const mins_y = transform.pos.y + phys.entity_bbox.mins.y - pad;
@@ -57,10 +57,10 @@ const PickSpawnLocations = struct{
 
     // also, don't spawn anything within 16 screen pixels of a player or
     // monster
-    var it = gs.gbe.iter(C.Player); while (it.next()) |object| {
+    var it = gs.iter(C.Player); while (it.next()) |object| {
       self.avoidObject(gs, object.entity_id);
     }
-    var it2 = gs.gbe.iter(C.Monster); while (it2.next()) |object| {
+    var it2 = gs.iter(C.Monster); while (it2.next()) |object| {
       self.avoidObject(gs, object.entity_id);
     }
 
@@ -80,7 +80,7 @@ const PickSpawnLocations = struct{
     std.debug.assert(num_candidates >= out_gridlocs.len);
 
     // shuffle the array and copy out as many spawn locations as were requested
-    gs.gbe.prng.random.shuffle(Math.Vec2, candidates[0..num_candidates]);
+    gs.prng.random.shuffle(Math.Vec2, candidates[0..num_candidates]);
     std.mem.copy(Math.Vec2, out_gridlocs, candidates[0..out_gridlocs.len]);
   }
 };

@@ -62,7 +62,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
       // non-existent entity (old bullet is gone)
       if (for (self.player.bullets) |*slot| {
         if (slot.*) |bullet_id| {
-          if (gs.gbe.find(bullet_id, C.Bullet) == null) {
+          if (gs.find(bullet_id, C.Bullet) == null) {
             break slot;
           }
         } else {
@@ -100,9 +100,9 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
 }
 
 fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
-  var it = gs.gbe.iter(C.Web); while (it.next()) |object| {
-    const transform = gs.gbe.find(object.entity_id, C.Transform) orelse continue;
-    const phys = gs.gbe.find(object.entity_id, C.PhysObject) orelse continue;
+  var it = gs.iter(C.Web); while (it.next()) |object| {
+    const transform = gs.find(object.entity_id, C.Transform) orelse continue;
+    const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
 
     if (boxesOverlap(
       self.transform.pos, self.phys.entity_bbox,

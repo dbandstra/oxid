@@ -17,17 +17,17 @@ fn monsterCollide(gs: *GameSession, self: SystemData) bool {
   var hit_wall = false;
   var hit_creature = false;
 
-  var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
+  var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
     if (Gbe.EntityId.isZero(event.other_id)) {
       hit_wall = true;
     } else {
-      const other_creature = gs.gbe.find(event.other_id, C.Creature) orelse continue;
-      const other_phys = gs.gbe.find(event.other_id, C.PhysObject) orelse continue;
+      const other_creature = gs.find(event.other_id, C.Creature) orelse continue;
+      const other_phys = gs.find(event.other_id, C.PhysObject) orelse continue;
 
       if (event.propelled and !self.phys.illusory and !other_phys.illusory) {
         hit_creature = true;
       }
-      if (gs.gbe.find(event.other_id, C.Player) != null) {
+      if (gs.find(event.other_id, C.Player) != null) {
         // if it's a player creature, inflict damage on it
         if (self.monster.spawning_timer == 0) {
           _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{

@@ -19,7 +19,7 @@ const SystemData = struct{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  var it = gs.gbe.iter(C.EventInput); while (it.next()) |event| {
+  var it = gs.iter(C.EventInput); while (it.next()) |event| {
     switch (event.data.command) {
       input.Command.TogglePaused => {
         if (event.data.down) {

@@ -15,7 +15,7 @@ const SystemData = struct {
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  var it = gs.gbe.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
+  var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
     _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
       .pos = self.transform.pos,
       .simple_anim = SimpleAnim.PlaSparks,

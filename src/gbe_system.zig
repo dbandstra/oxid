@@ -2,8 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Gbe = @import("gbe.zig");
 
-// `SessionType` param to these functions must have have a field called `gbe`
-// which is of type `Gbe.Session(...)`
+// `SessionType` param to these functions must have be of type  `Gbe.Session(...)`
 
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
@@ -37,9 +36,9 @@ pub fn build(
           if (ComponentType == MainComponentType)
             main_component
           else if (@typeId(field.field_type) == builtin.TypeId.Optional)
-            gs.gbe.find(self_id, ComponentType)
+            gs.find(self_id, ComponentType)
           else
-            gs.gbe.find(self_id, ComponentType) orelse return true;
+            gs.find(self_id, ComponentType) orelse return true;
       }
       // call the think function
       return think(gs, self);
@@ -49,9 +48,9 @@ pub fn build(
       gs: *SessionType,
       comptime MainComponentType: type,
     ) void {
-      var it = gs.gbe.iter(MainComponentType); while (it.next()) |object| {
+      var it = gs.iter(MainComponentType); while (it.next()) |object| {
         if (!runOne(gs, object.entity_id, MainComponentType, &object.data)) {
-          gs.gbe.markEntityForRemoval(object.entity_id);
+          gs.markEntityForRemoval(object.entity_id);
         }
       }
     }
@@ -96,8 +95,8 @@ pub fn build(
           continue;
         }
         comptime const field_type = unpackComponentType(field.field_type);
-        if (@field(&gs.gbe.components, @typeName(field_type)).count < best) {
-          best = @field(&gs.gbe.components, @typeName(field_type)).count;
+        if (@field(&gs.components, @typeName(field_type)).count < best) {
+          best = @field(&gs.components, @typeName(field_type)).count;
           which = i;
         }
       }

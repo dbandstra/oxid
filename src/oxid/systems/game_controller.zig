@@ -52,7 +52,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   }
   if (GameUtil.decrementTimer(&self.gc.next_pickup_timer)) {
     const pickup_type =
-      if ((gs.gbe.getRand().scalar(u32) & 1) == 0)
+      if ((gs.getRand().scalar(u32) & 1) == 0)
         ConstantTypes.PickupType.SpeedUp
       else
         ConstantTypes.PickupType.PowerUp;
@@ -75,7 +75,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 
 fn getPlayerScore(gs: *GameSession) ?u32 {
   // FIXME - what if there is multiplayer?
-  var it = gs.gbe.iter(C.PlayerController); while (it.next()) |object| {
+  var it = gs.iter(C.PlayerController); while (it.next()) |object| {
     return object.data.score;
   }
   return null;
@@ -83,7 +83,7 @@ fn getPlayerScore(gs: *GameSession) ?u32 {
 
 fn countNonPersistentMonsters(gs: *GameSession) u32 {
   var count: u32 = 0;
-  var it = gs.gbe.iter(C.Monster); while (it.next()) |object| {
+  var it = gs.iter(C.Monster); while (it.next()) |object| {
     if (!object.data.persistent) {
       count += 1;
     }
