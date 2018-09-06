@@ -28,9 +28,30 @@ Debug/cheat controls:
 ## Screenshot
 ![Screenshot](screenshot.png)
 
+## Code
+Oxid uses a minimalistic Entity Component System. Here are the main gameplay-related files:
+* `src/oxid/components.zig` - struct definitions of each component type
+* `src/oxid/frame.zig` - calls into systems
+* `src/oxid/game.zig` - component type registration
+* `src/oxid/prototypes.zig` - entity spawning functions
+* `src/oxid/systems/*.zig` - all of the systems (i.e. think functions)
+
+The ECS framework itself is located at `src/gbe*.zig`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
+
+Actually using the ECS requires practically no excess boilerplate.
+* To add a component type, add a struct to `components.zig` and register it in `game.zig`.
+* To add an entity prototype, add a function to `prototypes.zig`.
+* To add a system, add a file to `systems/` and import/call it in `frame.zig`.
+
+Adding new graphics, sound effects, or input bindings is not as polished but still relatively easy. Documentation to come later.
+
+Please do not look inside `physics.zig`.
+
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
 
 Sound effects from https://opengameart.org/content/512-sound-effects-8-bit-style
+
+Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
 Uses my [zigutils](https://gitlab.com/dbandstra/zigutils) and [zig-comptime-pcx](https://gitlab.com/dbandstra/zig-comptime-pcx) libraries.
