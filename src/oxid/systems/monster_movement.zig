@@ -39,7 +39,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {
-  const gc = gs.getGameController();
+  const gc = gs.gbe.findFirst(C.GameController).?;
 
   self.phys.push_dir = null;
 
@@ -125,7 +125,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
 }
 
 fn monsterAttack(gs: *GameSession, self: SystemData) void {
-  const gc = gs.getGameController();
+  const gc = gs.gbe.findFirst(C.GameController).?;
   if (gc.freeze_monsters_timer > 0) {
     return;
   }

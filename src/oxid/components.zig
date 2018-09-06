@@ -44,6 +44,10 @@ pub const Web = struct {
 };
 
 pub const GameController = struct {
+  paused: bool,
+  fast_forward: bool,
+  render_move_boxes: bool,
+
   monster_count: u32,
   enemy_speed_level: u31,
   enemy_speed_timer: u32,

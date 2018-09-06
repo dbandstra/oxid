@@ -45,6 +45,9 @@ pub const GameController = struct{
     errdefer gs.gbe.undoSpawn(entity_id);
 
     try gs.gbe.addComponent(entity_id, C.GameController{
+      .paused = false,
+      .fast_forward = false,
+      .render_move_boxes = false,
       .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,

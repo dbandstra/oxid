@@ -37,30 +37,7 @@ pub const GameSession = struct {
 
   gbe: GbeSessionType,
 
-  paused: bool,
-  fast_forward: bool,
-  render_move_boxes: bool,
-
   pub fn init(self: *GameSession, rand_seed: u32) void {
     self.gbe.init(rand_seed);
-
-    self.paused = false;
-    self.fast_forward = false;
-    self.render_move_boxes = false;
-  }
-
-  pub fn markAllEventsForRemoval(self: *GameSession) void {
-    inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
-      const ComponentType = field.field_type.ComponentType;
-      if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
-        var it = self.gbe.iter(ComponentType); while (it.next()) |object| {
-          self.gbe.markEntityForRemoval(object.entity_id);
-        }
-      }
-    }
-  }
-
-  pub fn getGameController(self: *GameSession) *C.GameController {
-    return &self.gbe.iter(C.GameController).next().?.data;
   }
 };

@@ -1,3 +1,5 @@
+const std = @import("std");
+const GameComponentLists = @import("game.zig").GameComponentLists;
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const C = @import("components.zig");
@@ -8,18 +10,24 @@ pub fn gameInit(gs: *GameSession) void {
   _ = Prototypes.PlayerController.spawn(gs);
 }
 
+// run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(gs: *GameSession) void {
-  const num_frames =
-    if (gs.paused)
-      u32(0)
-    else if (gs.fast_forward)
-      u32(4)
-    else
-      u32(1);
+  @import("systems/game_controller_input.zig").run(gs);
+  @import("systems/player_input.zig").run(gs);
+
+  const num_frames = blk: {
+    const gc = gs.gbe.findFirst(C.GameController).?;
+
+    if (gc.paused) {
+      break :blk u32(0);
+    } else if (gc.fast_forward) {
+      break :blk u32(4);
+    } else {
+      break :blk u32(1);
+    }
+  };
 
   var i: u32 = 0; while (i < num_frames) : (i += 1) {
-    @import("systems/player_input.zig").run(gs);
-
     @import("systems/game_controller.zig").run(gs);
     @import("systems/player_controller.zig").run(gs);
     @import("systems/animation.zig").run(gs);
@@ -49,7 +57,7 @@ pub fn gameFrame(gs: *GameSession) void {
     @import("systems/player_controller_react.zig").run(gs);
 
     if (i < num_frames - 1) {
-      gs.markAllEventsForRemoval();
+      markAllEventsForRemoval(gs);
       gs.gbe.applyRemovals();
     }
   }
@@ -59,15 +67,27 @@ pub fn gameFrame(gs: *GameSession) void {
   @import("systems/creature_draw.zig").run(gs);
   @import("systems/simple_graphic_draw.zig").run(gs);
 
-  if (gs.render_move_boxes) {
+  if (gs.gbe.findFirst(C.GameController).?.render_move_boxes) {
     @import("systems/bullet_draw_box.zig").run(gs);
     @import("systems/physobject_draw_box.zig").run(gs);
     @import("systems/player_draw_box.zig").run(gs);
   }
 }
 
+// run after "middleware" (rendering, sound, etc)
 pub fn gameFrameCleanup(gs: *GameSession) void {
   // clean up the draw events
-  gs.markAllEventsForRemoval();
+  markAllEventsForRemoval(gs);
   gs.gbe.applyRemovals();
+}
+
+fn markAllEventsForRemoval(gs: *GameSession) void {
+  inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+    const ComponentType = field.field_type.ComponentType;
+    if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+      var it = gs.gbe.iter(ComponentType); while (it.next()) |object| {
+        gs.gbe.markEntityForRemoval(object.entity_id);
+      }
+    }
+  }
 }

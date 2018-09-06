@@ -109,6 +109,15 @@ pub fn Session(comptime ComponentLists: type) type {
       }
     }
 
+    // use this for ad-hoc singleton component types
+    pub fn findFirst(self: *Self, comptime T: type) ?*T {
+      if (self.iter(T).next()) |object| {
+        return &object.data;
+      } else {
+        return null;
+      }
+    }
+
     pub fn getRand(self: *Self) *std.rand.Random {
       return &self.prng.random;
     }

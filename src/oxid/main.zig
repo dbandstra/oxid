@@ -11,10 +11,7 @@ const loadFont = @import("../font.zig").loadFont;
 const loadTileset = @import("graphics.zig").loadTileset;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("level.zig").LEVEL;
-const GameInput = @import("game.zig").GameInput;
 const GameSession = @import("game.zig").GameSession;
-const InputEvent = @import("input.zig").InputEvent;
-const killAllMonsters = @import("functions/kill_all_monsters.zig").killAllMonsters;
 const gameInit = @import("frame.zig").gameInit;
 const gameFrame = @import("frame.zig").gameFrame;
 const gameFrameCleanup = @import("frame.zig").gameFrameCleanup;
@@ -102,12 +99,6 @@ pub fn main() !void {
               g.session.init(rand_seed);
               gameInit(&g.session);
             },
-            Key.Return => {
-              killAllMonsters(&g.session);
-            },
-            Key.F2 => {
-              g.session.render_move_boxes = !g.session.render_move_boxes;
-            },
             Key.F4 => {
               g.perf_spam = !g.perf_spam;
             },
@@ -119,12 +110,6 @@ pub fn main() !void {
               g.mute = !g.mute;
               Platform.setMute(&g.platform_state, g.mute);
             },
-            Key.Tab => {
-              g.session.paused = !g.session.paused;
-            },
-            Key.Backquote => {
-              g.session.fast_forward = true;
-            },
             else => {},
           }
         },
@@ -134,12 +119,6 @@ pub fn main() !void {
               .command = command,
               .down = false,
             });
-          }
-          switch (key) {
-            Key.Backquote => {
-              g.session.fast_forward = false;
-            },
-            else => {},
           }
         },
         Event.Quit => {

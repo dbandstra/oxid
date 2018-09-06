@@ -130,7 +130,7 @@ fn drawHud(g: *GameState) void {
   perf.begin(&perf.timers.DrawHud);
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
-  const gc = g.session.getGameController();
+  const gc = g.session.gbe.findFirst(C.GameController).?;
   const pc_maybe = if (g.session.gbe.iter(C.PlayerController).next()) |object| &object.data else null;
 
   Platform.drawUntexturedRect(
