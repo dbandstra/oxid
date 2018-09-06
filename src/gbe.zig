@@ -28,11 +28,14 @@ pub fn ComponentObject(comptime T: type) type {
   };
 }
 
-pub fn ComponentList(comptime T: type) type {
+pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
   return struct {
-    const ComponentType = T;
+    const Self = this;
 
-    objects: []ComponentObject(T),
+    const ComponentType = T;
+    const capacity = capacity_;
+
+    objects: [capacity]ComponentObject(T),
     count: usize,
   };
 }
@@ -60,24 +63,51 @@ pub fn Session(comptime ComponentLists: type) type {
 
     components: ComponentLists,
 
-    pub fn init(self: *Self, component_storage: var, rand_seed: u32) void {
+    pub fn init(self: *Self, rand_seed: u32) void {
       self.prng = std.rand.DefaultPrng.init(rand_seed);
       self.next_entity_id = 1;
       self.num_removals = 0;
       inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        @field(&self.components, field.name).objects = @field(component_storage, field.name).objects[0..];
         @field(&self.components, field.name).count = 0;
       }
     }
 
-    pub fn iter(self: *Self, comptime T: type) GbeIterators.ComponentObjectIterator(T) {
+    pub fn iter(self: *Self, comptime T: type) blk: {
+      comptime var capacity: usize = 0;
+      inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        comptime if (std.mem.eql(u8, field.name, @typeName(T))) {
+          capacity = field.field_type.capacity;
+        };
+      }
+      break :blk GbeIterators.ComponentObjectIterator(T, capacity);
+    } {
+      comptime var capacity: usize = 0;
+      inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        comptime if (std.mem.eql(u8, field.name, @typeName(T))) {
+          capacity = field.field_type.capacity;
+        };
+      }
       const list = &@field(&self.components, @typeName(T));
-      return GbeIterators.ComponentObjectIterator(T).init(list);
+      return GbeIterators.ComponentObjectIterator(T, capacity).init(list);
     }
 
-    pub fn eventIter(self: *Self, comptime T: type, comptime field: []const u8, entity_id: EntityId) GbeIterators.EventIterator(T, field) {
+    pub fn eventIter(self: *Self, comptime T: type, comptime field: []const u8, entity_id: EntityId) blk: {
+      comptime var capacity: usize = 0;
+      inline for (@typeInfo(ComponentLists).Struct.fields) |sfield| {
+        comptime if (std.mem.eql(u8, sfield.name, @typeName(T))) {
+          capacity = sfield.field_type.capacity;
+        };
+      }
+      break :blk GbeIterators.EventIterator(T, capacity, field);
+    } {
+      comptime var capacity: usize = 0;
+      inline for (@typeInfo(ComponentLists).Struct.fields) |sfield| {
+        comptime if (std.mem.eql(u8, sfield.name, @typeName(T))) {
+          capacity = sfield.field_type.capacity;
+        };
+      }
       const list = &@field(&self.components, @typeName(T));
-      return GbeIterators.EventIterator(T, field).init(list, entity_id);
+      return GbeIterators.EventIterator(T, capacity, field).init(list, entity_id);
     }
 
     pub fn findObject(self: *Self, entity_id: EntityId, comptime T: type) ?*ComponentObject(T) {
