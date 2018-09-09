@@ -102,20 +102,16 @@ pub fn Session(comptime ComponentLists: type) type {
     }
 
     pub fn find(self: *Self, entity_id: EntityId, comptime T: type) ?*T {
-      if (self.findObject(entity_id, T)) |object| {
-        return &object.data;
-      } else {
-        return null;
-      }
+      return if (self.findObject(entity_id, T)) |object| &object.data else null;
     }
 
     // use this for ad-hoc singleton component types
+    pub fn findFirstObject(self: *Self, comptime T: type) ?*ComponentObject(T) {
+      return self.iter(T).next();
+    }
+
     pub fn findFirst(self: *Self, comptime T: type) ?*T {
-      if (self.iter(T).next()) |object| {
-        return &object.data;
-      } else {
-        return null;
-      }
+      return if (self.findFirstObject(T)) |object| &object.data else null;
     }
 
     pub fn getRand(self: *Self) *std.rand.Random {

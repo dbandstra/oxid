@@ -38,7 +38,7 @@ pub fn killAllMonsters(gs: *GameSession) void {
     }
   }
 
-  if (gs.iter(C.GameController).next()) |object| {
-    object.data.next_wave_timer = 1;
+  if (gs.findFirst(C.GameController)) |gc| {
+    gc.next_wave_timer = 1;
   }
 }

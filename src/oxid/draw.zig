@@ -154,7 +154,7 @@ fn drawHud(g: *GameState) void {
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
   const gc = g.session.findFirst(C.GameController).?;
-  const pc_maybe = if (g.session.iter(C.PlayerController).next()) |object| &object.data else null;
+  const pc_maybe = g.session.findFirst(C.PlayerController);
 
   drawUnderHud(g);
 

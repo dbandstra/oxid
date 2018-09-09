@@ -164,7 +164,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
 // this function needs more args if this is going to be any good
 fn getChaseTarget(gs: *GameSession) ?Math.Vec2 {
   // chase the first player in the entity list
-  if (gs.iter(C.Player).next()) |player| {
+  if (gs.findFirstObject(C.Player)) |player| {
     if (gs.find(player.entity_id, C.Transform)) |player_transform| {
       return player_transform.pos;
     }
