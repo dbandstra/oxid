@@ -40,11 +40,17 @@ pub const bullet_bbox = blk: {
 };
 
 pub const MainController = struct{
-  pub fn spawn(gs: *GameSession) !Gbe.EntityId {
+  pub const Params = struct{
+    high_score: u32,
+  };
+
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
     const entity_id = gs.spawn();
     errdefer gs.undoSpawn(entity_id);
 
     try gs.addComponent(entity_id, C.MainController{
+      .high_score = params.high_score,
+      .new_high_score = false,
       .game_running_state = null,
     });
 
@@ -58,6 +64,7 @@ pub const GameController = struct{
     errdefer gs.undoSpawn(entity_id);
 
     try gs.addComponent(entity_id, C.GameController{
+      .game_over = false,
       .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
@@ -449,6 +456,9 @@ pub const EventDrawBox = Event(C.EventDrawBox);
 pub const EventInput = Event(C.EventInput);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
+pub const EventPlayerOutOfLives = Event(C.EventPlayerOutOfLives);
+pub const EventPostScore = Event(C.EventPostScore);
 pub const EventQuit = Event(C.EventQuit);
+pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);

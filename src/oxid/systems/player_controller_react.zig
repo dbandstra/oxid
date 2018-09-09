@@ -3,6 +3,7 @@ const GbeSystem = @import("../../gbe_system.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
+const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
   id: Gbe.EntityId,
@@ -17,6 +18,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.pc.lives -= 1;
       if (self.pc.lives > 0) {
         self.pc.respawn_timer = Constants.PlayerRespawnTime;
+      } else {
+        _ = Prototypes.EventPlayerOutOfLives.spawn(gs, C.EventPlayerOutOfLives{
+          .player_controller_id = self.id,
+        });
       }
     }
   }

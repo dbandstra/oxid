@@ -10,12 +10,13 @@ const input = @import("input.zig");
 
 pub const MainController = struct {
   pub const GameRunningState = struct {
-    paused: bool,
     fast_forward: bool,
     render_move_boxes: bool,
     exit_dialog_open: bool,
   };
 
+  high_score: u32,
+  new_high_score: bool,
   game_running_state: ?GameRunningState,
 };
 
@@ -55,6 +56,7 @@ pub const Web = struct {
 };
 
 pub const GameController = struct {
+  game_over: bool,
   monster_count: u32,
   enemy_speed_level: u31,
   enemy_speed_timer: u32,
@@ -226,8 +228,20 @@ pub const EventPlayerDied = struct {
   player_controller_id: Gbe.EntityId,
 };
 
+pub const EventPlayerOutOfLives = struct {
+  player_controller_id: Gbe.EntityId,
+};
+
+pub const EventPostScore = struct {
+  score: u32,
+};
+
 pub const EventQuit = struct {
   unused: u32, // https://github.com/ziglang/zig/issues/1178
+};
+
+pub const EventSaveHighScore = struct {
+  high_score: u32,
 };
 
 pub const EventSound = struct {

@@ -6,16 +6,19 @@
   - unique_id reported getting it after moving the window
 
 ## Gameplay
+- backspace-to-reset: either give it a confirmation, or replace it with a 'return to main menu' feature that lets you start a new game
 - change squids to be spiders?
 - still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
 - sound effect when monsters speed up
+- when fast forwarding, render all the frames and blend them together
 
 i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
 
 ## Code
+- document the major pieces of code (e.g. GBE stuff), at least with comments, maybe also with some dedicated markdown files
 - font image should be pure b&w. in game code, remember palette. then allow rendering font using any colour from the palette
 - sound: figure out how to start sounds at an offset into the mixing buffer. this becomes more important the larger the mix buffer is
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
@@ -24,9 +27,24 @@ i have implemented monsters getting out of the player's line of fire. but it ten
 - collision: replace "speed_product" with something else (it will overflow if too many objects are colliding together)
 - (may not be a priority for this game) need a solution for spawning a non-illusory phys object in a spot overlapping other objects. for now i've just players and bullets illusory
 
+### Component system
+- SystemData should be able to include more than just 'self' stuff. it should probably just include all component types that you want access to. a separate layer would build the 'self' iteration.
+  - useful e.g. for monsters to get the GameController 'singleton'
+  - this would entail getting rid of the `find` functions that operate on a GameSession
+- some kind of hierarchy? like a component can (effectively) contain an entire Gbe instance. i think this would require allocating Gbes on the heap though.
+  - it would be used for MainController containing GameController, and GameController containing all the other stuff. that may reduce the number of systems needed (e.g. currently, MainController thinks, then GameController thinks, then MainController reacts to GameController's events - three systems).
+
 ### Events
 - maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.
+  - no, this is not flexible. you should be free to handle events whenever you want. maybe same frame, maybe next frame.
 - 'transient' entities: entities that will be autoremoved at the end of the frame. they would include events. i could also move some stuff like the 'line_of_fire' things to separate entities, this would make that simple. i'm just not sure if i want to lock into "end of frame" behaviours, i might want things to run less than once a frame... instead there should be some kind of system of messages and subscribers
+
+events always have a recipient. they go straight to the recipient's inbox for that event type. there is no list of active events anywhere. the recipients decide when to purge the inbox.
+- recipient components must have a setup up inbox for each event type. an inbox is actually a FUNCTION. thus, recipient can decide how to accumulate/aggregate incoming messages.
+- presumably, this function will mutate the recipient component's state. but this breaks all the rules!
+- so, it should operate on something separate from the component itself. probably a struct specific to that event type, for the recipient (so, 1:1 along with the function).
+- i don't know if this makes any sense at all in terms of cache coherence, when spawning the events.
+- so far, everything i've come up with sounds like overengineering.
 
 ### Paging system?
 - do the old state/new state page flipping thing for deterministic game code (think functions can only read old state of other entities)

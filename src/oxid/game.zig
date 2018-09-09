@@ -24,7 +24,10 @@ pub const GameComponentLists = struct {
   EventInput: Gbe.ComponentList(C.EventInput, 20),
   EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied, 20),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied, 20),
+  EventPlayerOutOfLives: Gbe.ComponentList(C.EventPlayerOutOfLives, 20),
+  EventPostScore: Gbe.ComponentList(C.EventPostScore, 20),
   EventQuit: Gbe.ComponentList(C.EventQuit, 5),
+  EventSaveHighScore: Gbe.ComponentList(C.EventSaveHighScore, 5),
   EventSound: Gbe.ComponentList(C.EventSound, 20),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
 };

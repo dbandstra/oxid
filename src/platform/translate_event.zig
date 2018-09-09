@@ -16,7 +16,6 @@ fn getKey(sym: c.SDL_Keycode) ?Key {
     c.SDLK_LEFT => Key.Left,
     c.SDLK_RIGHT => Key.Right,
     c.SDLK_SPACE => Key.Space,
-    c.SDLK_TAB => Key.Tab,
     c.SDLK_BACKQUOTE => Key.Backquote,
     c.SDLK_m => Key.M,
     c.SDLK_n => Key.N,

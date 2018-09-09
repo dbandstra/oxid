@@ -20,6 +20,7 @@ const Prototypes = @import("prototypes.zig");
 const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
 const perf = @import("perf.zig");
+const datafile = @import("datafile.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
@@ -69,16 +70,20 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
+  var high_score = datafile.loadHighScore(dsaf) catch |err| blk: {
+    std.debug.warn("Failed to load high score from disk: {}.\n", err);
+    break :blk 0;
+  };
+
+  try loadFont(dsaf, &g.font);
+  try loadTileset(dsaf, &g.tileset);
   Audio.loadSamples(&g.platform_state, &g.samples);
 
   g.perf_spam = false;
   g.mute = false;
 
   g.session.init(rand_seed);
-  gameInit(&g.session);
-
-  try loadFont(dsaf, &g.font);
-  try loadTileset(dsaf, &g.tileset);
+  gameInit(&g.session, high_score);
 
   perf.init();
 
@@ -96,7 +101,7 @@ pub fn main() !void {
           switch (key) {
             Key.Backspace => {
               g.session.init(rand_seed);
-              gameInit(&g.session);
+              gameInit(&g.session, high_score);
             },
             Key.F4 => {
               g.perf_spam = !g.perf_spam;
@@ -135,6 +140,9 @@ pub fn main() !void {
       quit = true;
     }
 
+    if (saveHighScore(g)) |new_high_score| {
+      high_score = new_high_score;
+    }
     playSounds(g);
     draw(g);
 
@@ -145,6 +153,16 @@ pub fn main() !void {
 // "middleware"
 
 const C = @import("components.zig");
+
+fn saveHighScore(g: *GameState) ?u32 {
+  var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
+    datafile.saveHighScore(dsaf, object.data.high_score) catch |err| {
+      std.debug.warn("Failed to save high score to disk: {}\n", err);
+    };
+    return object.data.high_score;
+  }
+  return null;
+}
 
 fn playSounds(g: *GameState) void {
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {

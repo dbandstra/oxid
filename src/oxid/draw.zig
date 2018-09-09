@@ -32,7 +32,7 @@ pub fn drawGame(g: *GameState) void {
     Platform.drawEnd(&g.platform_state);
 
     drawBoxes(g);
-    drawHud(g);
+    drawHud(g, true);
 
     if (grs.exit_dialog_open) {
       drawExitDialog(g);
@@ -42,6 +42,7 @@ pub fn drawGame(g: *GameState) void {
     drawMap(g);
     Platform.drawEnd(&g.platform_state);
 
+    drawHud(g, false);
     drawMainMenu(g);
   }
 }
@@ -140,105 +141,127 @@ fn drawBoxes(g: *GameState) void {
   }
 }
 
-fn drawUnderHud(g: *GameState) void {
+fn drawHud(g: *GameState, game_active: bool) void {
+  perf.begin(&perf.timers.DrawHud);
+  defer perf.end(&perf.timers.DrawHud, g.perf_spam);
+
+  var buffer: [40]u8 = undefined;
+  var dest = std.io.SliceOutStream.init(buffer[0..]);
+
+  const mc = g.session.findFirst(C.MainController).?;
+  const gc_maybe = g.session.findFirst(C.GameController);
+  const pc_maybe = g.session.findFirst(C.PlayerController);
+
   Platform.drawUntexturedRect(
     &g.platform_state,
     0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
     Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
     false,
   );
-}
-
-fn drawHud(g: *GameState) void {
-  perf.begin(&perf.timers.DrawHud);
-  defer perf.end(&perf.timers.DrawHud, g.perf_spam);
-
-  const gc = g.session.findFirst(C.GameController).?;
-  const pc_maybe = g.session.findFirst(C.PlayerController);
-
-  drawUnderHud(g);
 
   Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
 
-  if (pc_maybe) |pc| {
-    const maybe_player_creature =
-      if (pc.player_id) |player_id|
-        g.session.find(player_id, C.Creature)
-      else
-        null;
+  if (gc_maybe) |gc| {
+    if (pc_maybe) |pc| {
+      const maybe_player_creature =
+        if (pc.player_id) |player_id|
+          g.session.find(player_id, C.Creature)
+        else
+          null;
 
-    var buffer: [40]u8 = undefined;
-    var dest = std.io.SliceOutStream.init(buffer[0..]);
-    _ = dest.stream.print("Wave: {}", gc.wave_number);
-    fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
-    dest.reset();
-    _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
-    fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
-    dest.reset();
-    fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
-    var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-      fontDrawString(&g.platform_state, &g.font, (25+i)*8, 0, "\x1E"); // heart
+      _ = dest.stream.print("Wave: {}", gc.wave_number);
+      fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
+      dest.reset();
+      _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
+      fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
+      dest.reset();
+      fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
+      var i: u31 = 0; while (i < pc.lives) : (i += 1) {
+        fontDrawString(&g.platform_state, &g.font, (25+i)*8, 0, "\x1E"); // heart
+      }
+      if (pc.lives == 0) {
+        fontDrawString(&g.platform_state, &g.font, 25*8, 0, "\x1F"); // skull
+      }
+      if (maybe_player_creature) |player_creature| {
+        if (player_creature.god_mode) {
+          fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
+        }
+      }
+      _ = dest.stream.print("Score: {}", pc.score);
+      fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
+      dest.reset();
     }
-    if (pc.lives == 0) {
-      fontDrawString(&g.platform_state, &g.font, 25*8, 0, "\x1F"); // skull
-      fontDrawString(&g.platform_state, &g.font, 18*8, 15*8, "GAME");
-      fontDrawString(&g.platform_state, &g.font, 18*8, 16*8, "OVER");
-    }
-    if (maybe_player_creature) |player_creature| {
-      if (player_creature.god_mode) {
-        fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
+
+    if (gc.wave_message_timer > 0 and gc.wave_number > 0 and gc.wave_number <= Constants.Waves.len) {
+      if (Constants.Waves[gc.wave_number - 1].message) |message| {
+        const x = 320 / 2 - message.len * 8 / 2;
+        fontDrawString(&g.platform_state, &g.font, @intCast(i32, x), 28*8, message);
       }
     }
-    _ = dest.stream.print("Score: {}", pc.score);
-    fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
-    dest.reset();
   }
 
-  if (gc.wave_message_timer > 0 and gc.wave_number > 0 and gc.wave_number <= Constants.Waves.len) {
-    if (Constants.Waves[gc.wave_number - 1].message) |message| {
-      const x = 320 / 2 - message.len * 8 / 2;
-      fontDrawString(&g.platform_state, &g.font, @intCast(i32, x), 28*8, message);
-    }
+  if (!game_active) {
+    _ = dest.stream.print("High score: {}", mc.high_score);
+    fontDrawString(&g.platform_state, &g.font, 24*8, 0, dest.getWritten());
+    dest.reset();
   }
 
   Platform.drawEnd(&g.platform_state);
+
+  if (if (gc_maybe) |gc| gc.game_over else false) {
+    const y = 8*4;
+
+    if (mc.new_high_score) {
+      drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER\n\nNew high score!");
+    } else {
+      drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER");
+    }
+  }
 }
 
 fn drawExitDialog(g: *GameState) void {
-  const str = "Quit game? [Y/N]";
-  const len = @intCast(u31, str.len);
-
-  const w = 8*(len+2);
-  const h = 8*3;
-  const x = VWIN_W / 2 - w / 2;
-  const y = VWIN_H / 2 - h / 2;
-
-  Platform.drawUntexturedRect(
-    &g.platform_state,
-    @intToFloat(f32, x), @intToFloat(f32, y),
-    @intToFloat(f32, w), @intToFloat(f32, h),
-    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
-    false,
-  );
-
-  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
-
-  fontDrawString(&g.platform_state, &g.font, x + 8, y + 8, str);
-
-  Platform.drawEnd(&g.platform_state);
+  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "Quit game? [Y/N]");
 }
 
 fn drawMainMenu(g: *GameState) void {
-  drawUnderHud(g);
+  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, " OXID\n\nPress SPACE to play");
+}
 
-  const str1 = "       OXID       ";
-  const str2 = "Press SPACE to play";
-  const len = @intCast(u31, str2.len);
+const DrawCoord = union(enum) {
+  Centered,
+  Exact: i32,
+};
 
-  const w = 8*(len+2);
-  const h = 8*5;
-  const x = VWIN_W / 2 - w / 2;
-  const y = VWIN_H / 2 - h / 2;
+fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) void {
+  var tw: u31 = 0;
+  var th: u31 = 1;
+
+  {
+    var tx: u31 = 0;
+    for (text) |c| {
+      if (c == '\n') {
+        tx = 0;
+        th += 1;
+      } else {
+        tx += 1;
+        if (tx > tw) {
+          tw = tx;
+        }
+      }
+    }
+  }
+
+  const w = 8 * (tw + 2);
+  const h = 8 * (th + 2);
+
+  const x = switch (dx) {
+    DrawCoord.Centered => i32(VWIN_W / 2 - w / 2),
+    DrawCoord.Exact => |x| x,
+  };
+  const y = switch (dy) {
+    DrawCoord.Centered => i32(VWIN_H / 2 - h / 2),
+    DrawCoord.Exact => |y| y,
+  };
 
   Platform.drawUntexturedRect(
     &g.platform_state,
@@ -249,9 +272,19 @@ fn drawMainMenu(g: *GameState) void {
   );
 
   Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
-
-  fontDrawString(&g.platform_state, &g.font, x + 8, y + 8, str1);
-  fontDrawString(&g.platform_state, &g.font, x + 8, y + 3*8, str2);
-
+  {
+    var start: usize = 0;
+    var sy = y + 8;
+    var i: usize = 0; while (i <= text.len) : (i += 1) {
+      if (i == text.len or text[i] == '\n') {
+        const slice = text[start..i];
+        const sw = 8 * @intCast(u31, slice.len);
+        const sx = x + i32(w / 2 - sw / 2);
+        fontDrawString(&g.platform_state, &g.font, sx, sy, slice);
+        sy += 8;
+        start = i + 1;
+      }
+    }
+  }
   Platform.drawEnd(&g.platform_state);
 }
