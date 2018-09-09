@@ -14,6 +14,8 @@ pub const Key = enum {
   Tab,
   Backquote,
   M,
+  N,
+  Y,
 };
 
 pub const Event = union(enum) {

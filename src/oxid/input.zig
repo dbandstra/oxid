@@ -11,6 +11,9 @@ pub const Command = enum {
   ToggleDrawBoxes,
   FastForward,
   KillAllMonsters,
+  Escape,
+  Yes,
+  No,
 };
 
 // TODO - multiple input profiles
@@ -27,6 +30,9 @@ pub fn getCommandForKey(key: Key) ?Command {
     Key.Backquote => Command.FastForward,
     Key.F2 => Command.ToggleDrawBoxes,
     Key.F3 => Command.ToggleGodMode,
+    Key.Escape => Command.Escape,
+    Key.Y => Command.Yes,
+    Key.N => Command.No,
     else => null,
   };
 }

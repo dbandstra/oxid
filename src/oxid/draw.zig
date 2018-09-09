@@ -4,8 +4,8 @@ const Math = @import("../math.zig");
 const Draw = @import("../draw.zig");
 const fontDrawString = @import("../font.zig").fontDrawString;
 const Platform = @import("../platform/index.zig");
-const Gbe = @import("../gbe.zig");
 const VWIN_W = @import("main.zig").VWIN_W;
+const VWIN_H = @import("main.zig").VWIN_H;
 const HUD_HEIGHT = @import("main.zig").HUD_HEIGHT;
 const GameState = @import("main.zig").GameState;
 const Constants = @import("constants.zig");
@@ -19,17 +19,31 @@ const C = @import("components.zig");
 const perf = @import("perf.zig");
 
 pub fn drawGame(g: *GameState) void {
-  const max_drawables = comptime GameSession.getCapacity(C.EventDraw);
-  var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
-  const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+  const mc = g.session.findFirst(C.MainController) orelse return;
 
-  Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
-  drawMap(g);
-  drawEntities(g, sorted_drawables);
-  Platform.drawEnd(&g.platform_state);
+  if (mc.game_running_state) |grs| {
+    const max_drawables = comptime GameSession.getCapacity(C.EventDraw);
+    var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
+    const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-  drawBoxes(g);
-  drawHud(g);
+    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
+    drawMap(g);
+    drawEntities(g, sorted_drawables);
+    Platform.drawEnd(&g.platform_state);
+
+    drawBoxes(g);
+    drawHud(g);
+
+    if (grs.exit_dialog_open) {
+      drawExitDialog(g);
+    }
+  } else {
+    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
+    drawMap(g);
+    Platform.drawEnd(&g.platform_state);
+
+    drawMainMenu(g);
+  }
 }
 
 ///////////////////////////////////////
@@ -126,6 +140,15 @@ fn drawBoxes(g: *GameState) void {
   }
 }
 
+fn drawUnderHud(g: *GameState) void {
+  Platform.drawUntexturedRect(
+    &g.platform_state,
+    0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
+    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    false,
+  );
+}
+
 fn drawHud(g: *GameState) void {
   perf.begin(&perf.timers.DrawHud);
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
@@ -133,12 +156,7 @@ fn drawHud(g: *GameState) void {
   const gc = g.session.findFirst(C.GameController).?;
   const pc_maybe = if (g.session.iter(C.PlayerController).next()) |object| &object.data else null;
 
-  Platform.drawUntexturedRect(
-    &g.platform_state,
-    0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
-    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
-    false,
-  );
+  drawUnderHud(g);
 
   Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
 
@@ -182,6 +200,58 @@ fn drawHud(g: *GameState) void {
       fontDrawString(&g.platform_state, &g.font, @intCast(i32, x), 28*8, message);
     }
   }
+
+  Platform.drawEnd(&g.platform_state);
+}
+
+fn drawExitDialog(g: *GameState) void {
+  const str = "Quit game? [Y/N]";
+  const len = @intCast(u31, str.len);
+
+  const w = 8*(len+2);
+  const h = 8*3;
+  const x = VWIN_W / 2 - w / 2;
+  const y = VWIN_H / 2 - h / 2;
+
+  Platform.drawUntexturedRect(
+    &g.platform_state,
+    @intToFloat(f32, x), @intToFloat(f32, y),
+    @intToFloat(f32, w), @intToFloat(f32, h),
+    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    false,
+  );
+
+  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
+
+  fontDrawString(&g.platform_state, &g.font, x + 8, y + 8, str);
+
+  Platform.drawEnd(&g.platform_state);
+}
+
+fn drawMainMenu(g: *GameState) void {
+  drawUnderHud(g);
+
+  const str1 = "       OXID       ";
+  const str2 = "Press SPACE to play";
+  const len = @intCast(u31, str2.len);
+
+  const w = 8*(len+2);
+  const h = 8*5;
+  const x = VWIN_W / 2 - w / 2;
+  const y = VWIN_H / 2 - h / 2;
+
+  Platform.drawUntexturedRect(
+    &g.platform_state,
+    @intToFloat(f32, x), @intToFloat(f32, y),
+    @intToFloat(f32, w), @intToFloat(f32, h),
+    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    false,
+  );
+
+  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
+
+  fontDrawString(&g.platform_state, &g.font, x + 8, y + 8, str1);
+  fontDrawString(&g.platform_state, &g.font, x + 8, y + 3*8, str2);
 
   Platform.drawEnd(&g.platform_state);
 }

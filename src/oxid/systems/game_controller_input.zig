@@ -20,19 +20,6 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.iter(C.EventInput); while (it.next()) |event| {
     switch (event.data.command) {
-      input.Command.TogglePaused => {
-        if (event.data.down) {
-          self.gc.paused = !self.gc.paused;
-        }
-      },
-      input.Command.ToggleDrawBoxes => {
-        if (event.data.down) {
-          self.gc.render_move_boxes = !self.gc.render_move_boxes;
-        }
-      },
-      input.Command.FastForward => {
-        self.gc.fast_forward = event.data.down;
-      },
       input.Command.KillAllMonsters => {
         if (event.data.down) {
           killAllMonsters(gs);

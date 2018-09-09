@@ -38,7 +38,7 @@ Oxid uses a minimalistic Entity Component System. Here are the main gameplay-rel
 
 The ECS framework itself is located at `src/gbe*.zig`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
 
-Actually using the ECS requires practically no excess boilerplate.
+Actually using the ECS requires very little boilerplate.
 * To add a component type, add a struct to `components.zig` and register it in `game.zig`.
 * To add an entity prototype, add a function to `prototypes.zig`.
 * To add a system, add a file to `systems/` and import/call it in `frame.zig`.

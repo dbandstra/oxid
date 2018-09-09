@@ -8,6 +8,17 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
 
+pub const MainController = struct {
+  pub const GameRunningState = struct {
+    paused: bool,
+    fast_forward: bool,
+    render_move_boxes: bool,
+    exit_dialog_open: bool,
+  };
+
+  game_running_state: ?GameRunningState,
+};
+
 pub const Bullet = struct {
   inflictor_player_controller_id: ?Gbe.EntityId,
   damage: u32,
@@ -44,10 +55,6 @@ pub const Web = struct {
 };
 
 pub const GameController = struct {
-  paused: bool,
-  fast_forward: bool,
-  render_move_boxes: bool,
-
   monster_count: u32,
   enemy_speed_level: u31,
   enemy_speed_timer: u32,
@@ -212,11 +219,15 @@ pub const EventInput = struct {
 };
 
 pub const EventMonsterDied = struct {
-  unused: u32, // FIXME
+  unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
 pub const EventPlayerDied = struct {
   player_controller_id: Gbe.EntityId,
+};
+
+pub const EventQuit = struct {
+  unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
 pub const EventSound = struct {

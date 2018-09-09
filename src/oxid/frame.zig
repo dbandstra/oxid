@@ -6,28 +6,24 @@ const C = @import("components.zig");
 const Prototypes = @import("prototypes.zig");
 
 pub fn gameInit(gs: *GameSession) void {
-  _ = Prototypes.GameController.spawn(gs);
-  _ = Prototypes.PlayerController.spawn(gs);
+  _ = Prototypes.MainController.spawn(gs);
 }
 
 // run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(gs: *GameSession) void {
+  @import("systems/main_controller_input.zig").run(gs);
   @import("systems/game_controller_input.zig").run(gs);
   @import("systems/player_input.zig").run(gs);
 
-  const num_frames = blk: {
-    const gc = gs.findFirst(C.GameController).?;
+  var num_frames_to_run: u32 = 0;
 
-    if (gc.paused) {
-      break :blk u32(0);
-    } else if (gc.fast_forward) {
-      break :blk u32(4);
-    } else {
-      break :blk u32(1);
+  if (gs.findFirst(C.MainController).?.game_running_state) |grs| {
+    if (!grs.paused and !grs.exit_dialog_open) {
+      num_frames_to_run = if (grs.fast_forward) u32(4) else u32(1);
     }
-  };
+  }
 
-  var i: u32 = 0; while (i < num_frames) : (i += 1) {
+  var i: u32 = 0; while (i < num_frames_to_run) : (i += 1) {
     @import("systems/game_controller.zig").run(gs);
     @import("systems/player_controller.zig").run(gs);
     @import("systems/animation.zig").run(gs);
@@ -56,7 +52,7 @@ pub fn gameFrame(gs: *GameSession) void {
     // player controller reacts to 'player died' event
     @import("systems/player_controller_react.zig").run(gs);
 
-    if (i < num_frames - 1) {
+    if (i < num_frames_to_run - 1) {
       markAllEventsForRemoval(gs);
       gs.applyRemovals();
     }
@@ -67,10 +63,12 @@ pub fn gameFrame(gs: *GameSession) void {
   @import("systems/creature_draw.zig").run(gs);
   @import("systems/simple_graphic_draw.zig").run(gs);
 
-  if (gs.findFirst(C.GameController).?.render_move_boxes) {
-    @import("systems/bullet_draw_box.zig").run(gs);
-    @import("systems/physobject_draw_box.zig").run(gs);
-    @import("systems/player_draw_box.zig").run(gs);
+  if (gs.findFirst(C.MainController).?.game_running_state) |grs| {
+    if (grs.render_move_boxes) {
+      @import("systems/bullet_draw_box.zig").run(gs);
+      @import("systems/physobject_draw_box.zig").run(gs);
+      @import("systems/player_draw_box.zig").run(gs);
+    }
   }
 }
 

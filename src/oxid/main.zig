@@ -25,8 +25,8 @@ const perf = @import("perf.zig");
 pub const HUD_HEIGHT = 16;
 
 // size of the virtual screen
-pub const VWIN_W: u32 = LEVEL.w * GRIDSIZE_PIXELS; // 320
-pub const VWIN_H: u32 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
+pub const VWIN_W: u31 = LEVEL.w * GRIDSIZE_PIXELS; // 320
+pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
 
 // size of the system window (virtual screen will be scaled to this)
 const WINDOW_W = 1280;
@@ -94,7 +94,6 @@ pub fn main() !void {
             });
           }
           switch (key) {
-            Key.Escape => return,
             Key.Backspace => {
               g.session.init(rand_seed);
               gameInit(&g.session);
@@ -131,6 +130,10 @@ pub fn main() !void {
     perf.begin(&perf.timers.Frame);
     gameFrame(&g.session);
     perf.end(&perf.timers.Frame, g.perf_spam);
+
+    if (g.session.findFirst(C.EventQuit) != null) {
+      quit = true;
+    }
 
     playSounds(g);
     draw(g);

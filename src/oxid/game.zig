@@ -6,6 +6,7 @@ pub const GameComponentLists = struct {
   Bullet: Gbe.ComponentList(C.Bullet, 10),
   Creature: Gbe.ComponentList(C.Creature, 50),
   GameController: Gbe.ComponentList(C.GameController, 1),
+  MainController: Gbe.ComponentList(C.MainController, 1),
   Monster: Gbe.ComponentList(C.Monster, 50),
   PhysObject: Gbe.ComponentList(C.PhysObject, 100),
   Pickup: Gbe.ComponentList(C.Pickup, 10),
@@ -23,6 +24,7 @@ pub const GameComponentLists = struct {
   EventInput: Gbe.ComponentList(C.EventInput, 20),
   EventMonsterDied: Gbe.ComponentList(C.EventMonsterDied, 20),
   EventPlayerDied: Gbe.ComponentList(C.EventPlayerDied, 20),
+  EventQuit: Gbe.ComponentList(C.EventQuit, 5),
   EventSound: Gbe.ComponentList(C.EventSound, 20),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
 };

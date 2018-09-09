@@ -39,15 +39,25 @@ pub const bullet_bbox = blk: {
   };
 };
 
+pub const MainController = struct{
+  pub fn spawn(gs: *GameSession) !Gbe.EntityId {
+    const entity_id = gs.spawn();
+    errdefer gs.undoSpawn(entity_id);
+
+    try gs.addComponent(entity_id, C.MainController{
+      .game_running_state = null,
+    });
+
+    return entity_id;
+  }
+};
+
 pub const GameController = struct{
   pub fn spawn(gs: *GameSession) !Gbe.EntityId {
     const entity_id = gs.spawn();
     errdefer gs.undoSpawn(entity_id);
 
     try gs.addComponent(entity_id, C.GameController{
-      .paused = false,
-      .fast_forward = false,
-      .render_move_boxes = false,
       .monster_count = 0,
       .enemy_speed_level = 0,
       .enemy_speed_timer = Constants.EnemySpeedTicks,
@@ -439,5 +449,6 @@ pub const EventDrawBox = Event(C.EventDrawBox);
 pub const EventInput = Event(C.EventInput);
 pub const EventMonsterDied = Event(C.EventMonsterDied);
 pub const EventPlayerDied = Event(C.EventPlayerDied);
+pub const EventQuit = Event(C.EventQuit);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
