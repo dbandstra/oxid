@@ -21,20 +21,9 @@ const SystemData = struct{
 
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
-// helper
-fn alternation(comptime T: type, variable: T, half_period: T) bool {
-  return @mod(@divFloor(variable, half_period), 2) == 0;
-}
-
 fn think(gs: *GameSession, self: SystemData) bool {
-  var graphic1: ?Graphic = null;
-  var graphic2: ?Graphic = null;
-  var rotates: ?bool = null;
-  var z_index: ?u32 = null;
-
   if (self.player) |player| {
     if (player.dying_timer > 0) {
-      // death animation?
       _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
         .pos = self.transform.pos,
         .graphic =
@@ -52,16 +41,17 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .transform = Draw.Transform.Identity,
         .z_index = Constants.ZIndexPlayer,
       });
-      return true;
+    } else {
+      drawCreature(gs, self, DrawCreatureParams{
+        .graphic1 = Graphic.Man1,
+        .graphic2 = Graphic.Man2,
+        .rotates = true,
+        .z_index = Constants.ZIndexPlayer,
+      });
     }
-
-    graphic1 = Graphic.Man1;
-    graphic2 = Graphic.Man2;
-    rotates = true;
-    z_index = Constants.ZIndexPlayer;
+    return true;
   }
 
-  // if monster is spawning, show the spawning effect
   if (self.monster) |monster| {
     if (monster.spawning_timer > 0) {
       _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
@@ -74,55 +64,75 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .transform = Draw.Transform.Identity,
         .z_index = Constants.ZIndexEnemy,
       });
-      return true;
+    } else {
+      drawCreature(gs, self, switch (monster.monster_type) {
+        ConstantTypes.MonsterType.Spider => DrawCreatureParams{
+          .graphic1 = Graphic.Spider1,
+          .graphic2 = Graphic.Spider2,
+          .rotates = true,
+          .z_index = Constants.ZIndexEnemy,
+        },
+        ConstantTypes.MonsterType.Knight => DrawCreatureParams{
+          .graphic1 = Graphic.Knight1,
+          .graphic2 = Graphic.Knight2,
+          .rotates = true,
+          .z_index = Constants.ZIndexEnemy,
+        },
+        ConstantTypes.MonsterType.FastBug => DrawCreatureParams{
+          .graphic1 = Graphic.FastBug1,
+          .graphic2 = Graphic.FastBug2,
+          .rotates = true,
+          .z_index = Constants.ZIndexEnemy,
+        },
+        ConstantTypes.MonsterType.Squid => DrawCreatureParams{
+          .graphic1 = Graphic.Squid1,
+          .graphic2 = Graphic.Squid2,
+          .rotates = true,
+          .z_index = Constants.ZIndexEnemy,
+        },
+        ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams{
+          .graphic1 = Graphic.Juggernaut,
+          .graphic2 = Graphic.Juggernaut,
+          .rotates = false,
+          .z_index = Constants.ZIndexEnemy,
+        },
+      });
     }
-
-    switch (monster.monster_type) {
-      ConstantTypes.MonsterType.Spider => {
-        graphic1 = Graphic.Spider1;
-        graphic2 = Graphic.Spider2;
-        rotates = true;
-      },
-      ConstantTypes.MonsterType.Knight => {
-        graphic1 = Graphic.Knight1;
-        graphic2 = Graphic.Knight2;
-        rotates = true;
-      },
-      ConstantTypes.MonsterType.FastBug => {
-        graphic1 = Graphic.FastBug1;
-        graphic2 = Graphic.FastBug2;
-        rotates = true;
-      },
-      ConstantTypes.MonsterType.Squid => {
-        graphic1 = Graphic.Squid1;
-        graphic2 = Graphic.Squid2;
-        rotates = true;
-      },
-      ConstantTypes.MonsterType.Juggernaut => {
-        graphic1 = Graphic.Juggernaut;
-        graphic2 = Graphic.Juggernaut;
-        rotates = false;
-      },
-    }
-    z_index = Constants.ZIndexEnemy;
+    return true;
   }
 
   if (self.web) |web| {
-    if (self.creature.flinch_timer > 0) {
-      graphic1 = Graphic.Web2;
-      graphic2 = Graphic.Web2;
-    } else {
-      graphic1 = Graphic.Web1;
-      graphic2 = Graphic.Web1;
-    }
-    rotates = false;
-    z_index = Constants.ZIndexWeb;
+    const graphic = if (self.creature.flinch_timer > 0) Graphic.Web2 else Graphic.Web1;
+    drawCreature(gs, self, DrawCreatureParams{
+      .graphic1 = graphic,
+      .graphic2 = graphic,
+      .rotates = false,
+      .z_index = Constants.ZIndexWeb,
+    });
+    return true;
   }
 
+  return true;
+}
+
+///////////////////////////////////////
+
+fn alternation(comptime T: type, variable: T, half_period: T) bool {
+  return @mod(@divFloor(variable, half_period), 2) == 0;
+}
+
+const DrawCreatureParams = struct{
+  graphic1: Graphic,
+  graphic2: Graphic,
+  rotates: bool,
+  z_index: u32,
+};
+
+fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) void {
   // blink during invulnerability
   if (self.creature.invulnerability_timer > 0) {
     if (alternation(u32, self.creature.invulnerability_timer, 2)) {
-      return true;
+      return;
     }
   }
 
@@ -132,21 +142,15 @@ fn think(gs: *GameSession, self: SystemData) bool {
   };
   const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
-  const g1 = graphic1 orelse return true;
-  const g2 = graphic2 orelse return true;
-  const r = rotates orelse return true;
-  const z = z_index orelse return true;
-
   _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
     .pos = self.transform.pos,
     // animate legs every 6 screen pixels
-    .graphic = if (alternation(i32, sxpos, 6)) g1 else g2,
+    .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,
     .transform =
-      if (r)
+      if (params.rotates)
         GameUtil.getDirTransform(self.phys.facing)
       else
         Draw.Transform.Identity,
-    .z_index = z,
+    .z_index = params.z_index,
   });
-  return true;
 }
