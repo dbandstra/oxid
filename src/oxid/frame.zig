@@ -12,8 +12,6 @@ pub fn gameInit(gs: *GameSession) void {
 // run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(gs: *GameSession) void {
   @import("systems/main_controller_input.zig").run(gs);
-  @import("systems/game_controller_input.zig").run(gs);
-  @import("systems/player_input.zig").run(gs);
 
   var num_frames_to_run: u32 = 0;
 
@@ -24,6 +22,9 @@ pub fn gameFrame(gs: *GameSession) void {
   }
 
   var i: u32 = 0; while (i < num_frames_to_run) : (i += 1) {
+    @import("systems/game_controller_input.zig").run(gs);
+    @import("systems/player_input.zig").run(gs);
+
     @import("systems/game_controller.zig").run(gs);
     @import("systems/player_controller.zig").run(gs);
     @import("systems/animation.zig").run(gs);
@@ -52,10 +53,8 @@ pub fn gameFrame(gs: *GameSession) void {
     // player controller reacts to 'player died' event
     @import("systems/player_controller_react.zig").run(gs);
 
-    if (i < num_frames_to_run - 1) {
-      markAllEventsForRemoval(gs);
-      gs.applyRemovals();
-    }
+    markAllNonSoundEventsForRemoval(gs);
+    gs.applyRemovals();
   }
 
   // send draw commands (as events)
@@ -83,6 +82,18 @@ fn markAllEventsForRemoval(gs: *GameSession) void {
   inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
     const ComponentType = field.field_type.ComponentType;
     if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+      var it = gs.iter(ComponentType); while (it.next()) |object| {
+        gs.markEntityForRemoval(object.entity_id);
+      }
+    }
+  }
+}
+
+fn markAllNonSoundEventsForRemoval(gs: *GameSession) void {
+  inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+    const ComponentType = field.field_type.ComponentType;
+    if (std.mem.startsWith(u8, @typeName(ComponentType), "Event") and
+        !std.mem.eql(u8, @typeName(ComponentType), "EventSound")) {
       var it = gs.iter(ComponentType); while (it.next()) |object| {
         gs.markEntityForRemoval(object.entity_id);
       }

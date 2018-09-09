@@ -1,5 +1,10 @@
 # Todo
 
+## Bugs
+- input gets lagged sometimes
+  - i've gotten it with fast forwarding. sometimes (not always), while fast forwarding, input is a bit delayed, and after releasing the fast forward key, the game keeps fast forwarding for another half second
+  - unique_id reported getting it after moving the window
+
 ## Gameplay
 - change squids to be spiders?
 - still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
