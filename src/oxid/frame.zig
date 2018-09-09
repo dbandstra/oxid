@@ -13,6 +13,11 @@ pub fn gameInit(gs: *GameSession) void {
 pub fn gameFrame(gs: *GameSession) void {
   @import("systems/main_controller_input.zig").run(gs);
 
+  // note: ideally these would be inside the frame loop, but we have to make
+  // sure that key up events take effect even when the game is paused
+  @import("systems/game_controller_input.zig").run(gs);
+  @import("systems/player_input.zig").run(gs);
+
   var num_frames_to_run: u32 = 0;
 
   if (gs.findFirst(C.MainController).?.game_running_state) |grs| {
@@ -22,9 +27,6 @@ pub fn gameFrame(gs: *GameSession) void {
   }
 
   var i: u32 = 0; while (i < num_frames_to_run) : (i += 1) {
-    @import("systems/game_controller_input.zig").run(gs);
-    @import("systems/player_input.zig").run(gs);
-
     @import("systems/game_controller.zig").run(gs);
     @import("systems/player_controller.zig").run(gs);
     @import("systems/animation.zig").run(gs);
