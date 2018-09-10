@@ -70,7 +70,7 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
-  var high_score = datafile.loadHighScore(dsaf) catch |err| blk: {
+  const initial_high_score = datafile.loadHighScore(dsaf) catch |err| blk: {
     std.debug.warn("Failed to load high score from disk: {}.\n", err);
     break :blk 0;
   };
@@ -83,7 +83,7 @@ pub fn main() !void {
   g.mute = false;
 
   g.session.init(rand_seed);
-  gameInit(&g.session, high_score);
+  gameInit(&g.session, initial_high_score);
 
   perf.init();
 
@@ -99,10 +99,6 @@ pub fn main() !void {
             });
           }
           switch (key) {
-            Key.Backspace => {
-              g.session.init(rand_seed);
-              gameInit(&g.session, high_score);
-            },
             Key.F4 => {
               g.perf_spam = !g.perf_spam;
             },
@@ -140,9 +136,7 @@ pub fn main() !void {
       quit = true;
     }
 
-    if (saveHighScore(g)) |new_high_score| {
-      high_score = new_high_score;
-    }
+    saveHighScore(g);
     playSounds(g);
     draw(g);
 
@@ -154,14 +148,12 @@ pub fn main() !void {
 
 const C = @import("components.zig");
 
-fn saveHighScore(g: *GameState) ?u32 {
+fn saveHighScore(g: *GameState) void {
   var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
     datafile.saveHighScore(dsaf, object.data.high_score) catch |err| {
       std.debug.warn("Failed to save high score to disk: {}\n", err);
     };
-    return object.data.high_score;
   }
-  return null;
 }
 
 fn playSounds(g: *GameState) void {

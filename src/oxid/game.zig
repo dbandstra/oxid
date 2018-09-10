@@ -1,7 +1,7 @@
 const Gbe = @import("../gbe.zig");
 const C = @import("components.zig");
 
-pub const GameComponentLists = struct {
+pub const GameSession = Gbe.Session(struct {
   Animation: Gbe.ComponentList(C.Animation, 10),
   Bullet: Gbe.ComponentList(C.Bullet, 10),
   Creature: Gbe.ComponentList(C.Creature, 50),
@@ -30,6 +30,4 @@ pub const GameComponentLists = struct {
   EventSaveHighScore: Gbe.ComponentList(C.EventSaveHighScore, 5),
   EventSound: Gbe.ComponentList(C.EventSound, 20),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
-};
-
-pub const GameSession = Gbe.Session(GameComponentLists);
+});

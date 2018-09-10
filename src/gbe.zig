@@ -53,6 +53,7 @@ pub fn Session(comptime ComponentLists: type) type {
 
   return struct {
     const Self = this;
+    const ComponentListsType = ComponentLists;
 
     prng: std.rand.DefaultPrng,
 
@@ -140,7 +141,7 @@ pub fn Session(comptime ComponentLists: type) type {
       self.num_removals += 1;
     }
 
-    // `data` must be a struct object, and it must be one of the structs in GameComponentLists.
+    // `data` must be a struct object, and it must be one of the structs in ComponentLists.
     // FIXME - before i used duck typing for this, `data` had type `*const T`.
     // then you could pass struct using as-value syntax, and it was implicitly sent as a reference
     // (like c++ references). but with `var`, i don't think this is possible?

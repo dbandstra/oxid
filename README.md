@@ -12,8 +12,7 @@ Oxid is written in the [Zig](https://ziglang.org) programming language.
 Game controls:
 * arrow keys: move
 * space: shoot
-* esc: quit
-* backspace: reset
+* esc: leave game
 * m: toggle sound muting
 
 Debug/cheat controls:

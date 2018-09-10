@@ -6,7 +6,6 @@
   - unique_id reported getting it after moving the window
 
 ## Gameplay
-- backspace-to-reset: either give it a confirmation, or replace it with a 'return to main menu' feature that lets you start a new game
 - change squids to be spiders?
 - still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
@@ -19,6 +18,7 @@ i have implemented monsters getting out of the player's line of fire. but it ten
 
 ## Code
 - document the major pieces of code (e.g. GBE stuff), at least with comments, maybe also with some dedicated markdown files
+- shouldn't removals take effect after every system? right now, if you remove an entity, it just adds a 'removal' entry. doesn't even set is_active to false. so iterators will still hit those entities until the end of the entire frame.
 - font image should be pure b&w. in game code, remember palette. then allow rendering font using any colour from the palette
 - sound: figure out how to start sounds at an offset into the mixing buffer. this becomes more important the larger the mix buffer is
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)

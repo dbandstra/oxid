@@ -220,11 +220,11 @@ fn drawHud(g: *GameState, game_active: bool) void {
 }
 
 fn drawExitDialog(g: *GameState) void {
-  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "Quit game? [Y/N]");
+  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "Leave game? [Y/N]");
 }
 
 fn drawMainMenu(g: *GameState) void {
-  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, " OXID\n\nPress SPACE to play");
+  drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
 }
 
 const DrawCoord = union(enum) {

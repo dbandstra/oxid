@@ -7,14 +7,12 @@ const Monster = struct{ chasing: bool };
 const Player = struct{ attack_level: u32 };
 const Transform = struct{ x: i32, y: i32 };
 
-const GameComponentLists = struct {
+const MockGameSession = Gbe.Session(struct {
   Creature: Gbe.ComponentList(Creature, 50),
   Monster: Gbe.ComponentList(Monster, 50),
   Player: Gbe.ComponentList(Player, 50),
   Transform: Gbe.ComponentList(Transform, 50),
-};
-
-const MockGameSession = Gbe.Session(GameComponentLists);
+});
 
 fn prepareGs(gs: *MockGameSession) !void {
   gs.init(0);

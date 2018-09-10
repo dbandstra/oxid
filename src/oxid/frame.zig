@@ -1,5 +1,4 @@
 const std = @import("std");
-const GameComponentLists = @import("game.zig").GameComponentLists;
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const C = @import("components.zig");
@@ -85,7 +84,7 @@ pub fn gameFrameCleanup(gs: *GameSession) void {
 }
 
 fn markAllEventsForRemoval(gs: *GameSession) void {
-  inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+  inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
     const ComponentType = field.field_type.ComponentType;
     if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
       var it = gs.iter(ComponentType); while (it.next()) |object| {
@@ -96,7 +95,7 @@ fn markAllEventsForRemoval(gs: *GameSession) void {
 }
 
 fn markAllNonMiddlewareEventsForRemoval(gs: *GameSession) void {
-  inline for (@typeInfo(GameComponentLists).Struct.fields) |field| {
+  inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
     const ComponentType = field.field_type.ComponentType;
     const component_name = @typeName(ComponentType);
 
