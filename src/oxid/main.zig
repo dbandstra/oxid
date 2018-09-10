@@ -147,6 +147,7 @@ pub fn main() !void {
 
       if (g.session.findFirst(C.EventQuit) != null) {
         quit = true;
+        break;
       }
 
       saveHighScore(g);

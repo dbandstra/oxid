@@ -16,7 +16,7 @@ pub fn gameFrame(gs: *GameSession) void {
   @import("systems/main_controller_input.zig").run(gs);
 
   // note: ideally these would be inside the frame loop, but we have to make
-  // sure that key up events take effect even when the game is paused
+  // sure that key-up events take effect even when the game is paused
   @import("systems/game_controller_input.zig").run(gs);
   @import("systems/player_input.zig").run(gs);
 
@@ -51,11 +51,10 @@ pub fn gameFrame(gs: *GameSession) void {
       @import("systems/game_controller_react.zig").run(gs);
       // main controller reacts to 'post score' event
       @import("systems/main_controller_react.zig").run(gs);
-
-      markAllNonMiddlewareEventsForRemoval(gs);
-      gs.applyRemovals();
     }
   }
+
+  gs.applyRemovals();
 
   // send draw commands (as events)
   @import("systems/animation_draw.zig").run(gs);
@@ -84,28 +83,6 @@ fn markAllEventsForRemoval(gs: *GameSession) void {
       var it = gs.iter(ComponentType); while (it.next()) |object| {
         gs.markEntityForRemoval(object.entity_id);
       }
-    }
-  }
-}
-
-fn markAllNonMiddlewareEventsForRemoval(gs: *GameSession) void {
-  inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
-    const ComponentType = field.field_type.ComponentType;
-    const component_name = @typeName(ComponentType);
-
-    if (comptime !std.mem.startsWith(u8, component_name, "Event")) {
-      continue;
-    }
-
-    if (comptime std.mem.eql(u8, component_name, "EventSound")) {
-      continue;
-    }
-    if (comptime std.mem.eql(u8, component_name, "EventSaveHighScore")) {
-      continue;
-    }
-
-    var it = gs.iter(ComponentType); while (it.next()) |object| {
-      gs.markEntityForRemoval(object.entity_id);
     }
   }
 }
