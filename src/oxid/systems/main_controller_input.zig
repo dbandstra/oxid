@@ -55,9 +55,6 @@ fn handleGameRunningInput(gs: *GameSession, grs: *C.MainController.GameRunningSt
           grs.render_move_boxes = !grs.render_move_boxes;
         }
       },
-      input.Command.FastForward => {
-        grs.fast_forward = event.data.down;
-      },
       else => {},
     }
   }
@@ -83,7 +80,6 @@ fn handleMainMenuInput(gs: *GameSession, mc: *C.MainController) void {
 
 fn startGame(gs: *GameSession, mc: *C.MainController) void {
   mc.game_running_state = C.MainController.GameRunningState{
-    .fast_forward = false,
     .render_move_boxes = false,
     .exit_dialog_open = false,
   };

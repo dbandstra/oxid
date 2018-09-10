@@ -87,6 +87,8 @@ pub fn main() !void {
 
   perf.init();
 
+  var fast_forward = false;
+
   var quit = false;
   while (!quit) {
     while (Platform.pollEvent(&g.platform_state)) |event| {
@@ -99,6 +101,9 @@ pub fn main() !void {
             });
           }
           switch (key) {
+            Key.Backquote => {
+              fast_forward = true;
+            },
             Key.F4 => {
               g.perf_spam = !g.perf_spam;
             },
@@ -120,6 +125,12 @@ pub fn main() !void {
               .down = false,
             });
           }
+          switch (key) {
+            Key.Backquote => {
+              fast_forward = false;
+            },
+            else => {},
+          }
         },
         Event.Quit => {
           quit = true;
@@ -128,19 +139,24 @@ pub fn main() !void {
       }
     }
 
-    perf.begin(&perf.timers.Frame);
-    gameFrame(&g.session);
-    perf.end(&perf.timers.Frame, g.perf_spam);
+    const num_frames = if (fast_forward) usize(4) else usize(1);
+    var i: usize = 0; while (i < num_frames) : (i += 1) {
+      perf.begin(&perf.timers.Frame);
+      gameFrame(&g.session);
+      perf.end(&perf.timers.Frame, g.perf_spam);
 
-    if (g.session.findFirst(C.EventQuit) != null) {
-      quit = true;
+      if (g.session.findFirst(C.EventQuit) != null) {
+        quit = true;
+      }
+
+      saveHighScore(g);
+      playSounds(g);
+      draw(g, 1.0 / @intToFloat(f32, i + 1));
+
+      gameFrameCleanup(&g.session);
     }
 
-    saveHighScore(g);
-    playSounds(g);
-    draw(g);
-
-    gameFrameCleanup(&g.session);
+    Platform.swapWindow(&g.platform_state);
   }
 }
 
@@ -162,12 +178,12 @@ fn playSounds(g: *GameState) void {
   }
 }
 
-fn draw(g: *GameState) void {
+fn draw(g: *GameState, blit_alpha: f32) void {
   perf.begin(&perf.timers.WholeDraw);
   Platform.preDraw(&g.platform_state);
   perf.begin(&perf.timers.Draw);
   drawGame(g);
   perf.end(&perf.timers.Draw, g.perf_spam);
-  Platform.postDraw(&g.platform_state);
+  Platform.postDraw(&g.platform_state, blit_alpha);
   perf.end(&perf.timers.WholeDraw, g.perf_spam);
 }

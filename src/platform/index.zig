@@ -12,6 +12,7 @@ pub const deinit = platform.deinit;
 pub const pollEvent = platform.pollEvent;
 pub const preDraw = platform.preDraw;
 pub const postDraw = platform.postDraw;
+pub const swapWindow = platform.swapWindow;
 
 pub const cycleGlitchMode = draw.cycleGlitchMode;
 pub const drawBegin = draw.begin;

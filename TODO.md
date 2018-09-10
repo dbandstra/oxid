@@ -12,7 +12,6 @@
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
 - sound effect when monsters speed up
-- when fast forwarding, render all the frames and blend them together
 
 i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
 
@@ -33,6 +32,7 @@ i have implemented monsters getting out of the player's line of fire. but it ten
   - this would entail getting rid of the `find` functions that operate on a GameSession
 - some kind of hierarchy? like a component can (effectively) contain an entire Gbe instance. i think this would require allocating Gbes on the heap though.
   - it would be used for MainController containing GameController, and GameController containing all the other stuff. that may reduce the number of systems needed (e.g. currently, MainController thinks, then GameController thinks, then MainController reacts to GameController's events - three systems).
+  - currently the MainController ends the game by destroying all components except MainController. this is kinda hacky, an ownership system would be better. but all things considered it might be overengineering
 
 ### Events
 - maybe think functions should handle events from the previous frame? instead of having separate "think" and "react" routines. the purge function will then have to be removed/changed though.

@@ -152,9 +152,11 @@ pub fn preDraw(ps: *State) void {
   ps.clear_screen = false;
 }
 
-pub fn postDraw(ps: *State) void {
-  PlatformDraw.postDraw(&ps.draw_state);
+pub fn postDraw(ps: *State, blit_alpha: f32) void {
+  PlatformDraw.postDraw(&ps.draw_state, blit_alpha);
+}
 
+pub fn swapWindow(ps: *State) void {
   c.SDL_GL_SwapWindow(ps.window);
 
   // FIXME - try to detect if vsync is enabled...

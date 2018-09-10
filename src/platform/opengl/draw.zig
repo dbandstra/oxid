@@ -117,20 +117,21 @@ pub fn preDraw(ds: *DrawState, clear_screen: bool) void {
   }
 }
 
-pub fn postDraw(ds: *DrawState) void {
+pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
   ds.projection = math3d.mat4x4_ortho(0, 1, 1, 0);
   c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
   c.glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
-  blit(ds, ds.rt);
+  blit(ds, ds.rt, blit_alpha);
 }
 
 // this function must be called outside begin/end
-pub fn blit(ds: *DrawState, tex_id: c.GLuint) void {
+pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
   std.debug.assert(!ds.draw_buffer.active);
 
   ds.shaders.texture.bind();
   ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
   ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, ds.projection);
+  ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, alpha);
 
   c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));
@@ -191,6 +192,7 @@ pub fn begin(ps: *State, tex_id: c.GLuint) void {
 
   ds.shaders.texture.bind();
   ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
+  ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, 1.0);
   ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, ds.projection);
 
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));

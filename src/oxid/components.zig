@@ -10,7 +10,6 @@ const input = @import("input.zig");
 
 pub const MainController = struct {
   pub const GameRunningState = struct {
-    fast_forward: bool,
     render_move_boxes: bool,
     exit_dialog_open: bool,
   };
