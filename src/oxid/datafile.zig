@@ -46,7 +46,7 @@ pub fn loadHighScore(dsaf: *DoubleStackAllocatorFlat) !u32 {
   };
   defer file.close();
 
-  var fis = std.io.FileInStream.init(file);
+  var fis = std.os.File.inStream(file);
 
   return fis.stream.readIntLe(u32);
 }
@@ -55,7 +55,7 @@ pub fn saveHighScore(dsaf: *DoubleStackAllocatorFlat, high_score: u32) !void {
   const file = try openDataFile(dsaf, "highscore.dat", Mode.Write);
   defer file.close();
 
-  var fos = std.io.FileOutStream.init(file);
+  var fos = std.os.File.outStream(file);
 
   try fos.stream.writeIntLe(u32, high_score);
 }

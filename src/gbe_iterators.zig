@@ -2,7 +2,7 @@ const Gbe = @import("gbe.zig");
 
 pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type {
   return struct {
-    const Self = this;
+    const Self = @This();
 
     list: *Gbe.ComponentList(T, capacity),
     index: usize,
@@ -34,7 +34,7 @@ pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type 
 // - returns *T (component data) directly, instead of *ComponentObject(T)
 pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field: []const u8) type {
   return struct {
-    const Self = this;
+    const Self = @This();
 
     list: *Gbe.ComponentList(T, capacity),
     entity_id: Gbe.EntityId,

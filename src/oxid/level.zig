@@ -14,7 +14,7 @@ pub const TerrainType = enum{
 
 pub fn Level(comptime w: u31, comptime h: u31) type {
   return struct {
-    const Self = this;
+    const Self = @This();
 
     w: u31,
     h: u31,

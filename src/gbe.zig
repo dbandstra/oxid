@@ -30,7 +30,7 @@ pub fn ComponentObject(comptime T: type) type {
 
 pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
   return struct {
-    const Self = this;
+    const Self = @This();
 
     const ComponentType = T;
     const capacity = capacity_;
@@ -52,7 +52,7 @@ pub fn Session(comptime ComponentLists: type) type {
   }
 
   return struct {
-    const Self = this;
+    const Self = @This();
     const ComponentListsType = ComponentLists;
 
     prng: std.rand.DefaultPrng,
