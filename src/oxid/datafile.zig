@@ -2,7 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
 
-const Mode = enum {
+const Mode = enum.{
   Read,
   Write,
 };

@@ -10,7 +10,7 @@ const FONT_CHAR_HEIGHT = 8;
 const FONT_NUM_COLS = 16;
 const FONT_NUM_ROWS = 8;
 
-pub const Font = struct{
+pub const Font = struct.{
   tileset: Draw.Tileset,
 };
 
@@ -20,7 +20,7 @@ pub fn loadFont(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
 
   const img = try loadPcx(dsaf, FONT_FILENAME, 0);
 
-  font.tileset = Draw.Tileset{
+  font.tileset = Draw.Tileset.{
     .texture = Platform.uploadTexture(img),
     .xtiles = FONT_NUM_COLS,
     .ytiles = FONT_NUM_ROWS,
@@ -34,7 +34,7 @@ pub fn fontDrawString(ps: *Platform.State, font: *const Font, x: i32, y: i32, st
   for (string) |char| {
     const fx = @intToFloat(f32, ix);
     const fy = @intToFloat(f32, y);
-    const tile = Draw.Tile{
+    const tile = Draw.Tile.{
       .tx = char % FONT_NUM_COLS,
       .ty = char / FONT_NUM_COLS,
     };

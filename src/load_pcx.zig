@@ -16,12 +16,12 @@ pub fn loadPcx(
   const Loader = pcx.Loader(std.io.SliceInStream.Error);
 
   const preloaded = try Loader.preload(stream);
-  const img = try image.createImage(&dsaf.low_allocator, image.Info{
+  const img = try image.createImage(&dsaf.low_allocator, image.Info.{
     .width = preloaded.width,
     .height = preloaded.height,
     .format = image.Format.RGBA,
   });
-  try Loader.loadRGBA(stream, &preloaded, transparent_color_index, img.pixels);
+  try Loader.loadRGBA(stream, preloaded, transparent_color_index, img.pixels);
 
   return img;
 }

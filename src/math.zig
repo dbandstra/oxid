@@ -1,7 +1,7 @@
 // there are 16 subpixels to a screen pixel
 pub const SUBPIXELS = 16;
 
-pub const Direction = enum {
+pub const Direction = enum.{
   N,
   E,
   S,
@@ -44,26 +44,26 @@ pub const Direction = enum {
   }
 };
 
-pub const Vec2 = struct {
+pub const Vec2 = struct.{
   x: i32,
   y: i32,
 
   pub fn init(x: i32, y: i32) Vec2 {
-    return Vec2{
+    return Vec2.{
       .x = x,
       .y = y,
     };
   }
 
   pub fn add(a: Vec2, b: Vec2) Vec2 {
-    return Vec2{
+    return Vec2.{
       .x = a.x + b.x,
       .y = a.y + b.y,
     };
   }
 
   pub fn scale(a: Vec2, f: i32) Vec2 {
-    return Vec2{
+    return Vec2.{
       .x = a.x * f,
       .y = a.y * f,
     };
@@ -82,12 +82,12 @@ pub const Vec2 = struct {
   }
 };
 
-pub const BoundingBox = struct {
+pub const BoundingBox = struct.{
   mins: Vec2,
   maxs: Vec2,
 
   pub fn move(bbox: BoundingBox, vec: Vec2) BoundingBox {
-    return BoundingBox{
+    return BoundingBox.{
       .mins = Vec2.add(bbox.mins, vec),
       .maxs = Vec2.add(bbox.maxs, vec),
     };

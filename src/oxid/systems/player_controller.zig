@@ -7,7 +7,7 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 const GameUtil = @import("../util.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   id: Gbe.EntityId,
   pc: *C.PlayerController,
 };
@@ -22,7 +22,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {
-  if (Prototypes.Player.spawn(gs, Prototypes.Player.Params{
+  if (Prototypes.Player.spawn(gs, Prototypes.Player.Params.{
     .player_controller_id = self.id,
     .pos = Math.Vec2.init(
       9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,

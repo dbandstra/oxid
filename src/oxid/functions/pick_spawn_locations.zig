@@ -7,7 +7,7 @@ const LEVEL = @import("../level.zig").LEVEL;
 const TerrainType = @import("../level.zig").TerrainType;
 const C = @import("../components.zig");
 
-const PickSpawnLocations = struct{
+const PickSpawnLocations = struct.{
   gridmask: [LEVEL.w * LEVEL.h]bool,
 
   fn avoidObject(self: *PickSpawnLocations, gs: *GameSession, entity_id: Gbe.EntityId) void {
@@ -49,7 +49,7 @@ const PickSpawnLocations = struct{
 
     gy = 0; while (gy < LEVEL.h) : (gy += 1) {
       gx = 0; while (gx < LEVEL.w) : (gx += 1) {
-        const pos = Math.Vec2{ .x = gx, .y = gy };
+        const pos = Math.Vec2.{ .x = gx, .y = gy };
         const i = gy * LEVEL.w + gx;
         self.gridmask[i] = LEVEL.getGridTerrainType(pos) == TerrainType.Floor;
       }
@@ -71,7 +71,7 @@ const PickSpawnLocations = struct{
     gy = 0; while (gy < LEVEL.h) : (gy += 1) {
       gx = 0; while (gx < LEVEL.w) : (gx += 1) {
         if (self.gridmask[gy * LEVEL.w + gx]) {
-          candidates[num_candidates] = Math.Vec2{ .x = gx, .y = gy };
+          candidates[num_candidates] = Math.Vec2.{ .x = gx, .y = gy };
           num_candidates += 1;
         }
       }

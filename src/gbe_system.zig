@@ -14,7 +14,7 @@ pub fn build(
 ) fn(*SessionType)void {
   std.debug.assert(@typeId(SelfType) == builtin.TypeId.Struct);
 
-  const Impl = struct{
+  const Impl = struct.{
     fn runOne(
       gs: *SessionType,
       self_id: Gbe.EntityId,

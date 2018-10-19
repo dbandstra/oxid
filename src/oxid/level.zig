@@ -6,14 +6,14 @@ pub const GRIDSIZE_PIXELS = 16;
 
 pub const GRIDSIZE_SUBPIXELS = GRIDSIZE_PIXELS * Math.SUBPIXELS;
 
-pub const TerrainType = enum{
+pub const TerrainType = enum.{
   Floor,
   Wall,
   Pit, // blocks creatures but not bullets
 };
 
 pub fn Level(comptime w: u31, comptime h: u31) type {
-  return struct {
+  return struct.{
     const Self = @This();
 
     w: u31,
@@ -21,7 +21,7 @@ pub fn Level(comptime w: u31, comptime h: u31) type {
     data: [w*h]u8,
 
     pub fn init(data: [w*h]u8) Self {
-      return Self{
+      return Self.{
         .w = w,
         .h = h,
         .data = data,
@@ -116,7 +116,7 @@ pub const LEVEL = Level(20, 14).init(blk: {
   const C = 0x85;
   const D = 0x86;
 
-  break :blk []const u8{
+  break :blk []const u8.{
     O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
     O,e,e,e,e,e,e,e,e,e,e,e,O,e,e,e,e,e,e,O,
     O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,

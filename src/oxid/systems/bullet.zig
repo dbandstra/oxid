@@ -3,7 +3,7 @@ const GameSession = @import("../game.zig").GameSession;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const C = @import("../components.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   transform: *const C.Transform,
   phys: *const C.PhysObject,
   bullet: *C.Bullet,

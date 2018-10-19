@@ -155,7 +155,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
   Platform.drawUntexturedRect(
     &g.platform_state,
     0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
-    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    Draw.Color.{ .r = 0, .g = 0, .b = 0, .a = 255 },
     false,
   );
 
@@ -212,9 +212,9 @@ fn drawHud(g: *GameState, game_active: bool) void {
     const y = 8*4;
 
     if (mc.new_high_score) {
-      drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER\n\nNew high score!");
+      drawTextBox(g, DrawCoord.Centered, DrawCoord.{ .Exact = y }, "GAME OVER\n\nNew high score!");
     } else {
-      drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER");
+      drawTextBox(g, DrawCoord.Centered, DrawCoord.{ .Exact = y }, "GAME OVER");
     }
   }
 }
@@ -227,7 +227,7 @@ fn drawMainMenu(g: *GameState) void {
   drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
 }
 
-const DrawCoord = union(enum) {
+const DrawCoord = union(enum).{
   Centered,
   Exact: i32,
 };
@@ -267,7 +267,7 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     &g.platform_state,
     @intToFloat(f32, x), @intToFloat(f32, y),
     @intToFloat(f32, w), @intToFloat(f32, h),
-    Draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
+    Draw.Color.{ .r = 0, .g = 0, .b = 0, .a = 255 },
     false,
   );
 

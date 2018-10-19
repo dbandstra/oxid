@@ -6,12 +6,12 @@ const Platform = @import("platform.zig");
 
 const MAX_CHUNKS = 20;
 
-pub const AudioState = struct{
+pub const AudioState = struct.{
   chunks: [MAX_CHUNKS][*]c.Mix_Chunk,
   num_chunks: u32,
 };
 
-pub fn init(as: *AudioState, params: *const Platform.InitParams) !void {
+pub fn init(as: *AudioState, params: Platform.InitParams) !void {
   // avoid overaggressive compile error (function must return an error)
   var zero: u32 = 0;
 

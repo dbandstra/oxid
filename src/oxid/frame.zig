@@ -6,7 +6,7 @@ const Prototypes = @import("prototypes.zig");
 const datafile = @import("datafile.zig");
 
 pub fn gameInit(gs: *GameSession, high_score: u32) void {
-  _ = Prototypes.MainController.spawn(gs, Prototypes.MainController.Params{
+  _ = Prototypes.MainController.spawn(gs, Prototypes.MainController.Params.{
     .high_score = high_score,
   });
 }

@@ -6,7 +6,7 @@ const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct {
+const SystemData = struct.{
   id: Gbe.EntityId,
   bullet: *const C.Bullet,
   transform: *const C.Transform,
@@ -16,13 +16,13 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
-    _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
+    _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params.{
       .pos = self.transform.pos,
       .simple_anim = SimpleAnim.PlaSparks,
       .z_index = Constants.ZIndexSparks,
     });
     if (!Gbe.EntityId.isZero(event.other_id)) {
-      _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
+      _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage.{
         .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
         .self_id = event.other_id,
         .amount = self.bullet.damage,

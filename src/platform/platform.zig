@@ -11,7 +11,7 @@ const Draw = @import("../draw.zig");
 const Event = @import("../event.zig").Event;
 const translateEvent = @import("translate_event.zig").translateEvent;
 
-pub const State = struct {
+pub const State = struct.{
   initialized: bool,
   glitch_mode: PlatformDraw.GlitchMode,
   clear_screen: bool,
@@ -31,7 +31,7 @@ const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
 extern fn SDL_PollEvent(event: *c.SDL_Event) c_int;
 
-pub const InitParams = struct{
+pub const InitParams = struct.{
   window_title: []const u8,
   // dimensions of the system window
   window_width: u32,
@@ -54,7 +54,7 @@ fn makeCString(allocator: *std.mem.Allocator, source: []const u8) ![*]const u8 {
   return bytes.ptr;
 }
 
-pub fn init(ps: *State, params: *const InitParams) !void {
+pub fn init(ps: *State, params: InitParams) !void {
   ps.initialized = false;
 
   if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {

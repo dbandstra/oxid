@@ -6,7 +6,7 @@ const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   gc: *C.GameController,
 };
 
@@ -19,7 +19,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.iter(C.EventPlayerOutOfLives); while (it.next()) |object| {
     self.gc.game_over = true;
     if (gs.find(object.data.player_controller_id, C.PlayerController)) |pc| {
-      _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore{
+      _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore.{
         .score = pc.score,
       });
     }

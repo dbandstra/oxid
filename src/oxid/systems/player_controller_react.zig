@@ -5,7 +5,7 @@ const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   id: Gbe.EntityId,
   pc: *C.PlayerController,
 };
@@ -19,7 +19,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       if (self.pc.lives > 0) {
         self.pc.respawn_timer = Constants.PlayerRespawnTime;
       } else {
-        _ = Prototypes.EventPlayerOutOfLives.spawn(gs, C.EventPlayerOutOfLives{
+        _ = Prototypes.EventPlayerOutOfLives.spawn(gs, C.EventPlayerOutOfLives.{
           .player_controller_id = self.id,
         });
       }

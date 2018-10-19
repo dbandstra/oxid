@@ -8,8 +8,8 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
 
-pub const MainController = struct {
-  pub const GameRunningState = struct {
+pub const MainController = struct.{
+  pub const GameRunningState = struct.{
     render_move_boxes: bool,
     exit_dialog_open: bool,
   };
@@ -19,21 +19,21 @@ pub const MainController = struct {
   game_running_state: ?GameRunningState,
 };
 
-pub const Bullet = struct {
+pub const Bullet = struct.{
   inflictor_player_controller_id: ?Gbe.EntityId,
   damage: u32,
   line_of_fire: ?Math.BoundingBox,
 };
 
-pub const Creature = struct {
+pub const Creature = struct.{
   invulnerability_timer: u32,
   hit_points: u32,
   flinch_timer: u32,
   god_mode: bool,
 };
 
-pub const Monster = struct {
-  const Personality = enum{
+pub const Monster = struct.{
+  const Personality = enum.{
     Chase,
     Wander,
   };
@@ -50,11 +50,11 @@ pub const Monster = struct {
   persistent: bool,
 };
 
-pub const Web = struct {
+pub const Web = struct.{
   unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
-pub const GameController = struct {
+pub const GameController = struct.{
   game_over: bool,
   monster_count: u32,
   enemy_speed_level: u31,
@@ -67,27 +67,27 @@ pub const GameController = struct {
   wave_message_timer: u32,
 };
 
-pub const PlayerController = struct {
+pub const PlayerController = struct.{
   player_id: ?Gbe.EntityId,
   lives: u32,
   score: u32,
   respawn_timer: u32,
 };
 
-pub const Animation = struct {
+pub const Animation = struct.{
   simple_anim: SimpleAnim,
   frame_index: u32,
   frame_timer: u32,
   z_index: u32,
 };
 
-pub const SimpleGraphic = struct {
+pub const SimpleGraphic = struct.{
   graphic: Graphic,
   z_index: u32,
   directional: bool,
 };
 
-pub const PhysObject = struct {
+pub const PhysObject = struct.{
   pub const FLAG_BULLET: u32 = 1;
   pub const FLAG_MONSTER: u32 = 2;
   pub const FLAG_WEB: u32 = 4;
@@ -135,25 +135,25 @@ pub const PhysObject = struct {
   internal: PhysObjectInternal,
 };
 
-pub const PhysObjectInternal = struct {
+pub const PhysObjectInternal = struct.{
   move_bbox: Math.BoundingBox,
   group_index: usize,
 };
 
-pub const Pickup = struct {
+pub const Pickup = struct.{
   pickup_type: ConstantTypes.PickupType,
   timer: u32,
   get_points: u32,
 };
 
-pub const Player = struct {
-  const AttackLevel = enum {
+pub const Player = struct.{
+  const AttackLevel = enum.{
     One,
     Two,
     Three,
   };
 
-  const SpeedLevel = enum {
+  const SpeedLevel = enum.{
     One,
     Two,
     Three,
@@ -174,20 +174,20 @@ pub const Player = struct {
   in_shoot: bool,
 };
 
-pub const Transform = struct {
+pub const Transform = struct.{
   pos: Math.Vec2,
 };
 
-pub const EventAwardLife = struct {
+pub const EventAwardLife = struct.{
   player_controller_id: Gbe.EntityId,
 };
 
-pub const EventAwardPoints = struct {
+pub const EventAwardPoints = struct.{
   player_controller_id: Gbe.EntityId,
   points: u32,
 };
 
-pub const EventCollide = struct {
+pub const EventCollide = struct.{
   self_id: Gbe.EntityId,
   other_id: Gbe.EntityId, // 0 = wall
 
@@ -197,57 +197,57 @@ pub const EventCollide = struct {
   propelled: bool,
 };
 
-pub const EventConferBonus = struct {
+pub const EventConferBonus = struct.{
   recipient_id: Gbe.EntityId,
   pickup_type: ConstantTypes.PickupType,
 };
 
-pub const EventDraw = struct {
+pub const EventDraw = struct.{
   pos: Math.Vec2,
   graphic: Graphic,
   transform: Draw.Transform,
   z_index: u32,
 };
 
-pub const EventDrawBox = struct {
+pub const EventDrawBox = struct.{
   box: Math.BoundingBox,
   color: Draw.Color,
 };
 
-pub const EventInput = struct {
+pub const EventInput = struct.{
   command: input.Command,
   down: bool,
 };
 
-pub const EventMonsterDied = struct {
+pub const EventMonsterDied = struct.{
   unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
-pub const EventPlayerDied = struct {
+pub const EventPlayerDied = struct.{
   player_controller_id: Gbe.EntityId,
 };
 
-pub const EventPlayerOutOfLives = struct {
+pub const EventPlayerOutOfLives = struct.{
   player_controller_id: Gbe.EntityId,
 };
 
-pub const EventPostScore = struct {
+pub const EventPostScore = struct.{
   score: u32,
 };
 
-pub const EventQuit = struct {
+pub const EventQuit = struct.{
   unused: u32, // https://github.com/ziglang/zig/issues/1178
 };
 
-pub const EventSaveHighScore = struct {
+pub const EventSaveHighScore = struct.{
   high_score: u32,
 };
 
-pub const EventSound = struct {
+pub const EventSound = struct.{
   sample: Audio.Sample,
 };
 
-pub const EventTakeDamage = struct {
+pub const EventTakeDamage = struct.{
   inflictor_player_controller_id: ?Gbe.EntityId,
   self_id: Gbe.EntityId,
   amount: u32,

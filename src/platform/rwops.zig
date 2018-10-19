@@ -3,7 +3,7 @@ const c = @import("c.zig");
 const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 
 pub fn RWops(comptime ReadError: type) type {
-  return struct{
+  return struct.{
     pub fn create(
       in_stream: *std.io.InStream(ReadError),
       seekable: *Seekable,

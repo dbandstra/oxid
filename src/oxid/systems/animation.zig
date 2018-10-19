@@ -5,7 +5,7 @@ const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 const C = @import("../components.zig");
 const GameUtil = @import("../util.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   animation: *C.Animation,
 };
 

@@ -10,7 +10,7 @@ const State = @import("../platform.zig").State;
 const InitParams = @import("../platform.zig").InitParams;
 const Draw = @import("../../draw.zig");
 
-pub const GlitchMode = enum {
+pub const GlitchMode = enum.{
   Normal,
   QuadStrips,
   WholeTilesets,
@@ -26,14 +26,14 @@ pub fn cycleGlitchMode(ps: *State) void {
       @intToEnum(GlitchMode, 0);
 }
 
-const DrawBuffer = struct {
+const DrawBuffer = struct.{
   active: bool,
   vertex2f: [2 * BUFFER_VERTICES]c.GLfloat,
   texcoord2f: [2 * BUFFER_VERTICES]c.GLfloat,
   num_vertices: usize,
 };
 
-pub const DrawState = struct {
+pub const DrawState = struct.{
   // dimensions of the system window
   window_width: u32,
   window_height: u32,
@@ -51,7 +51,7 @@ pub const DrawState = struct {
   projection: math3d.Mat4x4,
 };
 
-pub fn init(ds: *DrawState, params: *const InitParams) !void {
+pub fn init(ds: *DrawState, params: InitParams) !void {
   ds.shaders = try all_shaders.createAllShaders();
   errdefer ds.shaders.destroy();
 
@@ -73,7 +73,7 @@ pub fn init(ds: *DrawState, params: *const InitParams) !void {
 
   c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, rt, 0);
 
-  var draw_buffers = []c.GLenum{ c.GL_COLOR_ATTACHMENT0 };
+  var draw_buffers = []c.GLenum.{ c.GL_COLOR_ATTACHMENT0 };
   c.glDrawBuffers(1, c.ptr(&draw_buffers[0]));
 
   if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {
@@ -130,7 +130,7 @@ pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
 
   ds.shaders.texture.bind();
   ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
-  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, ds.projection);
+  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, &ds.projection);
   ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, alpha);
 
   c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
@@ -157,7 +157,7 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: Draw.Co
   std.debug.assert(!ds.draw_buffer.active);
 
   const model = math3d.mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
-  const mvp = ds.projection.mult(model);
+  const mvp = ds.projection.mult(&model);
 
   ds.shaders.primitive.bind();
   ds.shaders.primitive.setUniformVec4(
@@ -167,7 +167,7 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: Draw.Co
     @intToFloat(f32, color.b) / 255.0,
     @intToFloat(f32, color.a) / 255.0,
   );
-  ds.shaders.primitive.setUniformMat4x4(ds.shaders.primitive_uniform_mvp, mvp);
+  ds.shaders.primitive.setUniformMat4x4(ds.shaders.primitive_uniform_mvp, &mvp);
 
   if (ds.shaders.primitive_attrib_position >= 0) { // ?
     c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
@@ -193,7 +193,7 @@ pub fn begin(ps: *State, tex_id: c.GLuint) void {
   ds.shaders.texture.bind();
   ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
   ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, 1.0);
-  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, ds.projection);
+  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, &ds.projection);
 
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));
   c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord));
@@ -257,22 +257,22 @@ pub fn tile(
   std.mem.copy(
     c.GLfloat,
     vertex2f,
-    [8]c.GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
+    [8]c.GLfloat.{x0, y0, x0, y1, x1, y1, x1, y0},
   );
   std.mem.copy(
     c.GLfloat,
     texcoord2f,
     switch (transform) {
       Draw.Transform.Identity =>
-        [8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
+        [8]f32.{s0, t0, s0, t1, s1, t1, s1, t0},
       Draw.Transform.FlipVertical =>
-        [8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
+        [8]f32.{s0, t1, s0, t0, s1, t0, s1, t1},
       Draw.Transform.FlipHorizontal =>
-        [8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
+        [8]f32.{s1, t0, s1, t1, s0, t1, s0, t0},
       Draw.Transform.RotateClockwise =>
-        [8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
+        [8]f32.{s0, t1, s1, t1, s1, t0, s0, t0},
       Draw.Transform.RotateCounterClockwise =>
-        [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
+        [8]f32.{s1, t0, s0, t0, s0, t1, s1, t1},
     },
   );
 

@@ -10,7 +10,7 @@ const Prototypes = @import("../prototypes.zig");
 const GameUtil = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 
-const SystemData = struct{
+const SystemData = struct.{
   transform: *const C.Transform,
   phys: *const C.PhysObject,
   creature: *const C.Creature,
@@ -24,7 +24,7 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
   if (self.player) |player| {
     if (player.dying_timer > 0) {
-      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
+      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw.{
         .pos = self.transform.pos,
         .graphic =
           if (player.dying_timer > 30)
@@ -42,7 +42,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .z_index = Constants.ZIndexPlayer,
       });
     } else {
-      drawCreature(gs, self, DrawCreatureParams{
+      drawCreature(gs, self, DrawCreatureParams.{
         .graphic1 = Graphic.Man1,
         .graphic2 = Graphic.Man2,
         .rotates = true,
@@ -54,7 +54,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 
   if (self.monster) |monster| {
     if (monster.spawning_timer > 0) {
-      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
+      _ = Prototypes.EventDraw.spawn(gs, C.EventDraw.{
         .pos = self.transform.pos,
         .graphic =
           if (alternation(u32, monster.spawning_timer, 8))
@@ -66,31 +66,31 @@ fn think(gs: *GameSession, self: SystemData) bool {
       });
     } else {
       drawCreature(gs, self, switch (monster.monster_type) {
-        ConstantTypes.MonsterType.Spider => DrawCreatureParams{
+        ConstantTypes.MonsterType.Spider => DrawCreatureParams.{
           .graphic1 = Graphic.Spider1,
           .graphic2 = Graphic.Spider2,
           .rotates = true,
           .z_index = Constants.ZIndexEnemy,
         },
-        ConstantTypes.MonsterType.Knight => DrawCreatureParams{
+        ConstantTypes.MonsterType.Knight => DrawCreatureParams.{
           .graphic1 = Graphic.Knight1,
           .graphic2 = Graphic.Knight2,
           .rotates = true,
           .z_index = Constants.ZIndexEnemy,
         },
-        ConstantTypes.MonsterType.FastBug => DrawCreatureParams{
+        ConstantTypes.MonsterType.FastBug => DrawCreatureParams.{
           .graphic1 = Graphic.FastBug1,
           .graphic2 = Graphic.FastBug2,
           .rotates = true,
           .z_index = Constants.ZIndexEnemy,
         },
-        ConstantTypes.MonsterType.Squid => DrawCreatureParams{
+        ConstantTypes.MonsterType.Squid => DrawCreatureParams.{
           .graphic1 = Graphic.Squid1,
           .graphic2 = Graphic.Squid2,
           .rotates = true,
           .z_index = Constants.ZIndexEnemy,
         },
-        ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams{
+        ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams.{
           .graphic1 = Graphic.Juggernaut,
           .graphic2 = Graphic.Juggernaut,
           .rotates = false,
@@ -103,7 +103,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 
   if (self.web) |web| {
     const graphic = if (self.creature.flinch_timer > 0) Graphic.Web2 else Graphic.Web1;
-    drawCreature(gs, self, DrawCreatureParams{
+    drawCreature(gs, self, DrawCreatureParams.{
       .graphic1 = graphic,
       .graphic2 = graphic,
       .rotates = false,
@@ -121,7 +121,7 @@ fn alternation(comptime T: type, variable: T, half_period: T) bool {
   return @mod(@divFloor(variable, half_period), 2) == 0;
 }
 
-const DrawCreatureParams = struct{
+const DrawCreatureParams = struct.{
   graphic1: Graphic,
   graphic2: Graphic,
   rotates: bool,
@@ -142,7 +142,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
   };
   const sxpos = @divFloor(xpos, Math.SUBPIXELS);
 
-  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
+  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw.{
     .pos = self.transform.pos,
     // animate legs every 6 screen pixels
     .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,

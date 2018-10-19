@@ -3,7 +3,7 @@ const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   mc: *C.MainController,
 };
 
@@ -15,7 +15,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (score > self.mc.high_score) {
       self.mc.high_score = score;
       self.mc.new_high_score = true;
-      _ = Prototypes.EventSaveHighScore.spawn(gs, C.EventSaveHighScore{
+      _ = Prototypes.EventSaveHighScore.spawn(gs, C.EventSaveHighScore.{
         .high_score = score,
       });
     } else {

@@ -26,24 +26,24 @@ pub fn getDirTransform(direction: Math.Direction) Draw.Transform {
   };
 }
 
-pub const Choice = struct{
+pub const Choice = struct.{
   direction: Math.Direction,
   score: u32, // lower is better
 };
 
-pub const Choices = struct{
+pub const Choices = struct.{
   choices: [4]Choice,
   num_choices: usize,
 
   fn init() Choices {
-    return Choices{
+    return Choices.{
       .choices = undefined,
       .num_choices = 0,
     };
   }
 
   fn add(self: *Choices, direction: Math.Direction, score: u32) void {
-    self.choices[self.num_choices] = Choice{
+    self.choices[self.num_choices] = Choice.{
       .direction = direction,
       .score = score,
     };

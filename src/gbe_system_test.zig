@@ -2,12 +2,12 @@ const std = @import("std");
 const Gbe = @import("gbe.zig");
 const GbeSystem = @import("gbe_system.zig");
 
-const Creature = struct{ hit_points: u32 };
-const Monster = struct{ chasing: bool };
-const Player = struct{ attack_level: u32 };
-const Transform = struct{ x: i32, y: i32 };
+const Creature = struct.{ hit_points: u32 };
+const Monster = struct.{ chasing: bool };
+const Player = struct.{ attack_level: u32 };
+const Transform = struct.{ x: i32, y: i32 };
 
-const MockGameSession = Gbe.Session(struct {
+const MockGameSession = Gbe.Session(struct.{
   Creature: Gbe.ComponentList(Creature, 50),
   Monster: Gbe.ComponentList(Monster, 50),
   Player: Gbe.ComponentList(Player, 50),
@@ -21,15 +21,15 @@ fn prepareGs(gs: *MockGameSession) !void {
 
   i = 0; while (i < 8) : (i += 1) {
     const entity_id = gs.spawn();
-    try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-    try gs.addComponent(entity_id, Creature{ .hit_points = 8 });
-    try gs.addComponent(entity_id, Monster{ .chasing = true });
+    try gs.addComponent(entity_id, Transform.{ .x = 0, .y = 0 });
+    try gs.addComponent(entity_id, Creature.{ .hit_points = 8 });
+    try gs.addComponent(entity_id, Monster.{ .chasing = true });
   }
   i = 0; while (i < 8) : (i += 1) {
     const entity_id = gs.spawn();
-    try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-    try gs.addComponent(entity_id, Creature{ .hit_points = 16 });
-    try gs.addComponent(entity_id, Player{ .attack_level = 0 });
+    try gs.addComponent(entity_id, Transform.{ .x = 0, .y = 0 });
+    try gs.addComponent(entity_id, Creature.{ .hit_points = 16 });
+    try gs.addComponent(entity_id, Player.{ .attack_level = 0 });
   }
 }
 
@@ -37,7 +37,7 @@ var g_count: u32 = undefined;
 
 ///////////////////////////////////////
 
-const SystemData1 = struct{
+const SystemData1 = struct.{
   creature: *Creature,
   transform: *Transform,
 };
@@ -62,7 +62,7 @@ test "GbeSystem basic test" {
 
 ///////////////////////////////////////
 
-const SystemData2 = struct{
+const SystemData2 = struct.{
   transform: *Transform,
   creature: ?*Creature,
 };
@@ -87,7 +87,7 @@ test "GbeSystem works with one optional and one required component" {
 
 ///////////////////////////////////////
 
-const SystemData3 = struct{
+const SystemData3 = struct.{
   transform: ?*Transform,
   creature: ?*Creature,
 };

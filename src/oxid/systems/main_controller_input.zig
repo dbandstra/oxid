@@ -4,7 +4,7 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 const input = @import("../input.zig");
 
-const SystemData = struct{
+const SystemData = struct.{
   mc: *C.MainController,
 };
 
@@ -65,7 +65,7 @@ fn handleMainMenuInput(gs: *GameSession, mc: *C.MainController) void {
     switch (event.data.command) {
       input.Command.Escape => {
         if (event.data.down) {
-          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit{ .unused = 0 });
+          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit.{ .unused = 0 });
         }
       },
       input.Command.Shoot => {
@@ -79,7 +79,7 @@ fn handleMainMenuInput(gs: *GameSession, mc: *C.MainController) void {
 }
 
 fn startGame(gs: *GameSession, mc: *C.MainController) void {
-  mc.game_running_state = C.MainController.GameRunningState{
+  mc.game_running_state = C.MainController.GameRunningState.{
     .render_move_boxes = false,
     .exit_dialog_open = false,
   };

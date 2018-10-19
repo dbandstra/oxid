@@ -7,7 +7,7 @@ const Draw = @import("../draw.zig");
 const GRAPHICS_FILENAME = "../assets/mytiles.pcx";
 const TRANSPARENT_COLOR_INDEX = 27;
 
-pub const Graphic = enum{
+pub const Graphic = enum.{
   Pit,
   PlaBullet,
   PlaBullet2,
@@ -57,83 +57,83 @@ pub const Graphic = enum{
 
 pub fn getGraphicTile(graphic: Graphic) Draw.Tile {
   return switch (graphic) {
-    Graphic.Pit        => Draw.Tile{ .tx = 1, .ty = 0 },
-    Graphic.Floor      => Draw.Tile{ .tx = 2, .ty = 0 },
-    Graphic.Wall       => Draw.Tile{ .tx = 3, .ty = 0 },
-    Graphic.Wall2      => Draw.Tile{ .tx = 4, .ty = 0 },
-    Graphic.EvilWallTL => Draw.Tile{ .tx = 0, .ty = 6 },
-    Graphic.EvilWallTR => Draw.Tile{ .tx = 1, .ty = 6 },
-    Graphic.EvilWallBL => Draw.Tile{ .tx = 0, .ty = 7 },
-    Graphic.EvilWallBR => Draw.Tile{ .tx = 1, .ty = 7 },
-    Graphic.PlaBullet  => Draw.Tile{ .tx = 2, .ty = 1 },
-    Graphic.PlaBullet2 => Draw.Tile{ .tx = 3, .ty = 1 },
-    Graphic.PlaBullet3 => Draw.Tile{ .tx = 4, .ty = 1 },
-    Graphic.PlaSpark1  => Draw.Tile{ .tx = 1, .ty = 1 },
-    Graphic.PlaSpark2  => Draw.Tile{ .tx = 0, .ty = 1 },
-    Graphic.MonBullet  => Draw.Tile{ .tx = 2, .ty = 3 },
-    Graphic.MonSpark1  => Draw.Tile{ .tx = 1, .ty = 3 },
-    Graphic.MonSpark2  => Draw.Tile{ .tx = 0, .ty = 3 },
-    Graphic.Man1       => Draw.Tile{ .tx = 6, .ty = 1 },
-    Graphic.Man2       => Draw.Tile{ .tx = 7, .ty = 1 },
-    Graphic.ManDying1  => Draw.Tile{ .tx = 0, .ty = 4 },
-    Graphic.ManDying2  => Draw.Tile{ .tx = 1, .ty = 4 },
-    Graphic.ManDying3  => Draw.Tile{ .tx = 2, .ty = 4 },
-    Graphic.ManDying4  => Draw.Tile{ .tx = 3, .ty = 4 },
-    Graphic.ManDying5  => Draw.Tile{ .tx = 4, .ty = 4 },
-    Graphic.ManDying6  => Draw.Tile{ .tx = 5, .ty = 4 },
-    Graphic.Spider1    => Draw.Tile{ .tx = 3, .ty = 2 },
-    Graphic.Spider2    => Draw.Tile{ .tx = 4, .ty = 2 },
-    Graphic.FastBug1   => Draw.Tile{ .tx = 5, .ty = 2 },
-    Graphic.FastBug2   => Draw.Tile{ .tx = 6, .ty = 2 },
-    Graphic.Juggernaut => Draw.Tile{ .tx = 7, .ty = 2 },
-    Graphic.Explode1   => Draw.Tile{ .tx = 0, .ty = 5 },
-    Graphic.Explode2   => Draw.Tile{ .tx = 1, .ty = 5 },
-    Graphic.Explode3   => Draw.Tile{ .tx = 2, .ty = 5 },
-    Graphic.Explode4   => Draw.Tile{ .tx = 3, .ty = 5 },
-    Graphic.Spawn1     => Draw.Tile{ .tx = 2, .ty = 2 },
-    Graphic.Spawn2     => Draw.Tile{ .tx = 1, .ty = 2 },
-    Graphic.Squid1     => Draw.Tile{ .tx = 3, .ty = 3 },
-    Graphic.Squid2     => Draw.Tile{ .tx = 4, .ty = 3 },
-    Graphic.Knight1    => Draw.Tile{ .tx = 5, .ty = 3 },
-    Graphic.Knight2    => Draw.Tile{ .tx = 6, .ty = 3 },
-    Graphic.Web1       => Draw.Tile{ .tx = 6, .ty = 4 },
-    Graphic.Web2       => Draw.Tile{ .tx = 7, .ty = 4 },
-    Graphic.LifeUp     => Draw.Tile{ .tx = 4, .ty = 5 },
-    Graphic.PowerUp    => Draw.Tile{ .tx = 6, .ty = 5 },
-    Graphic.SpeedUp    => Draw.Tile{ .tx = 5, .ty = 5 },
-    Graphic.Coin       => Draw.Tile{ .tx = 4, .ty = 6 },
+    Graphic.Pit        => Draw.Tile.{ .tx = 1, .ty = 0 },
+    Graphic.Floor      => Draw.Tile.{ .tx = 2, .ty = 0 },
+    Graphic.Wall       => Draw.Tile.{ .tx = 3, .ty = 0 },
+    Graphic.Wall2      => Draw.Tile.{ .tx = 4, .ty = 0 },
+    Graphic.EvilWallTL => Draw.Tile.{ .tx = 0, .ty = 6 },
+    Graphic.EvilWallTR => Draw.Tile.{ .tx = 1, .ty = 6 },
+    Graphic.EvilWallBL => Draw.Tile.{ .tx = 0, .ty = 7 },
+    Graphic.EvilWallBR => Draw.Tile.{ .tx = 1, .ty = 7 },
+    Graphic.PlaBullet  => Draw.Tile.{ .tx = 2, .ty = 1 },
+    Graphic.PlaBullet2 => Draw.Tile.{ .tx = 3, .ty = 1 },
+    Graphic.PlaBullet3 => Draw.Tile.{ .tx = 4, .ty = 1 },
+    Graphic.PlaSpark1  => Draw.Tile.{ .tx = 1, .ty = 1 },
+    Graphic.PlaSpark2  => Draw.Tile.{ .tx = 0, .ty = 1 },
+    Graphic.MonBullet  => Draw.Tile.{ .tx = 2, .ty = 3 },
+    Graphic.MonSpark1  => Draw.Tile.{ .tx = 1, .ty = 3 },
+    Graphic.MonSpark2  => Draw.Tile.{ .tx = 0, .ty = 3 },
+    Graphic.Man1       => Draw.Tile.{ .tx = 6, .ty = 1 },
+    Graphic.Man2       => Draw.Tile.{ .tx = 7, .ty = 1 },
+    Graphic.ManDying1  => Draw.Tile.{ .tx = 0, .ty = 4 },
+    Graphic.ManDying2  => Draw.Tile.{ .tx = 1, .ty = 4 },
+    Graphic.ManDying3  => Draw.Tile.{ .tx = 2, .ty = 4 },
+    Graphic.ManDying4  => Draw.Tile.{ .tx = 3, .ty = 4 },
+    Graphic.ManDying5  => Draw.Tile.{ .tx = 4, .ty = 4 },
+    Graphic.ManDying6  => Draw.Tile.{ .tx = 5, .ty = 4 },
+    Graphic.Spider1    => Draw.Tile.{ .tx = 3, .ty = 2 },
+    Graphic.Spider2    => Draw.Tile.{ .tx = 4, .ty = 2 },
+    Graphic.FastBug1   => Draw.Tile.{ .tx = 5, .ty = 2 },
+    Graphic.FastBug2   => Draw.Tile.{ .tx = 6, .ty = 2 },
+    Graphic.Juggernaut => Draw.Tile.{ .tx = 7, .ty = 2 },
+    Graphic.Explode1   => Draw.Tile.{ .tx = 0, .ty = 5 },
+    Graphic.Explode2   => Draw.Tile.{ .tx = 1, .ty = 5 },
+    Graphic.Explode3   => Draw.Tile.{ .tx = 2, .ty = 5 },
+    Graphic.Explode4   => Draw.Tile.{ .tx = 3, .ty = 5 },
+    Graphic.Spawn1     => Draw.Tile.{ .tx = 2, .ty = 2 },
+    Graphic.Spawn2     => Draw.Tile.{ .tx = 1, .ty = 2 },
+    Graphic.Squid1     => Draw.Tile.{ .tx = 3, .ty = 3 },
+    Graphic.Squid2     => Draw.Tile.{ .tx = 4, .ty = 3 },
+    Graphic.Knight1    => Draw.Tile.{ .tx = 5, .ty = 3 },
+    Graphic.Knight2    => Draw.Tile.{ .tx = 6, .ty = 3 },
+    Graphic.Web1       => Draw.Tile.{ .tx = 6, .ty = 4 },
+    Graphic.Web2       => Draw.Tile.{ .tx = 7, .ty = 4 },
+    Graphic.LifeUp     => Draw.Tile.{ .tx = 4, .ty = 5 },
+    Graphic.PowerUp    => Draw.Tile.{ .tx = 6, .ty = 5 },
+    Graphic.SpeedUp    => Draw.Tile.{ .tx = 5, .ty = 5 },
+    Graphic.Coin       => Draw.Tile.{ .tx = 4, .ty = 6 },
   };
 }
 
-pub const SimpleAnim = enum{
+pub const SimpleAnim = enum.{
   PlaSparks,
   MonSparks,
   Explosion,
 };
 
-pub const SimpleAnimConfig = struct{
+pub const SimpleAnimConfig = struct.{
   frames: []const Graphic,
   ticks_per_frame: u32,
 };
 
 pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
   return switch (simpleAnim) {
-    SimpleAnim.PlaSparks => SimpleAnimConfig{
-      .frames = ([2]Graphic{
+    SimpleAnim.PlaSparks => SimpleAnimConfig.{
+      .frames = ([2]Graphic.{
         Graphic.PlaSpark1,
         Graphic.PlaSpark2,
       })[0..],
       .ticks_per_frame = 6,
     },
-    SimpleAnim.MonSparks => SimpleAnimConfig{
-      .frames = ([2]Graphic{
+    SimpleAnim.MonSparks => SimpleAnimConfig.{
+      .frames = ([2]Graphic.{
         Graphic.MonSpark1,
         Graphic.MonSpark2,
       })[0..],
       .ticks_per_frame = 6,
     },
-    SimpleAnim.Explosion => SimpleAnimConfig{
-      .frames = ([4]Graphic{
+    SimpleAnim.Explosion => SimpleAnimConfig.{
+      .frames = ([4]Graphic.{
         Graphic.Explode1,
         Graphic.Explode2,
         Graphic.Explode3,
