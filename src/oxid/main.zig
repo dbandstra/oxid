@@ -56,8 +56,8 @@ pub fn main() !void {
     .window_height = WINDOW_H,
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
-    .audio_frequency = 22050,
-    .audio_buffer_size = 1024, // 4096,
+    .audio_frequency = 44100,
+    .audio_buffer_size = 1024,
     .dsaf = dsaf,
   });
   defer Platform.deinit(&g.platform_state);

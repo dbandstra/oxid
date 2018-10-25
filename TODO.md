@@ -20,6 +20,7 @@ i have implemented monsters getting out of the player's line of fire. but it ten
 - shouldn't removals take effect after every system? right now, if you remove an entity, it just adds a 'removal' entry. doesn't even set is_active to false. so iterators will still hit those entities until the end of the entire frame.
 - font image should be pure b&w. in game code, remember palette. then allow rendering font using any colour from the palette
 - sound: figure out how to start sounds at an offset into the mixing buffer. this becomes more important the larger the mix buffer is
+- not being able to init the sound device should not be a fatal error
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
 - optimization: player's "slipping around corners" code should operate on screen pixels, not subpixels
 - add tests for physics

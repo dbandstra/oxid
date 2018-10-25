@@ -29,8 +29,6 @@ pub const State = struct.{
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
-extern fn SDL_PollEvent(event: *c.SDL_Event) c_int;
-
 pub const InitParams = struct.{
   window_title: []const u8,
   // dimensions of the system window
@@ -42,7 +40,7 @@ pub const InitParams = struct.{
   virtual_window_height: u32,
   // audio settings
   audio_frequency: u32,
-  audio_buffer_size: u32,
+  audio_buffer_size: u16,
   // allocator (only used for temporary allocations during init)
   dsaf: *DoubleStackAllocatorFlat,
 };
@@ -90,16 +88,26 @@ pub fn init(ps: *State, params: InitParams) !void {
   errdefer c.SDL_DestroyWindow(window);
   params.dsaf.free_to_low_mark(low_mark);
 
-  if (c.Mix_OpenAudio(
-    @intCast(c_int, params.audio_frequency),
-    c.MIX_DEFAULT_FORMAT, // default format is 16-bit signed
-    1, // num channels (1 for mono, 2 for stereo)
-    @intCast(c_int, params.audio_buffer_size),
-  ) == -1) {
-    c.SDL_Log(c"Mix_OpenAudio failed: %s", c.Mix_GetError());
+  var want: c.SDL_AudioSpec = undefined;
+  want.freq = @intCast(c_int, params.audio_frequency);
+  want.format = c.AUDIO_S16SYS;
+  want.channels = 1;
+  want.samples = params.audio_buffer_size;
+  want.callback = PlatformAudio.audioCallback;
+  want.userdata = @ptrCast(*c_void, &ps.audio_state);
+
+  const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
+    @intToPtr([*]const u8, 0), // device name
+    0, // non-zero to open for recording instead of playback
+    @ptrCast([*]c.SDL_AudioSpec, &want), // desired output format
+    @intToPtr([*]c.SDL_AudioSpec, 0), // obtained output format
+    0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
+  );
+  if (device == 0) {
+    c.SDL_Log(c"Failed to open audio: %s", c.SDL_GetError());
     return error.SDLInitializationFailed;
   }
-  errdefer c.Mix_CloseAudio();
+  errdefer c.SDL_CloseAudio();
 
   const glcontext = c.SDL_GL_CreateContext(window) orelse {
     c.SDL_Log(c"SDL_GL_CreateContext failed: %s", c.SDL_GetError());
@@ -112,7 +120,7 @@ pub fn init(ps: *State, params: InitParams) !void {
   try PlatformDraw.init(&ps.draw_state, params);
   errdefer PlatformDraw.deinit(&ps.draw_state);
 
-  try PlatformAudio.init(&ps.audio_state, params);
+  try PlatformAudio.init(&ps.audio_state, params, device);
   errdefer PlatformAudio.deinit(&ps.audio_state);
 
   ps.initialized = true;
@@ -122,6 +130,8 @@ pub fn init(ps: *State, params: InitParams) !void {
   ps.window_height = params.window_height;
   ps.window = window;
   ps.glcontext = glcontext;
+
+  c.SDL_PauseAudioDevice(device, 0); // unpause
 }
 
 pub fn deinit(ps: *State) void {
@@ -131,7 +141,7 @@ pub fn deinit(ps: *State) void {
   PlatformAudio.deinit(&ps.audio_state);
   PlatformDraw.deinit(&ps.draw_state);
   c.SDL_GL_DeleteContext(ps.glcontext);
-  c.Mix_CloseAudio();
+  c.SDL_CloseAudioDevice(ps.audio_state.device);
   c.SDL_DestroyWindow(ps.window);
   c.SDL_Quit();
   ps.initialized = false;
@@ -140,7 +150,7 @@ pub fn deinit(ps: *State) void {
 pub fn pollEvent(ps: *State) ?Event {
   var sdl_event: c.SDL_Event = undefined;
 
-  if (SDL_PollEvent(&sdl_event) == 0) {
+  if (c.SDL_PollEvent(@ptrCast([*]c.SDL_Event, &sdl_event)) == 0) {
     return null;
   }
 
