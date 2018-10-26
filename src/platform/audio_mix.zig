@@ -18,8 +18,8 @@ const std = @import("std");
 
 // adapted from SDL2's SDL_MixAudioFormat function (AUDIO_S16LSB format)
 pub fn mixAudio(dst: []u8, src: []const u8) void {
-  const max_audioval: i32 = ((1 << (16 - 1)) - 1);
-  const min_audioval: i32 = -(1 << (16 - 1));
+  const max_audioval: i32 = std.math.maxInt(i16);
+  const min_audioval: i32 = std.math.minInt(i16);
 
   var num_samples = std.math.min(dst.len, src.len) / 2;
 

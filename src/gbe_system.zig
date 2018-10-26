@@ -83,7 +83,7 @@ pub fn build(
       // either an EntityId or a pointer to a component). decide which
       // component type to do the outermost iteration over. choose the
       // component type with the lowest amount of active entities.
-      var best: usize = @maxValue(usize);
+      var best: usize = std.math.maxInt(usize);
       var which: ?usize = null;
 
       inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
