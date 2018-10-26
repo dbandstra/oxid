@@ -9,13 +9,13 @@ const NUM_SLOTS = 8;
 
 pub const AudioSample = struct.{
   spec: c.SDL_AudioSpec,
-  buf: [*]u8,
-  len: u32, // num bytes
+  buf: []u8,
 };
 
 pub const AudioSlot = struct.{
   sample: ?*const AudioSample,
-  position: u32,
+  position: usize,
+  started_tickcount: usize,
 };
 
 pub const AudioState = struct.{
@@ -27,53 +27,91 @@ pub const AudioState = struct.{
   slots: [NUM_SLOTS]AudioSlot,
 
   muted: bool,
+
+  tickcount: usize,
 };
 
-pub extern fn audioCallback(userdata: ?*c_void, stream_: ?[*]u8, len: c_int) void {
-  const stream = stream_ orelse return;
+// terminology:
+// "sample": amplitude of one channel at one point in time
+// "frame": a sample per channel
+// for example, in 16-bit stereo, a sample is 2 bytes and a frame is 4 bytes
+pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
+  const as = @ptrCast(*AudioState, @alignCast(@alignOf(*AudioState), userdata_.?));
+  const mixbuf = stream_.?[0..@intCast(usize, len_)];
 
-  _ = c.SDL_memset(stream, 0, @intCast(usize, len));
+  std.mem.set(u8, mixbuf, 0);
 
-  const userdata_aligned = @alignCast(@alignOf(*AudioState), userdata.?);
-  const as = @ptrCast(*AudioState, userdata_aligned);
+  const frames_per_tick = 44100 / 60; // FIXME - no magic numbers
+  const bytes_per_frame = 2; // ditto
+
+  std.debug.assert((mixbuf.len % bytes_per_frame) == 0);
 
   for (as.slots) |*slot| {
     if (slot.sample) |sample| {
-      const ulen = @intCast(u32, len);
-      const bytes_left = sample.len - slot.position;
-      const num_bytes = if (bytes_left < ulen) bytes_left else ulen;
+      var skip_bytes: usize = 0;
+
+      if (slot.position == 0) {
+        // sound hasn't started playing yet. calculate how far into the mix
+        // buffer the sound should start playing.
+        // fudge the started_tickcount back by one in order to be optimistic,
+        // and because there's probably a bit of delay involved in everything
+        const started_tickcount =
+          if (slot.started_tickcount > 0) slot.started_tickcount - 1 else 0;
+        skip_bytes = std.math.min(
+          frames_per_tick * started_tickcount * bytes_per_frame,
+          // clamp to one sample before the end of the mix buffer, so it's
+          // guaranteed to start playing in this call
+          mixbuf.len - bytes_per_frame,
+        );
+      }
+
+      const num_bytes_to_mix = std.math.min(
+        sample.buf.len - slot.position,
+        mixbuf.len - skip_bytes,
+      );
 
       if (!as.muted) {
-        const bufPtr = @ptrToInt(sample.buf) + slot.position;
+        const mixbuf_ptr = @ptrToInt(mixbuf.ptr) + skip_bytes;
+        const buf_ptr = @ptrToInt(sample.buf.ptr) + slot.position;
 
         // TODO - mix into a u32 buffer and clamp it once at the end?
         c.SDL_MixAudioFormat(
-          stream, // dst
-          @intToPtr([*]const u8, bufPtr), // src
+          @intToPtr([*]u8, mixbuf_ptr), // dst
+          @intToPtr([*]const u8, buf_ptr), // src
           sample.spec.format, // format
-          num_bytes, // num bytes
+          @intCast(u32, num_bytes_to_mix), // num bytes
           c.SDL_MIX_MAXVOLUME / 2, // volume
         );
       }
 
-      slot.position += num_bytes;
-      if (slot.position >= sample.len) {
-        slot.sample = null;
-        slot.position = 0;
+      slot.position += num_bytes_to_mix;
+      if (slot.position >= sample.buf.len) {
+        slot.* = AudioSlot.{
+          .sample = null,
+          .position = 0,
+          .started_tickcount = 0,
+        };
       }
     }
   }
+
+  as.tickcount = 0;
 }
 
 fn clearState(as: *AudioState) void {
   as.num_samples = 0;
 
   for (as.slots[0..NUM_SLOTS]) |*slot| {
-    slot.sample = null;
-    slot.position = 0;
+    slot.* = AudioSlot.{
+      .sample = null,
+      .position = 0,
+      .started_tickcount = 0,
+    };
   }
 
   as.muted = false;
+
+  as.tickcount = 0;
 }
 
 pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDeviceID) error!void {
@@ -90,7 +128,7 @@ pub fn deinit(as: *AudioState) void {
   defer c.SDL_UnlockAudioDevice(as.device);
 
   for (as.samples[0..as.num_samples]) |*sample| {
-    c.SDL_FreeWAV(c.ptr(sample.buf));
+    c.SDL_FreeWAV(c.ptr(sample.buf.ptr));
   }
 
   clearState(as);
@@ -117,17 +155,20 @@ pub fn loadSound(
   var rwops_ptr = @ptrCast([*]c.SDL_RWops, &rwops);
 
   var sample = &ps.audio_state.samples[ps.audio_state.num_samples];
+  var buf: [*]u8 = undefined;
+  var len: u32 = undefined;
   const actual = c.SDL_LoadWAV_RW(
     rwops_ptr,
     0,
     @ptrCast([*]c.SDL_AudioSpec, &sample.spec),
-    @ptrCast([*]?[*]u8, &sample.buf),
-    @ptrCast([*]u32, &sample.len),
+    @ptrCast([*]?[*]u8, &buf),
+    @ptrCast([*]u32, &len),
   );
   if (actual == null) {
     c.SDL_Log(c"SDL_LoadWAV failed: %s", c.SDL_GetError());
     return 0;
   }
+  sample.buf = buf[0..len];
   // note: `actual` and `&sample.buf` are the same
   ps.audio_state.num_samples += 1;
   return ps.audio_state.num_samples;
@@ -141,8 +182,11 @@ pub fn playSound(ps: *Platform.State, handle: u32) void {
     const sample = &ps.audio_state.samples[handle - 1];
     for (ps.audio_state.slots) |*slot| {
       if (slot.sample == null) {
-        slot.sample = sample;
-        slot.position = 0;
+        slot.* = AudioSlot.{
+          .sample = sample,
+          .position = 0,
+          .started_tickcount = ps.audio_state.tickcount,
+        };
         break;
       }
     } else {
@@ -156,4 +200,11 @@ pub fn setMute(ps: *Platform.State, mute: bool) void {
   defer c.SDL_UnlockAudioDevice(ps.audio_state.device);
 
   ps.audio_state.muted = mute;
+}
+
+pub fn incrementTickCount(ps: *Platform.State) void {
+  c.SDL_LockAudioDevice(ps.audio_state.device);
+  defer c.SDL_UnlockAudioDevice(ps.audio_state.device);
+
+  ps.audio_state.tickcount += 1;
 }
