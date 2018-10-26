@@ -28,6 +28,7 @@ pub const AudioState = struct.{
   slots: [NUM_SLOTS]AudioSlot,
 
   muted: bool,
+  speed: usize,
 
   tickcount: usize,
 };
@@ -66,20 +67,14 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
         );
       }
 
-      const num_bytes_to_mix = std.math.min(
-        sample.buf.len - slot.position,
-        mixbuf.len - skip_bytes,
+      // TODO - mix into a u32 buffer and clamp it once at the end?
+      slot.position += mixAudio(
+        mixbuf[skip_bytes..],
+        sample.buf[slot.position..],
+        as.muted,
+        as.speed,
       );
 
-      if (!as.muted) {
-        // TODO - mix into a u32 buffer and clamp it once at the end?
-        mixAudio(
-          mixbuf[skip_bytes..skip_bytes + num_bytes_to_mix],
-          sample.buf[slot.position..slot.position + num_bytes_to_mix],
-        );
-      }
-
-      slot.position += num_bytes_to_mix;
       if (slot.position >= sample.buf.len) {
         slot.* = AudioSlot.{
           .sample = null,
@@ -105,6 +100,7 @@ fn clearState(as: *AudioState) void {
   }
 
   as.muted = false;
+  as.speed = 1;
 
   as.tickcount = 0;
 }
@@ -197,9 +193,10 @@ pub fn setMute(ps: *Platform.State, mute: bool) void {
   ps.audio_state.muted = mute;
 }
 
-pub fn incrementTickCount(ps: *Platform.State) void {
+pub fn incrementTickCount(ps: *Platform.State, num_ticks: usize) void {
   c.SDL_LockAudioDevice(ps.audio_state.device);
   defer c.SDL_UnlockAudioDevice(ps.audio_state.device);
 
-  ps.audio_state.tickcount += 1;
+  ps.audio_state.tickcount += num_ticks;
+  ps.audio_state.speed = num_ticks;
 }

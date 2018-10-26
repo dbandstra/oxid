@@ -17,27 +17,48 @@
 const std = @import("std");
 
 // adapted from SDL2's SDL_MixAudioFormat function (AUDIO_S16LSB format)
-pub fn mixAudio(dst: []u8, src: []const u8) void {
-  const max_audioval: i32 = std.math.maxInt(i16);
-  const min_audioval: i32 = std.math.minInt(i16);
+// `speed` is like a stride for the src buffer.
+// returns the number of source bytes used
+pub fn mixAudio(dst: []u8, src: []const u8, muted: bool, speed: usize) usize {
+  // since this is 16-bit audio, make sure both buffers have even length
+  std.debug.assert((dst.len % 1) == 0);
+  std.debug.assert((src.len % 1) == 0);
 
-  var num_samples = std.math.min(dst.len, src.len) / 2;
+  const num_bytes = std.math.min(dst.len, src.len);
 
-  var i: usize = 0; while (i < num_samples * 2) : (i += 2) {
-    const src_sample = i16(src[i]) | (i16(src[i + 1]) << 8);
-    const dst_sample = i16(dst[i]) | (i16(dst[i + 1]) << 8);
+  if (!muted) {
+    const max_audioval: i32 = std.math.maxInt(i16);
+    const min_audioval: i32 = std.math.minInt(i16);
 
-    const new_sample = i32(dst_sample) + @divTrunc(i32(src_sample), 2); // 50% volume
+    var i: usize = 0; while (i < num_bytes) : (i += 2) {
+      var dst_sample: i32 = i16(dst[i]) | (i16(dst[i + 1]) << 8);
 
-    const clamped_sample =
-      if (new_sample < min_audioval)
-        min_audioval
-      else if (new_sample > max_audioval)
-        max_audioval
-      else
-        new_sample;
+      var cumul: i32 = 0;
 
-    dst[i] = @intCast(u8, clamped_sample & 0xFF);
-    dst[i + 1] = @intCast(u8, (clamped_sample >> 8) & 0xFF);
+      var j: usize = 0; while (j < speed) : (j += 1) {
+        const src_index = i * speed + j * 2;
+        if (src_index >= src.len) {
+          break;
+        }
+
+        cumul += i16(src[src_index]) | (i16(src[src_index + 1]) << 8);
+      }
+
+      // average out all the source samples, and cut to 50% volume
+      dst_sample += @divTrunc(cumul, 2 * @intCast(i32, speed));
+
+      const clamped_sample =
+        if (dst_sample < min_audioval)
+          min_audioval
+        else if (dst_sample > max_audioval)
+          max_audioval
+        else
+          dst_sample;
+
+      dst[i] = @intCast(u8, clamped_sample & 0xFF);
+      dst[i + 1] = @intCast(u8, (clamped_sample >> 8) & 0xFF);
+    }
   }
+
+  return num_bytes * speed;
 }

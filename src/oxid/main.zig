@@ -158,7 +158,7 @@ pub fn main() !void {
     }
 
     Platform.swapWindow(&g.platform_state);
-    Platform.incrementTickCount(&g.platform_state);
+    Platform.incrementTickCount(&g.platform_state, num_frames);
   }
 }
 
