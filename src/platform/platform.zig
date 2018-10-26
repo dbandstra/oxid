@@ -90,7 +90,7 @@ pub fn init(ps: *State, params: InitParams) !void {
 
   var want: c.SDL_AudioSpec = undefined;
   want.freq = @intCast(c_int, params.audio_frequency);
-  want.format = c.AUDIO_S16SYS;
+  want.format = c.AUDIO_S16LSB;
   want.channels = 1;
   want.samples = params.audio_buffer_size;
   want.callback = PlatformAudio.audioCallback;

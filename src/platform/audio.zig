@@ -3,6 +3,7 @@ const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 const RWops = @import("rwops.zig").RWops;
 const c = @import("c.zig");
 const Platform = @import("platform.zig");
+const mixAudio = @import("audio_mix.zig").mixAudio;
 
 const MAX_SAMPLES = 20;
 const NUM_SLOTS = 8;
@@ -71,16 +72,10 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
       );
 
       if (!as.muted) {
-        const mixbuf_ptr = @ptrToInt(mixbuf.ptr) + skip_bytes;
-        const buf_ptr = @ptrToInt(sample.buf.ptr) + slot.position;
-
         // TODO - mix into a u32 buffer and clamp it once at the end?
-        c.SDL_MixAudioFormat(
-          @intToPtr([*]u8, mixbuf_ptr), // dst
-          @intToPtr([*]const u8, buf_ptr), // src
-          sample.spec.format, // format
-          @intCast(u32, num_bytes_to_mix), // num bytes
-          c.SDL_MIX_MAXVOLUME / 2, // volume
+        mixAudio(
+          mixbuf[skip_bytes..skip_bytes + num_bytes_to_mix],
+          sample.buf[slot.position..slot.position + num_bytes_to_mix],
         );
       }
 
