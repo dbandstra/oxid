@@ -108,7 +108,7 @@ pub fn createAllShaders() !AllShaders {
     var as: AllShaders = undefined;
 
     as.primitive = try createShader(
-        \\#version 150 core
+        \\#version 130
         \\
         \\in vec3 VertexPosition;
         \\
@@ -118,7 +118,7 @@ pub fn createAllShaders() !AllShaders {
         \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
         \\}
     ,
-        \\#version 150 core
+        \\#version 130
         \\
         \\out vec4 FragColor;
         \\
@@ -134,7 +134,7 @@ pub fn createAllShaders() !AllShaders {
     as.primitive_uniform_color = as.primitive.uniformLocation(c"Color");
 
     as.texture = try createShader(
-        \\#version 150 core
+        \\#version 130
         \\
         \\in vec3 VertexPosition;
         \\in vec2 TexCoord;
@@ -149,7 +149,7 @@ pub fn createAllShaders() !AllShaders {
         \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
         \\}
     ,
-        \\#version 150 core
+        \\#version 130
         \\
         \\in vec2 FragTexCoord;
         \\out vec4 FragColor;
