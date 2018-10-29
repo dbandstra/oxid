@@ -41,7 +41,7 @@ pub const InitParams = struct.{
   // audio settings
   audio_frequency: u32,
   audio_buffer_size: u16,
-  // allocator (only used for temporary allocations during init)
+  // allocators (low = temporary, high = persistent)
   dsaf: *DoubleStackAllocatorFlat,
 };
 

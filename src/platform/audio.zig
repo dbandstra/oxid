@@ -3,7 +3,7 @@ const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 const RWops = @import("rwops.zig").RWops;
 const c = @import("c.zig");
 const Platform = @import("platform.zig");
-const mixAudio = @import("audio_mix.zig").mixAudio;
+const mix = @import("audio_mix.zig");
 
 const MAX_SAMPLES = 20;
 const NUM_SLOTS = 8;
@@ -31,6 +31,9 @@ pub const AudioState = struct.{
   speed: usize,
 
   tickcount: usize,
+
+  allocator: *std.mem.Allocator,
+  mix_buffer: []i32,
 };
 
 // terminology:
@@ -39,18 +42,19 @@ pub const AudioState = struct.{
 // for example, in 16-bit stereo, a sample is 2 bytes and a frame is 4 bytes
 pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
   const as = @ptrCast(*AudioState, @alignCast(@alignOf(*AudioState), userdata_.?));
-  const mixbuf = stream_.?[0..@intCast(usize, len_)];
-
-  std.mem.set(u8, mixbuf, 0);
+  const stream = stream_.?[0..@intCast(usize, len_)];
 
   const frames_per_tick = 44100 / 60; // FIXME - no magic numbers
   const bytes_per_frame = 2; // ditto
 
-  std.debug.assert((mixbuf.len % bytes_per_frame) == 0);
+  std.debug.assert(as.mix_buffer.len * 2 == stream.len);
+  std.debug.assert((as.mix_buffer.len % bytes_per_frame) == 0);
+
+  std.mem.set(i32, as.mix_buffer, 0);
 
   for (as.slots) |*slot| {
     if (slot.sample) |sample| {
-      var skip_bytes: usize = 0;
+      var skip_frames: usize = 0;
 
       if (slot.position == 0) {
         // sound hasn't started playing yet. calculate how far into the mix
@@ -59,17 +63,17 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
         // and because there's probably a bit of delay involved in everything
         const started_tickcount =
           if (slot.started_tickcount > 0) slot.started_tickcount - 1 else 0;
-        skip_bytes = std.math.min(
-          frames_per_tick * started_tickcount * bytes_per_frame,
+
+        skip_frames = std.math.min(
+          frames_per_tick * started_tickcount,
           // clamp to one sample before the end of the mix buffer, so it's
           // guaranteed to start playing in this call
-          mixbuf.len - bytes_per_frame,
+          as.mix_buffer.len - 1,
         );
       }
 
-      // TODO - mix into a u32 buffer and clamp it once at the end?
-      slot.position += mixAudio(
-        mixbuf[skip_bytes..],
+      slot.position += mix.mixAudio(
+        as.mix_buffer[skip_frames..],
         sample.buf[slot.position..],
         as.muted,
         as.speed,
@@ -84,6 +88,8 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
       }
     }
   }
+
+  mix.mixDown(stream, as.mix_buffer);
 
   as.tickcount = 0;
 }
@@ -111,6 +117,9 @@ pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDev
   c.SDL_LockAudioDevice(as.device);
   defer c.SDL_UnlockAudioDevice(as.device);
 
+  as.allocator = &params.dsaf.high_allocator;
+  as.mix_buffer = try as.allocator.alloc(i32, params.audio_buffer_size);
+
   clearState(as);
 }
 
@@ -123,6 +132,8 @@ pub fn deinit(as: *AudioState) void {
   }
 
   clearState(as);
+
+  as.allocator.free(as.mix_buffer);
 }
 
 // note: handle 0 is null/empty.
