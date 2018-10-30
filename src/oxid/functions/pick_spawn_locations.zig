@@ -18,14 +18,10 @@ const PickSpawnLocations = struct.{
         const mins_y = transform.pos.y + phys.entity_bbox.mins.y - pad;
         const maxs_x = transform.pos.x + phys.entity_bbox.maxs.x + pad;
         const maxs_y = transform.pos.y + phys.entity_bbox.maxs.y + pad;
-        var gmins_x = @divFloor(mins_x, GRIDSIZE_SUBPIXELS);
-        var gmins_y = @divFloor(mins_y, GRIDSIZE_SUBPIXELS);
-        var gmaxs_x = @divFloor(maxs_x, GRIDSIZE_SUBPIXELS);
-        var gmaxs_y = @divFloor(maxs_y, GRIDSIZE_SUBPIXELS);
-        if (gmins_x < 0) gmins_x = 0;
-        if (gmins_y < 0) gmins_y = 0;
-        if (gmaxs_x > i32(LEVEL.w) - 1) gmaxs_x = i32(LEVEL.w) - 1;
-        if (gmaxs_y > i32(LEVEL.h) - 1) gmaxs_y = i32(LEVEL.h) - 1;
+        const gmins_x = std.math.max(@divFloor(mins_x, GRIDSIZE_SUBPIXELS), 0);
+        const gmins_y = std.math.min(@divFloor(mins_y, GRIDSIZE_SUBPIXELS), i32(LEVEL.w) - 1);
+        const gmaxs_x = std.math.max(@divFloor(maxs_x, GRIDSIZE_SUBPIXELS), 0);
+        const gmaxs_y = std.math.min(@divFloor(maxs_y, GRIDSIZE_SUBPIXELS), i32(LEVEL.h) - 1);
         const gx0 = @intCast(u31, gmins_x);
         const gy0 = @intCast(u31, gmins_y);
         const gx1 = @intCast(u31, gmaxs_x);
@@ -49,7 +45,7 @@ const PickSpawnLocations = struct.{
 
     gy = 0; while (gy < LEVEL.h) : (gy += 1) {
       gx = 0; while (gx < LEVEL.w) : (gx += 1) {
-        const pos = Math.Vec2.{ .x = gx, .y = gy };
+        const pos = Math.Vec2.init(gx, gy);
         const i = gy * LEVEL.w + gx;
         self.gridmask[i] = LEVEL.getGridTerrainType(pos) == TerrainType.Floor;
       }
@@ -71,7 +67,7 @@ const PickSpawnLocations = struct.{
     gy = 0; while (gy < LEVEL.h) : (gy += 1) {
       gx = 0; while (gx < LEVEL.w) : (gx += 1) {
         if (self.gridmask[gy * LEVEL.w + gx]) {
-          candidates[num_candidates] = Math.Vec2.{ .x = gx, .y = gy };
+          candidates[num_candidates] = Math.Vec2.init(gx, gy);
           num_candidates += 1;
         }
       }
