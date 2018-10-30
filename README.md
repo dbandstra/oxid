@@ -43,8 +43,6 @@ Actually using the ECS requires very little boilerplate.
 
 Adding new graphics, sound effects, or input bindings is not as polished but still relatively easy. Documentation to come later.
 
-Please do not look inside `physics.zig`.
-
 ## Notes
 Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
 
