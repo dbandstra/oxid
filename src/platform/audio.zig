@@ -21,6 +21,7 @@ pub const AudioSlot = struct.{
 
 pub const AudioState = struct.{
   device: c.SDL_AudioDeviceID,
+  frequency: u32,
 
   samples: [MAX_SAMPLES]AudioSample,
   num_samples: u32,
@@ -44,11 +45,9 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
   const as = @ptrCast(*AudioState, @alignCast(@alignOf(*AudioState), userdata_.?));
   const stream = stream_.?[0..@intCast(usize, len_)];
 
-  const frames_per_tick = 44100 / 60; // FIXME - no magic numbers
-  const bytes_per_frame = 2; // ditto
+  const frames_per_tick = as.frequency / 60; // FIXME - no magic numbers
 
   std.debug.assert(as.mix_buffer.len * 2 == stream.len);
-  std.debug.assert((as.mix_buffer.len % bytes_per_frame) == 0);
 
   std.mem.set(i32, as.mix_buffer, 0);
 
@@ -113,6 +112,7 @@ fn clearState(as: *AudioState) void {
 
 pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDeviceID) error!void {
   as.device = device;
+  as.frequency = params.audio_frequency;
 
   c.SDL_LockAudioDevice(as.device);
   defer c.SDL_UnlockAudioDevice(as.device);
