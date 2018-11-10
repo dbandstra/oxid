@@ -1,6 +1,6 @@
 [submodule "zigutils"]
 	path = zigutils
-	url = git@gitlab.com:dbandstra/zigutils.git
+	url = git@github.com:dbandstra/zigutils.git
 [submodule "zig-comptime-pcx"]
 	path = zig-comptime-pcx
-	url = git@gitlab.com:dbandstra/zig-comptime-pcx.git
+	url = git@github.com:dbandstra/zig-comptime-pcx.git
