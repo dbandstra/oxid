@@ -65,7 +65,7 @@ fn handleMainMenuInput(gs: *GameSession, mc: *C.MainController) void {
     switch (event.data.command) {
       input.Command.Escape => {
         if (event.data.down) {
-          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit.{ .unused = 0 });
+          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit.{});
         }
       },
       input.Command.Shoot => {
