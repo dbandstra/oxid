@@ -274,9 +274,7 @@ pub const Web = struct.{
       .internal = undefined,
     });
 
-    try gs.addComponent(entity_id, C.Web.{
-      .unused = 0,
-    });
+    try gs.addComponent(entity_id, C.Web.{});
 
     try gs.addComponent(entity_id, C.Creature.{
       .invulnerability_timer = 0,

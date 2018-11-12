@@ -50,9 +50,7 @@ pub const Monster = struct.{
   persistent: bool,
 };
 
-pub const Web = struct.{
-  unused: u32, // https://github.com/ziglang/zig/issues/1178
-};
+pub const Web = struct.{};
 
 pub const GameController = struct.{
   game_over: bool,
@@ -219,9 +217,7 @@ pub const EventInput = struct.{
   down: bool,
 };
 
-pub const EventMonsterDied = struct.{
-  unused: u32, // https://github.com/ziglang/zig/issues/1178
-};
+pub const EventMonsterDied = struct.{};
 
 pub const EventPlayerDied = struct.{
   player_controller_id: Gbe.EntityId,
@@ -235,9 +231,7 @@ pub const EventPostScore = struct.{
   score: u32,
 };
 
-pub const EventQuit = struct.{
-  unused: u32, // https://github.com/ziglang/zig/issues/1178
-};
+pub const EventQuit = struct.{};
 
 pub const EventSaveHighScore = struct.{
   high_score: u32,

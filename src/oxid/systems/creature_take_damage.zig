@@ -57,9 +57,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       } else {
         // something other than a player died
         if (self.monster) |self_monster| {
-          _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied.{
-            .unused = 0,
-          });
+          _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied.{});
           if (event.inflictor_player_controller_id) |player_controller_id| {
             _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints.{
               .player_controller_id = player_controller_id,
