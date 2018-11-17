@@ -1,4 +1,4 @@
-pub const Key = enum.{
+pub const Key = enum{
   Escape,
   Backspace,
   Return,
@@ -17,7 +17,7 @@ pub const Key = enum.{
   Y,
 };
 
-pub const Event = union(enum).{
+pub const Event = union(enum){
   KeyDown: Key,
   KeyUp: Key,
   Quit,

@@ -12,7 +12,7 @@ const Prototypes = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const GameUtil = @import("../util.zig");
 
-const SystemData = struct.{
+const SystemData = struct{
   gc: *C.GameController,
 };
 
@@ -25,7 +25,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   }
   _ = GameUtil.decrementTimer(&self.gc.wave_message_timer);
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
-    _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+    _ = Prototypes.EventSound.spawn(gs, C.EventSound{
       .sample = Audio.Sample.WaveBegin,
     });
     self.gc.wave_number += 1;
@@ -44,7 +44,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
     if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
       self.gc.enemy_speed_level += 1;
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.Accelerate,
       });
     }
@@ -99,7 +99,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
   var spawn_locs = spawn_locs_buf[0..count];
   pickSpawnLocations(gs, spawn_locs);
   for (spawn_locs) |loc, i| {
-    _ = Prototypes.Monster.spawn(gs, Prototypes.Monster.Params.{
+    _ = Prototypes.Monster.spawn(gs, Prototypes.Monster.Params{
       .wave_number = wave_number,
       .pos = Math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
       .monster_type =
@@ -123,7 +123,7 @@ fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
   var spawn_locs: [1]Math.Vec2 = undefined;
   pickSpawnLocations(gs, spawn_locs[0..]);
   const pos = Math.Vec2.scale(spawn_locs[0], GRIDSIZE_SUBPIXELS);
-  _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params.{
+  _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
     .pos = pos,
     .pickup_type = pickup_type,
   });

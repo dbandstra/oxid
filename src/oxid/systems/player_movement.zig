@@ -13,7 +13,7 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct.{
+const SystemData = struct{
   id: Gbe.EntityId,
   creature: *const C.Creature,
   phys: *C.PhysObject,
@@ -25,13 +25,13 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.player.dying_timer)) {
-    _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params.{
+    _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params{
       .pos = self.transform.pos,
     });
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.PlayerCrumble,
       });
     }
@@ -69,7 +69,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           break slot;
         }
       } else null) |slot| {
-        _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.PlayerShot,
         });
         // spawn the bullet one quarter of a grid cell in front of the player
@@ -77,7 +77,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
         const dir_vec = Math.Direction.normal(self.phys.facing);
         const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
         const bullet_pos = Math.Vec2.add(pos, ofs);
-        if (Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params.{
+        if (Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
           .inflictor_player_controller_id = self.player.player_controller_id,
           .owner_id = self.id,
           .pos = bullet_pos,

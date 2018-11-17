@@ -11,7 +11,7 @@ const Draw = @import("../draw.zig");
 const Event = @import("../event.zig").Event;
 const translateEvent = @import("translate_event.zig").translateEvent;
 
-pub const State = struct.{
+pub const State = struct{
   initialized: bool,
   glitch_mode: PlatformDraw.GlitchMode,
   clear_screen: bool,
@@ -29,7 +29,7 @@ pub const State = struct.{
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
-pub const InitParams = struct.{
+pub const InitParams = struct{
   window_title: []const u8,
   // dimensions of the system window
   window_width: u32,

@@ -1,7 +1,7 @@
 const c = @import("../c.zig");
 const image = @import("../../../zigutils/src/image/image.zig");
 
-pub const Texture = struct.{
+pub const Texture = struct{
   handle: c.GLuint,
 };
 
@@ -38,7 +38,7 @@ pub fn uploadTexture(img: *const image.Image) Texture {
     c.GL_UNSIGNED_BYTE, // type
     @ptrCast(*const c_void, &img.pixels[0]), // data
   );
-  return Texture.{
+  return Texture{
     .handle = texid,
   };
 }

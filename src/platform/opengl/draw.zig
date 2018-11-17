@@ -10,7 +10,7 @@ const State = @import("../platform.zig").State;
 const InitParams = @import("../platform.zig").InitParams;
 const Draw = @import("../../draw.zig");
 
-pub const GlitchMode = enum.{
+pub const GlitchMode = enum{
   Normal,
   QuadStrips,
   WholeTilesets,
@@ -26,14 +26,14 @@ pub fn cycleGlitchMode(ps: *State) void {
       @intToEnum(GlitchMode, 0);
 }
 
-const DrawBuffer = struct.{
+const DrawBuffer = struct{
   active: bool,
   vertex2f: [2 * BUFFER_VERTICES]c.GLfloat,
   texcoord2f: [2 * BUFFER_VERTICES]c.GLfloat,
   num_vertices: usize,
 };
 
-pub const DrawState = struct.{
+pub const DrawState = struct{
   // dimensions of the system window
   window_width: u32,
   window_height: u32,
@@ -73,7 +73,7 @@ pub fn init(ds: *DrawState, params: InitParams) !void {
 
   c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, rt, 0);
 
-  var draw_buffers = []c.GLenum.{ c.GL_COLOR_ATTACHMENT0 };
+  var draw_buffers = []c.GLenum{ c.GL_COLOR_ATTACHMENT0 };
   c.glDrawBuffers(1, c.ptr(&draw_buffers[0]));
 
   if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {
@@ -257,22 +257,22 @@ pub fn tile(
   std.mem.copy(
     c.GLfloat,
     vertex2f,
-    [8]c.GLfloat.{x0, y0, x0, y1, x1, y1, x1, y0},
+    [8]c.GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
   );
   std.mem.copy(
     c.GLfloat,
     texcoord2f,
     switch (transform) {
       Draw.Transform.Identity =>
-        [8]f32.{s0, t0, s0, t1, s1, t1, s1, t0},
+        [8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
       Draw.Transform.FlipVertical =>
-        [8]f32.{s0, t1, s0, t0, s1, t0, s1, t1},
+        [8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
       Draw.Transform.FlipHorizontal =>
-        [8]f32.{s1, t0, s1, t1, s0, t1, s0, t0},
+        [8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
       Draw.Transform.RotateClockwise =>
-        [8]f32.{s0, t1, s1, t1, s1, t0, s0, t0},
+        [8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
       Draw.Transform.RotateCounterClockwise =>
-        [8]f32.{s1, t0, s0, t0, s0, t1, s1, t1},
+        [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
     },
   );
 

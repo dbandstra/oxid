@@ -8,7 +8,7 @@ const Prototypes = @import("../prototypes.zig");
 const GameUtil = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 
-const SystemData = struct.{
+const SystemData = struct{
   transform: *const C.Transform,
   phys: ?*const C.PhysObject,
   simple_graphic: *const C.SimpleGraphic,
@@ -17,7 +17,7 @@ const SystemData = struct.{
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw.{
+  _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
     .pos = self.transform.pos,
     .graphic = self.simple_graphic.graphic,
     .transform =

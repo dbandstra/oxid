@@ -10,7 +10,7 @@ const GameUtil = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
-const SystemData = struct.{
+const SystemData = struct{
   phys: *const C.PhysObject,
 };
 
@@ -18,9 +18,9 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   const int = self.phys.internal;
-  _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox.{
+  _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox{
     .box = int.move_bbox,
-    .color = Draw.Color.{
+    .color = Draw.Color{
       .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
       .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
       .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),

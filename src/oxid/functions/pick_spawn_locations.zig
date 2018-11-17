@@ -7,7 +7,7 @@ const LEVEL = @import("../level.zig").LEVEL;
 const TerrainType = @import("../level.zig").TerrainType;
 const C = @import("../components.zig");
 
-const PickSpawnLocations = struct.{
+const PickSpawnLocations = struct{
   gridmask: [LEVEL.w * LEVEL.h]bool,
 
   fn avoidObject(self: *PickSpawnLocations, gs: *GameSession, entity_id: Gbe.EntityId) void {

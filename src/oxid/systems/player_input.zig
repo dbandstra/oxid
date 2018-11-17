@@ -11,7 +11,7 @@ const input = @import("../input.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
-const SystemData = struct.{
+const SystemData = struct{
   player: *C.Player,
   creature: *C.Creature,
 };

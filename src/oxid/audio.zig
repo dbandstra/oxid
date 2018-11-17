@@ -3,7 +3,7 @@ const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocato
 const SeekableFileInStream = @import("../../zigutils/src/FileInStream.zig").SeekableFileInStream;
 const Platform = @import("../platform/index.zig");
 
-pub const Sample = enum.{
+pub const Sample = enum{
   Accelerate,
   Coin,
   DropWeb,
@@ -37,7 +37,7 @@ fn getSampleFilename(sample: Sample) []const u8 {
   };
 }
 
-pub const LoadedSamples = struct.{
+pub const LoadedSamples = struct{
   handles: [@memberCount(Sample)]u32,
 };
 

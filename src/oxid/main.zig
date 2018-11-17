@@ -37,7 +37,7 @@ var dsaf_buffer: [200*1024]u8 = undefined;
 var dsaf_ = DoubleStackAllocatorFlat.init(dsaf_buffer[0..]);
 const dsaf = &dsaf_;
 
-pub const GameState = struct.{
+pub const GameState = struct{
   platform_state: Platform.State,
   samples: Audio.LoadedSamples,
   tileset: Draw.Tileset,
@@ -50,7 +50,7 @@ pub var game_state: GameState = undefined;
 
 pub fn main() !void {
   const g = &game_state;
-  try Platform.init(&g.platform_state, Platform.InitParams.{
+  try Platform.init(&g.platform_state, Platform.InitParams{
     .window_title = "Oxid",
     .window_width = WINDOW_W,
     .window_height = WINDOW_H,
@@ -95,7 +95,7 @@ pub fn main() !void {
       switch (event) {
         Event.KeyDown => |key| {
           if (input.getCommandForKey(key)) |command| {
-            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput.{
+            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
               .command = command,
               .down = true,
             });
@@ -120,7 +120,7 @@ pub fn main() !void {
         },
         Event.KeyUp => |key| {
           if (input.getCommandForKey(key)) |command| {
-            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput.{
+            _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
               .command = command,
               .down = false,
             });

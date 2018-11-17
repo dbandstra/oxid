@@ -4,7 +4,7 @@ const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const GameUtil = @import("../util.zig");
 
-const SystemData = struct.{
+const SystemData = struct{
   pickup: *C.Pickup,
 };
 

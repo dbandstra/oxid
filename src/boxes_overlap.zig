@@ -23,7 +23,7 @@ pub fn boxesOverlap(
 }
 
 test "boxesOverlap" {
-  const bbox = Math.BoundingBox.{
+  const bbox = Math.BoundingBox{
     .mins = Math.Vec2.init(0, 0),
     .maxs = Math.Vec2.init(15, 15),
   };

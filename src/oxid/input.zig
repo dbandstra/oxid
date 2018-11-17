@@ -1,6 +1,6 @@
 const Key = @import("../event.zig").Key;
 
-pub const Command = enum.{
+pub const Command = enum{
   Left,
   Right,
   Up,

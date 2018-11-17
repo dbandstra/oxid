@@ -10,7 +10,7 @@ const GameUtil = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
-const SystemData = struct.{
+const SystemData = struct{
   bullet: *const C.Bullet,
 };
 
@@ -18,9 +18,9 @@ pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (self.bullet.line_of_fire) |box| {
-    _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox.{
+    _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox{
       .box = box,
-      .color = Draw.Color.{
+      .color = Draw.Color{
         .r = 0,
         .g = 0,
         .b = 0,

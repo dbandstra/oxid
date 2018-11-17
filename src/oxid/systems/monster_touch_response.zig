@@ -5,7 +5,7 @@ const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct.{
+const SystemData = struct{
   id: Gbe.EntityId,
   phys: *C.PhysObject,
   monster: *const C.Monster,
@@ -30,7 +30,7 @@ fn monsterCollide(gs: *GameSession, self: SystemData) bool {
       if (gs.find(event.other_id, C.Player) != null) {
         // if it's a player creature, inflict damage on it
         if (self.monster.spawning_timer == 0) {
-          _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage.{
+          _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
             .inflictor_player_controller_id = null,
             .self_id = event.other_id,
             .amount = 1,

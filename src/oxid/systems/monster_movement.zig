@@ -13,7 +13,7 @@ const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
-const SystemData = struct.{
+const SystemData = struct{
   id: Gbe.EntityId,
   creature: *C.Creature,
   phys: *C.PhysObject,
@@ -133,7 +133,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.MonsterShot,
       });
       // spawn the bullet one quarter of a grid cell in front of the monster
@@ -141,7 +141,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
       const dir_vec = Math.Direction.normal(self.phys.facing);
       const ofs = Math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
       const bullet_pos = Math.Vec2.add(pos, ofs);
-      _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params.{
+      _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
         .inflictor_player_controller_id = null,
         .owner_id = self.id,
         .pos = bullet_pos,
@@ -150,10 +150,10 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       });
     } else if (self.monster.can_drop_webs) {
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound.{
+      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.DropWeb,
       });
-      _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params.{
+      _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
       });
     }

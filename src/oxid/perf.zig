@@ -1,13 +1,13 @@
 const std = @import("std");
 
-pub const Timer = struct.{
+pub const Timer = struct{
   label: []const u8,
   timer: std.os.time.Timer,
   samples: [60]u64,
   cursor: usize,
 };
 
-pub const Timers = struct.{
+pub const Timers = struct{
   Frame: Timer,
   Draw: Timer,
   DrawSort: Timer,
@@ -20,46 +20,46 @@ pub const Timers = struct.{
 pub var timers: Timers = undefined;
 
 pub fn init() void {
-  timers.Frame = Timer.{
+  timers.Frame = Timer{
     .label = "Frame",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.Draw = Timer.{
+  timers.Draw = Timer{
     .label = "Draw",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.DrawSort = Timer.{
+  timers.DrawSort = Timer{
     .label = "DrawSort",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.DrawMap = Timer.{
+  timers.DrawMap = Timer{
     .label = "DrawMap",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.DrawEntities = Timer.{
+  timers.DrawEntities = Timer{
     .label = "DrawEntities",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.DrawHud = Timer.{
+  timers.DrawHud = Timer{
     .label = "DrawHud",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
-  timers.WholeDraw = Timer.{
+  timers.WholeDraw = Timer{
     .label = "WholeDraw",
     .timer = std.os.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
-    .samples = [1]u64.{0} ** 60,
+    .samples = [1]u64{0} ** 60,
     .cursor = 0,
   };
 }

@@ -9,7 +9,7 @@ test "box_in_wall" {
     const x = 0x00;
     const O = 0x80;
 
-    break :blk []const u8.{
+    break :blk []const u8{
       O,O,O,
       O,x,O,
       O,O,O,
@@ -22,7 +22,7 @@ test "box_in_wall" {
   // provide gridsize within the level object so we can specify
   // a custom one in the test.
 
-  const bbox = Math.BoundingBox.{
+  const bbox = Math.BoundingBox{
     .mins = Math.Vec2.init(0, 0),
     .maxs = Math.Vec2.init(s-1, s-1),
   };

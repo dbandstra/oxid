@@ -29,17 +29,17 @@ pub fn translateEvent(sdl_event: c.SDL_Event) ?Event {
     c.SDL_KEYDOWN => {
       if (sdl_event.key.repeat == 0) {
         if (getKey(sdl_event.key.keysym.sym)) |key| {
-          return Event.{ .KeyDown = key};
+          return Event{ .KeyDown = key};
         }
       }
     },
     c.SDL_KEYUP => {
       if (getKey(sdl_event.key.keysym.sym)) |key| {
-        return Event.{ .KeyUp = key };
+        return Event{ .KeyUp = key };
       }
     },
     c.SDL_QUIT => {
-      return Event.{ .Quit = {} };
+      return Event{ .Quit = {} };
     },
     else => {},
   }

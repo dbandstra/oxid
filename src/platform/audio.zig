@@ -8,18 +8,18 @@ const mix = @import("audio_mix.zig");
 const MAX_SAMPLES = 20;
 const NUM_SLOTS = 8;
 
-pub const AudioSample = struct.{
+pub const AudioSample = struct{
   spec: c.SDL_AudioSpec,
   buf: []u8,
 };
 
-pub const AudioSlot = struct.{
+pub const AudioSlot = struct{
   sample: ?*const AudioSample,
   position: usize,
   started_tickcount: usize,
 };
 
-pub const AudioState = struct.{
+pub const AudioState = struct{
   device: c.SDL_AudioDeviceID,
   frequency: u32,
 
@@ -79,7 +79,7 @@ pub extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) v
       );
 
       if (slot.position >= sample.buf.len) {
-        slot.* = AudioSlot.{
+        slot.* = AudioSlot{
           .sample = null,
           .position = 0,
           .started_tickcount = 0,
@@ -97,7 +97,7 @@ fn clearState(as: *AudioState) void {
   as.num_samples = 0;
 
   for (as.slots[0..NUM_SLOTS]) |*slot| {
-    slot.* = AudioSlot.{
+    slot.* = AudioSlot{
       .sample = null,
       .position = 0,
       .started_tickcount = 0,
@@ -110,7 +110,7 @@ fn clearState(as: *AudioState) void {
   as.tickcount = 0;
 }
 
-pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDeviceID) error!void {
+pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDeviceID) anyerror!void {
   as.device = device;
   as.frequency = params.audio_frequency;
 
@@ -184,7 +184,7 @@ pub fn playSound(ps: *Platform.State, handle: u32) void {
     const sample = &ps.audio_state.samples[handle - 1];
     for (ps.audio_state.slots) |*slot| {
       if (slot.sample == null) {
-        slot.* = AudioSlot.{
+        slot.* = AudioSlot{
           .sample = sample,
           .position = 0,
           .started_tickcount = ps.audio_state.tickcount,

@@ -7,7 +7,7 @@ const assert = std.debug.assert;
 const GbeConstants = @import("gbe_constants.zig");
 const GbeIterators = @import("gbe_iterators.zig");
 
-pub const EntityId = struct.{
+pub const EntityId = struct{
   id: usize,
 
   pub fn eql(a: EntityId, b: EntityId) bool {
@@ -20,7 +20,7 @@ pub const EntityId = struct.{
 };
 
 pub fn ComponentObject(comptime T: type) type {
-  return struct.{
+  return struct{
     is_active: bool,
     entity_id: EntityId,
     data: T,
@@ -28,7 +28,7 @@ pub fn ComponentObject(comptime T: type) type {
 }
 
 pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
-  return struct.{
+  return struct{
     const Self = @This();
 
     const ComponentType = T;
@@ -50,7 +50,7 @@ pub fn Session(comptime ComponentLists: type) type {
     // @compileError(@typeName(field.field_type));
   }
 
-  return struct.{
+  return struct{
     const Self = @This();
     const ComponentListsType = ComponentLists;
 
@@ -119,7 +119,7 @@ pub fn Session(comptime ComponentLists: type) type {
     }
 
     pub fn spawn(self: *Self) EntityId {
-      const id = EntityId.{ .id = self.next_entity_id };
+      const id = EntityId{ .id = self.next_entity_id };
       self.next_entity_id += 1; // TODO - reuse these?
       return id;
     }

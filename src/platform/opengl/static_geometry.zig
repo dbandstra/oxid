@@ -3,7 +3,7 @@ const c = @import("../c.zig");
 
 pub const BUFFER_VERTICES = 4*512; // render up to 512 quads at once
 
-pub const StaticGeometry = struct.{
+pub const StaticGeometry = struct{
     rect_2d_vertex_buffer: c.GLuint,
     rect_2d_blit_texcoord_buffer: c.GLuint,
 
@@ -39,21 +39,21 @@ pub fn createStaticGeometry() StaticGeometry {
     c.glGenBuffers(1, c.ptr(&sg.dyn_texcoord_buffer));
     updateVbo(sg.dyn_texcoord_buffer, null);
 
-    const rect_2d_vertexes = [][2]c.GLfloat.{
-        []c.GLfloat.{ 0.0, 0.0 },
-        []c.GLfloat.{ 0.0, 1.0 },
-        []c.GLfloat.{ 1.0, 0.0 },
-        []c.GLfloat.{ 1.0, 1.0 },
+    const rect_2d_vertexes = [][2]c.GLfloat{
+        []c.GLfloat{ 0.0, 0.0 },
+        []c.GLfloat{ 0.0, 1.0 },
+        []c.GLfloat{ 1.0, 0.0 },
+        []c.GLfloat{ 1.0, 1.0 },
     };
     c.glGenBuffers(1, c.ptr(&sg.rect_2d_vertex_buffer));
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_vertex_buffer);
     c.glBufferData(c.GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(c.GLfloat), @ptrCast(*const c_void, &rect_2d_vertexes[0][0]), c.GL_STATIC_DRAW);
 
-    const rect_2d_blit_texcoords = [][2]c.GLfloat.{
-        []c.GLfloat.{ 0.0, 1.0 },
-        []c.GLfloat.{ 0.0, 0.0 },
-        []c.GLfloat.{ 1.0, 1.0 },
-        []c.GLfloat.{ 1.0, 0.0 },
+    const rect_2d_blit_texcoords = [][2]c.GLfloat{
+        []c.GLfloat{ 0.0, 1.0 },
+        []c.GLfloat{ 0.0, 0.0 },
+        []c.GLfloat{ 1.0, 1.0 },
+        []c.GLfloat{ 1.0, 0.0 },
     };
     c.glGenBuffers(1, c.ptr(&sg.rect_2d_blit_texcoord_buffer));
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_blit_texcoord_buffer);
