@@ -1,4 +1,3 @@
-const os = @import("std").os;
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
@@ -27,27 +26,25 @@ pub const ShaderProgram = struct{
     program_id: c.GLuint,
     vertex_id: c.GLuint,
     fragment_id: c.GLuint,
-    geometry_id: ?c.GLuint,
 
     pub fn bind(sp: *const ShaderProgram) void {
         c.glUseProgram(sp.program_id);
     }
 
-    pub fn attribLocation(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
+    pub fn attribLocation(sp: *const ShaderProgram, name: [*]const u8) !c.GLint {
         const id = c.glGetAttribLocation(sp.program_id, name);
         if (id == -1) {
             _ = c.printf(c"invalid attrib: %s\n", name);
-            os.abort();
+            return error.ShaderInvalidAttrib;
         }
         return id;
     }
 
     pub fn uniformLocation(sp: *const ShaderProgram, name: [*]const u8) c.GLint {
         const id = c.glGetUniformLocation(sp.program_id, name);
-        // if (id == -1) {
-        //     _ = c.printf(c"invalid uniform: %s\n", name);
-        //     os.abort();
-        // }
+        if (id == -1) {
+            _ = c.printf(c"(warning) invalid uniform: %s\n", name);
+        }
         return id;
     }
 
@@ -88,15 +85,9 @@ pub const ShaderProgram = struct{
     }
 
     pub fn destroy(sp: *ShaderProgram) void {
-        if (sp.geometry_id) |geo_id| {
-            c.glDetachShader(sp.program_id, geo_id);
-        }
         c.glDetachShader(sp.program_id, sp.fragment_id);
         c.glDetachShader(sp.program_id, sp.vertex_id);
 
-        if (sp.geometry_id) |geo_id| {
-            c.glDeleteShader(geo_id);
-        }
         c.glDeleteShader(sp.fragment_id);
         c.glDeleteShader(sp.vertex_id);
 
@@ -127,9 +118,9 @@ pub fn createAllShaders() !AllShaders {
         \\void main(void) {
         \\    FragColor = Color;
         \\}
-    , null);
+    );
 
-    as.primitive_attrib_position = as.primitive.attribLocation(c"VertexPosition");
+    as.primitive_attrib_position = try as.primitive.attribLocation(c"VertexPosition");
     as.primitive_uniform_mvp = as.primitive.uniformLocation(c"MVP");
     as.primitive_uniform_color = as.primitive.uniformLocation(c"Color");
 
@@ -162,10 +153,10 @@ pub fn createAllShaders() !AllShaders {
         \\    FragColor = texture(Tex, FragTexCoord);
         \\    FragColor.a *= Alpha;
         \\}
-    , null);
+    );
 
-    as.texture_attrib_tex_coord = as.texture.attribLocation(c"TexCoord");
-    as.texture_attrib_position = as.texture.attribLocation(c"VertexPosition");
+    as.texture_attrib_tex_coord = try as.texture.attribLocation(c"TexCoord");
+    as.texture_attrib_position = try as.texture.attribLocation(c"VertexPosition");
     as.texture_uniform_mvp = as.texture.uniformLocation(c"MVP");
     as.texture_uniform_tex = as.texture.uniformLocation(c"Tex");
     as.texture_uniform_alpha = as.texture.uniformLocation(c"Alpha");
@@ -175,37 +166,31 @@ pub fn createAllShaders() !AllShaders {
     return as;
 }
 
-pub fn createShader(
+fn createShader(
     vertex_source: []const u8,
     frag_source: []const u8,
-    maybe_geometry_source: ?[]u8,
 ) !ShaderProgram {
     var sp: ShaderProgram = undefined;
     sp.vertex_id = try initShader(vertex_source, c"vertex", c.GL_VERTEX_SHADER);
     sp.fragment_id = try initShader(frag_source, c"fragment", c.GL_FRAGMENT_SHADER);
-    sp.geometry_id = if (maybe_geometry_source) |geo_source|
-        try initShader(geo_source, c"geometry", c.GL_GEOMETRY_SHADER)
-    else
-        null;
 
     sp.program_id = c.glCreateProgram();
     c.glAttachShader(sp.program_id, sp.vertex_id);
     c.glAttachShader(sp.program_id, sp.fragment_id);
-    if (sp.geometry_id) |geo_id| {
-        c.glAttachShader(sp.program_id, geo_id);
-    }
     c.glLinkProgram(sp.program_id);
 
     var ok: c.GLint = undefined;
     c.glGetProgramiv(sp.program_id, c.GL_LINK_STATUS, c.ptr(&ok));
-    if (ok != 0) return sp;
+    if (ok != 0) {
+        return sp;
+    }
 
     var error_size: c.GLint = undefined;
     c.glGetProgramiv(sp.program_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
     const message = try c_allocator.alloc(u8, @intCast(usize, error_size));
     c.glGetProgramInfoLog(sp.program_id, error_size, c.ptr(&error_size), message.ptr);
     _ = c.printf(c"Error linking shader program: %s\n", message.ptr);
-    os.abort();
+    return error.ShaderError;
 }
 
 fn initShader(source: []const u8, name: [*]const u8, kind: c.GLenum) !c.GLuint {
@@ -217,7 +202,9 @@ fn initShader(source: []const u8, name: [*]const u8, kind: c.GLenum) !c.GLuint {
 
     var ok: c.GLint = undefined;
     c.glGetShaderiv(shader_id, c.GL_COMPILE_STATUS, c.ptr(&ok));
-    if (ok != 0) return shader_id;
+    if (ok != 0) {
+        return shader_id;
+    }
 
     var error_size: c.GLint = undefined;
     c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
@@ -225,5 +212,5 @@ fn initShader(source: []const u8, name: [*]const u8, kind: c.GLenum) !c.GLuint {
     const message = try c_allocator.alloc(u8, @intCast(usize, error_size));
     c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
     _ = c.printf(c"Error compiling %s shader:\n%s\n", name, message.ptr);
-    os.abort();
+    return error.ShaderError;
 }
