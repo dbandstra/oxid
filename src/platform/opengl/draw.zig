@@ -2,7 +2,7 @@ const std = @import("std");
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
-const all_shaders = @import("shaders.zig");
+const shaders = @import("shaders.zig");
 const static_geometry = @import("static_geometry.zig");
 const BUFFER_VERTICES = static_geometry.BUFFER_VERTICES;
 const updateVbo = static_geometry.updateVbo;
@@ -45,14 +45,30 @@ pub const DrawState = struct{
   fb: c.GLuint,
   // render texture
   rt: c.GLuint,
-  shaders: all_shaders.AllShaders,
+  shaders: shaders.AllShaders,
   static_geometry: static_geometry.StaticGeometry,
   draw_buffer: DrawBuffer,
   projection: math3d.Mat4x4,
 };
 
 pub fn init(ds: *DrawState, params: InitParams) !void {
-  ds.shaders = try all_shaders.createAllShaders();
+  const gl_version = c.glGetString(c.GL_VERSION);
+
+  const shader_version = blk: {
+    if (gl_version) |v| {
+      if (v[1] == '.') {
+        if (v[0] == '2' and v[2] != '0') {
+          break :blk shaders.ShaderVersion.V120;
+        } else if (v[0] >= '3' and v[0] <= '9') {
+          break :blk shaders.ShaderVersion.V130;
+        }
+      }
+    }
+    std.debug.warn("Unsupported OpenGL version: {s}\n", gl_version);
+    return error.OpenGLVersionError;
+  };
+
+  ds.shaders = try shaders.createAllShaders(shader_version);
   errdefer ds.shaders.destroy();
 
   ds.static_geometry = static_geometry.createStaticGeometry();

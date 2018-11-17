@@ -95,29 +95,95 @@ pub const ShaderProgram = struct{
     }
 };
 
-pub fn createAllShaders() !AllShaders {
+pub const ShaderVersion = enum{ V120, V130 };
+
+const ShaderSource = struct{
+    vertex: []const u8,
+    fragment: []const u8,
+};
+
+fn getPrimitiveShaderSource(comptime version: ShaderVersion) ShaderSource {
+    const old = version == ShaderVersion.V120;
+
+    return ShaderSource{
+        .vertex =
+            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            ++
+            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n"
+            ++
+            \\uniform mat4 MVP;
+            \\
+            \\void main(void) {
+            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+            \\}
+        ,
+        .fragment =
+            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            ++
+            (if (old) "" else "out vec4 FragColor;\n")
+            ++
+            \\uniform vec4 Color;
+            \\
+            \\void main(void) {
+            ++
+            (if (old) "gl_" else "") ++ "FragColor = Color;\n"
+            ++
+            \\}
+        ,
+    };
+}
+
+fn getTextureShaderSource(comptime version: ShaderVersion) ShaderSource {
+    const old = version == ShaderVersion.V120;
+
+    return ShaderSource{
+        .vertex =
+            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            ++
+            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n"
+            ++
+            (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n"
+            ++
+            (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n"
+            ++
+            \\uniform mat4 MVP;
+            \\
+            \\void main(void)
+            \\{
+            \\    FragTexCoord = TexCoord;
+            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+            \\}
+        ,
+        .fragment =
+            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            ++
+            (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n"
+            ++
+            (if (old) "" else "out vec4 FragColor;\n")
+            ++
+            \\uniform sampler2D Tex;
+            \\uniform float Alpha;
+            \\
+            \\void main(void)
+            \\{
+            ++
+            (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord);\n"
+            ++
+            (if (old) "gl_" else "") ++ "FragColor.a *= Alpha;\n"
+            ++
+            \\}
+        ,
+    };
+}
+
+pub fn createAllShaders(shader_version: ShaderVersion) !AllShaders {
     var as: AllShaders = undefined;
 
     as.primitive = try createShader(
-        \\#version 130
-        \\
-        \\in vec3 VertexPosition;
-        \\
-        \\uniform mat4 MVP;
-        \\
-        \\void main(void) {
-        \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
-        \\}
-    ,
-        \\#version 130
-        \\
-        \\out vec4 FragColor;
-        \\
-        \\uniform vec4 Color;
-        \\
-        \\void main(void) {
-        \\    FragColor = Color;
-        \\}
+        switch (shader_version) {
+            ShaderVersion.V120 => getPrimitiveShaderSource(ShaderVersion.V120),
+            ShaderVersion.V130 => getPrimitiveShaderSource(ShaderVersion.V130),
+        },
     );
 
     as.primitive_attrib_position = try as.primitive.attribLocation(c"VertexPosition");
@@ -125,34 +191,10 @@ pub fn createAllShaders() !AllShaders {
     as.primitive_uniform_color = as.primitive.uniformLocation(c"Color");
 
     as.texture = try createShader(
-        \\#version 130
-        \\
-        \\in vec3 VertexPosition;
-        \\in vec2 TexCoord;
-        \\
-        \\out vec2 FragTexCoord;
-        \\
-        \\uniform mat4 MVP;
-        \\
-        \\void main(void)
-        \\{
-        \\    FragTexCoord = TexCoord;
-        \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
-        \\}
-    ,
-        \\#version 130
-        \\
-        \\in vec2 FragTexCoord;
-        \\out vec4 FragColor;
-        \\
-        \\uniform sampler2D Tex;
-        \\uniform float Alpha;
-        \\
-        \\void main(void)
-        \\{
-        \\    FragColor = texture(Tex, FragTexCoord);
-        \\    FragColor.a *= Alpha;
-        \\}
+        switch (shader_version) {
+            ShaderVersion.V120 => getTextureShaderSource(ShaderVersion.V120),
+            ShaderVersion.V130 => getTextureShaderSource(ShaderVersion.V130),
+        },
     );
 
     as.texture_attrib_tex_coord = try as.texture.attribLocation(c"TexCoord");
@@ -166,13 +208,10 @@ pub fn createAllShaders() !AllShaders {
     return as;
 }
 
-fn createShader(
-    vertex_source: []const u8,
-    frag_source: []const u8,
-) !ShaderProgram {
+fn createShader(source: ShaderSource) !ShaderProgram {
     var sp: ShaderProgram = undefined;
-    sp.vertex_id = try initShader(vertex_source, c"vertex", c.GL_VERTEX_SHADER);
-    sp.fragment_id = try initShader(frag_source, c"fragment", c.GL_FRAGMENT_SHADER);
+    sp.vertex_id = try initShader(source.vertex, c"vertex", c.GL_VERTEX_SHADER);
+    sp.fragment_id = try initShader(source.fragment, c"fragment", c.GL_FRAGMENT_SHADER);
 
     sp.program_id = c.glCreateProgram();
     c.glAttachShader(sp.program_id, sp.vertex_id);
