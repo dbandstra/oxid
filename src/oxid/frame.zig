@@ -49,10 +49,11 @@ pub fn gameFrame(gs: *GameSession) void {
       @import("systems/player_controller_react.zig").run(gs);
       // game controller reacts to 'player died' / 'player out of lives' event
       @import("systems/game_controller_react.zig").run(gs);
-      // main controller reacts to 'post score' event
-      @import("systems/main_controller_react.zig").run(gs);
     }
   }
+
+  // main controller reacts to 'post score' event
+  @import("systems/main_controller_react.zig").run(gs);
 
   gs.applyRemovals();
 

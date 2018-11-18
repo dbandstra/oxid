@@ -89,12 +89,22 @@ fn startGame(gs: *GameSession, mc: *C.MainController) void {
 }
 
 fn leaveGame(gs: *GameSession, mc: *C.MainController) void {
+  // go through all the players and post their scores (if the player ran out of
+  // lives and got a game over, they've already posted their score, but posting
+  // it again won't cause any problem)
+  var it0 = gs.iter(C.PlayerController); while (it0.next()) |object| {
+    _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore{
+      .score = object.data.score,
+    });
+  }
+
   mc.game_running_state = null;
 
-  // remove all entities except the MainController
+  // remove all entities except the MainController and EventPostScore
   inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
     const ComponentType = field.field_type.ComponentType;
-    if (ComponentType != C.MainController) {
+    if (ComponentType != C.MainController and
+        ComponentType != C.EventPostScore) {
       var it = gs.iter(ComponentType); while (it.next()) |object| {
         gs.markEntityForRemoval(object.entity_id);
       }
