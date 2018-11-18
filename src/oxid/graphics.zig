@@ -1,4 +1,4 @@
-const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const StackAllocator = @import("../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
 
 const Platform = @import("../platform/index.zig");
 const loadPcx = @import("../load_pcx.zig").loadPcx;
@@ -144,11 +144,11 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
   };
 }
 
-pub fn loadTileset(dsaf: *DoubleStackAllocatorFlat, out_tileset: *Draw.Tileset) !void {
-  const low_mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(low_mark);
+pub fn loadTileset(stack: *StackAllocator, out_tileset: *Draw.Tileset) !void {
+  const mark = stack.get_mark();
+  defer stack.free_to_mark(mark);
 
-  const img = try loadPcx(dsaf, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+  const img = try loadPcx(stack, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
 
   out_tileset.texture = Platform.uploadTexture(img);
   out_tileset.xtiles = 8;

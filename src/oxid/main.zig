@@ -1,5 +1,5 @@
 const std = @import("std");
-const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const DoubleStackAllocator = @import("../../zigutils/src/DoubleStackAllocator.zig").DoubleStackAllocator;
 const image = @import("../../zigutils/src/image/image.zig");
 
 const Platform = @import("../platform/index.zig");
@@ -30,10 +30,6 @@ pub const HUD_HEIGHT = 16;
 pub const VWIN_W: u31 = LEVEL.w * GRIDSIZE_PIXELS; // 320
 pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
 
-var dsaf_buffer: [200*1024]u8 = undefined;
-var dsaf_ = DoubleStackAllocatorFlat.init(dsaf_buffer[0..]);
-const dsaf = &dsaf_;
-
 pub const GameState = struct{
   platform_state: Platform.State,
   samples: Audio.LoadedSamples,
@@ -46,6 +42,9 @@ pub const GameState = struct{
 pub var game_state: GameState = undefined;
 
 pub fn main() !void {
+  var memory: [200*1024]u8 = undefined;
+  var dsa = DoubleStackAllocator.init(memory[0..]);
+
   const g = &game_state;
   try Platform.init(&g.platform_state, Platform.InitParams{
     .window_title = "Oxid",
@@ -54,7 +53,7 @@ pub fn main() !void {
     .max_scale = 4,
     .audio_frequency = 44100,
     .audio_buffer_size = 1024,
-    .dsaf = dsaf,
+    .dsa = &dsa,
   });
   defer Platform.deinit(&g.platform_state);
 
@@ -66,13 +65,13 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
-  const initial_high_score = datafile.loadHighScore(dsaf) catch |err| blk: {
+  const initial_high_score = datafile.loadHighScore(&dsa.low_stack) catch |err| blk: {
     std.debug.warn("Failed to load high score from disk: {}.\n", err);
     break :blk 0;
   };
 
-  try loadFont(dsaf, &g.font);
-  try loadTileset(dsaf, &g.tileset);
+  try loadFont(&dsa.low_stack, &g.font);
+  try loadTileset(&dsa.low_stack, &g.tileset);
   Audio.loadSamples(&g.platform_state, &g.samples);
 
   g.perf_spam = false;
@@ -164,7 +163,7 @@ const C = @import("components.zig");
 
 fn saveHighScore(g: *GameState) void {
   var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
-    datafile.saveHighScore(dsaf, object.data.high_score) catch |err| {
+    datafile.saveHighScore(&g.platform_state.dsa.low_stack, object.data.high_score) catch |err| {
       std.debug.warn("Failed to save high score to disk: {}\n", err);
     };
   }

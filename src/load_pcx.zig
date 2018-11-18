@@ -1,11 +1,10 @@
 const std = @import("std");
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const StackAllocator = @import("../zigutils/src/traits/StackAllocator.zig").StackAllocator;
 const image = @import("../zigutils/src/image/image.zig");
 const pcx = @import("../zig-comptime-pcx/pcx.zig");
 
-// allocates image in low allocator
 pub fn loadPcx(
-  dsaf: *DoubleStackAllocatorFlat,
+  stack: *StackAllocator,
   comptime filename: []const u8,
   transparent_color_index: ?u8,
 ) !*image.Image {
@@ -16,7 +15,7 @@ pub fn loadPcx(
   const Loader = pcx.Loader(std.io.SliceInStream.Error);
 
   const preloaded = try Loader.preload(stream);
-  const img = try image.createImage(&dsaf.low_allocator, image.Info{
+  const img = try image.createImage(&stack.allocator, image.Info{
     .width = preloaded.width,
     .height = preloaded.height,
     .format = image.Format.RGBA,

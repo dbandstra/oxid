@@ -1,4 +1,4 @@
-const DoubleStackAllocatorFlat = @import("../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const StackAllocator = @import("../zigutils/src/traits/StackAllocator.zig").StackAllocator;
 
 const Draw = @import("draw.zig");
 const Platform = @import("platform/index.zig");
@@ -14,11 +14,11 @@ pub const Font = struct{
   tileset: Draw.Tileset,
 };
 
-pub fn loadFont(dsaf: *DoubleStackAllocatorFlat, font: *Font) !void {
-  const low_mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(low_mark);
+pub fn loadFont(stack: *StackAllocator, font: *Font) !void {
+  const mark = stack.get_mark();
+  defer stack.free_to_mark(mark);
 
-  const img = try loadPcx(dsaf, FONT_FILENAME, 0);
+  const img = try loadPcx(stack, FONT_FILENAME, 0);
 
   font.tileset = Draw.Tileset{
     .texture = Platform.uploadTexture(img),

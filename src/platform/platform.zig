@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("c.zig");
-const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const DoubleStackAllocator = @import("../../zigutils/src/DoubleStackAllocator.zig").DoubleStackAllocator;
 const debug_gl = @import("opengl/debug_gl.zig");
 const RWops = @import("rwops.zig").RWops;
 const all_shaders = @import("opengl/shaders.zig");
@@ -13,6 +13,7 @@ const translateEvent = @import("translate_event.zig").translateEvent;
 
 pub const State = struct{
   initialized: bool,
+  dsa: *DoubleStackAllocator,
   glitch_mode: PlatformDraw.GlitchMode,
   clear_screen: bool,
   window: *c.SDL_Window,
@@ -41,7 +42,7 @@ pub const InitParams = struct{
   audio_frequency: u32,
   audio_buffer_size: u16,
   // allocators (low = temporary, high = persistent)
-  dsaf: *DoubleStackAllocatorFlat,
+  dsa: *DoubleStackAllocator,
 };
 
 fn makeCString(allocator: *std.mem.Allocator, source: []const u8) ![*]const u8 {
@@ -95,8 +96,8 @@ pub fn init(ps: *State, params: InitParams) !void {
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_DEPTH_SIZE), 24);
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_STENCIL_SIZE), 8);
 
-  const low_mark = params.dsaf.get_low_mark();
-  const c_window_title = try makeCString(&params.dsaf.low_allocator, params.window_title);
+  const low_mark = params.dsa.low_stack.get_mark();
+  const c_window_title = try makeCString(&params.dsa.low_stack.allocator, params.window_title);
 
   const window = c.SDL_CreateWindow(
     c_window_title,
@@ -107,11 +108,11 @@ pub fn init(ps: *State, params: InitParams) !void {
     c.SDL_WINDOW_OPENGL,
   ) orelse {
     c.SDL_Log(c"Unable to create window: %s", c.SDL_GetError());
-    params.dsaf.free_to_low_mark(low_mark);
+    params.dsa.low_stack.free_to_mark(low_mark);
     return error.SDLInitializationFailed;
   };
   errdefer c.SDL_DestroyWindow(window);
-  params.dsaf.free_to_low_mark(low_mark);
+  params.dsa.low_stack.free_to_mark(low_mark);
 
   var want: c.SDL_AudioSpec = undefined;
   want.freq = @intCast(c_int, params.audio_frequency);
@@ -149,6 +150,7 @@ pub fn init(ps: *State, params: InitParams) !void {
   errdefer PlatformAudio.deinit(&ps.audio_state);
 
   ps.initialized = true;
+  ps.dsa = params.dsa;
   ps.glitch_mode = PlatformDraw.GlitchMode.Normal;
   ps.clear_screen = true;
   ps.window = window;

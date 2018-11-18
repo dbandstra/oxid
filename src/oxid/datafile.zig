@@ -1,23 +1,23 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const DoubleStackAllocatorFlat = @import("../../zigutils/src/DoubleStackAllocatorFlat.zig").DoubleStackAllocatorFlat;
+const StackAllocator = @import("../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
 
 const Mode = enum{
   Read,
   Write,
 };
 
-fn openDataFile(dsaf: *DoubleStackAllocatorFlat, filename: []const u8, mode: Mode) !std.os.File {
-  const mark = dsaf.get_low_mark();
-  defer dsaf.free_to_low_mark(mark);
+fn openDataFile(stack: *StackAllocator, filename: []const u8, mode: Mode) !std.os.File {
+  const mark = stack.get_mark();
+  defer stack.free_to_mark(mark);
 
   const dir_path = blk: {
     if (builtin.os == builtin.Os.windows) {
-      const appdata = try std.os.getEnvVarOwned(&dsaf.low_allocator, "APPDATA");
-      break :blk try std.os.path.join(&dsaf.low_allocator, appdata, "Oxid");
+      const appdata = try std.os.getEnvVarOwned(&stack.allocator, "APPDATA");
+      break :blk try std.os.path.join(&stack.allocator, appdata, "Oxid");
     } else {
-      const home = try std.os.getEnvVarOwned(&dsaf.low_allocator, "HOME");
-      break :blk try std.os.path.join(&dsaf.low_allocator, home, ".oxid");
+      const home = try std.os.getEnvVarOwned(&stack.allocator, "HOME");
+      break :blk try std.os.path.join(&stack.allocator, home, ".oxid");
     }
   };
 
@@ -29,7 +29,7 @@ fn openDataFile(dsaf: *DoubleStackAllocatorFlat, filename: []const u8, mode: Mod
     };
   }
 
-  const file_path = try std.os.path.join(&dsaf.low_allocator, dir_path, filename);
+  const file_path = try std.os.path.join(&stack.allocator, dir_path, filename);
 
   return switch (mode) {
     Mode.Read => std.os.File.openRead(file_path),
@@ -37,8 +37,8 @@ fn openDataFile(dsaf: *DoubleStackAllocatorFlat, filename: []const u8, mode: Mod
   };
 }
 
-pub fn loadHighScore(dsaf: *DoubleStackAllocatorFlat) !u32 {
-  const file = openDataFile(dsaf, "highscore.dat", Mode.Read) catch |err| {
+pub fn loadHighScore(stack: *StackAllocator) !u32 {
+  const file = openDataFile(stack, "highscore.dat", Mode.Read) catch |err| {
     if (err == error.FileNotFound) {
       return u32(0);
     }
@@ -51,8 +51,8 @@ pub fn loadHighScore(dsaf: *DoubleStackAllocatorFlat) !u32 {
   return fis.stream.readIntLe(u32);
 }
 
-pub fn saveHighScore(dsaf: *DoubleStackAllocatorFlat, high_score: u32) !void {
-  const file = try openDataFile(dsaf, "highscore.dat", Mode.Write);
+pub fn saveHighScore(stack: *StackAllocator, high_score: u32) !void {
+  const file = try openDataFile(stack, "highscore.dat", Mode.Write);
   defer file.close();
 
   var fos = std.os.File.outStream(file);
