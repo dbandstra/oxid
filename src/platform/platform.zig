@@ -17,8 +17,6 @@ pub const State = struct{
   clear_screen: bool,
   window: *c.SDL_Window,
   glcontext: c.SDL_GLContext,
-  window_width: u32,
-  window_height: u32,
   draw_state: PlatformDraw.DrawState,
   audio_state: PlatformAudio.AudioState,
 };
@@ -31,13 +29,14 @@ const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
 pub const InitParams = struct{
   window_title: []const u8,
-  // dimensions of the system window
-  window_width: u32,
-  window_height: u32,
   // dimensions of the game viewport, which will be scaled up to fit the system
   // window
   virtual_window_width: u32,
   virtual_window_height: u32,
+  // the actual window size will be a multiple of the virtual window size. this
+  // value puts a limit on high big it will be scaled (it will also be limited
+  // by the user's screen resolution)
+  max_scale: u3,
   // audio settings
   audio_frequency: u32,
   audio_buffer_size: u16,
@@ -61,6 +60,32 @@ pub fn init(ps: *State, params: InitParams) !void {
   }
   errdefer c.SDL_Quit();
 
+  var window_width = params.virtual_window_width;
+  var window_height = params.virtual_window_height;
+
+  // get the desktop resolution (for the first display)
+  var dm: c.SDL_DisplayMode = undefined;
+
+  if (c.SDL_GetDesktopDisplayMode(0, c.ptr(&dm)) != 0) {
+    std.debug.warn("Failed to query desktop display mode.\n");
+  } else {
+    // pick a window size that isn't bigger than the desktop resolution
+    const max_w = @intCast(u32, dm.w);
+    const max_h = @intCast(u32, dm.h) - 40; // bias for menubars/taskbars
+
+    var scale: u32 = 1; while (scale <= params.max_scale) : (scale += 1) {
+      const w = scale * params.virtual_window_width;
+      const h = scale * params.virtual_window_height;
+
+      if (w > max_w or h > max_h) {
+        break;
+      }
+
+      window_width = w;
+      window_height = h;
+    }
+  }
+
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_DOUBLEBUFFER), 1);
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_BUFFER_SIZE), 32);
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_RED_SIZE), 8);
@@ -77,8 +102,8 @@ pub fn init(ps: *State, params: InitParams) !void {
     c_window_title,
     SDL_WINDOWPOS_UNDEFINED,
     SDL_WINDOWPOS_UNDEFINED,
-    @intCast(c_int, params.window_width),
-    @intCast(c_int, params.window_height),
+    @intCast(c_int, window_width),
+    @intCast(c_int, window_height),
     c.SDL_WINDOW_OPENGL,
   ) orelse {
     c.SDL_Log(c"Unable to create window: %s", c.SDL_GetError());
@@ -117,7 +142,7 @@ pub fn init(ps: *State, params: InitParams) !void {
 
   _ = c.SDL_GL_MakeCurrent(window, glcontext);
 
-  try PlatformDraw.init(&ps.draw_state, params);
+  try PlatformDraw.init(&ps.draw_state, params, window_width, window_height);
   errdefer PlatformDraw.deinit(&ps.draw_state);
 
   try PlatformAudio.init(&ps.audio_state, params, device);
@@ -126,8 +151,6 @@ pub fn init(ps: *State, params: InitParams) !void {
   ps.initialized = true;
   ps.glitch_mode = PlatformDraw.GlitchMode.Normal;
   ps.clear_screen = true;
-  ps.window_width = params.window_width;
-  ps.window_height = params.window_height;
   ps.window = window;
   ps.glcontext = glcontext;
 

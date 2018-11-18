@@ -51,7 +51,7 @@ pub const DrawState = struct{
   projection: math3d.Mat4x4,
 };
 
-pub fn init(ds: *DrawState, params: InitParams) !void {
+pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) !void {
   const gl_version = c.glGetString(c.GL_VERSION);
 
   const shader_version = blk: {
@@ -105,8 +105,8 @@ pub fn init(ds: *DrawState, params: InitParams) !void {
 
   debug_gl.assertNoError();
 
-  ds.window_width = params.window_width;
-  ds.window_height = params.window_height;
+  ds.window_width = window_width;
+  ds.window_height = window_height;
   ds.virtual_window_width = params.virtual_window_width;
   ds.virtual_window_height = params.virtual_window_height;
   ds.fb = fb;

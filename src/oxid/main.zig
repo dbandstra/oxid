@@ -25,13 +25,10 @@ const datafile = @import("datafile.zig");
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
 
-// size of the virtual screen
+// size of the virtual screen. the actual window size will be an integer
+// multiple of this
 pub const VWIN_W: u31 = LEVEL.w * GRIDSIZE_PIXELS; // 320
 pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
-
-// size of the system window (virtual screen will be scaled to this)
-const WINDOW_W = 1280;
-const WINDOW_H = 960;
 
 var dsaf_buffer: [200*1024]u8 = undefined;
 var dsaf_ = DoubleStackAllocatorFlat.init(dsaf_buffer[0..]);
@@ -52,10 +49,9 @@ pub fn main() !void {
   const g = &game_state;
   try Platform.init(&g.platform_state, Platform.InitParams{
     .window_title = "Oxid",
-    .window_width = WINDOW_W,
-    .window_height = WINDOW_H,
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
+    .max_scale = 4,
     .audio_frequency = 44100,
     .audio_buffer_size = 1024,
     .dsaf = dsaf,
