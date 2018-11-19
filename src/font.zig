@@ -2,6 +2,7 @@ const StackAllocator = @import("../zigutils/src/traits/StackAllocator.zig").Stac
 
 const Draw = @import("draw.zig");
 const Platform = @import("platform/index.zig");
+const LoadPcxError = @import("load_pcx.zig").LoadPcxError;
 const loadPcx = @import("load_pcx.zig").loadPcx;
 
 const FONT_FILENAME = "../assets/font.pcx";
@@ -14,7 +15,7 @@ pub const Font = struct{
   tileset: Draw.Tileset,
 };
 
-pub fn loadFont(stack: *StackAllocator, font: *Font) !void {
+pub fn loadFont(stack: *StackAllocator, font: *Font) LoadPcxError!void {
   const mark = stack.get_mark();
   defer stack.free_to_mark(mark);
 

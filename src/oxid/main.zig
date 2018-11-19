@@ -41,12 +41,12 @@ pub const GameState = struct{
 };
 pub var game_state: GameState = undefined;
 
-pub fn main() !void {
+pub fn main() void {
   var memory: [200*1024]u8 = undefined;
   var dsa = DoubleStackAllocator.init(memory[0..]);
 
   const g = &game_state;
-  try Platform.init(&g.platform_state, Platform.InitParams{
+  Platform.init(&g.platform_state, Platform.InitParams{
     .window_title = "Oxid",
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
@@ -54,7 +54,13 @@ pub fn main() !void {
     .audio_frequency = 44100,
     .audio_buffer_size = 1024,
     .dsa = &dsa,
-  });
+  }) catch |err| {
+    // this causes runaway allocation in the compiler!
+    // https://github.com/ziglang/zig/issues/1753
+    // std.debug.warn("Platform.init failed: {}.\n", err);
+    std.debug.warn("Platform init failed.\n");
+    return;
+  };
   defer Platform.deinit(&g.platform_state);
 
   const rand_seed = blk: {
@@ -65,13 +71,25 @@ pub fn main() !void {
     break :blk std.mem.readIntLE(u32, seed_bytes);
   };
 
+  // TODO - is it really a good idea to set high score to 0 if it failed to
+  // load? i think we should disable high score functionality for this session
+  // instead. otherwise the real high score could get overwritten by a lower
+  // score.
   const initial_high_score = datafile.loadHighScore(&dsa.low_stack) catch |err| blk: {
     std.debug.warn("Failed to load high score from disk: {}.\n", err);
     break :blk 0;
   };
 
-  try loadFont(&dsa.low_stack, &g.font);
-  try loadTileset(&dsa.low_stack, &g.tileset);
+  loadFont(&dsa.low_stack, &g.font) catch |err| {
+    std.debug.warn("Failed to load font.\n"); // TODO - print error (see above)
+    return;
+  };
+
+  loadTileset(&dsa.low_stack, &g.tileset) catch |err| {
+    std.debug.warn("Failed to load tileset.\n"); // TODO - print error (see above)
+    return;
+  };
+
   Audio.loadSamples(&g.platform_state, &g.samples);
 
   g.perf_spam = false;

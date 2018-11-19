@@ -54,7 +54,12 @@ pub const DrawState = struct{
   projection: math3d.Mat4x4,
 };
 
-pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) !void {
+pub const InitError = error{
+  UnsupportedOpenGLVersion,
+  FailedToCreateFramebuffer,
+} || shaders.InitError;
+
+pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) InitError!void {
   const gl_version = c.glGetString(c.GL_VERSION);
 
   const glsl_version = blk: {
@@ -68,7 +73,7 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
       }
     }
     std.debug.warn("Unsupported OpenGL version: {s}\n", gl_version);
-    return error.OpenGLVersionError;
+    return error.UnsupportedOpenGLVersion;
   };
 
   ds.shader_primitive = try shader_primitive.create(&params.dsa.low_stack, glsl_version);
@@ -98,8 +103,8 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
   c.glDrawBuffers(1, c.ptr(&draw_buffers[0]));
 
   if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {
-    std.debug.warn("initDraw: failed to create framebuffer\n");
-    return error.InitDrawFailed;
+    std.debug.warn("Failed to create framebuffer.\n");
+    return error.FailedToCreateFramebuffer;
   }
 
   c.glDisable(c.GL_DEPTH_TEST);

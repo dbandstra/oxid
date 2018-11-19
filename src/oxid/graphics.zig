@@ -1,6 +1,7 @@
 const StackAllocator = @import("../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
 
 const Platform = @import("../platform/index.zig");
+const LoadPcxError = @import("../load_pcx.zig").LoadPcxError;
 const loadPcx = @import("../load_pcx.zig").loadPcx;
 const Draw = @import("../draw.zig");
 
@@ -144,7 +145,7 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
   };
 }
 
-pub fn loadTileset(stack: *StackAllocator, out_tileset: *Draw.Tileset) !void {
+pub fn loadTileset(stack: *StackAllocator, out_tileset: *Draw.Tileset) LoadPcxError!void {
   const mark = stack.get_mark();
   defer stack.free_to_mark(mark);
 

@@ -17,7 +17,13 @@ pub const Program = struct{
   fragment_id: c.GLuint,
 };
 
-pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: ShaderSource) !Program {
+pub const InitError = error{
+  ShaderCompileFailed,
+  ShaderLinkFailed,
+  ShaderInvalidAttrib,
+};
+
+pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: ShaderSource) InitError!Program {
   errdefer std.debug.warn("Failed to compile and link shader program \"{}\".\n", description);
 
   const vertex_id = try compile(stack, source.vertex, "vertex", c.GL_VERTEX_SHADER);
@@ -41,14 +47,17 @@ pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: S
     c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
     const mark = stack.get_mark();
     defer stack.free_to_mark(mark);
-    const message = try stack.allocator.alloc(u8, @intCast(usize, error_size));
-    c.glGetProgramInfoLog(program_id, error_size, c.ptr(&error_size), message.ptr);
-    std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
-    return error.ShaderError;
+    if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+      c.glGetProgramInfoLog(program_id, error_size, c.ptr(&error_size), message.ptr);
+      std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
+    } else |_| {
+      std.debug.warn("Failed to retrieve program info log (out of memory).\n");
+    }
+    return error.ShaderLinkFailed;
   }
 }
 
-fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, kind: c.GLenum) !c.GLuint {
+fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, kind: c.GLenum) InitError!c.GLuint {
   errdefer std.debug.warn("Failed to compile {} shader.\n", shader_type);
 
   const shader_id = c.glCreateShader(kind);
@@ -66,10 +75,13 @@ fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, 
     c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
     const mark = stack.get_mark();
     defer stack.free_to_mark(mark);
-    const message = try stack.allocator.alloc(u8, @intCast(usize, error_size));
-    c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
-    std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
-    return error.ShaderError;
+    if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+      c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
+      std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
+    } else |_| {
+      std.debug.warn("Failed to retrieve shader info log (out of memory).\n");
+    }
+    return error.ShaderCompileFailed;
   }
 }
 

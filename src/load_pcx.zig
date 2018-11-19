@@ -3,11 +3,17 @@ const StackAllocator = @import("../zigutils/src/traits/StackAllocator.zig").Stac
 const image = @import("../zigutils/src/image/image.zig");
 const pcx = @import("../zig-comptime-pcx/pcx.zig");
 
+pub const LoadPcxError = error{
+  PcxLoadFailed,
+  EndOfStream,
+  OutOfMemory,
+};
+
 pub fn loadPcx(
   stack: *StackAllocator,
   comptime filename: []const u8,
   transparent_color_index: ?u8,
-) !*image.Image {
+) LoadPcxError!*image.Image {
   const filedata = @embedFile(filename);
 
   var slice_stream = std.io.SliceInStream.init(filedata);

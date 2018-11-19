@@ -108,7 +108,7 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
   };
 }
 
-pub fn create(stack: *StackAllocator, glsl_version: shaders.GLSLVersion) !Shader {
+pub fn create(stack: *StackAllocator, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
   errdefer std.debug.warn("Failed to create textured shader program.\n");
 
   defer debug_gl.assertNoError();
