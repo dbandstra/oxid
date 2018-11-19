@@ -3,6 +3,8 @@ const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
 const shaders = @import("shaders.zig");
+const shader_primitive = @import("shader_primitive.zig");
+const shader_textured = @import("shader_textured.zig");
 const static_geometry = @import("static_geometry.zig");
 const BUFFER_VERTICES = static_geometry.BUFFER_VERTICES;
 const updateVbo = static_geometry.updateVbo;
@@ -45,7 +47,8 @@ pub const DrawState = struct{
   fb: c.GLuint,
   // render texture
   rt: c.GLuint,
-  shaders: shaders.AllShaders,
+  shader_primitive: shader_primitive.Shader,
+  shader_textured: shader_textured.Shader,
   static_geometry: static_geometry.StaticGeometry,
   draw_buffer: DrawBuffer,
   projection: math3d.Mat4x4,
@@ -54,13 +57,13 @@ pub const DrawState = struct{
 pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) !void {
   const gl_version = c.glGetString(c.GL_VERSION);
 
-  const shader_version = blk: {
+  const glsl_version = blk: {
     if (gl_version) |v| {
       if (v[1] == '.') {
         if (v[0] == '2' and v[2] != '0') {
-          break :blk shaders.ShaderVersion.V120;
+          break :blk shaders.GLSLVersion.V120;
         } else if (v[0] >= '3' and v[0] <= '9') {
-          break :blk shaders.ShaderVersion.V130;
+          break :blk shaders.GLSLVersion.V130;
         }
       }
     }
@@ -68,8 +71,10 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
     return error.OpenGLVersionError;
   };
 
-  ds.shaders = try shaders.createAllShaders(shader_version);
-  errdefer ds.shaders.destroy();
+  ds.shader_primitive = try shader_primitive.create(&params.dsa.low_stack, glsl_version);
+  errdefer shaders.destroy(ds.shader_primitive.program);
+  ds.shader_textured = try shader_textured.create(&params.dsa.low_stack, glsl_version);
+  errdefer shaders.destroy(ds.shader_textured.program);
 
   ds.static_geometry = static_geometry.createStaticGeometry();
   errdefer ds.static_geometry.destroy();
@@ -116,7 +121,8 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
 
 pub fn deinit(ds: *DrawState) void {
   ds.static_geometry.destroy();
-  ds.shaders.destroy();
+  shaders.destroy(ds.shader_primitive.program);
+  shaders.destroy(ds.shader_textured.program);
 }
 
 pub fn preDraw(ds: *DrawState, clear_screen: bool) void {
@@ -144,18 +150,13 @@ pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
 pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
   std.debug.assert(!ds.draw_buffer.active);
 
-  ds.shaders.texture.bind();
-  ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
-  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, &ds.projection);
-  ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, alpha);
-
-  c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
-  c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));
-  c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
-
-  c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_blit_texcoord_buffer);
-  c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord));
-  c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+  ds.shader_textured.bind(shader_textured.BindParams{
+    .tex = 0,
+    .mvp = &ds.projection,
+    .alpha = alpha,
+    .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
+    .texcoord_buffer = ds.static_geometry.rect_2d_blit_texcoord_buffer,
+  });
 
   c.glActiveTexture(c.GL_TEXTURE0);
   c.glBindTexture(c.GL_TEXTURE_2D, tex_id);
@@ -175,21 +176,16 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: Draw.Co
   const model = math3d.mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
   const mvp = ds.projection.mult(&model);
 
-  ds.shaders.primitive.bind();
-  ds.shaders.primitive.setUniformVec4(
-    ds.shaders.primitive_uniform_color,
-    @intToFloat(f32, color.r) / 255.0,
-    @intToFloat(f32, color.g) / 255.0,
-    @intToFloat(f32, color.b) / 255.0,
-    @intToFloat(f32, color.a) / 255.0,
-  );
-  ds.shaders.primitive.setUniformMat4x4(ds.shaders.primitive_uniform_mvp, &mvp);
-
-  if (ds.shaders.primitive_attrib_position >= 0) { // ?
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, ds.static_geometry.rect_2d_vertex_buffer);
-    c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.primitive_attrib_position));
-    c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.primitive_attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
-  }
+  ds.shader_primitive.bind(shader_primitive.BindParams{
+    .color = [4]f32{
+      @intToFloat(f32, color.r) / 255.0,
+      @intToFloat(f32, color.g) / 255.0,
+      @intToFloat(f32, color.b) / 255.0,
+      @intToFloat(f32, color.a) / 255.0,
+    },
+    .mvp = &mvp,
+    .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
+  });
 
   if (outline) {
     c.glPolygonMode(c.GL_FRONT, c.GL_LINE);
@@ -206,13 +202,13 @@ pub fn begin(ps: *State, tex_id: c.GLuint) void {
   std.debug.assert(!ds.draw_buffer.active);
   std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
-  ds.shaders.texture.bind();
-  ds.shaders.texture.setUniformInt(ds.shaders.texture_uniform_tex, 0);
-  ds.shaders.texture.setUniformFloat(ds.shaders.texture_uniform_alpha, 1.0);
-  ds.shaders.texture.setUniformMat4x4(ds.shaders.texture_uniform_mvp, &ds.projection);
-
-  c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_position));
-  c.glEnableVertexAttribArray(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord));
+  ds.shader_textured.bind(shader_textured.BindParams{
+    .tex = 0,
+    .alpha = 1.0,
+    .mvp = &ds.projection,
+    .vertex_buffer = null,
+    .texcoord_buffer = null,
+  });
 
   c.glActiveTexture(c.GL_TEXTURE0);
   c.glBindTexture(c.GL_TEXTURE_2D, tex_id);
@@ -312,10 +308,12 @@ fn flush(ps: *State) void {
     return;
   }
 
-  updateVbo(ds.static_geometry.dyn_vertex_buffer, ds.draw_buffer.vertex2f[0..]);
-  c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
-  updateVbo(ds.static_geometry.dyn_texcoord_buffer, ds.draw_buffer.texcoord2f[0..]);
-  c.glVertexAttribPointer(@intCast(c.GLuint, ds.shaders.texture_attrib_tex_coord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+  ds.shader_textured.update(shader_textured.UpdateParams{
+    .vertex_buffer = ds.static_geometry.dyn_vertex_buffer,
+    .vertex2f = ds.draw_buffer.vertex2f[0..],
+    .texcoord_buffer = ds.static_geometry.dyn_texcoord_buffer,
+    .texcoord2f = ds.draw_buffer.texcoord2f[0..],
+  });
 
   c.glDrawArrays(
     if (ps.glitch_mode == GlitchMode.QuadStrips)
