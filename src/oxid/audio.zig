@@ -1,5 +1,4 @@
 const std = @import("std");
-const SeekableFileInStream = @import("../../zigutils/src/FileInStream.zig").SeekableFileInStream;
 const Platform = @import("../platform/index.zig");
 
 pub const Sample = enum{
@@ -47,11 +46,17 @@ fn loadSample(ps: *Platform.State, filename: []const u8) u32 {
   };
   defer file.close();
 
-  var file_stream = SeekableFileInStream.init(&file);
-  var stream = &file_stream.stream;
-  var seekable = &file_stream.seekable;
+  var stream = std.os.File.inStream(file);
+  var seekable = std.os.File.seekableStream(file);
 
-  return Platform.loadSound(ps, SeekableFileInStream.ReadError, stream, seekable);
+  return Platform.loadSound(
+    ps,
+    std.os.File.InStream.Error,
+    &stream.stream,
+    std.os.File.SeekError,
+    std.os.File.GetSeekPosError,
+    &seekable.stream,
+  );
 }
 
 pub fn loadSamples(ps: *Platform.State, ls: *LoadedSamples) void {

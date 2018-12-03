@@ -1,5 +1,4 @@
 const std = @import("std");
-const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 const RWops = @import("rwops.zig").RWops;
 const c = @import("c.zig");
 const Platform = @import("platform.zig");
@@ -144,7 +143,9 @@ pub fn loadSound(
   ps: *Platform.State,
   comptime ReadError: type,
   stream: *std.io.InStream(ReadError),
-  seekable: *Seekable,
+  comptime SeekErrorType: type,
+  comptime GetSeekPosErrorType: type,
+  seekable: *std.io.SeekableStream(SeekErrorType, GetSeekPosErrorType),
 ) u32 {
   c.SDL_LockAudioDevice(ps.audio_state.device);
   defer c.SDL_UnlockAudioDevice(ps.audio_state.device);
@@ -153,7 +154,7 @@ pub fn loadSound(
     c.SDL_Log(c"no slots free to load sound");
     return 0;
   }
-  var rwops = RWops(ReadError).create(stream, seekable);
+  var rwops = RWops(ReadError, SeekErrorType, GetSeekPosErrorType).create(stream, seekable);
   var rwops_ptr = @ptrCast([*]c.SDL_RWops, &rwops);
 
   var sample = &ps.audio_state.samples[ps.audio_state.num_samples];

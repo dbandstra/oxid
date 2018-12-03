@@ -1,13 +1,16 @@
 const std = @import("std");
 const c = @import("c.zig");
-const Seekable = @import("../../zigutils/src/traits/Seekable.zig").Seekable;
 
-pub fn RWops(comptime ReadError: type) type {
+pub fn RWops(
+  comptime ReadError: type,
+  comptime SeekErrorType: type,
+  comptime GetSeekPosErrorType: type,
+) type {
+  const MyInStream = std.io.InStream(ReadError);
+  const MySeekable = std.io.SeekableStream(SeekErrorType, GetSeekPosErrorType);
+
   return struct{
-    pub fn create(
-      in_stream: *std.io.InStream(ReadError),
-      seekable: *Seekable,
-    ) c.SDL_RWops {
+    pub fn create(in_stream: *MyInStream, seekable: *MySeekable) c.SDL_RWops {
       var rwops: c.SDL_RWops = undefined;
 
       rwops.type = 0;
@@ -22,35 +25,51 @@ pub fn RWops(comptime ReadError: type) type {
       return rwops;
     }
 
-    fn getInStream(context: ?[*]c.SDL_RWops) *std.io.InStream(ReadError) {
+    fn getInStream(context: ?[*]c.SDL_RWops) *MyInStream {
       const context2 = @ptrCast(*c.SDL_RWops, context);
       const data = context2.hidden.unknown.data1;
-      const data2 = @alignCast(@alignOf(*std.io.InStream(ReadError)), data);
-      return @ptrCast(*std.io.InStream(ReadError), data2);
+      const data2 = @alignCast(@alignOf(*MyInStream), data);
+      return @ptrCast(*MyInStream, data2);
     }
 
-    fn getSeekable(context: ?[*]c.SDL_RWops) *Seekable {
+    fn getSeekable(context: ?[*]c.SDL_RWops) *MySeekable {
       const context2 = @ptrCast(*c.SDL_RWops, context);
       const data = context2.hidden.unknown.data2;
-      const data2 = @alignCast(@alignOf(*Seekable), data);
-      return @ptrCast(*Seekable, data2);
+      const data2 = @alignCast(@alignOf(*MySeekable), data);
+      return @ptrCast(*MySeekable, data2);
     }
 
     extern fn sizeFn(context: ?[*]c.SDL_RWops) i64 {
       var seekable = getSeekable(context);
-      const pos = seekable.seek(0, Seekable.Whence.Current) catch return -1;
-      const end_pos = seekable.seek(0, Seekable.Whence.End) catch return -1;
-      _ = seekable.seek(pos, Seekable.Whence.Start) catch return -1;
-      return end_pos;
+      const end_pos = seekable.getEndPos() catch return -1;
+      return @intCast(i64, end_pos);
     }
 
-    extern fn seekFn(context: ?[*]c.SDL_RWops, offset: i64, whence: c_int) i64 {
-      return getSeekable(context).seek(offset, switch (whence) {
-        c.RW_SEEK_SET => Seekable.Whence.Start,
-        c.RW_SEEK_CUR => Seekable.Whence.Current,
-        c.RW_SEEK_END => Seekable.Whence.End,
+    extern fn seekFn(context: ?[*]c.SDL_RWops, ofs: i64, whence: c_int) i64 {
+      var seekable = getSeekable(context);
+      switch (whence) {
+        c.RW_SEEK_SET => {
+          const uofs = std.math.cast(usize, ofs) catch return -1;
+          seekable.seekTo(uofs) catch return -1;
+          return ofs;
+        },
+        c.RW_SEEK_CUR => {
+          seekable.seekForward(ofs) catch return -1;
+          const new_pos = seekable.getPos() catch return -1;
+          const upos = std.math.cast(i64, new_pos) catch return -1;
+          return upos;
+        },
+        c.RW_SEEK_END => {
+          const end_pos = seekable.getEndPos() catch return -1;
+          const end_upos = std.math.cast(i64, end_pos) catch return -1;
+          if (-ofs > end_upos) return -1;
+          const new_pos = end_upos + ofs;
+          const new_upos = std.math.cast(usize, new_pos) catch return -1;
+          seekable.seekTo(new_upos) catch return -1;
+          return new_pos;
+        },
         else => return -1,
-      }) catch return -1;
+      }
     }
 
     extern fn readFn(context: ?[*]c.SDL_RWops, ptr: ?*c_void, size: usize, maxnum: usize) usize {
@@ -76,7 +95,7 @@ pub fn RWops(comptime ReadError: type) type {
             const num_elements_read = bytes_read / maxnum;
             const remainder = bytes_read % maxnum;
 
-            _ = getSeekable(context).seek(-@intCast(i64, remainder), Seekable.Whence.Current) catch return 0;
+            _ = getSeekable(context).seekForward(-@intCast(isize, remainder)) catch return 0;
 
             return num_elements_read;
           }
