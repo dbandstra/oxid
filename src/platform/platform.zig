@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("c.zig");
-const DoubleStackAllocator = @import("../../zigutils/src/DoubleStackAllocator.zig").DoubleStackAllocator;
+const DoubleStackAllocator = @import("zigutils").DoubleStackAllocator;
 const debug_gl = @import("opengl/debug_gl.zig");
 const RWops = @import("rwops.zig").RWops;
 const all_shaders = @import("opengl/shaders.zig");

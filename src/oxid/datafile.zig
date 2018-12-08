@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const StackAllocator = @import("../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
+const StackAllocator = @import("zigutils").StackAllocator;
 
 const Mode = enum{
   Read,

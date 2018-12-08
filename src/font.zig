@@ -1,4 +1,4 @@
-const StackAllocator = @import("../zigutils/src/traits/StackAllocator.zig").StackAllocator;
+const StackAllocator = @import("zigutils").StackAllocator;
 
 const Draw = @import("draw.zig");
 const Platform = @import("platform/index.zig");

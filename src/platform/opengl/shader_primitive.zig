@@ -1,5 +1,5 @@
 const std = @import("std");
-const StackAllocator = @import("../../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
+const StackAllocator = @import("zigutils").StackAllocator;
 const c = @import("../c.zig");
 const debug_gl = @import("debug_gl.zig");
 const math3d = @import("math3d.zig");

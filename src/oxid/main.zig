@@ -1,6 +1,6 @@
 const std = @import("std");
-const DoubleStackAllocator = @import("../../zigutils/src/DoubleStackAllocator.zig").DoubleStackAllocator;
-const image = @import("../../zigutils/src/image/image.zig");
+const DoubleStackAllocator = @import("zigutils").DoubleStackAllocator;
+const image = @import("zigutils").image;
 
 const Platform = @import("../platform/index.zig");
 const Event = @import("../event.zig").Event;

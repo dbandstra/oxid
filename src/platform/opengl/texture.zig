@@ -1,5 +1,5 @@
 const c = @import("../c.zig");
-const image = @import("../../../zigutils/src/image/image.zig");
+const image = @import("zigutils").image;
 
 pub const Texture = struct{
   handle: c.GLuint,

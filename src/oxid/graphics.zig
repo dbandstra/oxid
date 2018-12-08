@@ -1,4 +1,4 @@
-const StackAllocator = @import("../../zigutils/src/traits/StackAllocator.zig").StackAllocator;
+const StackAllocator = @import("zigutils").StackAllocator;
 
 const Platform = @import("../platform/index.zig");
 const LoadPcxError = @import("../load_pcx.zig").LoadPcxError;
