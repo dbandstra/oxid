@@ -1,7 +1,7 @@
 const std = @import("std");
 const StackAllocator = @import("zigutils").StackAllocator;
 const image = @import("zigutils").image;
-const pcx = @import("zig-comptime-pcx");
+const pcx = @import("zig-pcx");
 
 pub const LoadPcxError = error{
   PcxLoadFailed,

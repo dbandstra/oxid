@@ -50,4 +50,4 @@ Sound effects from https://opengameart.org/content/512-sound-effects-8-bit-style
 
 Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
-Uses my [zigutils](https://gitlab.com/dbandstra/zigutils) and [zig-comptime-pcx](https://gitlab.com/dbandstra/zig-comptime-pcx) libraries.
+Uses my [zigutils](https://github.com/dbandstra/zigutils) and [zig-pcx](https://github.com/dbandstra/zig-pcx) libraries.

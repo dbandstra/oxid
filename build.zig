@@ -10,7 +10,7 @@ pub fn build(b: *Builder) void {
   test_step.dependOn(&t.step);
 
   var exe = b.addExecutable("oxid", "src/oxid/main.zig");
-  exe.addPackagePath("zig-comptime-pcx", "zig-comptime-pcx/pcx.zig");
+  exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
   exe.addPackagePath("zigutils", "zigutils/src/index.zig");
   exe.setBuildMode(mode);
   exe.linkSystemLibrary("SDL2");
