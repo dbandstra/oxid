@@ -68,7 +68,7 @@ pub fn main() void {
     std.os.getRandomBytes(seed_bytes[0..]) catch {
       break :blk 0;
     };
-    break :blk std.mem.readIntLE(u32, seed_bytes);
+    break :blk std.mem.readIntSliceLittle(u32, seed_bytes);
   };
 
   // TODO - is it really a good idea to set high score to 0 if it failed to

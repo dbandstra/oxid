@@ -48,7 +48,7 @@ pub fn loadHighScore(stack: *StackAllocator) !u32 {
 
   var fis = std.os.File.inStream(file);
 
-  return fis.stream.readIntLe(u32);
+  return fis.stream.readIntLittle(u32);
 }
 
 pub fn saveHighScore(stack: *StackAllocator, high_score: u32) !void {
@@ -57,5 +57,5 @@ pub fn saveHighScore(stack: *StackAllocator, high_score: u32) !void {
 
   var fos = std.os.File.outStream(file);
 
-  try fos.stream.writeIntLe(u32, high_score);
+  try fos.stream.writeIntLittle(u32, high_score);
 }
