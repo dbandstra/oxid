@@ -8,8 +8,8 @@ const Mode = enum{
 };
 
 fn openDataFile(stack: *StackAllocator, filename: []const u8, mode: Mode) !std.os.File {
-  const mark = stack.get_mark();
-  defer stack.free_to_mark(mark);
+  const mark = stack.getMark();
+  defer stack.freeToMark(mark);
 
   const dir_path = blk: {
     if (builtin.os == builtin.Os.windows) {

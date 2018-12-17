@@ -16,8 +16,8 @@ pub const Font = struct{
 };
 
 pub fn loadFont(stack: *StackAllocator, font: *Font) LoadPcxError!void {
-  const mark = stack.get_mark();
-  defer stack.free_to_mark(mark);
+  const mark = stack.getMark();
+  defer stack.freeToMark(mark);
 
   const img = try loadPcx(stack, FONT_FILENAME, 0);
 

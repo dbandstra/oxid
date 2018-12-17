@@ -146,8 +146,8 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 }
 
 pub fn loadTileset(stack: *StackAllocator, out_tileset: *Draw.Tileset) LoadPcxError!void {
-  const mark = stack.get_mark();
-  defer stack.free_to_mark(mark);
+  const mark = stack.getMark();
+  defer stack.freeToMark(mark);
 
   const img = try loadPcx(stack, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
 

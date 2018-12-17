@@ -116,7 +116,7 @@ pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDev
   c.SDL_LockAudioDevice(as.device);
   defer c.SDL_UnlockAudioDevice(as.device);
 
-  as.allocator = &params.dsa.high_stack.allocator;
+  as.allocator = &params.hunk.high.allocator;
   as.mix_buffer = try as.allocator.alloc(i32, params.audio_buffer_size);
 
   clearState(as);

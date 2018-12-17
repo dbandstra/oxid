@@ -1,5 +1,5 @@
 const std = @import("std");
-const DoubleStackAllocator = @import("zigutils").DoubleStackAllocator;
+const Hunk = @import("zigutils").Hunk;
 const image = @import("zigutils").image;
 
 const Platform = @import("../platform/index.zig");
@@ -43,7 +43,7 @@ pub var game_state: GameState = undefined;
 
 pub fn main() void {
   var memory: [200*1024]u8 = undefined;
-  var dsa = DoubleStackAllocator.init(memory[0..]);
+  var hunk = Hunk.init(memory[0..]);
 
   const g = &game_state;
   Platform.init(&g.platform_state, Platform.InitParams{
@@ -53,7 +53,7 @@ pub fn main() void {
     .max_scale = 4,
     .audio_frequency = 44100,
     .audio_buffer_size = 1024,
-    .dsa = &dsa,
+    .hunk = &hunk,
   }) catch |err| {
     // this causes runaway allocation in the compiler!
     // https://github.com/ziglang/zig/issues/1753
@@ -75,17 +75,17 @@ pub fn main() void {
   // load? i think we should disable high score functionality for this session
   // instead. otherwise the real high score could get overwritten by a lower
   // score.
-  const initial_high_score = datafile.loadHighScore(&dsa.low_stack) catch |err| blk: {
+  const initial_high_score = datafile.loadHighScore(&hunk.low) catch |err| blk: {
     std.debug.warn("Failed to load high score from disk: {}.\n", err);
     break :blk 0;
   };
 
-  loadFont(&dsa.low_stack, &g.font) catch |err| {
+  loadFont(&hunk.low, &g.font) catch |err| {
     std.debug.warn("Failed to load font.\n"); // TODO - print error (see above)
     return;
   };
 
-  loadTileset(&dsa.low_stack, &g.tileset) catch |err| {
+  loadTileset(&hunk.low, &g.tileset) catch |err| {
     std.debug.warn("Failed to load tileset.\n"); // TODO - print error (see above)
     return;
   };
@@ -181,7 +181,7 @@ const C = @import("components.zig");
 
 fn saveHighScore(g: *GameState) void {
   var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
-    datafile.saveHighScore(&g.platform_state.dsa.low_stack, object.data.high_score) catch |err| {
+    datafile.saveHighScore(&g.platform_state.hunk.low, object.data.high_score) catch |err| {
       std.debug.warn("Failed to save high score to disk: {}\n", err);
     };
   }

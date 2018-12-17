@@ -45,8 +45,8 @@ pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: S
   } else {
     var error_size: c.GLint = undefined;
     c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
-    const mark = stack.get_mark();
-    defer stack.free_to_mark(mark);
+    const mark = stack.getMark();
+    defer stack.freeToMark(mark);
     if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
       c.glGetProgramInfoLog(program_id, error_size, c.ptr(&error_size), message.ptr);
       std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
@@ -73,8 +73,8 @@ fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, 
   } else {
     var error_size: c.GLint = undefined;
     c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
-    const mark = stack.get_mark();
-    defer stack.free_to_mark(mark);
+    const mark = stack.getMark();
+    defer stack.freeToMark(mark);
     if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
       c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
       std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
