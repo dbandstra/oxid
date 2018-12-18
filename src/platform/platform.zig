@@ -96,8 +96,8 @@ pub fn init(ps: *State, params: InitParams) !void {
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_DEPTH_SIZE), 24);
   _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_STENCIL_SIZE), 8);
 
-  const low_mark = params.hunk.low.getMark();
-  const c_window_title = try makeCString(&params.hunk.low.allocator, params.window_title);
+  const low_mark = params.hunk.getLowMark();
+  const c_window_title = try makeCString(&params.hunk.low().allocator, params.window_title);
 
   const window = c.SDL_CreateWindow(
     c_window_title,
@@ -108,11 +108,11 @@ pub fn init(ps: *State, params: InitParams) !void {
     c.SDL_WINDOW_OPENGL,
   ) orelse {
     c.SDL_Log(c"Unable to create window: %s", c.SDL_GetError());
-    params.hunk.low.freeToMark(low_mark);
+    params.hunk.freeToLowMark(low_mark);
     return error.SDLInitializationFailed;
   };
   errdefer c.SDL_DestroyWindow(window);
-  params.hunk.low.freeToMark(low_mark);
+  params.hunk.freeToLowMark(low_mark);
 
   var want: c.SDL_AudioSpec = undefined;
   want.freq = @intCast(c_int, params.audio_frequency);

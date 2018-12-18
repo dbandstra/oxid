@@ -76,9 +76,9 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
     return error.UnsupportedOpenGLVersion;
   };
 
-  ds.shader_primitive = try shader_primitive.create(&params.hunk.low, glsl_version);
+  ds.shader_primitive = try shader_primitive.create(&params.hunk.low(), glsl_version);
   errdefer shaders.destroy(ds.shader_primitive.program);
-  ds.shader_textured = try shader_textured.create(&params.hunk.low, glsl_version);
+  ds.shader_textured = try shader_textured.create(&params.hunk.low(), glsl_version);
   errdefer shaders.destroy(ds.shader_textured.program);
 
   ds.static_geometry = static_geometry.createStaticGeometry();

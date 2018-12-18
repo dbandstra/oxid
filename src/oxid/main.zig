@@ -75,17 +75,17 @@ pub fn main() void {
   // load? i think we should disable high score functionality for this session
   // instead. otherwise the real high score could get overwritten by a lower
   // score.
-  const initial_high_score = datafile.loadHighScore(&hunk.low) catch |err| blk: {
+  const initial_high_score = datafile.loadHighScore(&hunk.low()) catch |err| blk: {
     std.debug.warn("Failed to load high score from disk: {}.\n", err);
     break :blk 0;
   };
 
-  loadFont(&hunk.low, &g.font) catch |err| {
+  loadFont(&hunk.low(), &g.font) catch |err| {
     std.debug.warn("Failed to load font.\n"); // TODO - print error (see above)
     return;
   };
 
-  loadTileset(&hunk.low, &g.tileset) catch |err| {
+  loadTileset(&hunk.low(), &g.tileset) catch |err| {
     std.debug.warn("Failed to load tileset.\n"); // TODO - print error (see above)
     return;
   };
@@ -181,7 +181,7 @@ const C = @import("components.zig");
 
 fn saveHighScore(g: *GameState) void {
   var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
-    datafile.saveHighScore(&g.platform_state.hunk.low, object.data.high_score) catch |err| {
+    datafile.saveHighScore(&g.platform_state.hunk.low(), object.data.high_score) catch |err| {
       std.debug.warn("Failed to save high score to disk: {}\n", err);
     };
   }

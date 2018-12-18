@@ -1,5 +1,5 @@
 const std = @import("std");
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
@@ -23,11 +23,11 @@ pub const InitError = error{
   ShaderInvalidAttrib,
 };
 
-pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: ShaderSource) InitError!Program {
+pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
   errdefer std.debug.warn("Failed to compile and link shader program \"{}\".\n", description);
 
-  const vertex_id = try compile(stack, source.vertex, "vertex", c.GL_VERTEX_SHADER);
-  const fragment_id = try compile(stack, source.fragment, "fragment", c.GL_FRAGMENT_SHADER);
+  const vertex_id = try compile(hunk_side, source.vertex, "vertex", c.GL_VERTEX_SHADER);
+  const fragment_id = try compile(hunk_side, source.fragment, "fragment", c.GL_FRAGMENT_SHADER);
 
   const program_id = c.glCreateProgram();
   c.glAttachShader(program_id, vertex_id);
@@ -45,9 +45,9 @@ pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: S
   } else {
     var error_size: c.GLint = undefined;
     c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
-    const mark = stack.getMark();
-    defer stack.freeToMark(mark);
-    if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+    const mark = hunk_side.getMark();
+    defer hunk_side.freeToMark(mark);
+    if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
       c.glGetProgramInfoLog(program_id, error_size, c.ptr(&error_size), message.ptr);
       std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
     } else |_| {
@@ -57,7 +57,7 @@ pub fn compileAndLink(stack: *StackAllocator, description: []const u8, source: S
   }
 }
 
-fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, kind: c.GLenum) InitError!c.GLuint {
+fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: c.GLenum) InitError!c.GLuint {
   errdefer std.debug.warn("Failed to compile {} shader.\n", shader_type);
 
   const shader_id = c.glCreateShader(kind);
@@ -73,9 +73,9 @@ fn compile(stack: *StackAllocator, source: []const u8, shader_type: []const u8, 
   } else {
     var error_size: c.GLint = undefined;
     c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
-    const mark = stack.getMark();
-    defer stack.freeToMark(mark);
-    if (stack.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+    const mark = hunk_side.getMark();
+    defer hunk_side.freeToMark(mark);
+    if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
       c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
       std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
     } else |_| {

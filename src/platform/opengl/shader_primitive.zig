@@ -1,5 +1,5 @@
 const std = @import("std");
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 const c = @import("../c.zig");
 const debug_gl = @import("debug_gl.zig");
 const math3d = @import("math3d.zig");
@@ -65,13 +65,13 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
   };
 }
 
-pub fn create(stack: *StackAllocator, version: shaders.GLSLVersion) shaders.InitError!Shader {
+pub fn create(hunk_side: *HunkSide, version: shaders.GLSLVersion) shaders.InitError!Shader {
   errdefer std.debug.warn("Failed to create primitive shader program.\n");
 
   defer debug_gl.assertNoError();
 
   const program = try shaders.compileAndLink(
-    stack,
+    hunk_side,
     "primitive",
     switch (version) {
       shaders.GLSLVersion.V120 => getSource(shaders.GLSLVersion.V120),

@@ -1,5 +1,5 @@
 const std = @import("std");
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 const image = @import("zigutils").image;
 const pcx = @import("zig-pcx");
 
@@ -10,7 +10,7 @@ pub const LoadPcxError = error{
 };
 
 pub fn loadPcx(
-  stack: *StackAllocator,
+  hunk_side: *HunkSide,
   comptime filename: []const u8,
   transparent_color_index: ?u8,
 ) LoadPcxError!*image.Image {
@@ -21,7 +21,7 @@ pub fn loadPcx(
   const Loader = pcx.Loader(std.io.SliceInStream.Error);
 
   const preloaded = try Loader.preload(stream);
-  const img = try image.createImage(&stack.allocator, image.Info{
+  const img = try image.createImage(&hunk_side.allocator, image.Info{
     .width = preloaded.width,
     .height = preloaded.height,
     .format = image.Format.RGBA,

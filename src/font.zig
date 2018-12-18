@@ -1,4 +1,4 @@
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 
 const Draw = @import("draw.zig");
 const Platform = @import("platform/index.zig");
@@ -15,11 +15,11 @@ pub const Font = struct{
   tileset: Draw.Tileset,
 };
 
-pub fn loadFont(stack: *StackAllocator, font: *Font) LoadPcxError!void {
-  const mark = stack.getMark();
-  defer stack.freeToMark(mark);
+pub fn loadFont(hunk_side: *HunkSide, font: *Font) LoadPcxError!void {
+  const mark = hunk_side.getMark();
+  defer hunk_side.freeToMark(mark);
 
-  const img = try loadPcx(stack, FONT_FILENAME, 0);
+  const img = try loadPcx(hunk_side, FONT_FILENAME, 0);
 
   font.tileset = Draw.Tileset{
     .texture = Platform.uploadTexture(img),

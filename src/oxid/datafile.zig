@@ -1,23 +1,23 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 
 const Mode = enum{
   Read,
   Write,
 };
 
-fn openDataFile(stack: *StackAllocator, filename: []const u8, mode: Mode) !std.os.File {
-  const mark = stack.getMark();
-  defer stack.freeToMark(mark);
+fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.os.File {
+  const mark = hunk_side.getMark();
+  defer hunk_side.freeToMark(mark);
 
   const dir_path = blk: {
     if (builtin.os == builtin.Os.windows) {
-      const appdata = try std.os.getEnvVarOwned(&stack.allocator, "APPDATA");
-      break :blk try std.os.path.join(&stack.allocator, appdata, "Oxid");
+      const appdata = try std.os.getEnvVarOwned(&hunk_side.allocator, "APPDATA");
+      break :blk try std.os.path.join(&hunk_side.allocator, appdata, "Oxid");
     } else {
-      const home = try std.os.getEnvVarOwned(&stack.allocator, "HOME");
-      break :blk try std.os.path.join(&stack.allocator, home, ".oxid");
+      const home = try std.os.getEnvVarOwned(&hunk_side.allocator, "HOME");
+      break :blk try std.os.path.join(&hunk_side.allocator, home, ".oxid");
     }
   };
 
@@ -29,7 +29,7 @@ fn openDataFile(stack: *StackAllocator, filename: []const u8, mode: Mode) !std.o
     };
   }
 
-  const file_path = try std.os.path.join(&stack.allocator, dir_path, filename);
+  const file_path = try std.os.path.join(&hunk_side.allocator, dir_path, filename);
 
   return switch (mode) {
     Mode.Read => std.os.File.openRead(file_path),
@@ -37,8 +37,8 @@ fn openDataFile(stack: *StackAllocator, filename: []const u8, mode: Mode) !std.o
   };
 }
 
-pub fn loadHighScore(stack: *StackAllocator) !u32 {
-  const file = openDataFile(stack, "highscore.dat", Mode.Read) catch |err| {
+pub fn loadHighScore(hunk_side: *HunkSide) !u32 {
+  const file = openDataFile(hunk_side, "highscore.dat", Mode.Read) catch |err| {
     if (err == error.FileNotFound) {
       return u32(0);
     }
@@ -51,8 +51,8 @@ pub fn loadHighScore(stack: *StackAllocator) !u32 {
   return fis.stream.readIntLittle(u32);
 }
 
-pub fn saveHighScore(stack: *StackAllocator, high_score: u32) !void {
-  const file = try openDataFile(stack, "highscore.dat", Mode.Write);
+pub fn saveHighScore(hunk_side: *HunkSide, high_score: u32) !void {
+  const file = try openDataFile(hunk_side, "highscore.dat", Mode.Write);
   defer file.close();
 
   var fos = std.os.File.outStream(file);

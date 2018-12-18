@@ -1,4 +1,5 @@
 const std = @import("std");
+const Hunk = @import("zigutils").Hunk;
 const RWops = @import("rwops.zig").RWops;
 const c = @import("c.zig");
 const Platform = @import("platform.zig");
@@ -32,7 +33,7 @@ pub const AudioState = struct{
 
   tickcount: usize,
 
-  allocator: *std.mem.Allocator,
+  hunk: *Hunk,
   mix_buffer: []i32,
 };
 
@@ -116,8 +117,8 @@ pub fn init(as: *AudioState, params: Platform.InitParams, device: c.SDL_AudioDev
   c.SDL_LockAudioDevice(as.device);
   defer c.SDL_UnlockAudioDevice(as.device);
 
-  as.allocator = &params.hunk.high.allocator;
-  as.mix_buffer = try as.allocator.alloc(i32, params.audio_buffer_size);
+  as.hunk = params.hunk;
+  as.mix_buffer = try as.hunk.high().allocator.alloc(i32, params.audio_buffer_size);
 
   clearState(as);
 }
@@ -132,7 +133,8 @@ pub fn deinit(as: *AudioState) void {
 
   clearState(as);
 
-  as.allocator.free(as.mix_buffer);
+  // ?! you think you can free?
+  // as.hunk.high().allocator.free(as.mix_buffer);
 }
 
 // note: handle 0 is null/empty.

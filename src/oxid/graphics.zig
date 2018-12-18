@@ -1,4 +1,4 @@
-const StackAllocator = @import("zigutils").StackAllocator;
+const HunkSide = @import("zigutils").HunkSide;
 
 const Platform = @import("../platform/index.zig");
 const LoadPcxError = @import("../load_pcx.zig").LoadPcxError;
@@ -145,11 +145,11 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
   };
 }
 
-pub fn loadTileset(stack: *StackAllocator, out_tileset: *Draw.Tileset) LoadPcxError!void {
-  const mark = stack.getMark();
-  defer stack.freeToMark(mark);
+pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *Draw.Tileset) LoadPcxError!void {
+  const mark = hunk_side.getMark();
+  defer hunk_side.freeToMark(mark);
 
-  const img = try loadPcx(stack, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+  const img = try loadPcx(hunk_side, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
 
   out_tileset.texture = Platform.uploadTexture(img);
   out_tileset.xtiles = 8;
