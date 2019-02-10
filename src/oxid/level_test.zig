@@ -1,4 +1,4 @@
-const assert = @import("std").debug.assert;
+const std = @import("std");
 
 const Math = @import("../math.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
@@ -27,10 +27,10 @@ test "box_in_wall" {
     .maxs = Math.Vec2.init(s-1, s-1),
   };
 
-  assert(!level.boxInWall(Math.Vec2.init(1*s, 1*s), bbox, false));
+  std.testing.expect(!level.boxInWall(Math.Vec2.init(1*s, 1*s), bbox, false));
 
-  assert(level.boxInWall(Math.Vec2.init(1*s-1, 1*s), bbox, false));
-  assert(level.boxInWall(Math.Vec2.init(1*s+1, 1*s), bbox, false));
-  assert(level.boxInWall(Math.Vec2.init(1*s, 1*s-1), bbox, false));
-  assert(level.boxInWall(Math.Vec2.init(1*s, 1*s+1), bbox, false));
+  std.testing.expect(level.boxInWall(Math.Vec2.init(1*s-1, 1*s), bbox, false));
+  std.testing.expect(level.boxInWall(Math.Vec2.init(1*s+1, 1*s), bbox, false));
+  std.testing.expect(level.boxInWall(Math.Vec2.init(1*s, 1*s-1), bbox, false));
+  std.testing.expect(level.boxInWall(Math.Vec2.init(1*s, 1*s+1), bbox, false));
 }

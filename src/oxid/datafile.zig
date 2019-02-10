@@ -14,10 +14,10 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.os.
   const dir_path = blk: {
     if (builtin.os == builtin.Os.windows) {
       const appdata = try std.os.getEnvVarOwned(&hunk_side.allocator, "APPDATA");
-      break :blk try std.os.path.join(&hunk_side.allocator, appdata, "Oxid");
+      break :blk try std.os.path.join(&hunk_side.allocator, [][]const u8{appdata, "Oxid"});
     } else {
       const home = try std.os.getEnvVarOwned(&hunk_side.allocator, "HOME");
-      break :blk try std.os.path.join(&hunk_side.allocator, home, ".oxid");
+      break :blk try std.os.path.join(&hunk_side.allocator, [][]const u8{home, ".oxid"});
     }
   };
 
@@ -29,7 +29,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.os.
     };
   }
 
-  const file_path = try std.os.path.join(&hunk_side.allocator, dir_path, filename);
+  const file_path = try std.os.path.join(&hunk_side.allocator, [][]const u8{dir_path, filename});
 
   return switch (mode) {
     Mode.Read => std.os.File.openRead(file_path),

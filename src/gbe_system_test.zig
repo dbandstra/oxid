@@ -43,9 +43,9 @@ const SystemData1 = struct{
 };
 
 fn think1(gs: *MockGameSession, self: SystemData1) bool {
-  std.debug.assert(self.transform.x == 0);
-  std.debug.assert(self.transform.y == 0);
-  std.debug.assert(self.creature.hit_points == 8 or self.creature.hit_points == 16);
+  std.testing.expect(self.transform.x == 0);
+  std.testing.expect(self.transform.y == 0);
+  std.testing.expect(self.creature.hit_points == 8 or self.creature.hit_points == 16);
   g_count += 1;
   return true;
 }
@@ -57,7 +57,7 @@ test "GbeSystem basic test" {
   try prepareGs(&gs);
   g_count = 0;
   run1(&gs);
-  std.debug.assert(g_count == 16);
+  std.testing.expect(g_count == 16);
 }
 
 ///////////////////////////////////////
@@ -68,9 +68,9 @@ const SystemData2 = struct{
 };
 
 fn think2(gs: *MockGameSession, self: SystemData2) bool {
-  std.debug.assert(self.transform.x == 0);
-  std.debug.assert(self.transform.y == 0);
-  std.debug.assert(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
+  std.testing.expect(self.transform.x == 0);
+  std.testing.expect(self.transform.y == 0);
+  std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
   g_count += 1;
   return true;
 }
@@ -82,7 +82,7 @@ test "GbeSystem works with one optional and one required component" {
   try prepareGs(&gs);
   g_count = 0;
   run2(&gs);
-  std.debug.assert(g_count == 16);
+  std.testing.expect(g_count == 16);
 }
 
 ///////////////////////////////////////
@@ -93,9 +93,9 @@ const SystemData3 = struct{
 };
 
 fn think3(gs: *MockGameSession, self: SystemData3) bool {
-  std.debug.assert(if (self.transform) |transform| transform.x == 0 else false);
-  std.debug.assert(if (self.transform) |transform| transform.y == 0 else false);
-  std.debug.assert(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
+  std.testing.expect(if (self.transform) |transform| transform.x == 0 else false);
+  std.testing.expect(if (self.transform) |transform| transform.y == 0 else false);
+  std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
   g_count += 1;
   return true;
 }
@@ -107,7 +107,7 @@ test "GbeSystem works if all components are optional" {
   try prepareGs(&gs);
   g_count = 0;
   run3(&gs);
-  std.debug.assert(g_count == 16);
+  std.testing.expect(g_count == 16);
 }
 
 // any way to test something that would result in a compile error...?

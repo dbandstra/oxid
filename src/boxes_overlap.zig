@@ -1,9 +1,9 @@
-const assert = @import("std").debug.assert;
+const std = @import("std");
 const Math = @import("math.zig");
 
 pub fn absBoxesOverlap(a: Math.BoundingBox, b: Math.BoundingBox) bool {
-  assert(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
-  assert(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
+  std.testing.expect(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
+  std.testing.expect(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
 
   return
     a.maxs.x >= b.mins.x and
@@ -28,19 +28,19 @@ test "boxesOverlap" {
     .maxs = Math.Vec2.init(15, 15),
   };
 
-  assert(!boxesOverlap(
+  std.testing.expect(!boxesOverlap(
     Math.Vec2.init(0, 0), bbox,
     Math.Vec2.init(16, 0), bbox,
   ));
-  assert(boxesOverlap(
+  std.testing.expect(boxesOverlap(
     Math.Vec2.init(0, 0), bbox,
     Math.Vec2.init(15, 0), bbox,
   ));
-  assert(!boxesOverlap(
+  std.testing.expect(!boxesOverlap(
     Math.Vec2.init(0, 0), bbox,
     Math.Vec2.init(-16, 0), bbox,
   ));
-  assert(boxesOverlap(
+  std.testing.expect(boxesOverlap(
     Math.Vec2.init(0, 0), bbox,
     Math.Vec2.init(-15, 0), bbox,
   ));
