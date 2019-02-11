@@ -2,8 +2,8 @@ const std = @import("std");
 const Math = @import("math.zig");
 
 pub fn absBoxesOverlap(a: Math.BoundingBox, b: Math.BoundingBox) bool {
-  std.testing.expect(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
-  std.testing.expect(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
+  std.debug.assert(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
+  std.debug.assert(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
 
   return
     a.maxs.x >= b.mins.x and
