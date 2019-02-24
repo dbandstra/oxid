@@ -25,27 +25,27 @@ pub fn RWops(
       return rwops;
     }
 
-    fn getInStream(context: ?[*]c.SDL_RWops) *MyInStream {
+    fn getInStream(context: [*c]c.SDL_RWops) *MyInStream {
       const context2 = @ptrCast(*c.SDL_RWops, context);
       const data = context2.hidden.unknown.data1;
       const data2 = @alignCast(@alignOf(*MyInStream), data);
       return @ptrCast(*MyInStream, data2);
     }
 
-    fn getSeekable(context: ?[*]c.SDL_RWops) *MySeekable {
+    fn getSeekable(context: [*c]c.SDL_RWops) *MySeekable {
       const context2 = @ptrCast(*c.SDL_RWops, context);
       const data = context2.hidden.unknown.data2;
       const data2 = @alignCast(@alignOf(*MySeekable), data);
       return @ptrCast(*MySeekable, data2);
     }
 
-    extern fn sizeFn(context: ?[*]c.SDL_RWops) i64 {
+    extern fn sizeFn(context: [*c]c.SDL_RWops) i64 {
       var seekable = getSeekable(context);
       const end_pos = seekable.getEndPos() catch return -1;
       return @intCast(i64, end_pos);
     }
 
-    extern fn seekFn(context: ?[*]c.SDL_RWops, ofs: i64, whence: c_int) i64 {
+    extern fn seekFn(context: [*c]c.SDL_RWops, ofs: i64, whence: c_int) i64 {
       var seekable = getSeekable(context);
       switch (whence) {
         c.RW_SEEK_SET => {
@@ -72,7 +72,7 @@ pub fn RWops(
       }
     }
 
-    extern fn readFn(context: ?[*]c.SDL_RWops, ptr: ?*c_void, size: usize, maxnum: usize) usize {
+    extern fn readFn(context: [*c]c.SDL_RWops, ptr: ?*c_void, size: usize, maxnum: usize) usize {
       var in_stream = getInStream(context);
 
       const num_bytes = size * maxnum;
@@ -109,11 +109,11 @@ pub fn RWops(
       return maxnum;
     }
 
-    extern fn writeFn(context: ?[*]c.SDL_RWops, ptr_: ?*const c_void, size: usize, num: usize) usize {
+    extern fn writeFn(context: [*c]c.SDL_RWops, ptr_: ?*const c_void, size: usize, num: usize) usize {
       return 0; // error or eof
     }
 
-    extern fn closeFn(context: ?[*]c.SDL_RWops) c_int {
+    extern fn closeFn(context: [*c]c.SDL_RWops) c_int {
       return 0; // successful
     }
   };

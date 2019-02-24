@@ -128,7 +128,7 @@ pub fn deinit(as: *AudioState) void {
   defer c.SDL_UnlockAudioDevice(as.device);
 
   for (as.samples[0..as.num_samples]) |*sample| {
-    c.SDL_FreeWAV(c.ptr(sample.buf.ptr));
+    c.SDL_FreeWAV(sample.buf.ptr);
   }
 
   clearState(as);
@@ -157,19 +157,18 @@ pub fn loadSound(
     return 0;
   }
   var rwops = RWops(ReadError, SeekErrorType, GetSeekPosErrorType).create(stream, seekable);
-  var rwops_ptr = @ptrCast([*]c.SDL_RWops, &rwops);
 
   var sample = &ps.audio_state.samples[ps.audio_state.num_samples];
   var buf: [*]u8 = undefined;
   var len: u32 = undefined;
   const actual = c.SDL_LoadWAV_RW(
-    rwops_ptr,
+    &rwops,
     0,
-    @ptrCast([*]c.SDL_AudioSpec, &sample.spec),
+    &sample.spec,
     @ptrCast([*]?[*]u8, &buf),
-    @ptrCast([*]u32, &len),
+    &len,
   );
-  if (actual == null) {
+  if (actual == 0) {
     c.SDL_Log(c"SDL_LoadWAV failed: %s", c.SDL_GetError());
     return 0;
   }

@@ -35,7 +35,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
   c.glLinkProgram(program_id);
 
   var ok: c.GLint = undefined;
-  c.glGetProgramiv(program_id, c.GL_LINK_STATUS, c.ptr(&ok));
+  c.glGetProgramiv(program_id, c.GL_LINK_STATUS, &ok);
   if (ok != 0) {
     return Program{
       .program_id = program_id,
@@ -44,11 +44,11 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
     };
   } else {
     var error_size: c.GLint = undefined;
-    c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
+    c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, &error_size);
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
     if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-      c.glGetProgramInfoLog(program_id, error_size, c.ptr(&error_size), message.ptr);
+      c.glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
       std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
     } else |_| {
       std.debug.warn("Failed to retrieve program info log (out of memory).\n");
@@ -63,20 +63,20 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
   const shader_id = c.glCreateShader(kind);
   const source_ptr: ?[*]const u8 = source.ptr;
   const source_len = @intCast(c.GLint, source.len);
-  c.glShaderSource(shader_id, 1, c.ptr(&source_ptr), c.ptr(&source_len));
+  c.glShaderSource(shader_id, 1, &source_ptr, &source_len);
   c.glCompileShader(shader_id);
 
   var ok: c.GLint = undefined;
-  c.glGetShaderiv(shader_id, c.GL_COMPILE_STATUS, c.ptr(&ok));
+  c.glGetShaderiv(shader_id, c.GL_COMPILE_STATUS, &ok);
   if (ok != 0) {
     return shader_id;
   } else {
     var error_size: c.GLint = undefined;
-    c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, c.ptr(&error_size));
+    c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, &error_size);
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
     if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-      c.glGetShaderInfoLog(shader_id, error_size, c.ptr(&error_size), message.ptr);
+      c.glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
       std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
     } else |_| {
       std.debug.warn("Failed to retrieve shader info log (out of memory).\n");

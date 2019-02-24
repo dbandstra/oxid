@@ -10,7 +10,7 @@ pub fn uploadTexture(img: *const image.Image) Texture {
     @panic("uploadTexture does not work on indexed-color images");
   }
   var texid: c.GLuint = undefined;
-  c.glGenTextures(1, c.ptr(&texid));
+  c.glGenTextures(1, &texid);
   c.glBindTexture(c.GL_TEXTURE_2D, texid);
   c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
   c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
@@ -36,7 +36,7 @@ pub fn uploadTexture(img: *const image.Image) Texture {
       image.Format.INDEXED => unreachable, // FIXME
     },
     c.GL_UNSIGNED_BYTE, // type
-    @ptrCast(*const c_void, &img.pixels[0]), // data
+    &img.pixels[0], // data
   );
   return Texture{
     .handle = texid,

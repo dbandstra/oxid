@@ -60,10 +60,12 @@ pub const InitError = error{
 } || shaders.InitError;
 
 pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) InitError!void {
-  const gl_version = c.glGetString(c.GL_VERSION);
-
   const glsl_version = blk: {
-    if (gl_version) |v| {
+    const gl_version = c.glGetString(c.GL_VERSION);
+
+    if (gl_version != 0) {
+      const v = @ptrCast([*]const u8, gl_version);
+
       if (v[1] == '.') {
         if (v[0] == '2' and v[2] != '0') {
           break :blk shaders.GLSLVersion.V120;
@@ -71,8 +73,12 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
           break :blk shaders.GLSLVersion.V130;
         }
       }
+
+      std.debug.warn("Unsupported OpenGL version: {s}\n", v);
+    } else {
+      std.debug.warn("Failed to get OpenGL version.\n");
     }
-    std.debug.warn("Unsupported OpenGL version: {s}\n", gl_version);
+
     return error.UnsupportedOpenGLVersion;
   };
 
@@ -85,11 +91,11 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
   errdefer ds.static_geometry.destroy();
 
   var fb: c.GLuint = 0;
-  c.glGenFramebuffers(1, c.ptr(&fb));
+  c.glGenFramebuffers(1, &fb);
   c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
 
   var rt: c.GLuint = 0;
-  c.glGenTextures(1, c.ptr(&rt));
+  c.glGenTextures(1, &rt);
   c.glBindTexture(c.GL_TEXTURE_2D, rt);
   c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, @intToPtr(*const c_void, 0));
   c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
@@ -100,7 +106,7 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
   c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, rt, 0);
 
   var draw_buffers = []c.GLenum{ c.GL_COLOR_ATTACHMENT0 };
-  c.glDrawBuffers(1, c.ptr(&draw_buffers[0]));
+  c.glDrawBuffers(1, &draw_buffers[0]);
 
   if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {
     std.debug.warn("Failed to create framebuffer.\n");

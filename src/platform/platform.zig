@@ -67,7 +67,7 @@ pub fn init(ps: *State, params: InitParams) !void {
   // get the desktop resolution (for the first display)
   var dm: c.SDL_DisplayMode = undefined;
 
-  if (c.SDL_GetDesktopDisplayMode(0, c.ptr(&dm)) != 0) {
+  if (c.SDL_GetDesktopDisplayMode(0, &dm) != 0) {
     std.debug.warn("Failed to query desktop display mode.\n");
   } else {
     // pick a window size that isn't bigger than the desktop resolution
@@ -120,13 +120,13 @@ pub fn init(ps: *State, params: InitParams) !void {
   want.channels = 1;
   want.samples = params.audio_buffer_size;
   want.callback = PlatformAudio.audioCallback;
-  want.userdata = @ptrCast(*c_void, &ps.audio_state);
+  want.userdata = &ps.audio_state;
 
   const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
-    @intToPtr([*]const u8, 0), // device name
+    0, // device name (NULL)
     0, // non-zero to open for recording instead of playback
-    @ptrCast([*]c.SDL_AudioSpec, &want), // desired output format
-    @intToPtr([*]c.SDL_AudioSpec, 0), // obtained output format
+    &want, // desired output format
+    0, // obtained output format (NULL)
     0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
   );
   if (device == 0) {
@@ -175,7 +175,7 @@ pub fn deinit(ps: *State) void {
 pub fn pollEvent(ps: *State) ?Event {
   var sdl_event: c.SDL_Event = undefined;
 
-  if (c.SDL_PollEvent(@ptrCast([*]c.SDL_Event, &sdl_event)) == 0) {
+  if (c.SDL_PollEvent(&sdl_event) == 0) {
     return null;
   }
 
