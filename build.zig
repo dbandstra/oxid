@@ -9,7 +9,7 @@ pub fn build(b: *Builder) void {
   const test_step = b.step("test", "Run all tests");
   test_step.dependOn(&t.step);
 
-  var exe = b.addExecutable("oxid", "src/oxid/main.zig");
+  var exe = b.addExecutable("oxid", "src/main.zig");
   exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
   exe.addPackagePath("zigutils", "zigutils/src/index.zig");
   exe.setBuildMode(mode);
