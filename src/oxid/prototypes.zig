@@ -434,7 +434,7 @@ pub const Pickup = struct{
 
 fn Event(comptime T: type) type {
   return struct{
-    fn spawn(gs: *GameSession, body: T) !Gbe.EntityId {
+    pub fn spawn(gs: *GameSession, body: T) !Gbe.EntityId {
       const entity_id = gs.spawn();
       errdefer gs.undoSpawn(entity_id);
 

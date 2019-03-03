@@ -33,7 +33,7 @@ pub const Creature = struct{
 };
 
 pub const Monster = struct{
-  const Personality = enum{
+  pub const Personality = enum{
     Chase,
     Wander,
   };
@@ -145,13 +145,13 @@ pub const Pickup = struct{
 };
 
 pub const Player = struct{
-  const AttackLevel = enum{
+  pub const AttackLevel = enum{
     One,
     Two,
     Three,
   };
 
-  const SpeedLevel = enum{
+  pub const SpeedLevel = enum{
     One,
     Two,
     Three,

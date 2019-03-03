@@ -35,14 +35,14 @@ pub const Choices = struct{
   choices: [4]Choice,
   num_choices: usize,
 
-  fn init() Choices {
+  pub fn init() Choices {
     return Choices{
       .choices = undefined,
       .num_choices = 0,
     };
   }
 
-  fn add(self: *Choices, direction: Math.Direction, score: u32) void {
+  pub fn add(self: *Choices, direction: Math.Direction, score: u32) void {
     self.choices[self.num_choices] = Choice{
       .direction = direction,
       .score = score,
@@ -50,7 +50,7 @@ pub const Choices = struct{
     self.num_choices += 1;
   }
 
-  fn choose(self: *Choices) ?Math.Direction {
+  pub fn choose(self: *Choices) ?Math.Direction {
     if (self.num_choices > 0) {
       // TODO - use random if there is a tie.
       std.sort.sort(Choice, self.choices[0..self.num_choices], lessThanField(Choice, "score"));
