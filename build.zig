@@ -13,6 +13,7 @@ pub fn build(b: *Builder) void {
   exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
   exe.addPackagePath("zigutils", "zigutils/src/index.zig");
   exe.setBuildMode(mode);
+  exe.addIncludeDir("/usr/local/include"); // where to find SDL2 and epoxy headers
   exe.linkSystemLibrary("SDL2");
   exe.linkSystemLibrary("epoxy");
   exe.linkSystemLibrary("c");
