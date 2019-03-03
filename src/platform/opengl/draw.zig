@@ -61,11 +61,9 @@ pub const InitError = error{
 
 pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) InitError!void {
   const glsl_version = blk: {
-    const gl_version = c.glGetString(c.GL_VERSION);
+    const v = c.glGetString(c.GL_VERSION);
 
-    if (gl_version != 0) {
-      const v = @ptrCast([*]const u8, gl_version);
-
+    if (v != 0) { // null check
       if (v[1] == '.') {
         if (v[0] == '2' and v[2] != '0') {
           break :blk shaders.GLSLVersion.V120;
