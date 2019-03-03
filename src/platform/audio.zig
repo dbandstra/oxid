@@ -159,19 +159,18 @@ pub fn loadSound(
   var rwops = RWops(ReadError, SeekErrorType, GetSeekPosErrorType).create(stream, seekable);
 
   var sample = &ps.audio_state.samples[ps.audio_state.num_samples];
-  var buf: [*]u8 = undefined;
+  var maybeBuf: ?[*]u8 = undefined;
   var len: u32 = undefined;
-  const actual = c.SDL_LoadWAV_RW(
-    &rwops,
-    0,
-    &sample.spec,
-    @ptrCast([*]?[*]u8, &buf),
-    &len,
-  );
+  const actual = c.SDL_LoadWAV_RW(&rwops, 0, &sample.spec, &maybeBuf, &len);
   if (actual == 0) {
     c.SDL_Log(c"SDL_LoadWAV failed: %s", c.SDL_GetError());
     return 0;
   }
+  const buf = maybeBuf orelse {
+    // this probably never happens
+    c.SDL_Log(c"SDL_LoadWAV returned null buffer");
+    return 0;
+  };
   sample.buf = buf[0..len];
   // note: `actual` and `&sample.buf` are the same
   ps.audio_state.num_samples += 1;
