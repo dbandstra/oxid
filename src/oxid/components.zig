@@ -162,6 +162,7 @@ pub const Player = struct{
   bullets: [Constants.PlayerMaxBullets]?Gbe.EntityId,
   attack_level: AttackLevel,
   speed_level: SpeedLevel,
+  spawn_anim_y_remaining: u31,
   dying_timer: u32,
   last_pickup: ?ConstantTypes.PickupType,
   line_of_fire: ?Math.BoundingBox,

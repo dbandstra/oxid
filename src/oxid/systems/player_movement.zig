@@ -1,3 +1,4 @@
+const std = @import("std");
 const Math = @import("../../math.zig");
 const boxesOverlap = @import("../../boxes_overlap.zig").boxesOverlap;
 const Gbe = @import("../../gbe.zig");
@@ -18,13 +19,18 @@ const SystemData = struct{
   creature: *const C.Creature,
   phys: *C.PhysObject,
   player: *C.Player,
-  transform: *const C.Transform,
+  transform: *C.Transform,
 };
 
 pub const run = GbeSystem.build(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  if (GameUtil.decrementTimer(&self.player.dying_timer)) {
+  if (self.player.spawn_anim_y_remaining > 0) {
+    const dy = std.math.min(8, self.player.spawn_anim_y_remaining);
+    self.transform.pos.y -= i32(dy);
+    self.player.spawn_anim_y_remaining -= dy;
+    return true;
+  } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
     _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params{
       .pos = self.transform.pos,
     });

@@ -29,6 +29,7 @@ pub fn drawGame(g: *GameState) void {
     Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
     drawMap(g);
     drawEntities(g, sorted_drawables);
+    drawMapForeground(g);
     Platform.drawEnd(&g.platform_state);
 
     drawBoxes(g);
@@ -65,39 +66,55 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const
   return sorted_drawables;
 }
 
+fn drawMapTile(g: *GameState, x: u31, y: u31) void {
+  const gridpos = Math.Vec2.init(x, y);
+  if (switch (LEVEL.getGridValue(gridpos).?) {
+    0x00 => Graphic.Floor,
+    0x80 => Graphic.Wall,
+    0x81 => Graphic.Wall2,
+    0x82 => Graphic.Pit,
+    0x83 => Graphic.EvilWallTL,
+    0x84 => Graphic.EvilWallTR,
+    0x85 => Graphic.EvilWallBL,
+    0x86 => Graphic.EvilWallBR,
+    else => null,
+  }) |graphic| {
+    const pos = Math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS);
+    const dx = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
+    const dy = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
+    const dw = GRIDSIZE_PIXELS;
+    const dh = GRIDSIZE_PIXELS;
+    Platform.drawTile(
+      &g.platform_state,
+      &g.tileset,
+      getGraphicTile(graphic),
+      dx, dy, dw, dh,
+      Draw.Transform.Identity,
+    );
+  }
+}
+
 fn drawMap(g: *GameState) void {
   perf.begin(&perf.timers.DrawMap);
   defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
-  var y: u31 = 0;
-  while (y < LEVEL.h) : (y += 1) {
-    var x: u31 = 0;
-    while (x < LEVEL.w) : (x += 1) {
-      const gridpos = Math.Vec2.init(x, y);
-      if (switch (LEVEL.getGridValue(gridpos).?) {
-        0x00 => Graphic.Floor,
-        0x80 => Graphic.Wall,
-        0x81 => Graphic.Wall2,
-        0x82 => Graphic.Pit,
-        0x83 => Graphic.EvilWallTL,
-        0x84 => Graphic.EvilWallTR,
-        0x85 => Graphic.EvilWallBL,
-        0x86 => Graphic.EvilWallBR,
-        else => null,
-      }) |graphic| {
-        const pos = Math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS);
-        const dx = @intToFloat(f32, @divFloor(pos.x, Math.SUBPIXELS));
-        const dy = @intToFloat(f32, @divFloor(pos.y, Math.SUBPIXELS)) + HUD_HEIGHT;
-        const dw = GRIDSIZE_PIXELS;
-        const dh = GRIDSIZE_PIXELS;
-        Platform.drawTile(
-          &g.platform_state,
-          &g.tileset,
-          getGraphicTile(graphic),
-          dx, dy, dw, dh,
-          Draw.Transform.Identity,
-        );
-      }
+  var y: u31 = 0; while (y < LEVEL.h) : (y += 1) {
+    var x: u31 = 0; while (x < LEVEL.w) : (x += 1) {
+      drawMapTile(g, x, y);
+    }
+  }
+}
+
+// make the central 2x2 map tiles a foreground layer, so that the player spawn
+// anim makes him arise from behind it. (this should probably be implemented as
+// a regular entity later.)
+fn drawMapForeground(g: *GameState) void {
+  perf.begin(&perf.timers.DrawMapForeground);
+  defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
+
+  var y: u31 = 6; while (y < 8) : (y += 1) {
+    var x: u31 = 9; while (x < 11) : (x += 1) {
+      drawMapTile(g, x, y);
     }
   }
 }

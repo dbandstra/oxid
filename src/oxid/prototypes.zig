@@ -107,7 +107,7 @@ pub const Player = struct{
     errdefer gs.undoSpawn(entity_id);
 
     try gs.addComponent(entity_id, C.Transform{
-      .pos = params.pos,
+      .pos = Math.Vec2.init(params.pos.x, params.pos.y + GRIDSIZE_SUBPIXELS),
     });
 
     try gs.addComponent(entity_id, C.PhysObject{
@@ -137,6 +137,7 @@ pub const Player = struct{
       .bullets = []?Gbe.EntityId{null} ** Constants.PlayerMaxBullets,
       .attack_level = C.Player.AttackLevel.One,
       .speed_level = C.Player.SpeedLevel.One,
+      .spawn_anim_y_remaining = GRIDSIZE_SUBPIXELS, // will animate upwards 1 tile upon spawning
       .dying_timer = 0,
       .last_pickup = null,
       .line_of_fire = null,
