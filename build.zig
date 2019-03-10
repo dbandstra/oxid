@@ -3,27 +3,38 @@ const builtin = @import("builtin");
 
 pub fn build(b: *Builder) void {
   const mode = b.standardReleaseOptions();
+  const windows = b.option(bool, "windows", "create windows build") orelse false;
 
-  var t = b.addTest("test.zig");
-  t.linkSystemLibrary("c");
-  const test_step = b.step("test", "Run all tests");
-  test_step.dependOn(&t.step);
+  {
+    var t = b.addTest("test.zig");
+    t.linkSystemLibrary("c");
+    const test_step = b.step("test", "Run all tests");
+    test_step.dependOn(&t.step);
+  }
 
-  var exe = b.addExecutable("oxid", "src/main.zig");
-  exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
-  exe.addPackagePath("zigutils", "zigutils/src/index.zig");
-  exe.setBuildMode(mode);
-  exe.addIncludeDir("/usr/local/include"); // where to find SDL2 and epoxy headers
-  exe.linkSystemLibrary("SDL2");
-  exe.linkSystemLibrary("epoxy");
-  exe.linkSystemLibrary("c");
+  {
+    var exe = b.addExecutable("oxid", "src/main.zig");
+    exe.setBuildMode(mode);
 
-  b.installArtifact(exe);
+    if (windows) {
+      exe.setTarget(builtin.Arch.x86_64, builtin.Os.windows, builtin.Abi.gnu);
+    }
 
-  b.default_step.dependOn(&exe.step);
+    exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
+    exe.addPackagePath("zigutils", "zigutils/src/index.zig");
 
-  const play = b.step("play", "Play the game");
-  const run = b.addCommand(".", b.env_map, [][]const u8{ exe.getOutputPath() });
-  play.dependOn(&run.step);
-  run.step.dependOn(&exe.step);
+    exe.addIncludeDir("/usr/local/include"); // where to find SDL2 and epoxy headers on mac
+    exe.addIncludeDir("/usr/include"); // where to find SDL2/epoxy headers on ubuntu
+    exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("epoxy");
+    exe.linkSystemLibrary("c");
+
+    b.default_step.dependOn(&exe.step);
+
+    b.installArtifact(exe);
+
+    const play = b.step("play", "Play the game");
+    const run = exe.run();
+    play.dependOn(&run.step);
+  }
 }
