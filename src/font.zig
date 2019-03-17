@@ -1,4 +1,4 @@
-const HunkSide = @import("zigutils").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 
 const Draw = @import("draw.zig");
 const Platform = @import("platform/index.zig");

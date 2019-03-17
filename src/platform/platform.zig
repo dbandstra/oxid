@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("c.zig");
-const Hunk = @import("zigutils").Hunk;
+const Hunk = @import("zig-hunk").Hunk;
 const debug_gl = @import("opengl/debug_gl.zig");
 const RWops = @import("rwops.zig").RWops;
 const all_shaders = @import("opengl/shaders.zig");

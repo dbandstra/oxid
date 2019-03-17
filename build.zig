@@ -20,8 +20,8 @@ pub fn build(b: *Builder) void {
       exe.setTarget(builtin.Arch.x86_64, builtin.Os.windows, builtin.Abi.gnu);
     }
 
+    exe.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
     exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
-    exe.addPackagePath("zigutils", "zigutils/src/index.zig");
 
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("epoxy");

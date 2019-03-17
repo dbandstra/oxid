@@ -1,5 +1,5 @@
 const std = @import("std");
-const HunkSide = @import("zigutils").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 const pcx = @import("zig-pcx");
 
 pub const LoadPcxError = error{
@@ -29,14 +29,17 @@ pub fn loadPcx(
   const preloaded = try Loader.preload(stream);
 
   // allocate space for image data
-  const pixels = try hunk_side.allocator.alloc(u8, preloaded.width * preloaded.height * 4);
+  const width: u32 = preloaded.width;
+  const height: u32 = preloaded.height;
+
+  const pixels = try hunk_side.allocator.alloc(u8, width * height * 4);
 
   // decode image into `pixels`
   try Loader.loadRGBA(stream, preloaded, transparent_color_index, pixels);
 
   return Image{
     .pixels = pixels,
-    .width = preloaded.width,
-    .height = preloaded.height,
+    .width = width,
+    .height = height,
   };
 }

@@ -1,6 +1,6 @@
-[submodule "zigutils"]
-	path = zigutils
-	url = https://github.com/dbandstra/zigutils.git
 [submodule "zig-pcx"]
 	path = zig-pcx
 	url = https://github.com/dbandstra/zig-pcx.git
+[submodule "zig-hunk"]
+	path = zig-hunk
+	url = https://github.com/dbandstra/zig-hunk.git

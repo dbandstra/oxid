@@ -1,4 +1,4 @@
-const HunkSide = @import("zigutils").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 
 const Platform = @import("../platform/index.zig");
 const LoadPcxError = @import("../load_pcx.zig").LoadPcxError;

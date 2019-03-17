@@ -1,5 +1,5 @@
 const std = @import("std");
-const Hunk = @import("zigutils").Hunk;
+const Hunk = @import("zig-hunk").Hunk;
 const RWops = @import("rwops.zig").RWops;
 const c = @import("c.zig");
 const Platform = @import("platform.zig");

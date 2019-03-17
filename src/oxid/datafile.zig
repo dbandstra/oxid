@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const HunkSide = @import("zigutils").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 
 const Mode = enum{
   Read,
