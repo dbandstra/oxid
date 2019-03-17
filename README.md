@@ -44,10 +44,10 @@ Actually using the ECS requires very little boilerplate.
 Adding new graphics, sound effects, or input bindings is not as polished but still relatively easy. Documentation to come later.
 
 ## Notes
-Low-level graphics code was lifted from andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
+Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
 
 Sound effects from https://opengameart.org/content/512-sound-effects-8-bit-style
 
 Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
-Uses my [zigutils](https://github.com/dbandstra/zigutils) and [zig-pcx](https://github.com/dbandstra/zig-pcx) libraries.
+Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk) and [zig-pcx](https://github.com/dbandstra/zig-pcx) one-file libraries.
