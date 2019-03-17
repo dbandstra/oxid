@@ -1,14 +1,11 @@
 const c = @import("../c.zig");
-const image = @import("zigutils").image;
+const Image = @import("../../load_pcx.zig").Image;
 
 pub const Texture = struct{
   handle: c.GLuint,
 };
 
-pub fn uploadTexture(img: *const image.Image) Texture {
-  if (img.info.format == image.Format.INDEXED) {
-    @panic("uploadTexture does not work on indexed-color images");
-  }
+pub fn uploadTexture(img: Image) Texture {
   var texid: c.GLuint = undefined;
   c.glGenTextures(1, &texid);
   c.glBindTexture(c.GL_TEXTURE_2D, texid);
@@ -20,21 +17,11 @@ pub fn uploadTexture(img: *const image.Image) Texture {
   c.glTexImage2D(
     c.GL_TEXTURE_2D, // target
     0, // level
-    // internalFormat
-    switch (img.info.format) {
-      image.Format.RGB => @intCast(c.GLint, c.GL_RGB),
-      image.Format.RGBA => @intCast(c.GLint, c.GL_RGBA),
-      image.Format.INDEXED => unreachable, // FIXME
-    },
-    @intCast(c.GLsizei, img.info.width), // width
-    @intCast(c.GLsizei, img.info.height), // height
+    c.GL_RGBA, // internalFormat
+    @intCast(c.GLsizei, img.width), // width
+    @intCast(c.GLsizei, img.height), // height
     0, // border
-    // format
-    switch (img.info.format) {
-      image.Format.RGB => @intCast(c.GLenum, c.GL_RGB),
-      image.Format.RGBA => @intCast(c.GLenum, c.GL_RGBA),
-      image.Format.INDEXED => unreachable, // FIXME
-    },
+    c.GL_RGBA, // format
     c.GL_UNSIGNED_BYTE, // type
     &img.pixels[0], // data
   );

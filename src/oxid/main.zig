@@ -1,6 +1,5 @@
 const std = @import("std");
 const Hunk = @import("zigutils").Hunk;
-const image = @import("zigutils").image;
 
 const Platform = @import("../platform/index.zig");
 const Event = @import("../event.zig").Event;
