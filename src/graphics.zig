@@ -1,3 +1,4 @@
+const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
@@ -6,9 +7,7 @@ const LoadPcxError = @import("common/load_pcx.zig").LoadPcxError;
 const loadPcx = @import("common/load_pcx.zig").loadPcx;
 const Draw = @import("common/draw.zig");
 
-// FIXME! this is relative to src/common/load_pcx.zig! how can i find the path
-// to this file (src/graphics.zig) and make it relative to that?
-const GRAPHICS_FILENAME = "../../assets/mytiles.pcx";
+const GRAPHICS_FILENAME = build_options.assets_path ++ "/mytiles.pcx";
 const TRANSPARENT_COLOR_INDEX = 27;
 
 pub const Graphic = enum{

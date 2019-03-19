@@ -1,3 +1,4 @@
+const build_options = @import("build_options");
 const HunkSide = @import("zig-hunk").HunkSide;
 
 const Draw = @import("draw.zig");
@@ -5,7 +6,7 @@ const Platform = @import("platform/index.zig");
 const LoadPcxError = @import("load_pcx.zig").LoadPcxError;
 const loadPcx = @import("load_pcx.zig").loadPcx;
 
-const FONT_FILENAME = "../../assets/font.pcx"; // FIXME... don't like this relative path
+const FONT_FILENAME = build_options.assets_path ++ "/font.pcx";
 const FONT_CHAR_WIDTH = 8;
 const FONT_CHAR_HEIGHT = 8;
 const FONT_NUM_COLS = 16;

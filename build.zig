@@ -1,4 +1,5 @@
-const Builder = @import("std").build.Builder;
+const std = @import("std");
+const Builder = std.build.Builder;
 const builtin = @import("builtin");
 
 pub fn build(b: *Builder) void {
@@ -26,6 +27,9 @@ pub fn build(b: *Builder) void {
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("epoxy");
     exe.linkSystemLibrary("c");
+
+    const assets_path = std.os.path.join(b.allocator, [][]const u8{b.build_root, "assets"});
+    exe.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", assets_path));
 
     b.default_step.dependOn(&exe.step);
 
