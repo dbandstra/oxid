@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Math = @import("../math.zig");
+const Math = @import("common/math.zig");
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const Level = @import("level.zig").Level;
 
