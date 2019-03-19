@@ -10,13 +10,13 @@ pub const Colour = struct{
   r: f32,
   g: f32,
   b: f32,
+  a: f32,
 };
 
 pub const BindParams = struct{
   mvp: *const math3d.Mat4x4,
   tex: c.GLint,
   colour: Colour,
-  alpha: f32,
   vertex_buffer: ?c.GLuint,
   texcoord_buffer: ?c.GLuint,
 };
@@ -35,7 +35,6 @@ pub const Shader = struct{
   uniform_mvp: c.GLint,
   uniform_tex: c.GLint,
   uniform_colour: c.GLint,
-  uniform_alpha: c.GLint,
 
   pub fn bind(self: Shader, params: BindParams) void {
     c.glUseProgram(self.program.program_id);
@@ -44,10 +43,7 @@ pub const Shader = struct{
       c.glUniform1i(self.uniform_tex, params.tex);
     }
     if (self.uniform_colour != -1) {
-      c.glUniform3f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b);
-    }
-    if (self.uniform_alpha != -1) {
-      c.glUniform1f(self.uniform_alpha, params.alpha);
+      c.glUniform4f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b, params.colour.a);
     }
     if (self.uniform_mvp != -1) {
       c.glUniformMatrix4fv(self.uniform_mvp, 1, c.GL_FALSE, params.mvp.data[0][0..].ptr);
@@ -104,18 +100,13 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
       (if (old) "" else "out vec4 FragColor;\n")
       ++
       \\uniform sampler2D Tex;
-      \\uniform vec3 Colour;
-      \\uniform float Alpha;
+      \\uniform vec4 Colour;
       \\
       \\void main(void)
       \\{
       \\
       ++
-      "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord);\n"
-      ++
-      "  " ++ (if (old) "gl_" else "") ++ "FragColor.rgb *= Colour;\n"
-      ++
-      "  " ++ (if (old) "gl_" else "") ++ "FragColor.a *= Alpha;\n"
+      "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Colour;\n"
       ++
       \\}
     ,
@@ -143,6 +134,5 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
     .uniform_mvp = shaders.getUniformLocation(program, c"MVP"),
     .uniform_tex = shaders.getUniformLocation(program, c"Tex"),
     .uniform_colour = shaders.getUniformLocation(program, c"Colour"),
-    .uniform_alpha = shaders.getUniformLocation(program, c"Alpha"),
   };
 }

@@ -172,8 +172,8 @@ pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
       .r = 1.0,
       .g = 1.0,
       .b = 1.0,
+      .a = alpha,
     },
-    .alpha = alpha,
     .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
     .texcoord_buffer = ds.static_geometry.rect_2d_blit_texcoord_buffer,
   });
@@ -230,14 +230,15 @@ pub fn begin(ps: *State, tex_id: c.GLuint, maybe_colour: ?Colour) void {
           .r = @intToFloat(f32, colour.r) / 255.0,
           .g = @intToFloat(f32, colour.g) / 255.0,
           .b = @intToFloat(f32, colour.b) / 255.0,
+          .a = 1.0,
         }
       else
         shader_textured.Colour{
           .r = 1.0,
           .g = 1.0,
           .b = 1.0,
+          .a = 1.0,
         },
-    .alpha = 1.0,
     .mvp = &ds.projection,
     .vertex_buffer = null,
     .texcoord_buffer = null,
