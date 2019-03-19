@@ -1,4 +1,3 @@
-const builtin = @import("builtin");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
@@ -11,15 +10,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.os.
   const mark = hunk_side.getMark();
   defer hunk_side.freeToMark(mark);
 
-  const dir_path = blk: {
-    if (builtin.os == builtin.Os.windows) {
-      const appdata = try std.os.getEnvVarOwned(&hunk_side.allocator, "APPDATA");
-      break :blk try std.os.path.join(&hunk_side.allocator, [][]const u8{appdata, "Oxid"});
-    } else {
-      const home = try std.os.getEnvVarOwned(&hunk_side.allocator, "HOME");
-      break :blk try std.os.path.join(&hunk_side.allocator, [][]const u8{home, ".oxid"});
-    }
-  };
+  const dir_path = try std.os.getAppDataDir(&hunk_side.allocator, "Oxid");
 
   if (mode == Mode.Write) {
     std.os.makeDir(dir_path) catch |err| {
