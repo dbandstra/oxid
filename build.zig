@@ -31,6 +31,8 @@ pub fn build(b: *Builder) void {
     const assets_path = std.os.path.join(b.allocator, [][]const u8{b.build_root, "assets"});
     exe.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", assets_path));
 
+    exe.setOutputDir("zig-cache");
+
     b.default_step.dependOn(&exe.step);
 
     b.installArtifact(exe);
