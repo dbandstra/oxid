@@ -3,6 +3,7 @@ const texture = @import("opengl/texture.zig");
 const audio = @import("audio.zig");
 const platform = @import("platform.zig");
 
+pub const Colour = draw.Colour;
 pub const InitParams = platform.InitParams;
 pub const State = platform.State;
 pub const Texture = texture.Texture;

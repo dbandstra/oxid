@@ -12,6 +12,12 @@ const State = @import("../platform.zig").State;
 const InitParams = @import("../platform.zig").InitParams;
 const Draw = @import("../../draw.zig");
 
+pub const Colour = struct{
+  r: u8,
+  g: u8,
+  b: u8,
+};
+
 pub const GlitchMode = enum{
   Normal,
   QuadStrips,
@@ -162,6 +168,11 @@ pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
   ds.shader_textured.bind(shader_textured.BindParams{
     .tex = 0,
     .mvp = &ds.projection,
+    .colour = shader_textured.Colour{
+      .r = 1.0,
+      .g = 1.0,
+      .b = 1.0,
+    },
     .alpha = alpha,
     .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
     .texcoord_buffer = ds.static_geometry.rect_2d_blit_texcoord_buffer,
@@ -205,7 +216,7 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: Draw.Co
   }
 }
 
-pub fn begin(ps: *State, tex_id: c.GLuint) void {
+pub fn begin(ps: *State, tex_id: c.GLuint, maybe_colour: ?Colour) void {
   const ds = &ps.draw_state;
 
   std.debug.assert(!ds.draw_buffer.active);
@@ -213,6 +224,19 @@ pub fn begin(ps: *State, tex_id: c.GLuint) void {
 
   ds.shader_textured.bind(shader_textured.BindParams{
     .tex = 0,
+    .colour =
+      if (maybe_colour) |colour|
+        shader_textured.Colour{
+          .r = @intToFloat(f32, colour.r) / 255.0,
+          .g = @intToFloat(f32, colour.g) / 255.0,
+          .b = @intToFloat(f32, colour.b) / 255.0,
+        }
+      else
+        shader_textured.Colour{
+          .r = 1.0,
+          .g = 1.0,
+          .b = 1.0,
+        },
     .alpha = 1.0,
     .mvp = &ds.projection,
     .vertex_buffer = null,

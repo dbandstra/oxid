@@ -18,6 +18,10 @@ const LEVEL = @import("level.zig").LEVEL;
 const C = @import("components.zig");
 const perf = @import("perf.zig");
 
+const PRIMARY_FONT_COLOUR_INDEX = 15; // near-white
+const HEART_FONT_COLOUR_INDEX = 6; // red
+const SKULL_FONT_COLOUR_INDEX = 10; // light grey
+
 pub fn drawGame(g: *GameState) void {
   const mc = g.session.findFirst(C.MainController) orelse return;
 
@@ -26,7 +30,7 @@ pub fn drawGame(g: *GameState) void {
     var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
     const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
+    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle, null);
     drawMap(g);
     drawEntities(g, sorted_drawables);
     drawMapForeground(g);
@@ -39,7 +43,7 @@ pub fn drawGame(g: *GameState) void {
       drawExitDialog(g);
     }
   } else {
-    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle);
+    Platform.drawBegin(&g.platform_state, g.tileset.texture.handle, null);
     drawMap(g);
     Platform.drawEnd(&g.platform_state);
 
@@ -158,6 +162,16 @@ fn drawBoxes(g: *GameState) void {
   }
 }
 
+fn getColour(g: *GameState, index: usize) Platform.Colour {
+  std.debug.assert(index < 16);
+
+  return Platform.Colour{
+    .r = g.palette[index * 3 + 0],
+    .g = g.palette[index * 3 + 1],
+    .b = g.palette[index * 3 + 2],
+  };
+}
+
 fn drawHud(g: *GameState, game_active: bool) void {
   perf.begin(&perf.timers.DrawHud);
   defer perf.end(&perf.timers.DrawHud, g.perf_spam);
@@ -176,7 +190,8 @@ fn drawHud(g: *GameState, game_active: bool) void {
     false,
   );
 
-  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
+  const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
+  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
 
   if (gc_maybe) |gc| {
     if (pc_maybe) |pc| {
@@ -193,12 +208,24 @@ fn drawHud(g: *GameState, game_active: bool) void {
       fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
       dest.reset();
       fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
+
+      Platform.drawEnd(&g.platform_state);
+      const heartFontColour = getColour(g, HEART_FONT_COLOUR_INDEX);
+      Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, heartFontColour);
       var i: u31 = 0; while (i < pc.lives) : (i += 1) {
         fontDrawString(&g.platform_state, &g.font, (25+i)*8, 0, "\x1E"); // heart
       }
+      Platform.drawEnd(&g.platform_state);
+
       if (pc.lives == 0) {
+        const skullFontColour = getColour(g, SKULL_FONT_COLOUR_INDEX);
+        Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, skullFontColour);
         fontDrawString(&g.platform_state, &g.font, 25*8, 0, "\x1F"); // skull
+        Platform.drawEnd(&g.platform_state);
       }
+
+      Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
+
       if (maybe_player_creature) |player_creature| {
         if (player_creature.god_mode) {
           fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
@@ -288,7 +315,8 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     false,
   );
 
-  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle);
+  const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
+  Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
   {
     var start: usize = 0;
     var sy = y + 8;

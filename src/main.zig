@@ -33,6 +33,7 @@ pub const GameState = struct{
   platform_state: Platform.State,
   samples: Audio.LoadedSamples,
   tileset: Draw.Tileset,
+  palette: [48]u8,
   font: Font,
   session: GameSession,
   perf_spam: bool,
@@ -84,7 +85,7 @@ pub fn main() void {
     return;
   };
 
-  loadTileset(&hunk.low(), &g.tileset) catch |err| {
+  loadTileset(&hunk.low(), &g.tileset, g.palette[0..]) catch |err| {
     std.debug.warn("Failed to load tileset.\n"); // TODO - print error (see above)
     return;
   };

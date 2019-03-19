@@ -147,7 +147,9 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
   };
 }
 
-pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *Draw.Tileset) LoadPcxError!void {
+pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *Draw.Tileset, out_palette: []u8) LoadPcxError!void {
+  std.debug.assert(out_palette.len == 48);
+
   const mark = hunk_side.getMark();
   defer hunk_side.freeToMark(mark);
 
@@ -156,4 +158,6 @@ pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *Draw.Tileset) LoadPcxErro
   out_tileset.texture = Platform.uploadTexture(img);
   out_tileset.xtiles = 8;
   out_tileset.ytiles = 8;
+
+  std.mem.copy(u8, out_palette, img.palette[0..]);
 }

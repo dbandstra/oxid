@@ -6,9 +6,16 @@ const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 const static_geometry = @import("static_geometry.zig");
 
+pub const Colour = struct{
+  r: f32,
+  g: f32,
+  b: f32,
+};
+
 pub const BindParams = struct{
   mvp: *const math3d.Mat4x4,
   tex: c.GLint,
+  colour: Colour,
   alpha: f32,
   vertex_buffer: ?c.GLuint,
   texcoord_buffer: ?c.GLuint,
@@ -27,6 +34,7 @@ pub const Shader = struct{
   attrib_position: c.GLint,
   uniform_mvp: c.GLint,
   uniform_tex: c.GLint,
+  uniform_colour: c.GLint,
   uniform_alpha: c.GLint,
 
   pub fn bind(self: Shader, params: BindParams) void {
@@ -34,6 +42,9 @@ pub const Shader = struct{
 
     if (self.uniform_tex != -1) {
       c.glUniform1i(self.uniform_tex, params.tex);
+    }
+    if (self.uniform_colour != -1) {
+      c.glUniform3f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b);
     }
     if (self.uniform_alpha != -1) {
       c.glUniform1f(self.uniform_alpha, params.alpha);
@@ -93,6 +104,7 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
       (if (old) "" else "out vec4 FragColor;\n")
       ++
       \\uniform sampler2D Tex;
+      \\uniform vec3 Colour;
       \\uniform float Alpha;
       \\
       \\void main(void)
@@ -100,6 +112,8 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
       \\
       ++
       "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord);\n"
+      ++
+      "  " ++ (if (old) "gl_" else "") ++ "FragColor.rgb *= Colour;\n"
       ++
       "  " ++ (if (old) "gl_" else "") ++ "FragColor.a *= Alpha;\n"
       ++
@@ -128,6 +142,7 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
     .attrib_texcoord = try shaders.getAttribLocation(program, c"TexCoord"),
     .uniform_mvp = shaders.getUniformLocation(program, c"MVP"),
     .uniform_tex = shaders.getUniformLocation(program, c"Tex"),
+    .uniform_colour = shaders.getUniformLocation(program, c"Colour"),
     .uniform_alpha = shaders.getUniformLocation(program, c"Alpha"),
   };
 }
