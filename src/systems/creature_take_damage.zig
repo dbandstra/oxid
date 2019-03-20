@@ -1,5 +1,4 @@
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const SimpleAnim = @import("../graphics.zig").SimpleAnim;
@@ -9,14 +8,14 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
-  id: Gbe.EntityId,
+  id: gbe.EntityId,
   creature: *C.Creature,
   transform: *const C.Transform,
   monster: ?*const C.Monster,
   player: ?*C.Player,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (self.creature.invulnerability_timer > 0) {

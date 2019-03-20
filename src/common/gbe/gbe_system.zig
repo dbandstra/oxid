@@ -1,13 +1,13 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const Gbe = @import("gbe.zig");
+const Gbe = @import("gbe_main.zig");
 
 // `SessionType` param to these functions must have be of type  `Gbe.Session(...)`
 
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
 
-pub fn build(
+pub fn buildSystem(
   comptime SessionType: type,
   comptime SelfType: type,
   comptime think: fn(*SessionType, SelfType)bool,

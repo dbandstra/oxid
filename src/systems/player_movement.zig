@@ -1,8 +1,7 @@
 const std = @import("std");
 const Math = @import("../common/math.zig");
 const boxesOverlap = @import("../common/boxes_overlap.zig").boxesOverlap;
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const Constants = @import("../constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("../level.zig").LEVEL;
@@ -15,14 +14,14 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
-  id: Gbe.EntityId,
+  id: gbe.EntityId,
   creature: *const C.Creature,
   phys: *C.PhysObject,
   player: *C.Player,
   transform: *C.Transform,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (self.player.spawn_anim_y_remaining > 0) {

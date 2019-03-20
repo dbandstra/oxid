@@ -1,5 +1,4 @@
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
@@ -10,7 +9,7 @@ const SystemData = struct{
   gc: *C.GameController,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (gs.findFirst(C.EventPlayerDied) != null) {

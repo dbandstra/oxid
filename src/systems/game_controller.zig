@@ -1,7 +1,6 @@
 const std = @import("std");
 const Math = @import("../common/math.zig");
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
@@ -16,7 +15,7 @@ const SystemData = struct{
   gc: *C.GameController,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   // if all non-persistent monsters are dead, prepare next wave

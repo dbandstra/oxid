@@ -1,7 +1,6 @@
 const Draw = @import("../common/draw.zig");
 const Math = @import("../common/math.zig");
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");
@@ -19,7 +18,7 @@ const SystemData = struct{
   web: ?*const C.Web,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (self.player) |player| {

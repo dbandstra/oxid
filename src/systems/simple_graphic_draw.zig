@@ -1,6 +1,5 @@
 const Draw = @import("../common/draw.zig");
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
@@ -14,7 +13,7 @@ const SystemData = struct{
   simple_graphic: *const C.SimpleGraphic,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{

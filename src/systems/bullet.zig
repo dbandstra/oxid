@@ -1,4 +1,4 @@
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const C = @import("../components.zig");
@@ -9,7 +9,7 @@ const SystemData = struct{
   bullet: *C.Bullet,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   self.bullet.line_of_fire = getLineOfFire(self.transform.pos, self.phys.entity_bbox, self.phys.facing);

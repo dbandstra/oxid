@@ -1,24 +1,23 @@
 const Math = @import("../common/math.zig");
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
-  id: Gbe.EntityId,
+  id: gbe.EntityId,
   phys: *C.PhysObject,
   monster: *const C.Monster,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, monsterCollide);
+pub const run = gbe.buildSystem(GameSession, SystemData, monsterCollide);
 
 fn monsterCollide(gs: *GameSession, self: SystemData) bool {
   var hit_wall = false;
   var hit_creature = false;
 
   var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {
-    if (Gbe.EntityId.isZero(event.other_id)) {
+    if (gbe.EntityId.isZero(event.other_id)) {
       hit_wall = true;
     } else {
       const other_creature = gs.find(event.other_id, C.Creature) orelse continue;

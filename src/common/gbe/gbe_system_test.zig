@@ -1,5 +1,5 @@
 const std = @import("std");
-const Gbe = @import("gbe.zig");
+const Gbe = @import("gbe_main.zig");
 const GbeSystem = @import("gbe_system.zig");
 
 const Creature = struct{ hit_points: u32 };

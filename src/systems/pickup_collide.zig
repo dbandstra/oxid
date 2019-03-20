@@ -1,15 +1,14 @@
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
-  id: Gbe.EntityId,
+  id: gbe.EntityId,
   pickup: *const C.Pickup,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, collide);
+pub const run = gbe.buildSystem(GameSession, SystemData, collide);
 
 fn collide(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventCollide, "self_id", self.id); while (it.next()) |event| {

@@ -2,8 +2,7 @@ const std = @import("std");
 const lessThanField = @import("../common/util.zig").lessThanField;
 const Math = @import("../common/math.zig");
 const absBoxesOverlap = @import("../common/boxes_overlap.zig").absBoxesOverlap;
-const Gbe = @import("../common/gbe.zig");
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
@@ -14,14 +13,14 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 
 const SystemData = struct{
-  id: Gbe.EntityId,
+  id: gbe.EntityId,
   creature: *C.Creature,
   phys: *C.PhysObject,
   monster: *C.Monster,
   transform: *const C.Transform,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.monster.spawning_timer)) {

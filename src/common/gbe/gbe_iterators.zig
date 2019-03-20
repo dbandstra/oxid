@@ -1,4 +1,4 @@
-const Gbe = @import("gbe.zig");
+const Gbe = @import("gbe_main.zig");
 
 pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type {
   return struct{

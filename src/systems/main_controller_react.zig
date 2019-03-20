@@ -1,4 +1,4 @@
-const GbeSystem = @import("../common/gbe_system.zig");
+const gbe = @import("../common/gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
@@ -7,7 +7,7 @@ const SystemData = struct{
   mc: *C.MainController,
 };
 
-pub const run = GbeSystem.build(GameSession, SystemData, think);
+pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.iter(C.EventPostScore); while (it.next()) |object| {
