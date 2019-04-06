@@ -25,6 +25,6 @@ fn think(gs: *GameSession, self: SystemData) bool {
       .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
       .a = 255,
     },
-  });
+  }) catch undefined;
   return true;
 }

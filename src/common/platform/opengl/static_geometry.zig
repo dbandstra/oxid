@@ -20,7 +20,7 @@ pub const StaticGeometry = struct{
 
 pub fn updateVbo(vbo: c.GLuint, maybe_data2f: ?[]f32) void {
   const size = BUFFER_VERTICES * 2 * @sizeOf(c.GLfloat);
-  const null_data = @intToPtr(*const c_void, 0);
+  const null_data = @intToPtr(?*const c_void, 0);
 
   c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
   c.glBufferData(c.GL_ARRAY_BUFFER, size, null_data, c.GL_STREAM_DRAW);

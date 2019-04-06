@@ -33,7 +33,7 @@ fn monsterCollide(gs: *GameSession, self: SystemData) bool {
             .inflictor_player_controller_id = null,
             .self_id = event.other_id,
             .amount = 1,
-          });
+          }) catch undefined;
         }
       }
     }

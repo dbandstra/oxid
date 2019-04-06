@@ -21,7 +21,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
       ConstantTypes.PickupType.PowerUp => {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.PowerUp,
-        });
+        }) catch undefined;
         self.player.attack_level = switch (self.player.attack_level) {
           C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
           else => C.Player.AttackLevel.Three,
@@ -31,7 +31,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
       ConstantTypes.PickupType.SpeedUp => {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.PowerUp,
-        });
+        }) catch undefined;
         self.player.speed_level = switch (self.player.speed_level) {
           C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
           else => C.Player.SpeedLevel.Three,
@@ -41,15 +41,15 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
       ConstantTypes.PickupType.LifeUp => {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.ExtraLife,
-        });
+        }) catch undefined;
         _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
           .player_controller_id = self.player.player_controller_id,
-        });
+        }) catch undefined;
       },
       ConstantTypes.PickupType.Coin => {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.Coin,
-        });
+        }) catch undefined;
       },
     }
   }

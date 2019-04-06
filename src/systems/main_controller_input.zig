@@ -65,7 +65,7 @@ fn handleMainMenuInput(gs: *GameSession, mc: *C.MainController) void {
     switch (event.data.command) {
       input.Command.Escape => {
         if (event.data.down) {
-          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit{});
+          _ = Prototypes.EventQuit.spawn(gs, C.EventQuit{}) catch undefined;
         }
       },
       input.Command.Shoot => {
@@ -84,8 +84,8 @@ fn startGame(gs: *GameSession, mc: *C.MainController) void {
     .exit_dialog_open = false,
   };
 
-  _ = Prototypes.GameController.spawn(gs);
-  _ = Prototypes.PlayerController.spawn(gs);
+  _ = Prototypes.GameController.spawn(gs) catch undefined;
+  _ = Prototypes.PlayerController.spawn(gs) catch undefined;
 }
 
 fn leaveGame(gs: *GameSession, mc: *C.MainController) void {
@@ -95,7 +95,7 @@ fn leaveGame(gs: *GameSession, mc: *C.MainController) void {
   var it0 = gs.iter(C.PlayerController); while (it0.next()) |object| {
     _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore{
       .score = object.data.score,
-    });
+    }) catch undefined;
   }
 
   mc.game_running_state = null;

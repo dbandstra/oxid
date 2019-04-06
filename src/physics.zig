@@ -208,7 +208,7 @@ pub fn physicsFrame(gs: *GameSession) void {
             .self_id = m.entity_id,
             .other_id = Gbe.EntityId{ .id = 0 },
             .propelled = true,
-          });
+          }) catch undefined;
           hit_something = true;
         }
 
@@ -252,7 +252,7 @@ fn collide(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) void
       .self_id = self_id,
       .other_id = other_id,
       .propelled = true,
-    });
+    }) catch undefined;
   }
 
   if (findCollisionEvent(gs, other_id, self_id) == null) {
@@ -260,7 +260,7 @@ fn collide(gs: *GameSession, self_id: Gbe.EntityId, other_id: Gbe.EntityId) void
       .self_id = other_id,
       .other_id = self_id,
       .propelled = false,
-    });
+    }) catch undefined;
   }
 }
 

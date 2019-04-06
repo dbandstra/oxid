@@ -20,7 +20,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (gs.find(object.data.player_controller_id, C.PlayerController)) |pc| {
       _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore{
         .score = pc.score,
-      });
+      }) catch undefined;
     }
   }
   var it2 = gs.iter(C.EventMonsterDied); while (it2.next()) |_| {

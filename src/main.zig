@@ -96,7 +96,10 @@ pub fn main() void {
   g.mute = false;
 
   g.session.init(rand_seed);
-  gameInit(&g.session, initial_high_score);
+  gameInit(&g.session, initial_high_score) catch |err| {
+    std.debug.warn("Failed to initialize game.\n"); // TODO - print error (see above)
+    return;
+  };
 
   perf.init();
 
@@ -111,7 +114,7 @@ pub fn main() void {
             _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
               .command = command,
               .down = true,
-            });
+            }) catch undefined;
           }
           switch (key) {
             Key.Backquote => {
@@ -136,7 +139,7 @@ pub fn main() void {
             _ = Prototypes.EventInput.spawn(&g.session, C.EventInput{
               .command = command,
               .down = false,
-            });
+            }) catch undefined;
           }
           switch (key) {
             Key.Backquote => {

@@ -201,10 +201,10 @@ fn drawHud(g: *GameState, game_active: bool) void {
         else
           null;
 
-      _ = dest.stream.print("Wave: {}", gc.wave_number);
+      _ = dest.stream.print("Wave: {}", gc.wave_number) catch unreachable; // FIXME
       fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
       dest.reset();
-      _ = dest.stream.print("Speed: {}", gc.enemy_speed_level);
+      _ = dest.stream.print("Speed: {}", gc.enemy_speed_level) catch unreachable; // FIXME
       fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
       dest.reset();
       fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
@@ -231,7 +231,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
           fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
         }
       }
-      _ = dest.stream.print("Score: {}", pc.score);
+      _ = dest.stream.print("Score: {}", pc.score) catch unreachable; // FIXME
       fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
       dest.reset();
     }
@@ -245,7 +245,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
   }
 
   if (!game_active) {
-    _ = dest.stream.print("High score: {}", mc.high_score);
+    _ = dest.stream.print("High score: {}", mc.high_score) catch unreachable; // FIXME
     fontDrawString(&g.platform_state, &g.font, 24*8, 0, dest.getWritten());
     dest.reset();
   }

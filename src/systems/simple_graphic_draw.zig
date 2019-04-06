@@ -28,6 +28,6 @@ fn think(gs: *GameSession, self: SystemData) bool {
       else
         Draw.Transform.Identity,
     .z_index = self.simple_graphic.z_index,
-  });
+  }) catch undefined;
   return true;
 }

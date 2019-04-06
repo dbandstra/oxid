@@ -17,7 +17,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.mc.new_high_score = true;
       _ = Prototypes.EventSaveHighScore.spawn(gs, C.EventSaveHighScore{
         .high_score = score,
-      });
+      }) catch undefined;
     } else {
       self.mc.new_high_score = false;
     }

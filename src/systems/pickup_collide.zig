@@ -16,11 +16,11 @@ fn collide(gs: *GameSession, self: SystemData) bool {
     _ = Prototypes.EventConferBonus.spawn(gs, C.EventConferBonus{
       .recipient_id = event.other_id,
       .pickup_type = self.pickup.pickup_type,
-    });
+    }) catch undefined;
     _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints{
       .player_controller_id = other_player.player_controller_id,
       .points = self.pickup.get_points,
-    });
+    }) catch undefined;
     return false;
   }
   return true;

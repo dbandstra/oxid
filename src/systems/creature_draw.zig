@@ -39,7 +39,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             Graphic.ManDying5,
         .transform = Draw.Transform.Identity,
         .z_index = Constants.ZIndexPlayer,
-      });
+      }) catch undefined;
     } else {
       drawCreature(gs, self, DrawCreatureParams{
         .graphic1 = Graphic.Man1,
@@ -62,7 +62,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             Graphic.Spawn2,
         .transform = Draw.Transform.Identity,
         .z_index = Constants.ZIndexEnemy,
-      });
+      }) catch undefined;
     } else {
       drawCreature(gs, self, switch (monster.monster_type) {
         ConstantTypes.MonsterType.Spider => DrawCreatureParams{
@@ -151,5 +151,5 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
       else
         Draw.Transform.Identity,
     .z_index = params.z_index,
-  });
+  }) catch undefined;
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const Gbe = @import("gbe_main.zig");
-const GbeSystem = @import("gbe_system.zig");
+const buildSystem = @import("gbe_system.zig").buildSystem;
 
 const Creature = struct{ hit_points: u32 };
 const Monster = struct{ chasing: bool };
@@ -50,7 +50,7 @@ fn think1(gs: *MockGameSession, self: SystemData1) bool {
   return true;
 }
 
-const run1 = GbeSystem.build(MockGameSession, SystemData1, think1);
+const run1 = buildSystem(MockGameSession, SystemData1, think1);
 
 test "GbeSystem basic test" {
   var gs: MockGameSession = undefined;
@@ -75,7 +75,7 @@ fn think2(gs: *MockGameSession, self: SystemData2) bool {
   return true;
 }
 
-const run2 = GbeSystem.build(MockGameSession, SystemData2, think2);
+const run2 = buildSystem(MockGameSession, SystemData2, think2);
 
 test "GbeSystem works with one optional and one required component" {
   var gs: MockGameSession = undefined;
@@ -100,7 +100,7 @@ fn think3(gs: *MockGameSession, self: SystemData3) bool {
   return true;
 }
 
-const run3 = GbeSystem.build(MockGameSession, SystemData3, think3);
+const run3 = buildSystem(MockGameSession, SystemData3, think3);
 
 test "GbeSystem works if all components are optional" {
   var gs: MockGameSession = undefined;

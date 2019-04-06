@@ -20,7 +20,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       } else {
         _ = Prototypes.EventPlayerOutOfLives.spawn(gs, C.EventPlayerOutOfLives{
           .player_controller_id = self.id,
-        });
+        }) catch undefined;
       }
     }
   }

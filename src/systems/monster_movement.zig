@@ -134,7 +134,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     if (self.monster.can_shoot) {
       _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.MonsterShot,
-      });
+      }) catch undefined;
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
       const dir_vec = Math.Direction.normal(self.phys.facing);
@@ -147,14 +147,14 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .facing = self.phys.facing,
         .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
         .cluster_size = 1,
-      });
+      }) catch undefined;
     } else if (self.monster.can_drop_webs) {
       _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.DropWeb,
-      });
+      }) catch undefined;
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
-      });
+      }) catch undefined;
     }
     self.monster.next_attack_timer = gs.getRand().range(u32, 75, 400);
   }

@@ -26,7 +26,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
     _ = Prototypes.EventSound.spawn(gs, C.EventSound{
       .sample = Audio.Sample.WaveBegin,
-    });
+    }) catch undefined;
     self.gc.wave_number += 1;
     self.gc.wave_message_timer = 180;
     self.gc.enemy_speed_level = 0;
@@ -45,7 +45,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.gc.enemy_speed_level += 1;
       _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.Accelerate,
-      });
+      }) catch undefined;
     }
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
   }
@@ -114,7 +114,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
           ConstantTypes.MonsterType.Juggernaut,
       // TODO - distribute coins randomly across monster types?
       .has_coin = i < coins,
-    });
+    }) catch undefined;
   }
 }
 
@@ -125,5 +125,5 @@ fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
   _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params{
     .pos = pos,
     .pickup_type = pickup_type,
-  });
+  }) catch undefined;
 }

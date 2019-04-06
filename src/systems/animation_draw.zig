@@ -24,6 +24,6 @@ fn think(gs: *GameSession, self: SystemData) bool {
     .graphic = animcfg.frames[self.animation.frame_index],
     .transform = Draw.Transform.Identity,
     .z_index = self.animation.z_index,
-  });
+  }) catch undefined;
   return true;
 }

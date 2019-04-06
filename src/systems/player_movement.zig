@@ -32,13 +32,13 @@ fn think(gs: *GameSession, self: SystemData) bool {
   } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
     _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params{
       .pos = self.transform.pos,
-    });
+    }) catch undefined;
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
       _ = Prototypes.EventSound.spawn(gs, C.EventSound{
         .sample = Audio.Sample.PlayerCrumble,
-      });
+      }) catch undefined;
     }
     self.phys.speed = 0;
     self.phys.push_dir = null;
@@ -76,7 +76,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
       } else null) |slot| {
         _ = Prototypes.EventSound.spawn(gs, C.EventSound{
           .sample = Audio.Sample.PlayerShot,
-        });
+        }) catch undefined;
         // spawn the bullet one quarter of a grid cell in front of the player
         const pos = self.transform.pos;
         const dir_vec = Math.Direction.normal(self.phys.facing);

@@ -25,7 +25,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .b = 0,
         .a = 255,
       },
-    });
+    }) catch undefined;
   }
   return true;
 }

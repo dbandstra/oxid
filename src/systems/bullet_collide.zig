@@ -19,13 +19,13 @@ fn think(gs: *GameSession, self: SystemData) bool {
       .pos = self.transform.pos,
       .simple_anim = SimpleAnim.PlaSparks,
       .z_index = Constants.ZIndexSparks,
-    });
+    }) catch undefined;
     if (!gbe.EntityId.isZero(event.other_id)) {
       _ = Prototypes.EventTakeDamage.spawn(gs, C.EventTakeDamage{
         .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
         .self_id = event.other_id,
         .amount = self.bullet.damage,
-      });
+      }) catch undefined;
     }
     return false;
   }
