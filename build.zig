@@ -21,6 +21,7 @@ pub fn build(b: *Builder) void {
       exe.setTarget(builtin.Arch.x86_64, builtin.Os.windows, builtin.Abi.gnu);
     }
 
+    exe.addPackagePath("zang", "zang/src/zang.zig");
     exe.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
     exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
 

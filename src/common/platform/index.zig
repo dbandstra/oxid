@@ -23,7 +23,8 @@ pub const drawUntexturedRect = draw.untexturedRect;
 
 pub const uploadTexture = texture.uploadTexture;
 
-pub const loadSound = audio.loadSound;
 pub const playSound = audio.playSound;
 pub const setMute = audio.setMute;
-pub const incrementTickCount = audio.incrementTickCount;
+pub const setAudioSpeed = audio.setAudioSpeed;
+pub const lockAudio = audio.lockAudio;
+pub const unlockAudio = audio.unlockAudio;

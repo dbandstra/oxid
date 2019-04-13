@@ -2,7 +2,6 @@ const std = @import("std");
 const c = @import("c.zig");
 const Hunk = @import("zig-hunk").Hunk;
 const debug_gl = @import("opengl/debug_gl.zig");
-const RWops = @import("rwops.zig").RWops;
 const all_shaders = @import("opengl/shaders.zig");
 const static_geometry = @import("opengl/static_geometry.zig");
 const PlatformDraw = @import("opengl/draw.zig");
@@ -41,6 +40,8 @@ pub const InitParams = struct{
   // audio settings
   audio_frequency: u32,
   audio_buffer_size: u16,
+  audio_callback: extern fn(?*c_void, [*c]u8, c_int)void,
+  audio_userdata: *c_void,
   // allocators (low = temporary, high = persistent)
   hunk: *Hunk,
 };
@@ -119,8 +120,8 @@ pub fn init(ps: *State, params: InitParams) !void {
   want.format = c.AUDIO_S16LSB;
   want.channels = 1;
   want.samples = params.audio_buffer_size;
-  want.callback = PlatformAudio.audioCallback;
-  want.userdata = &ps.audio_state;
+  want.callback = params.audio_callback;
+  want.userdata = params.audio_userdata;
 
   const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
     0, // device name (NULL)

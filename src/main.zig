@@ -1,5 +1,6 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
+const zang = @import("zang");
 
 const Platform = @import("common/platform/index.zig");
 const Event = @import("common/event.zig").Event;
@@ -31,7 +32,7 @@ pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
 
 pub const GameState = struct{
   platform_state: Platform.State,
-  samples: Audio.LoadedSamples,
+  audio_module: Audio.MainModule,
   tileset: Draw.Tileset,
   palette: [48]u8,
   font: Font,
@@ -41,9 +42,23 @@ pub const GameState = struct{
 };
 pub var game_state: GameState = undefined;
 
+// i don't like having this here (it should be in platform).
+// but we need to call g.audio_module.paint, which is outside the platform audio state object.
+extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
+  const g = @ptrCast(*GameState, @alignCast(@alignOf(*GameState), userdata_.?));
+  const stream = stream_.?[0..@intCast(usize, len_)];
+
+  const buf = g.audio_module.paint(&g.platform_state.audio_state);
+
+  zang.mixDown(stream, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
+}
+
 pub fn main() void {
   var memory: [200*1024]u8 = undefined;
   var hunk = Hunk.init(memory[0..]);
+
+  const audio_sample_rate = 44100;
+  const audio_buffer_size = 1024;
 
   const g = &game_state;
   Platform.init(&g.platform_state, Platform.InitParams{
@@ -51,8 +66,10 @@ pub fn main() void {
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
     .max_scale = 4,
-    .audio_frequency = 44100,
-    .audio_buffer_size = 1024,
+    .audio_frequency = audio_sample_rate,
+    .audio_buffer_size = audio_buffer_size,
+    .audio_callback = audioCallback,
+    .audio_userdata = g,
     .hunk = &hunk,
   }) catch |err| {
     // this causes runaway allocation in the compiler!
@@ -90,7 +107,10 @@ pub fn main() void {
     return;
   };
 
-  Audio.loadSamples(&g.platform_state, &g.samples);
+  g.audio_module = Audio.MainModule.init(&hunk.low(), audio_sample_rate, audio_buffer_size) catch |err| {
+    std.debug.warn("Failed to load audio module.\n"); // TODO - print error (see above)
+    return;
+  };
 
   g.perf_spam = false;
   g.mute = false;
@@ -129,7 +149,7 @@ pub fn main() void {
             },
             Key.M => {
               g.mute = !g.mute;
-              Platform.setMute(&g.platform_state, g.mute);
+              Platform.setMute(&g.platform_state.audio_state, g.mute);
             },
             else => {},
           }
@@ -155,8 +175,8 @@ pub fn main() void {
       }
     }
 
-    const num_frames = if (fast_forward) usize(4) else usize(1);
-    var i: usize = 0; while (i < num_frames) : (i += 1) {
+    const num_frames = if (fast_forward) u32(4) else u32(1);
+    var i: u32 = 0; while (i < num_frames) : (i += 1) {
       perf.begin(&perf.timers.Frame);
       gameFrame(&g.session);
       perf.end(&perf.timers.Frame, g.perf_spam);
@@ -174,7 +194,7 @@ pub fn main() void {
     }
 
     Platform.swapWindow(&g.platform_state);
-    Platform.incrementTickCount(&g.platform_state, num_frames);
+    Platform.setAudioSpeed(&g.platform_state.audio_state, num_frames);
   }
 }
 
@@ -191,9 +211,13 @@ fn saveHighScore(g: *GameState) void {
 }
 
 fn playSounds(g: *GameState) void {
+  Platform.lockAudio(&g.platform_state.audio_state);
+
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {
-    Audio.playSample(&g.platform_state, &g.samples, object.data.sample);
+    g.audio_module.playSample(object.data.sample);
   }
+
+  Platform.unlockAudio(&g.platform_state.audio_state);
 }
 
 fn draw(g: *GameState, blit_alpha: f32) void {

@@ -4,3 +4,6 @@
 [submodule "zig-hunk"]
 	path = zig-hunk
 	url = https://github.com/dbandstra/zig-hunk.git
+[submodule "zang"]
+	path = zang
+	url = https://github.com/dbandstra/zang.git
