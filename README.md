@@ -27,14 +27,16 @@ Debug/cheat controls:
 ![Screenshot](screenshot.png)
 
 ## Code
-Oxid uses a minimalistic Entity Component System. Here are the main gameplay-related files:
-* [src/oxid/components.zig](src/oxid/components.zig) - struct definitions of each component type
-* [src/oxid/frame.zig](src/oxid/frame.zig) - calls into systems
-* [src/oxid/game.zig](src/oxid/game.zig) - component type registration
-* [src/oxid/prototypes.zig](src/oxid/prototypes.zig) - entity spawning functions
-* [src/oxid/systems/*.zig](src/oxid/systems/) - all of the systems (i.e. think functions)
+Oxid uses a minimalistic Entity Component System, which is certainly overkill for a game like this, but for me it's a experiment in itself.
 
-The ECS framework itself is located at `src/gbe*.zig`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
+Here are the main gameplay-related files:
+* [src/oxid/components.zig](src/components.zig) - struct definitions of each component type
+* [src/oxid/frame.zig](src/frame.zig) - calls into systems
+* [src/oxid/game.zig](src/game.zig) - component type registration
+* [src/oxid/prototypes.zig](src/prototypes.zig) - entity spawning functions
+* [src/oxid/systems/*.zig](src/systems/) - all of the systems (i.e. think functions)
+
+The ECS framework itself is located in `src/common/gbe/`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
 
 Actually using the ECS requires very little boilerplate.
 * To add a component type, add a struct to `components.zig` and register it in `game.zig`.
