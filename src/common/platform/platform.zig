@@ -20,9 +20,6 @@ pub const State = struct{
   draw_state: PlatformDraw.DrawState,
   audio_device: c.SDL_AudioDeviceID,
   audio_sample_rate: u32,
-  // TODO - move these to game code
-  audio_muted: bool,
-  audio_speed: u32,
 };
 
 // See https://github.com/zig-lang/zig/issues/565
