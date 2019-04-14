@@ -46,16 +46,80 @@ const SampleVoice = struct {
   }
 };
 
+// expects ModuleType to have `paint` method
+fn VoiceBase(comptime ModuleType: type, comptime num_temp_bufs: usize) type {
+  return struct {
+    iq: zang.ImpulseQueue,
+    sub_frame_index: usize,
+    note_id: usize,
+    freq: f32,
+
+    fn init() @This() {
+      return @This() {
+        .iq = zang.ImpulseQueue.init(),
+        .sub_frame_index = 0,
+        .note_id = 0,
+        .freq = 0.0,
+      };
+    }
+
+    fn update(
+      base: *@This(),
+      module: *ModuleType,
+      sample_rate: u32,
+      out: []f32,
+      tmp_bufs: [num_temp_bufs][]f32,
+      frame_index: usize,
+    ) void {
+      var i: usize = 0;
+      while (i < num_temp_bufs) : (i += 1) {
+        std.debug.assert(out.len == tmp_bufs[i].len);
+      }
+
+      if (!base.iq.isEmpty()) {
+        const track = base.iq.getImpulses();
+
+        var start: usize = 0;
+
+        while (start < out.len) {
+          const note_span = zang.getNextNoteSpan(track, frame_index, start, out.len);
+
+          std.debug.assert(note_span.start == start);
+          std.debug.assert(note_span.end > start);
+          std.debug.assert(note_span.end <= out.len);
+
+          const buf_span = out[note_span.start .. note_span.end];
+          var tmp_spans: [num_temp_bufs][]f32 = undefined;
+          comptime var ci: usize = 0;
+          comptime while (ci < num_temp_bufs) : (ci += 1) {
+            tmp_spans[ci] = tmp_bufs[ci][note_span.start .. note_span.end];
+          };
+
+          if (note_span.note) |note| {
+            if (note.id != base.note_id) {
+              std.debug.assert(note.id > base.note_id);
+
+              base.note_id = note.id;
+              base.freq = note.freq;
+              base.sub_frame_index = 0;
+            }
+
+            module.paint(sample_rate, buf_span, tmp_spans);
+          }
+
+          start = note_span.end;
+        }
+      }
+
+      base.iq.flush(frame_index, out.len);
+    }
+  };
+}
+
 const CoinVoice = struct {
+  base: VoiceBase(CoinVoice, 1),
   notes: []const zang.Impulse,
-
-  iq: zang.ImpulseQueue,
-
   osc: zang.Oscillator,
-
-  sub_frame_index: usize,
-  note_id: usize,
-  freq: f32,
 
   fn init(comptime sample_rate: u32) CoinVoice {
     const second = @floatToInt(usize, @intToFloat(f32, sample_rate));
@@ -67,76 +131,30 @@ const CoinVoice = struct {
     };
 
     return CoinVoice {
+      .base = VoiceBase(CoinVoice, 1).init(),
       .notes = notes[0..],
-      .iq = zang.ImpulseQueue.init(),
       .osc = zang.Oscillator.init(.Square),
-      .sub_frame_index = 0,
-      .note_id = 0,
-      .freq = 0.0,
     };
   }
 
-  fn paint(self: *CoinVoice, sample_rate: u32, out: []f32, tmp0: []f32) void {
-    const freq_mul = self.freq;
+  fn paint(self: *CoinVoice, sample_rate: u32, out: []f32, tmp: [1][]f32) void {
+    const freq_mul = self.base.freq;
 
-    zang.zero(tmp0);
-    self.osc.paintFromImpulses(sample_rate, tmp0, self.notes, self.sub_frame_index, freq_mul, false);
-    zang.multiplyWithScalar(tmp0, 0.2);
-    zang.addInto(out, tmp0);
+    zang.zero(tmp[0]);
+    self.osc.paintFromImpulses(sample_rate, tmp[0], self.notes, self.base.sub_frame_index, freq_mul, false);
+    zang.multiplyWithScalar(tmp[0], 0.2);
+    zang.addInto(out, tmp[0]);
 
-    self.sub_frame_index += out.len;
-  }
-
-  fn update(
-    self: *CoinVoice,
-    sample_rate: u32,
-    out: []f32,
-    tmp0: []f32,
-    frame_index: usize,
-  ) void {
-    std.debug.assert(out.len == tmp0.len);
-
-    if (!self.iq.isEmpty()) {
-      const track = self.iq.getImpulses();
-
-      var start: usize = 0;
-
-      while (start < out.len) {
-        const note_span = zang.getNextNoteSpan(track, frame_index, start, out.len);
-
-        std.debug.assert(note_span.start == start);
-        std.debug.assert(note_span.end > start);
-        std.debug.assert(note_span.end <= out.len);
-
-        const buf_span = out[note_span.start .. note_span.end];
-        const tmp0_span = tmp0[note_span.start .. note_span.end];
-
-        if (note_span.note) |note| {
-          if (note.id != self.note_id) {
-            std.debug.assert(note.id > self.note_id);
-
-            self.note_id = note.id;
-            self.freq = note.freq;
-            self.sub_frame_index = 0;
-          }
-
-          self.paint(sample_rate, buf_span, tmp0_span);
-        }
-
-        start = note_span.end;
-      }
-    }
-
-    self.iq.flush(frame_index, out.len);
+    self.base.sub_frame_index += out.len;
   }
 };
 
 const CurveVoice = struct {
+  base: VoiceBase(CurveVoice, 3),
+
   carrier_curve: []const zang.CurveNode,
   modulator_curve: []const zang.CurveNode,
   volume_curve: []const zang.CurveNode,
-
-  iq: zang.ImpulseQueue,
 
   carrier_mul: f32,
   modulator_mul: f32,
@@ -144,9 +162,6 @@ const CurveVoice = struct {
   curve: zang.Curve,
   carrier: zang.Oscillator,
   modulator: zang.Oscillator,
-  sub_frame_index: usize,
-  note_id: usize,
-  freq: f32,
 
   // sample_rate arg being comptime is just me being lazy to avoid allocators
   fn init(comptime sample_rate: u32, carrier_mul: f32, modulator_mul: f32, modulator_rad: f32) CurveVoice {
@@ -174,98 +189,37 @@ const CurveVoice = struct {
       zang.CurveNode{ .frame = 2 * second / 10, .value = 0.0 },
     };
 
-    return CurveVoice{
+    return CurveVoice {
+      .base = VoiceBase(CurveVoice, 3).init(),
       .carrier_curve = carrier_curve[0..],
       .modulator_curve = modulator_curve[0..],
       .volume_curve = volume_curve[0..],
-      .iq = zang.ImpulseQueue.init(),
       .carrier_mul = carrier_mul,
       .modulator_mul = modulator_mul,
       .modulator_rad = modulator_rad,
       .curve = zang.Curve.init(.SmoothStep),
       .carrier = zang.Oscillator.init(.Sine),
       .modulator = zang.Oscillator.init(.Sine),
-      .sub_frame_index = 0,
-      .note_id = 0,
-      .freq = 0.0,
     };
   }
 
-  fn paint(self: *CurveVoice, sample_rate: u32, out: []f32, tmp0: []f32, tmp1: []f32, tmp2: []f32) void {
-    const freq_mul = self.freq;
+  fn paint(self: *CurveVoice, sample_rate: u32, out: []f32, tmp: [3][]f32) void {
+    const freq_mul = self.base.freq;
 
-    zang.zero(tmp0);
-    self.curve.paintFromCurve(sample_rate, tmp0, self.modulator_curve, self.sub_frame_index, freq_mul * self.modulator_mul);
-    zang.zero(tmp1);
-    self.modulator.paintControlledFrequency(sample_rate, tmp1, tmp0);
-    zang.multiplyWithScalar(tmp1, self.modulator_rad);
-    zang.zero(tmp0);
-    self.curve.paintFromCurve(sample_rate, tmp0, self.carrier_curve, self.sub_frame_index, freq_mul * self.carrier_mul);
-    zang.zero(tmp2);
-    self.carrier.paintControlledPhaseAndFrequency(sample_rate, tmp2, tmp1, tmp0);
-    zang.zero(tmp0);
-    self.curve.paintFromCurve(sample_rate, tmp0, self.volume_curve, self.sub_frame_index, null);
-    zang.multiply(out, tmp0, tmp2);
+    zang.zero(tmp[0]);
+    self.curve.paintFromCurve(sample_rate, tmp[0], self.modulator_curve, self.base.sub_frame_index, freq_mul * self.modulator_mul);
+    zang.zero(tmp[1]);
+    self.modulator.paintControlledFrequency(sample_rate, tmp[1], tmp[0]);
+    zang.multiplyWithScalar(tmp[1], self.modulator_rad);
+    zang.zero(tmp[0]);
+    self.curve.paintFromCurve(sample_rate, tmp[0], self.carrier_curve, self.base.sub_frame_index, freq_mul * self.carrier_mul);
+    zang.zero(tmp[2]);
+    self.carrier.paintControlledPhaseAndFrequency(sample_rate, tmp[2], tmp[1], tmp[0]);
+    zang.zero(tmp[0]);
+    self.curve.paintFromCurve(sample_rate, tmp[0], self.volume_curve, self.base.sub_frame_index, null);
+    zang.multiply(out, tmp[0], tmp[2]);
 
-    self.sub_frame_index += out.len;
-  }
-
-  fn update(
-    self: *CurveVoice,
-    sample_rate: u32,
-    out: []f32,
-    tmp0: []f32,
-    tmp1: []f32,
-    tmp2: []f32,
-    frame_index: usize,
-  ) void {
-    std.debug.assert(out.len == tmp0.len);
-    std.debug.assert(out.len == tmp1.len);
-    std.debug.assert(out.len == tmp2.len);
-
-    if (!self.iq.isEmpty()) {
-      const track = self.iq.getImpulses();
-
-      var start: usize = 0;
-
-      while (start < out.len) {
-        const note_span = zang.getNextNoteSpan(track, frame_index, start, out.len);
-
-        std.debug.assert(note_span.start == start);
-        std.debug.assert(note_span.end > start);
-        std.debug.assert(note_span.end <= out.len);
-
-        const buf_span = out[note_span.start .. note_span.end];
-        const tmp0_span = tmp0[note_span.start .. note_span.end];
-        const tmp1_span = tmp1[note_span.start .. note_span.end];
-        const tmp2_span = tmp2[note_span.start .. note_span.end];
-
-        if (note_span.note) |note| {
-          if (note.id != self.note_id) {
-            std.debug.assert(note.id > self.note_id);
-
-            self.note_id = note.id;
-            self.freq = note.freq;
-            self.sub_frame_index = 0;
-          }
-
-          self.paint(sample_rate, buf_span, tmp0_span, tmp1_span, tmp2_span);
-        } else {
-          // gap between notes. but keep playing (sampler currently ignores note
-          // end events).
-
-          // don't paint at all if note_freq is null. that means we haven't hit
-          // the first note yet
-          if (self.note_id > 0) {
-            self.paint(sample_rate, buf_span, tmp0_span, tmp1_span, tmp2_span);
-          }
-        }
-
-        start = note_span.end;
-      }
-    }
-
-    self.iq.flush(frame_index, out.len);
+    self.base.sub_frame_index += out.len;
   }
 };
 
@@ -318,10 +272,10 @@ pub const MainModule = struct {
   pub fn playSample(self: *MainModule, sample: Sample) void {
     const maybe_iq = switch (sample) {
       .Accelerate => null, // TODO
-      .Coin => &self.coin.iq,
+      .Coin => &self.coin.base.iq,
       .DropWeb => &self.drop_web.iq,
       .ExtraLife => &self.extra_life.iq,
-      .PlayerShot => &self.laser.iq,
+      .PlayerShot => &self.laser.base.iq,
       .PlayerScream => &self.player_scream.iq,
       .PlayerDeath => &self.player_death.iq,
       .PlayerCrumble => &self.player_crumble.iq,
@@ -354,8 +308,8 @@ pub const MainModule = struct {
 
     const mix_freq = platform_audio_state.frequency / platform_audio_state.speed;
 
-    self.laser.update(mix_freq, out, tmp0, tmp1, tmp2, self.frame_index);
-    self.coin.update(mix_freq, out, tmp0, self.frame_index);
+    self.laser.base.update(&self.laser, mix_freq, out, [][]f32{tmp0, tmp1, tmp2}, self.frame_index);
+    self.coin.base.update(&self.coin, mix_freq, out, [][]f32{tmp0}, self.frame_index);
     self.drop_web.update(mix_freq, out, self.frame_index);
     self.extra_life.update(mix_freq, out, self.frame_index);
     self.player_scream.update(mix_freq, out, self.frame_index);
