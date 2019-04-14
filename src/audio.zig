@@ -223,6 +223,59 @@ const CurveVoice = struct {
   }
 };
 
+const ExplodeVoice = struct {
+  base: VoiceBase(ExplodeVoice, 3),
+
+  cutoff_curve: []const zang.CurveNode,
+  volume_curve: []const zang.CurveNode,
+
+  curve: zang.Curve,
+  noise: zang.Noise,
+  filter: zang.Filter,
+
+  // sample_rate arg being comptime is just me being lazy to avoid allocators
+  fn init(comptime sample_rate: u32) ExplodeVoice {
+    const second = @floatToInt(usize, @intToFloat(f32, sample_rate));
+
+    comptime const cutoff_curve = []zang.CurveNode {
+      zang.CurveNode{ .frame = 0 * second / 10, .value = comptime zang.cutoffFromFrequency(3000.0, sample_rate) },
+      zang.CurveNode{ .frame = 5 * second / 10, .value = comptime zang.cutoffFromFrequency(1000.0, sample_rate) },
+      zang.CurveNode{ .frame = 7 * second / 10, .value = comptime zang.cutoffFromFrequency(200.0, sample_rate) },
+    };
+
+    comptime const volume_curve = []zang.CurveNode {
+      zang.CurveNode{ .frame = 0 * second / 10, .value = 0.0 },
+      zang.CurveNode{ .frame = 1 * second / 250, .value = 0.75 },
+      zang.CurveNode{ .frame = 7 * second / 10, .value = 0.0 },
+    };
+
+    return ExplodeVoice {
+      .base = VoiceBase(ExplodeVoice, 3).init(),
+      .cutoff_curve = cutoff_curve[0..],
+      .volume_curve = volume_curve[0..],
+      .curve = zang.Curve.init(.SmoothStep),
+      .noise = zang.Noise.init(0),
+      .filter = zang.Filter.init(.LowPass, 0.0, 0.0),
+    };
+  }
+
+  fn paint(self: *ExplodeVoice, sample_rate: u32, out: []f32, tmp: [3][]f32) void {
+    const freq = self.base.freq;
+
+    zang.zero(tmp[0]);
+    self.noise.paint(tmp[0]);
+    zang.zero(tmp[1]);
+    self.curve.paintFromCurve(sample_rate, tmp[1], self.cutoff_curve, self.base.sub_frame_index, freq);
+    zang.zero(tmp[2]);
+    self.filter.paintControlledCutoff(sample_rate, tmp[2], tmp[0], tmp[1]);
+    zang.zero(tmp[1]);
+    self.curve.paintFromCurve(sample_rate, tmp[1], self.volume_curve, self.base.sub_frame_index, null);
+    zang.multiply(out, tmp[2], tmp[1]);
+
+    self.base.sub_frame_index += out.len;
+  }
+};
+
 pub const MainModule = struct {
   frame_index: usize,
   r: std.rand.Xoroshiro128,
@@ -231,17 +284,17 @@ pub const MainModule = struct {
   buf2: []f32,
   buf3: []f32,
 
-  laser: CurveVoice,
   coin: CoinVoice,
   drop_web: SampleVoice,
   extra_life: SampleVoice,
+  player_shot: CurveVoice,
   player_scream: SampleVoice,
   player_death: SampleVoice,
   player_crumble: SampleVoice,
   power_up: SampleVoice,
   monster_impact: SampleVoice,
   monster_shot: SampleVoice,
-  monster_death: SampleVoice,
+  monster_death: ExplodeVoice,
   wave_begin: SampleVoice,
 
   pub fn init(hunk_side: *HunkSide, comptime sample_rate: u32, audio_buffer_size: usize) !MainModule {
@@ -254,17 +307,17 @@ pub const MainModule = struct {
       .buf3 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
       .r = std.rand.DefaultPrng.init(0),
       .frame_index = 0,
-      .laser = CurveVoice.init(sample_rate, 2.0, 0.5, 0.5),
       .coin = CoinVoice.init(sample_rate),
       .drop_web = try SampleVoice.init("sfx_sounds_interaction5.wav"),
       .extra_life = try SampleVoice.init("sfx_sounds_powerup4.wav"),
+      .player_shot = CurveVoice.init(sample_rate, 2.0, 0.5, 0.5),
       .player_scream = try SampleVoice.init("sfx_deathscream_human2.wav"),
       .player_death = try SampleVoice.init("sfx_exp_cluster7.wav"),
       .player_crumble = try SampleVoice.init("sfx_exp_short_soft10.wav"),
       .power_up = try SampleVoice.init("sfx_sounds_powerup10.wav"),
       .monster_impact = try SampleVoice.init("sfx_sounds_impact1.wav"),
       .monster_shot = try SampleVoice.init("sfx_wpn_laser10.wav"),
-      .monster_death = try SampleVoice.init("sfx_exp_short_soft5.wav"),
+      .monster_death = ExplodeVoice.init(sample_rate),
       .wave_begin = try SampleVoice.init("sfx_sound_mechanicalnoise2.wav"),
     };
   }
@@ -275,14 +328,14 @@ pub const MainModule = struct {
       .Coin => &self.coin.base.iq,
       .DropWeb => &self.drop_web.iq,
       .ExtraLife => &self.extra_life.iq,
-      .PlayerShot => &self.laser.base.iq,
+      .PlayerShot => &self.player_shot.base.iq,
       .PlayerScream => &self.player_scream.iq,
       .PlayerDeath => &self.player_death.iq,
       .PlayerCrumble => &self.player_crumble.iq,
       .PowerUp => &self.power_up.iq,
       .MonsterImpact => &self.monster_impact.iq,
       .MonsterShot => &self.monster_shot.iq,
-      .MonsterDeath => &self.monster_death.iq,
+      .MonsterDeath => &self.monster_death.base.iq,
       .WaveBegin => &self.wave_begin.iq,
     };
 
@@ -308,17 +361,17 @@ pub const MainModule = struct {
 
     const mix_freq = platform_audio_state.frequency / platform_audio_state.speed;
 
-    self.laser.base.update(&self.laser, mix_freq, out, [][]f32{tmp0, tmp1, tmp2}, self.frame_index);
     self.coin.base.update(&self.coin, mix_freq, out, [][]f32{tmp0}, self.frame_index);
     self.drop_web.update(mix_freq, out, self.frame_index);
     self.extra_life.update(mix_freq, out, self.frame_index);
+    self.player_shot.base.update(&self.player_shot, mix_freq, out, [][]f32{tmp0, tmp1, tmp2}, self.frame_index);
     self.player_scream.update(mix_freq, out, self.frame_index);
     self.player_death.update(mix_freq, out, self.frame_index);
     self.player_crumble.update(mix_freq, out, self.frame_index);
     self.power_up.update(mix_freq, out, self.frame_index);
     self.monster_impact.update(mix_freq, out, self.frame_index);
     self.monster_shot.update(mix_freq, out, self.frame_index);
-    self.monster_death.update(mix_freq, out, self.frame_index);
+    self.monster_death.base.update(&self.monster_death, mix_freq, out, [][]f32{tmp0, tmp1, tmp2}, self.frame_index);
     self.wave_begin.update(mix_freq, out, self.frame_index);
 
     self.frame_index += out.len;
