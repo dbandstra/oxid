@@ -48,7 +48,7 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
   const g = @ptrCast(*GameState, @alignCast(@alignOf(*GameState), userdata_.?));
   const stream = stream_.?[0..@intCast(usize, len_)];
 
-  const buf = g.audio_module.paint(&g.platform_state.audio_state);
+  const buf = g.audio_module.paint(g.platform_state.audio_sample_rate);
 
   zang.mixDown(stream, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
 }
@@ -66,7 +66,7 @@ pub fn main() void {
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
     .max_scale = 4,
-    .audio_frequency = audio_sample_rate,
+    .audio_sample_rate = audio_sample_rate,
     .audio_buffer_size = audio_buffer_size,
     .audio_callback = audioCallback,
     .audio_userdata = g,
@@ -149,7 +149,6 @@ pub fn main() void {
             },
             Key.M => {
               g.mute = !g.mute;
-              Platform.setMute(&g.platform_state.audio_state, g.mute);
             },
             else => {},
           }
@@ -187,14 +186,13 @@ pub fn main() void {
       }
 
       saveHighScore(g);
-      playSounds(g);
+      playSounds(g, num_frames);
       draw(g, 1.0 / @intToFloat(f32, i + 1));
 
       gameFrameCleanup(&g.session);
     }
 
     Platform.swapWindow(&g.platform_state);
-    Platform.setAudioSpeed(&g.platform_state.audio_state, num_frames);
   }
 }
 
@@ -210,14 +208,17 @@ fn saveHighScore(g: *GameState) void {
   }
 }
 
-fn playSounds(g: *GameState) void {
-  Platform.lockAudio(&g.platform_state.audio_state);
+fn playSounds(g: *GameState, speed: u32) void {
+  Platform.lockAudio(&g.platform_state);
+
+  g.audio_module.muted = g.mute;
+  g.audio_module.speed = speed;
 
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {
     g.audio_module.playSample(object.data.sample);
   }
 
-  Platform.unlockAudio(&g.platform_state.audio_state);
+  Platform.unlockAudio(&g.platform_state);
 }
 
 fn draw(g: *GameState, blit_alpha: f32) void {

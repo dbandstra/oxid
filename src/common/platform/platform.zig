@@ -18,7 +18,11 @@ pub const State = struct{
   window: *c.SDL_Window,
   glcontext: c.SDL_GLContext,
   draw_state: PlatformDraw.DrawState,
-  audio_state: PlatformAudio.AudioState,
+  audio_device: c.SDL_AudioDeviceID,
+  audio_sample_rate: u32,
+  // TODO - move these to game code
+  audio_muted: bool,
+  audio_speed: u32,
 };
 
 // See https://github.com/zig-lang/zig/issues/565
@@ -38,7 +42,7 @@ pub const InitParams = struct{
   // by the user's screen resolution)
   max_scale: u3,
   // audio settings
-  audio_frequency: u32,
+  audio_sample_rate: u32,
   audio_buffer_size: u16,
   audio_callback: extern fn(?*c_void, [*c]u8, c_int)void,
   audio_userdata: *c_void,
@@ -116,7 +120,7 @@ pub fn init(ps: *State, params: InitParams) !void {
   params.hunk.freeToLowMark(low_mark);
 
   var want: c.SDL_AudioSpec = undefined;
-  want.freq = @intCast(c_int, params.audio_frequency);
+  want.freq = @intCast(c_int, params.audio_sample_rate);
   want.format = c.AUDIO_S16LSB;
   want.channels = 1;
   want.samples = params.audio_buffer_size;
@@ -147,15 +151,14 @@ pub fn init(ps: *State, params: InitParams) !void {
   try PlatformDraw.init(&ps.draw_state, params, window_width, window_height);
   errdefer PlatformDraw.deinit(&ps.draw_state);
 
-  try PlatformAudio.init(&ps.audio_state, params, device);
-  errdefer PlatformAudio.deinit(&ps.audio_state);
-
   ps.initialized = true;
   ps.hunk = params.hunk;
   ps.glitch_mode = PlatformDraw.GlitchMode.Normal;
   ps.clear_screen = true;
   ps.window = window;
   ps.glcontext = glcontext;
+  ps.audio_device = device;
+  ps.audio_sample_rate = params.audio_sample_rate;
 
   c.SDL_PauseAudioDevice(device, 0); // unpause
 }
@@ -164,10 +167,12 @@ pub fn deinit(ps: *State) void {
   if (!ps.initialized) {
     return;
   }
-  PlatformAudio.deinit(&ps.audio_state);
+
+  c.SDL_PauseAudioDevice(ps.audio_device, 1);
+  c.SDL_CloseAudioDevice(ps.audio_device);
+
   PlatformDraw.deinit(&ps.draw_state);
   c.SDL_GL_DeleteContext(ps.glcontext);
-  c.SDL_CloseAudioDevice(ps.audio_state.device);
   c.SDL_DestroyWindow(ps.window);
   c.SDL_Quit();
   ps.initialized = false;
@@ -197,4 +202,12 @@ pub fn swapWindow(ps: *State) void {
 
   // FIXME - try to detect if vsync is enabled...
   // c.SDL_Delay(17);
+}
+
+pub fn lockAudio(ps: *State) void {
+  c.SDL_LockAudioDevice(ps.audio_device);
+}
+
+pub fn unlockAudio(ps: *State) void {
+  c.SDL_UnlockAudioDevice(ps.audio_device);
 }

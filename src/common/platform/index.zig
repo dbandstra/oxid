@@ -1,6 +1,5 @@
 const draw = @import("opengl/draw.zig");
 const texture = @import("opengl/texture.zig");
-const audio = @import("audio.zig");
 const platform = @import("platform.zig");
 
 pub const Colour = draw.Colour;
@@ -14,6 +13,8 @@ pub const pollEvent = platform.pollEvent;
 pub const preDraw = platform.preDraw;
 pub const postDraw = platform.postDraw;
 pub const swapWindow = platform.swapWindow;
+pub const lockAudio = platform.lockAudio;
+pub const unlockAudio = platform.unlockAudio;
 
 pub const cycleGlitchMode = draw.cycleGlitchMode;
 pub const drawBegin = draw.begin;
@@ -22,9 +23,3 @@ pub const drawTile = draw.tile;
 pub const drawUntexturedRect = draw.untexturedRect;
 
 pub const uploadTexture = texture.uploadTexture;
-
-pub const playSound = audio.playSound;
-pub const setMute = audio.setMute;
-pub const setAudioSpeed = audio.setAudioSpeed;
-pub const lockAudio = audio.lockAudio;
-pub const unlockAudio = audio.unlockAudio;

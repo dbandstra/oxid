@@ -1,7 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
-const PlatformAudioState = @import("common/platform/audio.zig").AudioState;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 const LaserVoice = @import("audio/laser.zig").LaserVoice;
@@ -33,6 +32,14 @@ pub const MainModule = struct {
   buf2: []f32,
   buf3: []f32,
 
+  // muted: main thread can access this (under lock)
+  muted: bool,
+
+  // speed: ditto. if this is 1, play sound at normal rate. if it's 2, play
+  // back at double speed, and so on. this is used to speed up the sound when
+  // the game is being fast forwarded
+  speed: u32,
+
   coin: CoinVoice,
   drop_web: SampleVoice,
   extra_life: SampleVoice,
@@ -46,16 +53,19 @@ pub const MainModule = struct {
   monster_death: ExplosionVoice,
   wave_begin: SampleVoice,
 
+  // call this in the main thread before the audio device is set up
   pub fn init(hunk_side: *HunkSide, comptime sample_rate: u32, audio_buffer_size: usize) !MainModule {
     return MainModule {
+      .frame_index = 0,
+      .r = std.rand.DefaultPrng.init(0),
       // these allocations are never freed (but it's ok because this object is
       // create once in the main function)
       .buf0 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
       .buf1 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
       .buf2 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
       .buf3 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
-      .r = std.rand.DefaultPrng.init(0),
-      .frame_index = 0,
+      .muted = false,
+      .speed = 1,
       .coin = CoinVoice.init(sample_rate),
       .drop_web = try SampleVoice.init("sfx_sounds_interaction5.wav"),
       .extra_life = try SampleVoice.init("sfx_sounds_powerup4.wav"),
@@ -71,6 +81,7 @@ pub const MainModule = struct {
     };
   }
 
+  // call this in the main thread with the audio device locked
   pub fn playSample(self: *MainModule, sample: Sample) void {
     const maybe_iq = switch (sample) {
       .Accelerate => null, // TODO
@@ -100,7 +111,14 @@ pub const MainModule = struct {
     }
   }
 
-  pub fn paint(self: *MainModule, platform_audio_state: *const PlatformAudioState) []const f32 {
+  // called in the audio thread.
+  // note: this works under the assumption the thread mutex is locked during
+  // the entire audio callback call. this is just how SDL2 works. if we switch
+  // to another library that gives more control, this method should be
+  // refactored so that all the IQs (impulse queues) are pulled out before
+  // painting, so that the thread doesn't need to be locked during the actual
+  // painting
+  pub fn paint(self: *MainModule, sample_rate: u32) []const f32 {
     const out = self.buf0;
     const tmp0 = self.buf1;
     const tmp1 = self.buf2;
@@ -108,7 +126,7 @@ pub const MainModule = struct {
 
     zang.zero(out);
 
-    const mix_freq = platform_audio_state.frequency / platform_audio_state.speed;
+    const mix_freq = sample_rate / self.speed;
 
     self.coin.base.update(&self.coin, mix_freq, out, [][]f32{tmp0}, self.frame_index);
     self.drop_web.update(mix_freq, out, self.frame_index);
@@ -122,6 +140,10 @@ pub const MainModule = struct {
     self.monster_shot.update(mix_freq, out, self.frame_index);
     self.monster_death.base.update(&self.monster_death, mix_freq, out, [][]f32{tmp0, tmp1, tmp2}, self.frame_index);
     self.wave_begin.update(mix_freq, out, self.frame_index);
+
+    if (self.muted) {
+      zang.zero(out);
+    }
 
     self.frame_index += out.len;
 
