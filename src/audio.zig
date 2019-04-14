@@ -46,6 +46,91 @@ const SampleVoice = struct {
   }
 };
 
+const CoinVoice = struct {
+  notes: []const zang.Impulse,
+
+  iq: zang.ImpulseQueue,
+
+  osc: zang.Oscillator,
+
+  sub_frame_index: usize,
+  note_id: usize,
+  freq: f32,
+
+  fn init(comptime sample_rate: u32) CoinVoice {
+    const second = @floatToInt(usize, @intToFloat(f32, sample_rate));
+
+    comptime const notes = []zang.Impulse{
+      zang.Impulse{ .id = 1, .freq = 750.0, .frame = 0 },
+      zang.Impulse{ .id = 2, .freq = 1000.0, .frame = second * 45 / 1000 },
+      zang.Impulse{ .id = 4, .freq = null, .frame = second * 90 / 1000 },
+    };
+
+    return CoinVoice {
+      .notes = notes[0..],
+      .iq = zang.ImpulseQueue.init(),
+      .osc = zang.Oscillator.init(.Square),
+      .sub_frame_index = 0,
+      .note_id = 0,
+      .freq = 0.0,
+    };
+  }
+
+  fn paint(self: *CoinVoice, sample_rate: u32, out: []f32, tmp0: []f32) void {
+    const freq_mul = self.freq;
+
+    zang.zero(tmp0);
+    self.osc.paintFromImpulses(sample_rate, tmp0, self.notes, self.sub_frame_index, freq_mul, false);
+    zang.multiplyWithScalar(tmp0, 0.2);
+    zang.addInto(out, tmp0);
+
+    self.sub_frame_index += out.len;
+  }
+
+  fn update(
+    self: *CoinVoice,
+    sample_rate: u32,
+    out: []f32,
+    tmp0: []f32,
+    frame_index: usize,
+  ) void {
+    std.debug.assert(out.len == tmp0.len);
+
+    if (!self.iq.isEmpty()) {
+      const track = self.iq.getImpulses();
+
+      var start: usize = 0;
+
+      while (start < out.len) {
+        const note_span = zang.getNextNoteSpan(track, frame_index, start, out.len);
+
+        std.debug.assert(note_span.start == start);
+        std.debug.assert(note_span.end > start);
+        std.debug.assert(note_span.end <= out.len);
+
+        const buf_span = out[note_span.start .. note_span.end];
+        const tmp0_span = tmp0[note_span.start .. note_span.end];
+
+        if (note_span.note) |note| {
+          if (note.id != self.note_id) {
+            std.debug.assert(note.id > self.note_id);
+
+            self.note_id = note.id;
+            self.freq = note.freq;
+            self.sub_frame_index = 0;
+          }
+
+          self.paint(sample_rate, buf_span, tmp0_span);
+        }
+
+        start = note_span.end;
+      }
+    }
+
+    self.iq.flush(frame_index, out.len);
+  }
+};
+
 const CurveVoice = struct {
   carrier_curve: []const zang.CurveNode,
   modulator_curve: []const zang.CurveNode,
@@ -193,7 +278,7 @@ pub const MainModule = struct {
   buf3: []f32,
 
   laser: CurveVoice,
-  coin: SampleVoice,
+  coin: CoinVoice,
   drop_web: SampleVoice,
   extra_life: SampleVoice,
   player_scream: SampleVoice,
@@ -216,7 +301,7 @@ pub const MainModule = struct {
       .r = std.rand.DefaultPrng.init(0),
       .frame_index = 0,
       .laser = CurveVoice.init(sample_rate, 2.0, 0.5, 0.5),
-      .coin = try SampleVoice.init("sfx_coin_double7.wav"),
+      .coin = CoinVoice.init(sample_rate),
       .drop_web = try SampleVoice.init("sfx_sounds_interaction5.wav"),
       .extra_life = try SampleVoice.init("sfx_sounds_powerup4.wav"),
       .player_scream = try SampleVoice.init("sfx_deathscream_human2.wav"),
@@ -252,7 +337,7 @@ pub const MainModule = struct {
       // playing at the beginning of the mix buffer
       const impulse_frame = 0;
 
-      const variance = 0.2;
+      const variance = 0.1;
       const playback_speed = 1.0 + self.r.random.float(f32) * variance - 0.5 * variance;
 
       iq.push(impulse_frame, playback_speed, self.frame_index);
@@ -270,7 +355,7 @@ pub const MainModule = struct {
     const mix_freq = platform_audio_state.frequency / platform_audio_state.speed;
 
     self.laser.update(mix_freq, out, tmp0, tmp1, tmp2, self.frame_index);
-    self.coin.update(mix_freq, out, self.frame_index);
+    self.coin.update(mix_freq, out, tmp0, self.frame_index);
     self.drop_web.update(mix_freq, out, self.frame_index);
     self.extra_life.update(mix_freq, out, self.frame_index);
     self.player_scream.update(mix_freq, out, self.frame_index);
