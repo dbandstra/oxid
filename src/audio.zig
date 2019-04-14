@@ -25,6 +25,7 @@ pub const Sample = enum{
 };
 
 pub const MainModule = struct {
+  initialized: bool,
   frame_index: usize,
   r: std.rand.Xoroshiro128,
   buf0: []f32,
@@ -56,6 +57,7 @@ pub const MainModule = struct {
   // call this in the main thread before the audio device is set up
   pub fn init(hunk_side: *HunkSide, comptime sample_rate: u32, audio_buffer_size: usize) !MainModule {
     return MainModule {
+      .initialized = true,
       .frame_index = 0,
       .r = std.rand.DefaultPrng.init(0),
       // these allocations are never freed (but it's ok because this object is

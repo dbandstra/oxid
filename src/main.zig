@@ -41,12 +41,17 @@ pub const GameState = struct{
   perf_spam: bool,
   mute: bool,
 };
+// this is only global because GameState is pretty big, and i didn't want to
+// use an allocator. don't access it outside of the main function.
 pub var game_state: GameState = undefined;
 
-fn audioCallback(g: *GameState, out_bytes: []u8) void {
-  const buf = g.audio_module.paint(g.platform_state.audio_sample_rate);
-
-  zang.mixDown(out_bytes, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
+fn audioCallback(mm: *Audio.MainModule, out_bytes: []u8, sample_rate: u32) void {
+  if (mm.initialized) {
+    zang.mixDown(out_bytes, mm.paint(sample_rate), zang.AudioFormat.S16LSB, 1, 0, 0.5);
+  } else {
+    // note to self: change this if we ever use an unsigned audio format
+    std.mem.set(u8, out_bytes, 0);
+  }
 }
 
 pub fn main() void {
@@ -57,7 +62,8 @@ pub fn main() void {
   const audio_buffer_size = 1024;
 
   const g = &game_state;
-  Platform.init(&g.platform_state, g, audioCallback, Platform.InitParams{
+  g.audio_module.initialized = false;
+  Platform.init(&g.platform_state, &g.audio_module, audioCallback, Platform.InitParams{
     .window_title = "Oxid",
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,

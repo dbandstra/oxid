@@ -11,9 +11,11 @@ const Draw = @import("../draw.zig");
 const Event = @import("../event.zig").Event;
 const translateEvent = @import("translate_event.zig").translateEvent;
 
+pub const AudioCallback = fn (userdata: *c_void, out_bytes: []u8, sample_rate: u32) void;
 pub const AudioUserData = struct {
   userdata: *c_void,
-  callback: fn (userdata: *c_void, out_bytes: []u8) void,
+  sample_rate: u32,
+  callback: AudioCallback,
 };
 
 pub const State = struct {
@@ -63,7 +65,7 @@ extern fn platformAudioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_in
   const ud = @ptrCast(*AudioUserData, @alignCast(@alignOf(*AudioUserData), userdata_.?));
   const stream = stream_.?[0..@intCast(usize, len_)];
 
-  ud.callback(ud.userdata, stream);
+  ud.callback(ud.userdata, stream, ud.sample_rate);
 }
 
 pub fn init(ps: *State, audio_userdata: var, audio_callback: var, params: InitParams) !void {
@@ -78,14 +80,17 @@ pub fn init(ps: *State, audio_userdata: var, audio_callback: var, params: InitPa
       @compileError("Platform.init: `audio_callback` must be a function`");
     }
     const args = @typeInfo(CallbackType).Fn.args;
-    if (args.len != 2) {
-      @compileError("Platform.init: `audio_callback` must take 2 args");
+    if (args.len != 3) {
+      @compileError("Platform.init: `audio_callback` must take 3 args");
     }
     if (if (args[0].arg_type) |at| at != UserDataType else false) {
       @compileError("Platform.init: `audio_callback` first arg must have same type as `audio_userdata`");
     }
     if (if (args[1].arg_type) |at| at != []u8 else false) {
       @compileError("Platform.init: `audio_callback` second arg must have type `[]u8`");
+    }
+    if (if (args[2].arg_type) |at| at != u32 else false) {
+      @compileError("Platform.init: `audio_callback` third arg must have type `u32`");
     }
     if (if (@typeInfo(CallbackType).Fn.return_type) |ret| ret != void else false) {
       @compileError("Platform.init: `audio_callback` must return `void`");
@@ -155,7 +160,8 @@ pub fn init(ps: *State, audio_userdata: var, audio_callback: var, params: InitPa
 
   ps.audio_user_data = AudioUserData {
     .userdata = audio_userdata,
-    .callback = @ptrCast(fn (userdata: *c_void, out_bytes: []u8) void, audio_callback),
+    .sample_rate = params.audio_sample_rate,
+    .callback = @ptrCast(AudioCallback, audio_callback),
   };
 
   var want: c.SDL_AudioSpec = undefined;
@@ -166,6 +172,8 @@ pub fn init(ps: *State, audio_userdata: var, audio_callback: var, params: InitPa
   want.callback = platformAudioCallback;
   want.userdata = &ps.audio_user_data;
 
+  // TODO - allow SDL to pick something different? (make sure to update
+  // ps.audio_user_data.sample_rate)
   const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
     0, // device name (NULL)
     0, // non-zero to open for recording instead of playback
