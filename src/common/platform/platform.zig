@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const c = @import("c.zig");
 const Hunk = @import("zig-hunk").Hunk;
@@ -10,7 +11,12 @@ const Draw = @import("../draw.zig");
 const Event = @import("../event.zig").Event;
 const translateEvent = @import("translate_event.zig").translateEvent;
 
-pub const State = struct{
+pub const AudioUserData = struct {
+  userdata: *c_void,
+  callback: fn (userdata: *c_void, out_bytes: []u8) void,
+};
+
+pub const State = struct {
   initialized: bool,
   hunk: *Hunk,
   glitch_mode: PlatformDraw.GlitchMode,
@@ -20,6 +26,7 @@ pub const State = struct{
   draw_state: PlatformDraw.DrawState,
   audio_device: c.SDL_AudioDeviceID,
   audio_sample_rate: u32,
+  audio_user_data: AudioUserData,
 };
 
 // See https://github.com/zig-lang/zig/issues/565
@@ -28,7 +35,7 @@ pub const State = struct{
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
 
-pub const InitParams = struct{
+pub const InitParams = struct {
   window_title: []const u8,
   // dimensions of the game viewport, which will be scaled up to fit the system
   // window
@@ -41,8 +48,6 @@ pub const InitParams = struct{
   // audio settings
   audio_sample_rate: u32,
   audio_buffer_size: u16,
-  audio_callback: extern fn(?*c_void, [*c]u8, c_int)void,
-  audio_userdata: *c_void,
   // allocators (low = temporary, high = persistent)
   hunk: *Hunk,
 };
@@ -54,7 +59,39 @@ fn makeCString(allocator: *std.mem.Allocator, source: []const u8) ![*]const u8 {
   return bytes.ptr;
 }
 
-pub fn init(ps: *State, params: InitParams) !void {
+extern fn platformAudioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
+  const ud = @ptrCast(*AudioUserData, @alignCast(@alignOf(*AudioUserData), userdata_.?));
+  const stream = stream_.?[0..@intCast(usize, len_)];
+
+  ud.callback(ud.userdata, stream);
+}
+
+pub fn init(ps: *State, audio_userdata: var, audio_callback: var, params: InitParams) !void {
+  // type check the `audio_userdata` and `audio_callback` args
+  {
+    const UserDataType = @typeOf(audio_userdata);
+    if (@typeId(UserDataType) != builtin.TypeId.Pointer) {
+      @compileError("Platform.init: `audio_userdata` must be a pointer");
+    }
+    const CallbackType = @typeOf(audio_callback);
+    if (@typeId(CallbackType) != builtin.TypeId.Fn) {
+      @compileError("Platform.init: `audio_callback` must be a function`");
+    }
+    const args = @typeInfo(CallbackType).Fn.args;
+    if (args.len != 2) {
+      @compileError("Platform.init: `audio_callback` must take 2 args");
+    }
+    if (if (args[0].arg_type) |at| at != UserDataType else false) {
+      @compileError("Platform.init: `audio_callback` first arg must have same type as `audio_userdata`");
+    }
+    if (if (args[1].arg_type) |at| at != []u8 else false) {
+      @compileError("Platform.init: `audio_callback` second arg must have type `[]u8`");
+    }
+    if (if (@typeInfo(CallbackType).Fn.return_type) |ret| ret != void else false) {
+      @compileError("Platform.init: `audio_callback` must return `void`");
+    }
+  }
+
   ps.initialized = false;
 
   if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {
@@ -116,13 +153,18 @@ pub fn init(ps: *State, params: InitParams) !void {
   errdefer c.SDL_DestroyWindow(window);
   params.hunk.freeToLowMark(low_mark);
 
+  ps.audio_user_data = AudioUserData {
+    .userdata = audio_userdata,
+    .callback = @ptrCast(fn (userdata: *c_void, out_bytes: []u8) void, audio_callback),
+  };
+
   var want: c.SDL_AudioSpec = undefined;
   want.freq = @intCast(c_int, params.audio_sample_rate);
   want.format = c.AUDIO_S16LSB;
   want.channels = 1;
   want.samples = params.audio_buffer_size;
-  want.callback = params.audio_callback;
-  want.userdata = params.audio_userdata;
+  want.callback = platformAudioCallback;
+  want.userdata = &ps.audio_user_data;
 
   const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
     0, // device name (NULL)

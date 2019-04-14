@@ -30,6 +30,7 @@ pub const HUD_HEIGHT = 16;
 pub const VWIN_W: u31 = LEVEL.w * GRIDSIZE_PIXELS; // 320
 pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
 
+// this is a global singleton
 pub const GameState = struct{
   platform_state: Platform.State,
   audio_module: Audio.MainModule,
@@ -42,15 +43,10 @@ pub const GameState = struct{
 };
 pub var game_state: GameState = undefined;
 
-// i don't like having this here (it should be in platform).
-// but we need to call g.audio_module.paint, which is outside the platform audio state object.
-extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
-  const g = @ptrCast(*GameState, @alignCast(@alignOf(*GameState), userdata_.?));
-  const stream = stream_.?[0..@intCast(usize, len_)];
-
+fn audioCallback(g: *GameState, out_bytes: []u8) void {
   const buf = g.audio_module.paint(g.platform_state.audio_sample_rate);
 
-  zang.mixDown(stream, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
+  zang.mixDown(out_bytes, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
 }
 
 pub fn main() void {
@@ -61,15 +57,13 @@ pub fn main() void {
   const audio_buffer_size = 1024;
 
   const g = &game_state;
-  Platform.init(&g.platform_state, Platform.InitParams{
+  Platform.init(&g.platform_state, g, audioCallback, Platform.InitParams{
     .window_title = "Oxid",
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
     .max_scale = 4,
     .audio_sample_rate = audio_sample_rate,
     .audio_buffer_size = audio_buffer_size,
-    .audio_callback = audioCallback,
-    .audio_userdata = g,
     .hunk = &hunk,
   }) catch |err| {
     // this causes runaway allocation in the compiler!
