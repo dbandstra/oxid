@@ -107,7 +107,7 @@ pub fn main() void {
     return;
   };
 
-  g.audio_module = Audio.MainModule.init(&hunk.low(), audio_sample_rate, audio_buffer_size) catch |err| {
+  g.audio_module = Audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
     std.debug.warn("Failed to load audio module.\n"); // TODO - print error (see above)
     return;
   };
@@ -186,7 +186,7 @@ pub fn main() void {
       }
 
       saveHighScore(g);
-      playSounds(g, num_frames);
+      playSounds(g, @intToFloat(f32, num_frames));
       draw(g, 1.0 / @intToFloat(f32, i + 1));
 
       gameFrameCleanup(&g.session);
@@ -208,7 +208,7 @@ fn saveHighScore(g: *GameState) void {
   }
 }
 
-fn playSounds(g: *GameState, speed: u32) void {
+fn playSounds(g: *GameState, speed: f32) void {
   Platform.lockAudio(&g.platform_state);
 
   g.audio_module.muted = g.mute;

@@ -1,35 +1,42 @@
 const zang = @import("zang");
-const VoiceBase = @import("base.zig").VoiceBase;
 
 pub const CoinVoice = struct {
-  base: VoiceBase(CoinVoice, 1),
-  notes: []const zang.Impulse,
+  pub const NumTempBufs = 2;
+
   osc: zang.Oscillator,
+  osc_triggerable: zang.Triggerable(zang.Oscillator),
+  gate: zang.Gate,
+  gate_triggerable: zang.Triggerable(zang.Gate),
+  note_tracker: zang.NoteTracker,
 
-  pub fn init(comptime sample_rate: u32) CoinVoice {
-    const second = @floatToInt(usize, @intToFloat(f32, sample_rate));
-
-    comptime const notes = []zang.Impulse{
-      zang.Impulse{ .id = 1, .freq = 750.0, .frame = 0 },
-      zang.Impulse{ .id = 2, .freq = 1000.0, .frame = second * 45 / 1000 },
-      zang.Impulse{ .id = 4, .freq = null, .frame = second * 90 / 1000 },
-    };
-
+  pub fn init() CoinVoice {
     return CoinVoice {
-      .base = VoiceBase(CoinVoice, 1).init(),
-      .notes = notes[0..],
       .osc = zang.Oscillator.init(.Square),
+      .osc_triggerable = zang.Triggerable(zang.Oscillator).init(),
+      .gate = zang.Gate.init(),
+      .gate_triggerable = zang.Triggerable(zang.Gate).init(),
+      .note_tracker = zang.NoteTracker.init([]zang.SongNote {
+        zang.SongNote{ .freq = 750.0, .t = 0.0 },
+        zang.SongNote{ .freq = 1000.0, .t = 0.045 },
+        zang.SongNote{ .freq = null, .t = 0.090 },
+      }),
     };
   }
 
-  pub fn paint(self: *CoinVoice, sample_rate: u32, out: []f32, tmp: [1][]f32) void {
-    const freq_mul = self.base.freq;
+  pub fn paint(self: *CoinVoice, sample_rate: f32, out: []f32, note_on: bool, freq: f32, tmp: [2][]f32) void {
+    const impulses = self.note_tracker.getImpulses(sample_rate, out.len, freq);
 
     zang.zero(tmp[0]);
-    self.osc.paintFromImpulses(sample_rate, tmp[0], self.notes, self.base.sub_frame_index, freq_mul, false);
-    zang.multiplyWithScalar(tmp[0], 0.2);
-    zang.addInto(out, tmp[0]);
+    self.osc_triggerable.paintFromImpulses(&self.osc, sample_rate, tmp[0], impulses, [0][]f32{});
+    zang.zero(tmp[1]);
+    self.gate_triggerable.paintFromImpulses(self.gate, sample_rate, tmp[1], impulses, [0][]f32{});
+    zang.multiplyWithScalar(tmp[1], 0.2);
+    zang.multiply(out, tmp[0], tmp[1]);
+  }
 
-    self.base.sub_frame_index += out.len;
+  pub fn reset(self: *CoinVoice) void {
+    self.osc.reset();
+    self.gate.reset();
+    self.note_tracker.reset();
   }
 };

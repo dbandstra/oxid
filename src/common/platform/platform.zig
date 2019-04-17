@@ -6,7 +6,6 @@ const debug_gl = @import("opengl/debug_gl.zig");
 const all_shaders = @import("opengl/shaders.zig");
 const static_geometry = @import("opengl/static_geometry.zig");
 const PlatformDraw = @import("opengl/draw.zig");
-const PlatformAudio = @import("audio.zig");
 const Draw = @import("../draw.zig");
 const Event = @import("../event.zig").Event;
 const translateEvent = @import("translate_event.zig").translateEvent;
