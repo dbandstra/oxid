@@ -29,7 +29,7 @@ pub const CoinVoice = struct {
     zang.zero(tmp[0]);
     self.osc_triggerable.paintFromImpulses(&self.osc, sample_rate, tmp[0], impulses, [0][]f32{});
     zang.zero(tmp[1]);
-    self.gate_triggerable.paintFromImpulses(self.gate, sample_rate, tmp[1], impulses, [0][]f32{});
+    self.gate_triggerable.paintFromImpulses(&self.gate, sample_rate, tmp[1], impulses, [0][]f32{});
     zang.multiplyWithScalar(tmp[1], 0.2);
     zang.multiply(out, tmp[0], tmp[1]);
   }
