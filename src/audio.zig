@@ -25,23 +25,23 @@ pub const Sample = enum{
 // `Voice`: convenience wrapper for:
 // - impulse queue (the "inbox" which you push to in order to trigger sound effects)
 // - module (the actual sound module being used)
-// - triggerable (calls into module's paint method using the impulses in the impulse queue)
+// - trigger (calls into module's paint method using the impulses in the impulse queue)
 pub fn Voice(comptime ModuleType: type) type {
   return struct {
     iq: zang.ImpulseQueue,
     module: ModuleType,
-    triggerable: zang.Triggerable(ModuleType),
+    trigger: zang.Trigger(ModuleType),
 
     pub fn init(module: ModuleType) @This() {
       return @This() {
         .iq = zang.ImpulseQueue.init(),
         .module = module,
-        .triggerable = zang.Triggerable(ModuleType).init(),
+        .trigger = zang.Trigger(ModuleType).init(),
       };
     }
 
     pub fn paint(self: *@This(), sample_rate: f32, out: []f32, tmp: [ModuleType.NumTempBufs][]f32) void {
-      self.triggerable.paintFromImpulses(&self.module, sample_rate, out, self.iq.consume(), tmp);
+      self.trigger.paintFromImpulses(&self.module, sample_rate, out, self.iq.consume(), tmp);
     }
   };
 }
