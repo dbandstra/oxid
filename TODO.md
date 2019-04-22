@@ -11,7 +11,6 @@
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
-- sound effect when monsters speed up
 - when you respawn after dying, you shouldn't have to release and repress movement keys
 
 i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.

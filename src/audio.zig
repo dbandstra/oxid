@@ -2,12 +2,17 @@ const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
+const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
-pub const Sample = enum{
-  Accelerate,
+pub const Sample = enum {
+  Accelerate1,
+  Accelerate2,
+  Accelerate3,
+  Accelerate4,
   Coin,
   DropWeb,
   ExtraLife,
@@ -69,6 +74,7 @@ pub const MainModule = struct {
   // TODO figure out what happens if it's <= 0. if it breaks, add checks
   speed: f32,
 
+  accelerate: Voice(AccelerateVoice),
   coin: Voice(CoinVoice),
   drop_web: Voice(zang.Sampler),
   extra_life: Voice(zang.Sampler),
@@ -80,7 +86,7 @@ pub const MainModule = struct {
   monster_impact: Voice(zang.Sampler),
   monster_shot: Voice(zang.Sampler),
   monster_death: Voice(ExplosionVoice),
-  wave_begin: Voice(zang.Sampler),
+  wave_begin: Voice(WaveBeginVoice),
 
   // call this in the main thread before the audio device is set up
   pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
@@ -95,6 +101,7 @@ pub const MainModule = struct {
       .buf3 = try hunk_side.allocator.alloc(f32, audio_buffer_size),
       .muted = false,
       .speed = 1,
+      .accelerate = Voice(AccelerateVoice).init(AccelerateVoice.init()),
       .coin = Voice(CoinVoice).init(CoinVoice.init()),
       .drop_web = Voice(zang.Sampler).init(try loadSampler("sfx_sounds_interaction5.wav")),
       .extra_life = Voice(zang.Sampler).init(try loadSampler("sfx_sounds_powerup4.wav")),
@@ -106,14 +113,21 @@ pub const MainModule = struct {
       .monster_impact = Voice(zang.Sampler).init(try loadSampler("sfx_sounds_impact1.wav")),
       .monster_shot = Voice(zang.Sampler).init(try loadSampler("sfx_wpn_laser10.wav")),
       .monster_death = Voice(ExplosionVoice).init(ExplosionVoice.init()),
-      .wave_begin = Voice(zang.Sampler).init(try loadSampler("sfx_sound_mechanicalnoise2.wav")),
+      .wave_begin = Voice(WaveBeginVoice).init(WaveBeginVoice.init()),
     };
   }
 
   // call this in the main thread with the audio device locked
   pub fn playSample(self: *MainModule, sample: Sample) void {
-    const maybe_iq = switch (sample) {
-      .Accelerate => null, // TODO
+    // FIXME - impulse_frame being 0 means that sounds will always start
+    // playing at the beginning of the mix buffer
+    const impulse_frame = 0;
+
+    const iq = switch (sample) {
+      .Accelerate1 => { self.accelerate.iq.push(impulse_frame, 1.25); return; },
+      .Accelerate2 => { self.accelerate.iq.push(impulse_frame, 1.5); return; },
+      .Accelerate3 => { self.accelerate.iq.push(impulse_frame, 1.75); return; },
+      .Accelerate4 => { self.accelerate.iq.push(impulse_frame, 2.0); return; },
       .Coin => &self.coin.iq,
       .DropWeb => &self.drop_web.iq,
       .ExtraLife => &self.extra_life.iq,
@@ -128,16 +142,10 @@ pub const MainModule = struct {
       .WaveBegin => &self.wave_begin.iq,
     };
 
-    if (maybe_iq) |iq| {
-      // FIXME - impulse_frame being 0 means that sounds will always start
-      // playing at the beginning of the mix buffer
-      const impulse_frame = 0;
+    const variance = 0.1;
+    const playback_speed = 1.0 + self.r.random.float(f32) * variance - 0.5 * variance;
 
-      const variance = 0.1;
-      const playback_speed = 1.0 + self.r.random.float(f32) * variance - 0.5 * variance;
-
-      iq.push(impulse_frame, playback_speed);
-    }
+    iq.push(impulse_frame, playback_speed);
   }
 
   // called in the audio thread.
@@ -158,6 +166,7 @@ pub const MainModule = struct {
     const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
 
     // TODO these voices should be in components and belong to the entities
+    self.accelerate.paint(mix_freq, out, [][]f32{tmp0, tmp1});
     self.coin.paint(mix_freq, out, [][]f32{tmp0, tmp1});
     self.drop_web.paint(mix_freq, out, [][]f32{});
     self.extra_life.paint(mix_freq, out, [][]f32{});
@@ -169,7 +178,7 @@ pub const MainModule = struct {
     self.monster_impact.paint(mix_freq, out, [][]f32{});
     self.monster_shot.paint(mix_freq, out, [][]f32{});
     self.monster_death.paint(mix_freq, out, [][]f32{tmp0, tmp1, tmp2});
-    self.wave_begin.paint(mix_freq, out, [][]f32{});
+    self.wave_begin.paint(mix_freq, out, [][]f32{tmp0, tmp1});
 
     if (self.muted) {
       zang.zero(out);
