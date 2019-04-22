@@ -201,26 +201,23 @@ fn drawHud(g: *GameState, game_active: bool) void {
         else
           null;
 
-      _ = dest.stream.print("Wave: {}", gc.wave_number) catch unreachable; // FIXME
+      _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
       fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
       dest.reset();
-      _ = dest.stream.print("Speed: {}", gc.enemy_speed_level) catch unreachable; // FIXME
-      fontDrawString(&g.platform_state, &g.font, 9*8, 0, dest.getWritten());
-      dest.reset();
-      fontDrawString(&g.platform_state, &g.font, 19*8, 0, "Lives:");
+      fontDrawString(&g.platform_state, &g.font, 9*8, 0, "Lives:");
 
       Platform.drawEnd(&g.platform_state);
       const heartFontColour = getColour(g, HEART_FONT_COLOUR_INDEX);
       Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, heartFontColour);
       var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-        fontDrawString(&g.platform_state, &g.font, (25+i)*8, 0, "\x1E"); // heart
+        fontDrawString(&g.platform_state, &g.font, (15+i)*8, 0, "\x1E"); // heart
       }
       Platform.drawEnd(&g.platform_state);
 
       if (pc.lives == 0) {
         const skullFontColour = getColour(g, SKULL_FONT_COLOUR_INDEX);
         Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, skullFontColour);
-        fontDrawString(&g.platform_state, &g.font, 25*8, 0, "\x1F"); // skull
+        fontDrawString(&g.platform_state, &g.font, 15*8, 0, "\x1F"); // skull
         Platform.drawEnd(&g.platform_state);
       }
 
@@ -228,11 +225,11 @@ fn drawHud(g: *GameState, game_active: bool) void {
 
       if (maybe_player_creature) |player_creature| {
         if (player_creature.god_mode) {
-          fontDrawString(&g.platform_state, &g.font, 19*8, 8, "god mode");
+          fontDrawString(&g.platform_state, &g.font, 9*8, 8, "god mode");
         }
       }
-      _ = dest.stream.print("Score: {}", pc.score) catch unreachable; // FIXME
-      fontDrawString(&g.platform_state, &g.font, 29*8, 0, dest.getWritten());
+      _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
+      fontDrawString(&g.platform_state, &g.font, 20*8, 0, dest.getWritten());
       dest.reset();
     }
 
@@ -244,11 +241,9 @@ fn drawHud(g: *GameState, game_active: bool) void {
     }
   }
 
-  if (!game_active) {
-    _ = dest.stream.print("High score: {}", mc.high_score) catch unreachable; // FIXME
-    fontDrawString(&g.platform_state, &g.font, 24*8, 0, dest.getWritten());
-    dest.reset();
-  }
+  _ = dest.stream.print("High:{}", mc.high_score) catch unreachable; // FIXME
+  fontDrawString(&g.platform_state, &g.font, 31*8, 0, dest.getWritten());
+  dest.reset();
 
   Platform.drawEnd(&g.platform_state);
 
