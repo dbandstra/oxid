@@ -62,6 +62,7 @@ pub const GameController = struct{
   next_pickup_timer: u32,
   freeze_monsters_timer: u32,
   extra_lives_spawned: u32,
+  wave_message: ?[]const u8,
   wave_message_timer: u32,
 };
 

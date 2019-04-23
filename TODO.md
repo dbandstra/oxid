@@ -59,7 +59,6 @@ events always have a recipient. they go straight to the recipient's inbox for th
 ## Gameplay ideas
 Beyond cloning Verminian Trap.
 
-- (maybe) come up with a function to create waves based on a difficulty rating as well as remembering old waves so it can "change things up" in terms of monster types
 - (maybe) random maze generation
 - enemy with a shield that deflects your bullets back at you
 - exploding enemy

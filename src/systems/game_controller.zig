@@ -10,6 +10,7 @@ const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const GameUtil = @import("../util.zig");
+const createWave = @import("../wave.zig").createWave;
 
 const SystemData = struct{
   gc: *C.GameController,
@@ -31,14 +32,11 @@ fn think(gs: *GameSession, self: SystemData) bool {
     self.gc.wave_message_timer = 180;
     self.gc.enemy_speed_level = 0;
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
-    if (self.gc.wave_number - 1 < Constants.Waves.len) {
-      const wave = &Constants.Waves[self.gc.wave_number - 1];
-      spawnWave(gs, self.gc.wave_number, wave);
-      self.gc.enemy_speed_level = wave.speed;
-      self.gc.monster_count = countNonPersistentMonsters(gs);
-    } else {
-      spawnWave(gs, 0, &Constants.DefaultWave);
-    }
+    const wave = createWave(gs, self.gc);
+    spawnWave(gs, self.gc.wave_number, &wave);
+    self.gc.enemy_speed_level = wave.speed;
+    self.gc.monster_count = countNonPersistentMonsters(gs);
+    self.gc.wave_message = wave.message;
   }
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
     if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {

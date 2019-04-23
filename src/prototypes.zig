@@ -73,6 +73,7 @@ pub const GameController = struct{
       .next_pickup_timer = 15*60,
       .freeze_monsters_timer = 0,
       .extra_lives_spawned = 0,
+      .wave_message = null,
       .wave_message_timer = 0,
     });
 
