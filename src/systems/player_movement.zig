@@ -12,6 +12,8 @@ const physInWall = @import("../physics.zig").physInWall;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
+const LaserVoice = @import("../audio/laser.zig").LaserVoice;
+const SampleVoice = @import("../audio/sample.zig").SampleVoice;
 
 const SystemData = struct{
   id: gbe.EntityId,
@@ -36,9 +38,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound{
-        .sample = Audio.Sample.PlayerCrumble,
-      }) catch undefined;
+      Prototypes.spawnPointSound(gs, SampleVoice, Audio.samples.player_crumble);
     }
     self.phys.speed = 0;
     self.phys.push_dir = null;
@@ -74,8 +74,11 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           break slot;
         }
       } else null) |slot| {
-        _ = Prototypes.EventSound.spawn(gs, C.EventSound{
-          .sample = Audio.Sample.PlayerShot,
+        _ = Prototypes.EventSound.spawn(gs, C.EventSound {
+          .entity_id = self.id,
+          .voice_name = "LaserVoice",
+          .speed = null,
+          .sample = null,
         }) catch undefined;
         // spawn the bullet one quarter of a grid cell in front of the player
         const pos = self.transform.pos;

@@ -52,4 +52,4 @@ Sound effects from https://opengameart.org/content/512-sound-effects-8-bit-style
 
 Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
-Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk) and [zig-pcx](https://github.com/dbandstra/zig-pcx) one-file libraries.
+Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk) and [zig-pcx](https://github.com/dbandstra/zig-pcx) one-file libraries, as well as [zang](https://github.com/dbandstra/zang).

@@ -8,6 +8,7 @@ const Key = @import("common/event.zig").Key;
 const Draw = @import("common/draw.zig");
 const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
+const gbe = @import("common/gbe.zig");
 const loadTileset = @import("graphics.zig").loadTileset;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("level.zig").LEVEL;
@@ -45,9 +46,11 @@ pub const GameState = struct{
 // use an allocator. don't access it outside of the main function.
 pub var game_state: GameState = undefined;
 
-fn audioCallback(mm: *Audio.MainModule, out_bytes: []u8, sample_rate: u32) void {
-  if (mm.initialized) {
-    zang.mixDown(out_bytes, mm.paint(sample_rate), zang.AudioFormat.S16LSB, 1, 0, 0.5);
+fn audioCallback(g: *GameState, out_bytes: []u8, sample_rate: u32) void {
+  if (g.audio_module.initialized) {
+    const buf = g.audio_module.paint(sample_rate, &g.session);
+
+    zang.mixDown(out_bytes, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
   } else {
     // note to self: change this if we ever use an unsigned audio format
     std.mem.set(u8, out_bytes, 0);
@@ -63,7 +66,7 @@ pub fn main() void {
 
   const g = &game_state;
   g.audio_module.initialized = false;
-  Platform.init(&g.platform_state, &g.audio_module, audioCallback, Platform.InitParams{
+  Platform.init(&g.platform_state, g, audioCallback, Platform.InitParams{
     .window_title = "Oxid",
     .virtual_window_width = VWIN_W,
     .virtual_window_height = VWIN_H,
@@ -215,10 +218,44 @@ fn playSounds(g: *GameState, speed: f32) void {
   g.audio_module.speed = speed;
 
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {
-    g.audio_module.playSample(object.data.sample);
+    const entity_id = object.data.entity_id;
+    const voice_name = object.data.voice_name;
+    const speed_override = object.data.speed;
+    const sample = object.data.sample;
+
+    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
+      const ComponentType = field.field_type.ComponentType;
+      if (std.mem.eql(u8, voice_name, @typeName(ComponentType))) {
+        if (g.session.findObject(entity_id, ComponentType)) |voice_object| {
+          inline for (@typeInfo(ComponentType).Struct.fields) |component_field| {
+            if (comptime std.mem.eql(u8, component_field.name, "iq")) {
+              if (comptime std.mem.eql(u8, @typeName(ComponentType), "SampleVoice")) {
+                if (sample) |s| {
+                  voice_object.data.setSample(s);
+                }
+              }
+              playSound(g, &voice_object.data.iq, speed_override);
+            }
+          }
+        }
+      }
+    }
   }
 
   Platform.unlockAudio(&g.platform_state);
+}
+
+fn playSound(g: *GameState, impulse_queue: *zang.ImpulseQueue, speed_override: ?f32) void {
+  // FIXME - impulse_frame being 0 means that sounds will always start
+  // playing at the beginning of the mix buffer
+  const impulse_frame = 0;
+
+  const playback_speed = if (speed_override) |speed| speed else blk: {
+    const variance = 0.1;
+    break :blk 1.0 + g.session.getRand().float(f32) * variance - 0.5 * variance;
+  };
+
+  impulse_queue.push(impulse_frame, playback_speed);
 }
 
 fn draw(g: *GameState, blit_alpha: f32) void {

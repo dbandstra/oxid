@@ -1,5 +1,11 @@
 const Gbe = @import("common/gbe.zig");
 const C = @import("components.zig");
+const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
+const CoinVoice = @import("audio/coin.zig").CoinVoice;
+const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
+const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const SampleVoice = @import("audio/sample.zig").SampleVoice;
+const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 pub const GameSession = Gbe.Session(struct{
   Animation: Gbe.ComponentList(C.Animation, 10),
@@ -12,6 +18,7 @@ pub const GameSession = Gbe.Session(struct{
   Pickup: Gbe.ComponentList(C.Pickup, 10),
   Player: Gbe.ComponentList(C.Player, 50),
   PlayerController: Gbe.ComponentList(C.PlayerController, 4),
+  RemoveTimer: Gbe.ComponentList(C.RemoveTimer, 50),
   SimpleGraphic: Gbe.ComponentList(C.SimpleGraphic, 50),
   Transform: Gbe.ComponentList(C.Transform, 100),
   Web: Gbe.ComponentList(C.Web, 100),
@@ -30,4 +37,10 @@ pub const GameSession = Gbe.Session(struct{
   EventSaveHighScore: Gbe.ComponentList(C.EventSaveHighScore, 5),
   EventSound: Gbe.ComponentList(C.EventSound, 20),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
+  AccelerateVoice: Gbe.ComponentList(AccelerateVoice, 1),
+  CoinVoice: Gbe.ComponentList(CoinVoice, 50),
+  ExplosionVoice: Gbe.ComponentList(ExplosionVoice, 50),
+  LaserVoice: Gbe.ComponentList(LaserVoice, 50),
+  SampleVoice: Gbe.ComponentList(SampleVoice, 100),
+  WaveBeginVoice: Gbe.ComponentList(WaveBeginVoice, 1),
 });

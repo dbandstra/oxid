@@ -3,6 +3,9 @@ const zang = @import("zang");
 pub const LaserVoice = struct {
   pub const NumTempBufs = 3;
 
+  iq: zang.ImpulseQueue,
+  trigger: zang.Trigger(LaserVoice),
+
   carrier_mul: f32,
   carrier_curve: zang.Curve,
   carrier: zang.Oscillator,
@@ -14,6 +17,8 @@ pub const LaserVoice = struct {
 
   pub fn init(carrier_mul: f32, modulator_mul: f32, modulator_rad: f32) LaserVoice {
     return LaserVoice {
+      .iq = zang.ImpulseQueue.init(),
+      .trigger = zang.Trigger(LaserVoice).init(),
       .carrier_mul = carrier_mul,
       .carrier_curve = zang.Curve.init(.SmoothStep, []zang.CurveNode {
         zang.CurveNode{ .value = 1000.0, .t = 0.0 },

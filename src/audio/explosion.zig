@@ -2,6 +2,10 @@ const zang = @import("zang");
 
 pub const ExplosionVoice = struct {
   pub const NumTempBufs = 3;
+  pub const SoundDuration = 0.7;
+
+  iq: zang.ImpulseQueue,
+  trigger: zang.Trigger(ExplosionVoice),
 
   cutoff_curve: zang.Curve,
   volume_curve: zang.Curve,
@@ -10,6 +14,8 @@ pub const ExplosionVoice = struct {
 
   pub fn init() ExplosionVoice {
     return ExplosionVoice {
+      .iq = zang.ImpulseQueue.init(),
+      .trigger = zang.Trigger(ExplosionVoice).init(),
       .cutoff_curve = zang.Curve.init(.SmoothStep, []zang.CurveNode {
         zang.CurveNode{ .t = 0.0, .value = 3000.0 },
         zang.CurveNode{ .t = 0.5, .value = 1000.0 },

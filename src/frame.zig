@@ -29,7 +29,7 @@ pub fn gameFrame(gs: *GameSession) void {
       @import("systems/monster_movement.zig").run(gs);
       @import("systems/bullet.zig").run(gs);
       @import("systems/creature.zig").run(gs);
-      @import("systems/pickup.zig").run(gs);
+      @import("systems/remove_timer.zig").run(gs);
 
       physicsFrame(gs);
 

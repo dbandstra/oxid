@@ -1,9 +1,9 @@
+const zang = @import("zang");
 const Math = @import("common/math.zig");
 const Draw = @import("common/draw.zig");
 const Gbe = @import("common/gbe.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
-const Audio = @import("audio.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
@@ -80,6 +80,10 @@ pub const Animation = struct{
   z_index: u32,
 };
 
+pub const RemoveTimer = struct {
+  timer: u32,
+};
+
 pub const SimpleGraphic = struct{
   graphic: Graphic,
   z_index: u32,
@@ -141,7 +145,6 @@ pub const PhysObjectInternal = struct{
 
 pub const Pickup = struct{
   pickup_type: ConstantTypes.PickupType,
-  timer: u32,
   get_points: u32,
 };
 
@@ -240,7 +243,10 @@ pub const EventSaveHighScore = struct{
 };
 
 pub const EventSound = struct{
-  sample: Audio.Sample,
+  entity_id: Gbe.EntityId,
+  voice_name: []const u8,
+  speed: ?f32,
+  sample: ?zang.WavContents,
 };
 
 pub const EventTakeDamage = struct{

@@ -1,3 +1,4 @@
+const zang = @import("zang");
 const Math = @import("common/math.zig");
 const Gbe = @import("common/gbe.zig");
 const Graphic = @import("graphics.zig").Graphic;
@@ -9,6 +10,11 @@ const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const C = @import("components.zig");
+const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
+const CoinVoice = @import("audio/coin.zig").CoinVoice;
+const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
+const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 fn make_bbox(diameter: u31) Math.BoundingBox {
   const graphic_diameter = GRIDSIZE_SUBPIXELS;
@@ -76,6 +82,9 @@ pub const GameController = struct{
       .wave_message = null,
       .wave_message_timer = 0,
     });
+
+    try gs.addComponent(entity_id, AccelerateVoice.init());
+    try gs.addComponent(entity_id, WaveBeginVoice.init());
 
     return entity_id;
   }
@@ -148,6 +157,8 @@ pub const Player = struct{
       .in_down = false,
       .in_shoot = false,
     });
+
+    try gs.addComponent(entity_id, LaserVoice.init(2.0, 0.5, 0.5));
 
     return entity_id;
   }
@@ -426,8 +437,11 @@ pub const Pickup = struct{
 
     try gs.addComponent(entity_id, C.Pickup{
       .pickup_type = params.pickup_type,
-      .timer = pickup_values.lifetime,
       .get_points = pickup_values.get_points,
+    });
+
+    try gs.addComponent(entity_id, C.RemoveTimer {
+      .timer = pickup_values.lifetime,
     });
 
     return entity_id;
@@ -462,3 +476,28 @@ pub const EventQuit = Event(C.EventQuit);
 pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
+
+pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, sample: ?zang.WavContents) void {
+  const sound_entity_id = gs.spawn();
+
+  gs.addComponent(sound_entity_id, VoiceType.init()) catch {
+    gs.undoSpawn(sound_entity_id);
+    return;
+  };
+  gs.addComponent(sound_entity_id, C.RemoveTimer {
+    .timer = @floatToInt(u32, VoiceType.SoundDuration * 60.0),
+  }) catch {
+    gs.undoSpawn(sound_entity_id);
+    return;
+  };
+
+  _ = EventSound.spawn(gs, C.EventSound {
+    .entity_id = sound_entity_id,
+    .voice_name = @typeName(VoiceType),
+    .speed = null,
+    .sample = sample,
+  }) catch {
+    gs.undoSpawn(sound_entity_id);
+    return;
+  };
+}

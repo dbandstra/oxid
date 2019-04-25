@@ -2,6 +2,10 @@ const zang = @import("zang");
 
 pub const CoinVoice = struct {
   pub const NumTempBufs = 2;
+  pub const SoundDuration = 0.09;
+
+  iq: zang.ImpulseQueue,
+  trigger: zang.Trigger(CoinVoice),
 
   osc: zang.Oscillator,
   osc_trigger: zang.Trigger(zang.Oscillator),
@@ -11,6 +15,8 @@ pub const CoinVoice = struct {
 
   pub fn init() CoinVoice {
     return CoinVoice {
+      .iq = zang.ImpulseQueue.init(),
+      .trigger = zang.Trigger(CoinVoice).init(),
       .osc = zang.Oscillator.init(.Square),
       .osc_trigger = zang.Trigger(zang.Oscillator).init(),
       .gate = zang.Gate.init(),

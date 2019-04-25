@@ -3,6 +3,9 @@ const zang = @import("zang");
 pub const WaveBeginVoice = struct {
   pub const NumTempBufs = 2;
 
+  iq: zang.ImpulseQueue,
+  trigger: zang.Trigger(WaveBeginVoice),
+
   osc: zang.Oscillator,
   osc_trigger: zang.Trigger(zang.Oscillator),
   env: zang.Envelope,
@@ -13,6 +16,8 @@ pub const WaveBeginVoice = struct {
     const speed = 0.125;
 
     return WaveBeginVoice {
+      .iq = zang.ImpulseQueue.init(),
+      .trigger = zang.Trigger(WaveBeginVoice).init(),
       .osc = zang.Oscillator.init(.Square),
       .osc_trigger = zang.Trigger(zang.Oscillator).init(),
       .env = zang.Envelope.init(zang.EnvParams {
