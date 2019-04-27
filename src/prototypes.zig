@@ -14,6 +14,7 @@ const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const SampleVoice = @import("audio/sample.zig").SampleVoice;
 const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 fn make_bbox(diameter: u31) Math.BoundingBox {
@@ -83,8 +84,20 @@ pub const GameController = struct{
       .wave_message_timer = 0,
     });
 
-    try gs.addComponent(entity_id, AccelerateVoice.init());
-    try gs.addComponent(entity_id, WaveBeginVoice.init());
+    try gs.addComponent(entity_id, C.Voices {
+      .accelerate = C.VoiceWrapper(AccelerateVoice) {
+        .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(AccelerateVoice.init()),
+      },
+      .coin = null,
+      .explosion = null,
+      .laser = null,
+      .sample = null,
+      .wave_begin = C.VoiceWrapper(WaveBeginVoice) {
+        .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(WaveBeginVoice.init()),
+      },
+    });
 
     return entity_id;
   }
@@ -158,7 +171,17 @@ pub const Player = struct{
       .in_shoot = false,
     });
 
-    try gs.addComponent(entity_id, LaserVoice.init(2.0, 0.5, 0.5));
+    try gs.addComponent(entity_id, C.Voices {
+      .accelerate = null,
+      .coin = null,
+      .explosion = null,
+      .laser = C.VoiceWrapper(LaserVoice) {
+        .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(LaserVoice.init()),
+      },
+      .sample = null,
+      .wave_begin = null,
+    });
 
     return entity_id;
   }
@@ -477,13 +500,57 @@ pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
 
-pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, sample: ?zang.WavContents) void {
+pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, params: C.EventSoundU) void {
   const sound_entity_id = gs.spawn();
 
-  gs.addComponent(sound_entity_id, VoiceType.init()) catch {
+  gs.addComponent(sound_entity_id, C.Voices {
+    .accelerate = switch (params) {
+      C.EventSoundU.Accelerate => C.VoiceWrapper(AccelerateVoice) {
+        .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(AccelerateVoice.init()),
+      },
+      else => null,
+    },
+    .coin = switch (params) {
+      C.EventSoundU.Coin => C.VoiceWrapper(CoinVoice) {
+        .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(CoinVoice.init()),
+      },
+      else => null,
+    },
+    .explosion = switch (params) {
+      C.EventSoundU.Explosion => C.VoiceWrapper(ExplosionVoice) {
+        .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(ExplosionVoice.init()),
+      },
+      else => null,
+    },
+    .laser = switch (params) {
+      C.EventSoundU.Laser => C.VoiceWrapper(LaserVoice) {
+        .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(LaserVoice.init()),
+      },
+      else => null,
+    },
+    .sample = switch (params) {
+      C.EventSoundU.Sample => C.VoiceWrapper(SampleVoice) {
+        .iq = zang.Notes(SampleVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(SampleVoice.init()),
+      },
+      else => null,
+    },
+    .wave_begin = switch (params) {
+      C.EventSoundU.WaveBegin => C.VoiceWrapper(WaveBeginVoice) {
+        .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(WaveBeginVoice.init()),
+      },
+      else => null,
+    },
+  }) catch {
     gs.undoSpawn(sound_entity_id);
     return;
   };
+
   gs.addComponent(sound_entity_id, C.RemoveTimer {
     .timer = @floatToInt(u32, VoiceType.SoundDuration * 60.0),
   }) catch {
@@ -493,9 +560,7 @@ pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, sample: ?zang
 
   _ = EventSound.spawn(gs, C.EventSound {
     .entity_id = sound_entity_id,
-    .voice_name = @typeName(VoiceType),
-    .speed = null,
-    .sample = sample,
+    .params = params,
   }) catch {
     gs.undoSpawn(sound_entity_id);
     return;

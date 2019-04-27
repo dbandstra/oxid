@@ -3,6 +3,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
+const C = @import("components.zig");
 
 // FIXME - i need some kind of basic resource manager.
 // right now, game code only has access to GameSession, which is the ECS and nothing else.
@@ -75,25 +76,62 @@ pub const MainModule = struct {
 
     const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
 
-    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
-      const ComponentType = field.field_type.ComponentType;
-      inline for (@typeInfo(ComponentType).Struct.fields) |component_field| {
-        if (comptime std.mem.eql(u8, component_field.name, "iq")) {
-          var tmp: [ComponentType.NumTempBufs][]f32 = undefined;
-          comptime var i: usize = 0;
-          inline while (i < ComponentType.NumTempBufs) : (i += 1) {
-            tmp[i] = self.tmp_bufs[i];
-          }
-          var it = gs.iter(ComponentType); while (it.next()) |object| {
-            object.data.trigger.paintFromImpulses(
-              &object.data,
-              mix_freq,
-              self.out_buf,
-              object.data.iq.consume(),
-              tmp,
-            );
-          }
-        }
+    var it = gs.iter(C.Voices); while (it.next()) |object| {
+      const voices = &object.data;
+
+      if (voices.accelerate) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
+          wrapper.iq.consume(),
+        );
+      }
+      if (voices.coin) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
+          wrapper.iq.consume(),
+        );
+      }
+      if (voices.explosion) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [3][]f32{self.tmp_bufs[0], self.tmp_bufs[1], self.tmp_bufs[2]},
+          wrapper.iq.consume(),
+        );
+      }
+      if (voices.laser) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [3][]f32{self.tmp_bufs[0], self.tmp_bufs[1], self.tmp_bufs[2]},
+          wrapper.iq.consume(),
+        );
+      }
+      if (voices.sample) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [0][]f32{},
+          wrapper.iq.consume(),
+        );
+      }
+      if (voices.wave_begin) |*wrapper| {
+        wrapper.module.paintFromImpulses(
+          mix_freq,
+          [1][]f32{self.out_buf},
+          [0][]f32{},
+          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
+          wrapper.iq.consume(),
+        );
       }
     }
 

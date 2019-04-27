@@ -7,6 +7,12 @@ const Constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
+const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
+const CoinVoice = @import("audio/coin.zig").CoinVoice;
+const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
+const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const SampleVoice = @import("audio/sample.zig").SampleVoice;
+const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 pub const MainController = struct{
   pub const GameRunningState = struct{
@@ -242,15 +248,47 @@ pub const EventSaveHighScore = struct{
   high_score: u32,
 };
 
-pub const EventSound = struct{
+pub const VoiceEnum = enum {
+  Accelerate,
+  Coin,
+  Explosion,
+  Laser,
+  Sample,
+  WaveBegin,
+};
+
+pub const EventSoundU = union(VoiceEnum) {
+  Accelerate: AccelerateVoice.Params,
+  Coin: CoinVoice.Params,
+  Explosion: ExplosionVoice.Params,
+  Laser: LaserVoice.Params,
+  Sample: SampleVoice.Params,
+  WaveBegin: WaveBeginVoice.Params,
+};
+
+pub const EventSound = struct {
   entity_id: Gbe.EntityId,
-  voice_name: []const u8,
-  speed: ?f32,
-  sample: ?zang.WavContents,
+  params: EventSoundU,
 };
 
 pub const EventTakeDamage = struct{
   inflictor_player_controller_id: ?Gbe.EntityId,
   self_id: Gbe.EntityId,
   amount: u32,
+};
+
+pub fn VoiceWrapper(comptime T: type) type {
+  return struct {
+    iq: zang.Notes(T.Params).ImpulseQueue,
+    module: zang.Triggerable(T),
+  };
+}
+
+pub const Voices = struct {
+  accelerate: ?VoiceWrapper(AccelerateVoice),
+  coin: ?VoiceWrapper(CoinVoice),
+  explosion: ?VoiceWrapper(ExplosionVoice),
+  laser: ?VoiceWrapper(LaserVoice),
+  sample: ?VoiceWrapper(SampleVoice),
+  wave_begin: ?VoiceWrapper(WaveBeginVoice),
 };

@@ -1,11 +1,14 @@
 const zang = @import("zang");
 
 pub const ExplosionVoice = struct {
-  pub const NumTempBufs = 3;
+  pub const NumOutputs = 1;
+  pub const NumInputs = 0;
+  pub const NumTemps = 3;
+  pub const Params = struct {};
+
   pub const SoundDuration = 0.7;
 
-  iq: zang.ImpulseQueue,
-  trigger: zang.Trigger(ExplosionVoice),
+  const Notes = zang.Notes(Params);
 
   cutoff_curve: zang.Curve,
   volume_curve: zang.Curve,
@@ -14,8 +17,6 @@ pub const ExplosionVoice = struct {
 
   pub fn init() ExplosionVoice {
     return ExplosionVoice {
-      .iq = zang.ImpulseQueue.init(),
-      .trigger = zang.Trigger(ExplosionVoice).init(),
       .cutoff_curve = zang.Curve.init(.SmoothStep, []zang.CurveNode {
         zang.CurveNode{ .t = 0.0, .value = 3000.0 },
         zang.CurveNode{ .t = 0.5, .value = 1000.0 },
@@ -27,29 +28,35 @@ pub const ExplosionVoice = struct {
         zang.CurveNode{ .t = 0.7, .value = 0.0 },
       }),
       .noise = zang.Noise.init(0),
-      .filter = zang.Filter.init(.LowPass, 0.0, 0.0),
+      .filter = zang.Filter.init(.LowPass),
     };
-  }
-
-  pub fn paint(self: *ExplosionVoice, sample_rate: f32, out: []f32, note_on: bool, freq: f32, tmp: [3][]f32) void {
-    zang.zero(tmp[0]);
-    self.noise.paint(tmp[0]);
-    zang.zero(tmp[1]);
-    self.cutoff_curve.paint(sample_rate, tmp[1], freq);
-    // FIXME - apply this to the curve nodes before interpolation, to save
-    // time. but this probably requires a change to the zang api
-    var i: usize = 0; while (i < tmp[1].len) : (i += 1) {
-      tmp[1][i] = zang.cutoffFromFrequency(tmp[1][i], sample_rate);
-    }
-    zang.zero(tmp[2]);
-    self.filter.paintControlledCutoff(sample_rate, tmp[2], tmp[0], tmp[1]);
-    zang.zero(tmp[1]);
-    self.volume_curve.paint(sample_rate, tmp[1], null);
-    zang.multiply(out, tmp[2], tmp[1]);
   }
 
   pub fn reset(self: *ExplosionVoice) void {
     self.cutoff_curve.reset();
     self.volume_curve.reset();
+  }
+
+  pub fn paintSpan(self: *ExplosionVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+    const out = outputs[0];
+
+    zang.zero(temps[0]);
+    self.noise.paintSpan(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, zang.Noise.Params {});
+    zang.zero(temps[1]);
+    self.cutoff_curve.paintSpan(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, zang.Curve.Params {
+      .freq_mul = 1.0,
+    });
+    // FIXME - apply this to the curve nodes before interpolation, to save
+    // time. but this probably requires a change to the zang api
+    var i: usize = 0; while (i < temps[1].len) : (i += 1) {
+      temps[1][i] = zang.cutoffFromFrequency(temps[1][i], sample_rate);
+    }
+    zang.zero(temps[2]);
+    self.filter.paintControlledCutoff(sample_rate, temps[2], temps[0], temps[1], 0.0);
+    zang.zero(temps[1]);
+    self.volume_curve.paintSpan(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, zang.Curve.Params {
+      .freq_mul = 1.0,
+    });
+    zang.multiply(out, temps[2], temps[1]);
   }
 };

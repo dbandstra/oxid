@@ -1,34 +1,36 @@
 const zang = @import("zang");
 
+// TODO - remove and just use zang.Sampler
 pub const SampleVoice = struct {
-  pub const NumTempBufs = 0;
+  pub const NumOutputs = 1;
+  pub const NumInputs = 0;
+  pub const NumTemps = 0;
+  pub const Params = struct {
+    wav: zang.WavContents,
+  };
+
   pub const SoundDuration = 2.0; // hack
 
-  iq: zang.ImpulseQueue,
-  trigger: zang.Trigger(SampleVoice),
+  const Notes = zang.Notes(Params);
 
   sampler: zang.Sampler,
 
   pub fn init() SampleVoice {
     return SampleVoice {
-      .iq = zang.ImpulseQueue.init(),
-      .trigger = zang.Trigger(SampleVoice).init(),
-      .sampler = zang.Sampler.init([0]u8{}, 48000, 1.0),
+      .sampler = zang.Sampler.init(),
     };
-  }
-
-  // FIXME sample should be a property of the impulse/note!!!
-  pub fn setSample(self: *SampleVoice, wav: zang.WavContents) void {
-    self.sampler.sample_data = wav.data;
-    self.sampler.sample_rate = @intToFloat(f32, wav.sample_rate);
-    self.sampler.reset();
-  }
-
-  pub fn paint(self: *SampleVoice, sample_rate: f32, out: []f32, note_on: bool, freq: f32, tmp: [0][]f32) void {
-    self.sampler.paint(sample_rate, out, note_on, freq, tmp);
   }
 
   pub fn reset(self: *SampleVoice) void {
     self.sampler.reset();
+  }
+
+  pub fn paintSpan(self: *SampleVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+    self.sampler.paintSpan(sample_rate, outputs, inputs, temps, zang.Sampler.Params {
+      .freq = 1.0,
+      .sample_data = params.wav.data,
+      .sample_rate = @intToFloat(f32, params.wav.sample_rate),
+      .sample_freq = null,
+    });
   }
 };

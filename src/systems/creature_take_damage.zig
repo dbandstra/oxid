@@ -29,15 +29,27 @@ fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
     const amount = event.amount;
     if (self.creature.hit_points > amount) {
-      Prototypes.spawnPointSound(gs, SampleVoice, Audio.samples.monster_impact);
+      Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
+        .Sample = SampleVoice.Params {
+          .wav = Audio.samples.monster_impact,
+        },
+      });
       self.creature.hit_points -= amount;
       self.creature.flinch_timer = 4;
     } else if (self.creature.hit_points > 0) {
       self.creature.hit_points = 0;
       if (self.player) |self_player| {
         // player died
-        Prototypes.spawnPointSound(gs, SampleVoice, Audio.samples.player_scream);
-        Prototypes.spawnPointSound(gs, SampleVoice, Audio.samples.player_death);
+        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
+          .Sample = SampleVoice.Params {
+            .wav = Audio.samples.player_scream,
+          },
+        });
+        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
+          .Sample = SampleVoice.Params {
+            .wav = Audio.samples.player_death,
+          },
+        });
         self_player.dying_timer = Constants.PlayerDeathAnimTime;
         _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
           .player_controller_id = self_player.player_controller_id,
@@ -66,8 +78,14 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }) catch undefined;
           }
         }
-        Prototypes.spawnPointSound(gs, SampleVoice, Audio.samples.monster_impact);
-        Prototypes.spawnPointSound(gs, ExplosionVoice, null);
+        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
+          .Sample = SampleVoice.Params {
+            .wav = Audio.samples.monster_impact,
+          },
+        });
+        Prototypes.spawnPointSound(gs, ExplosionVoice, C.EventSoundU {
+          .Explosion = ExplosionVoice.Params {},
+        });
         _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
           .pos = self.transform.pos,
           .simple_anim = SimpleAnim.Explosion,

@@ -22,6 +22,12 @@ const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
 const perf = @import("perf.zig");
 const datafile = @import("datafile.zig");
+const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
+const CoinVoice = @import("audio/coin.zig").CoinVoice;
+const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
+const LaserVoice = @import("audio/laser.zig").LaserVoice;
+const SampleVoice = @import("audio/sample.zig").SampleVoice;
+const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
@@ -217,45 +223,52 @@ fn playSounds(g: *GameState, speed: f32) void {
   g.audio_module.muted = g.mute;
   g.audio_module.speed = speed;
 
+  // FIXME - impulse_frame being 0 means that sounds will always start
+  // playing at the beginning of the mix buffer
+  const impulse_frame = 0;
+
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {
     const entity_id = object.data.entity_id;
-    const voice_name = object.data.voice_name;
-    const speed_override = object.data.speed;
-    const sample = object.data.sample;
 
-    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
-      const ComponentType = field.field_type.ComponentType;
-      if (std.mem.eql(u8, voice_name, @typeName(ComponentType))) {
-        if (g.session.findObject(entity_id, ComponentType)) |voice_object| {
-          inline for (@typeInfo(ComponentType).Struct.fields) |component_field| {
-            if (comptime std.mem.eql(u8, component_field.name, "iq")) {
-              if (comptime std.mem.eql(u8, @typeName(ComponentType), "SampleVoice")) {
-                if (sample) |s| {
-                  voice_object.data.setSample(s);
-                }
-              }
-              playSound(g, &voice_object.data.iq, speed_override);
-            }
+    if (g.session.findObject(entity_id, C.Voices)) |voices_object| {
+      const voices = &voices_object.data;
+
+      switch (object.data.params) {
+        C.EventSoundU.Accelerate => |params| {
+          if (voices.accelerate) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
           }
-        }
+        },
+        C.EventSoundU.Coin => |params| {
+          if (voices.coin) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
+          }
+        },
+        C.EventSoundU.Explosion => |params| {
+          if (voices.explosion) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
+          }
+        },
+        C.EventSoundU.Laser => |params| {
+          if (voices.laser) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
+          }
+        },
+        C.EventSoundU.Sample => |params| {
+          if (voices.sample) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
+          }
+        },
+        C.EventSoundU.WaveBegin => |params| {
+          if (voices.wave_begin) |*wrapper| {
+            wrapper.iq.push(impulse_frame, params);
+          }
+        },
       }
     }
   }
 
   Platform.unlockAudio(&g.platform_state);
-}
-
-fn playSound(g: *GameState, impulse_queue: *zang.ImpulseQueue, speed_override: ?f32) void {
-  // FIXME - impulse_frame being 0 means that sounds will always start
-  // playing at the beginning of the mix buffer
-  const impulse_frame = 0;
-
-  const playback_speed = if (speed_override) |speed| speed else blk: {
-    const variance = 0.1;
-    break :blk 1.0 + g.session.getRand().float(f32) * variance - 0.5 * variance;
-  };
-
-  impulse_queue.push(impulse_frame, playback_speed);
 }
 
 fn draw(g: *GameState, blit_alpha: f32) void {

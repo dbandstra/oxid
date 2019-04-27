@@ -1,63 +1,68 @@
 const zang = @import("zang");
 
 pub const WaveBeginVoice = struct {
-  pub const NumTempBufs = 2;
+  pub const NumOutputs = 1;
+  pub const NumInputs = 0;
+  pub const NumTemps = 2;
+  pub const Params = struct {};
+  pub const InnerParams = struct { freq: f32, note_on: bool };
 
-  iq: zang.ImpulseQueue,
-  trigger: zang.Trigger(WaveBeginVoice),
+  const Notes = zang.Notes(Params);
+  const InnerNotes = zang.Notes(InnerParams);
 
-  osc: zang.Oscillator,
-  osc_trigger: zang.Trigger(zang.Oscillator),
-  env: zang.Envelope,
-  env_trigger: zang.Trigger(zang.Envelope),
-  note_tracker: zang.NoteTracker,
+  osc: zang.Triggerable(zang.Oscillator),
+  env: zang.Triggerable(zang.Envelope),
+  note_tracker: InnerNotes.NoteTracker,
 
   pub fn init() WaveBeginVoice {
     const speed = 0.125;
 
     return WaveBeginVoice {
-      .iq = zang.ImpulseQueue.init(),
-      .trigger = zang.Trigger(WaveBeginVoice).init(),
-      .osc = zang.Oscillator.init(.Square),
-      .osc_trigger = zang.Trigger(zang.Oscillator).init(),
-      .env = zang.Envelope.init(zang.EnvParams {
+      .osc = zang.initTriggerable(zang.Oscillator.init(.Square)),
+      .env = zang.initTriggerable(zang.Envelope.init(zang.EnvParams {
         .attack_duration = 0.01,
         .decay_duration = 0.1,
         .sustain_volume = 0.5,
         .release_duration = 0.15,
-      }),
-      .env_trigger = zang.Trigger(zang.Envelope).init(),
-      .note_tracker = zang.NoteTracker.init([]zang.SongNote {
-        zang.SongNote{ .freq = 40.0, .t = 0.0 * speed },
-        zang.SongNote{ .freq = 43.0, .t = 1.0 * speed },
-        zang.SongNote{ .freq = 36.0, .t = 2.0 * speed },
-        zang.SongNote{ .freq = 45.0, .t = 3.0 * speed },
-        zang.SongNote{ .freq = 43.0, .t = 4.0 * speed },
-        zang.SongNote{ .freq = 36.0, .t = 5.0 * speed },
-        zang.SongNote{ .freq = 40.0, .t = 6.0 * speed },
-        zang.SongNote{ .freq = 45.0, .t = 7.0 * speed },
-        zang.SongNote{ .freq = 43.0, .t = 8.0 * speed },
-        zang.SongNote{ .freq = 35.0, .t = 9.0 * speed },
-        zang.SongNote{ .freq = 38.0, .t = 10.0 * speed },
-        zang.SongNote{ .freq = null, .t = 11.0 * speed },
+      })),
+      .note_tracker = InnerNotes.NoteTracker.init([]InnerNotes.SongNote {
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 40.0, .note_on = true }, .t = 0.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 43.0, .note_on = true }, .t = 1.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 36.0, .note_on = true }, .t = 2.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 45.0, .note_on = true }, .t = 3.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 43.0, .note_on = true }, .t = 4.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 36.0, .note_on = true }, .t = 5.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 40.0, .note_on = true }, .t = 6.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 45.0, .note_on = true }, .t = 7.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 43.0, .note_on = true }, .t = 8.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 35.0, .note_on = true }, .t = 9.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 38.0, .note_on = true }, .t = 10.0 * speed },
+        InnerNotes.SongNote{ .params = InnerParams { .freq = 38.0, .note_on = false }, .t = 11.0 * speed },
       }),
     };
-  }
-
-  pub fn paint(self: *WaveBeginVoice, sample_rate: f32, out: []f32, note_on: bool, freq: f32, tmp: [2][]f32) void {
-    const impulses = self.note_tracker.getImpulses(sample_rate / freq, out.len, null);
-
-    zang.zero(tmp[0]);
-    self.osc_trigger.paintFromImpulses(&self.osc, sample_rate, tmp[0], impulses, [0][]f32{});
-    zang.zero(tmp[1]);
-    self.env_trigger.paintFromImpulses(&self.env, sample_rate, tmp[1], impulses, [0][]f32{});
-    zang.multiplyWithScalar(tmp[1], 0.25);
-    zang.multiply(out, tmp[0], tmp[1]);
   }
 
   pub fn reset(self: *WaveBeginVoice) void {
     self.osc.reset();
     self.env.reset();
     self.note_tracker.reset();
+  }
+
+  pub fn paintSpan(self: *WaveBeginVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+    const out = outputs[0];
+    const impulses = self.note_tracker.getImpulses(sample_rate, out.len);
+
+    zang.zero(temps[0]);
+    {
+      var conv = zang.ParamsConverter(InnerParams, zang.Oscillator.Params).init();
+      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.autoStructural(impulses));
+    }
+    zang.zero(temps[1]);
+    {
+      var conv = zang.ParamsConverter(InnerParams, zang.Envelope.Params).init();
+      self.env.paintFromImpulses(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, conv.autoStructural(impulses));
+    }
+    zang.multiplyWithScalar(temps[1], 0.25);
+    zang.multiply(out, temps[0], temps[1]);
   }
 };

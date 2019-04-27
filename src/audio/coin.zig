@@ -1,48 +1,59 @@
 const zang = @import("zang");
 
 pub const CoinVoice = struct {
-  pub const NumTempBufs = 2;
+  pub const NumOutputs = 1;
+  pub const NumInputs = 0;
+  pub const NumTemps = 2;
+  pub const Params = struct { freq_mul: f32 };
+  pub const InnerParams = struct { freq: f32, note_on: bool };
+
   pub const SoundDuration = 0.09;
 
-  iq: zang.ImpulseQueue,
-  trigger: zang.Trigger(CoinVoice),
+  const Notes = zang.Notes(Params);
+  const InnerNotes = zang.Notes(InnerParams);
 
-  osc: zang.Oscillator,
-  osc_trigger: zang.Trigger(zang.Oscillator),
-  gate: zang.Gate,
-  gate_trigger: zang.Trigger(zang.Gate),
-  note_tracker: zang.NoteTracker,
+  osc: zang.Triggerable(zang.Oscillator),
+  gate: zang.Triggerable(zang.Gate),
+  note_tracker: InnerNotes.NoteTracker,
 
   pub fn init() CoinVoice {
     return CoinVoice {
-      .iq = zang.ImpulseQueue.init(),
-      .trigger = zang.Trigger(CoinVoice).init(),
-      .osc = zang.Oscillator.init(.Square),
-      .osc_trigger = zang.Trigger(zang.Oscillator).init(),
-      .gate = zang.Gate.init(),
-      .gate_trigger = zang.Trigger(zang.Gate).init(),
-      .note_tracker = zang.NoteTracker.init([]zang.SongNote {
-        zang.SongNote{ .freq = 750.0, .t = 0.0 },
-        zang.SongNote{ .freq = 1000.0, .t = 0.045 },
-        zang.SongNote{ .freq = null, .t = 0.090 },
+      .osc = zang.initTriggerable(zang.Oscillator.init(.Square)),
+      .gate = zang.initTriggerable(zang.Gate.init()),
+      .note_tracker = InnerNotes.NoteTracker.init([]InnerNotes.SongNote {
+        InnerNotes.SongNote { .params = InnerParams { .freq = 750.0, .note_on = true }, .t = 0.0 },
+        InnerNotes.SongNote { .params = InnerParams { .freq = 1000.0, .note_on = true }, .t = 0.045 },
+        InnerNotes.SongNote { .params = InnerParams { .freq = 1000.0, .note_on = false }, .t = 0.090 },
       }),
     };
-  }
-
-  pub fn paint(self: *CoinVoice, sample_rate: f32, out: []f32, note_on: bool, freq: f32, tmp: [2][]f32) void {
-    const impulses = self.note_tracker.getImpulses(sample_rate, out.len, freq);
-
-    zang.zero(tmp[0]);
-    self.osc_trigger.paintFromImpulses(&self.osc, sample_rate, tmp[0], impulses, [0][]f32{});
-    zang.zero(tmp[1]);
-    self.gate_trigger.paintFromImpulses(&self.gate, sample_rate, tmp[1], impulses, [0][]f32{});
-    zang.multiplyWithScalar(tmp[1], 0.2);
-    zang.multiply(out, tmp[0], tmp[1]);
   }
 
   pub fn reset(self: *CoinVoice) void {
     self.osc.reset();
     self.gate.reset();
     self.note_tracker.reset();
+  }
+
+  pub fn paintSpan(self: *CoinVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+    const out = outputs[0];
+    const impulses = self.note_tracker.getImpulses(sample_rate, out.len);
+
+    zang.zero(temps[0]);
+    {
+      var conv = zang.ParamsConverter(InnerParams, zang.Oscillator.Params).init();
+      for (conv.getPairs(impulses)) |*pair| {
+        pair.dest = zang.Oscillator.Params {
+          .freq = pair.source.freq * params.freq_mul,
+        };
+      }
+      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.getImpulses());
+    }
+    zang.zero(temps[1]);
+    {
+      var conv = zang.ParamsConverter(InnerParams, zang.Gate.Params).init();
+      self.gate.paintFromImpulses(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, conv.autoStructural(impulses));
+    }
+    zang.multiplyWithScalar(temps[1], 0.2);
+    zang.multiply(out, temps[0], temps[1]);
   }
 };

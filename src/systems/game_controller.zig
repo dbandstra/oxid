@@ -11,6 +11,8 @@ const Prototypes = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const GameUtil = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
+const AccelerateVoice = @import("../audio/accelerate.zig").AccelerateVoice;
+const WaveBeginVoice = @import("../audio/wave_begin.zig").WaveBeginVoice;
 
 const SystemData = struct {
   id: gbe.EntityId,
@@ -28,9 +30,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
     _ = Prototypes.EventSound.spawn(gs, C.EventSound {
       .entity_id = self.id,
-      .voice_name = "WaveBeginVoice",
-      .speed = null,
-      .sample = null,
+      .params = C.EventSoundU {
+        .WaveBegin = WaveBeginVoice.Params {},
+      },
     }) catch undefined;
     self.gc.wave_number += 1;
     self.gc.wave_message_timer = 180;
@@ -47,14 +49,16 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.gc.enemy_speed_level += 1;
       _ = Prototypes.EventSound.spawn(gs, C.EventSound {
         .entity_id = self.id,
-        .voice_name = "AccelerateVoice",
-        .speed = switch (self.gc.enemy_speed_level) {
-          1 => f32(1.25),
-          2 => f32(1.5),
-          3 => f32(1.75),
-          else => f32(2.0),
+        .params = C.EventSoundU {
+          .Accelerate = AccelerateVoice.Params {
+            .playback_speed = switch (self.gc.enemy_speed_level) {
+              1 => f32(1.25),
+              2 => f32(1.5),
+              3 => f32(1.75),
+              else => f32(2.0),
+            },
+          },
         },
-        .sample = null,
       }) catch undefined;
     }
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
