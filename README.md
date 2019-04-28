@@ -9,6 +9,9 @@ Oxid is written in the [Zig](https://ziglang.org) programming language.
 * Depending on your version of Git, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
 * `zig build play`
 
+To build the release build:
+* `zig build -Drelease-fast=true`
+
 Game controls:
 * arrow keys: move
 * space: shoot

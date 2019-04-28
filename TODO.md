@@ -1,13 +1,9 @@
 # Todo
 
-## Bugs
-- input gets lagged sometimes
-  - i've gotten it with fast forwarding. sometimes (not always), while fast forwarding, input is a bit delayed, and after releasing the fast forward key, the game keeps fast forwarding for another half second
-  - unique_id reported getting it after moving the window
+See also: https://github.com/dbandstra/oxid/issues
 
 ## Gameplay
 - change squids to be spiders?
-- still get "who is this joker" in rare occasions - i think if you complete a wave and then step into a spawning monster? maybe if you are also invulnerable (blinking) after a spawn?
 - more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
 - monsters should sometimes randomly stop/change direction
 - multiple explosions when squid is killed
