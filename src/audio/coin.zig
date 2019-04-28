@@ -18,7 +18,7 @@ pub const CoinVoice = struct {
 
   pub fn init() CoinVoice {
     return CoinVoice {
-      .osc = zang.initTriggerable(zang.Oscillator.init(.Square)),
+      .osc = zang.initTriggerable(zang.Oscillator.init()),
       .gate = zang.initTriggerable(zang.Gate.init()),
       .note_tracker = InnerNotes.NoteTracker.init([]InnerNotes.SongNote {
         InnerNotes.SongNote { .params = InnerParams { .freq = 750.0, .note_on = true }, .t = 0.0 },
@@ -43,7 +43,9 @@ pub const CoinVoice = struct {
       var conv = zang.ParamsConverter(InnerParams, zang.Oscillator.Params).init();
       for (conv.getPairs(impulses)) |*pair| {
         pair.dest = zang.Oscillator.Params {
+          .waveform = .Square,
           .freq = pair.source.freq * params.freq_mul,
+          .colour = 0.5,
         };
       }
       self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.getImpulses());

@@ -18,7 +18,7 @@ pub const WaveBeginVoice = struct {
     const speed = 0.125;
 
     return WaveBeginVoice {
-      .osc = zang.initTriggerable(zang.Oscillator.init(.Square)),
+      .osc = zang.initTriggerable(zang.Oscillator.init()),
       .env = zang.initTriggerable(zang.Envelope.init(zang.EnvParams {
         .attack_duration = 0.01,
         .decay_duration = 0.1,
@@ -55,7 +55,14 @@ pub const WaveBeginVoice = struct {
     zang.zero(temps[0]);
     {
       var conv = zang.ParamsConverter(InnerParams, zang.Oscillator.Params).init();
-      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.autoStructural(impulses));
+      for (conv.getPairs(impulses)) |*pair| {
+        pair.dest = zang.Oscillator.Params {
+          .waveform = .Square,
+          .freq = pair.source.freq,
+          .colour = 0.5,
+        };
+      }
+      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.getImpulses());
     }
     zang.zero(temps[1]);
     {

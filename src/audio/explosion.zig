@@ -28,7 +28,7 @@ pub const ExplosionVoice = struct {
         zang.CurveNode{ .t = 0.7, .value = 0.0 },
       }),
       .noise = zang.Noise.init(0),
-      .filter = zang.Filter.init(.LowPass),
+      .filter = zang.Filter.init(),
     };
   }
 
@@ -52,7 +52,7 @@ pub const ExplosionVoice = struct {
       temps[1][i] = zang.cutoffFromFrequency(temps[1][i], sample_rate);
     }
     zang.zero(temps[2]);
-    self.filter.paintControlledCutoff(sample_rate, temps[2], temps[0], temps[1], 0.0);
+    self.filter.paintControlledCutoff(sample_rate, temps[2], temps[0], .LowPass, temps[1], 0.0);
     zang.zero(temps[1]);
     self.volume_curve.paintSpan(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, zang.Curve.Params {
       .freq_mul = 1.0,
