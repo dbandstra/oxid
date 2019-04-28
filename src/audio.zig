@@ -5,36 +5,29 @@ const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
 const C = @import("components.zig");
 
-// FIXME - i need some kind of basic resource manager.
-// right now, game code only has access to GameSession, which is the ECS and nothing else.
-// there's currently no way to get these loaded sounds to the game code, except by a global...
-pub const Samples = struct {
-  drop_web: zang.Sampler.Params,
-  extra_life: zang.Sampler.Params,
-  player_scream: zang.Sampler.Params,
-  player_death: zang.Sampler.Params,
-  player_crumble: zang.Sampler.Params,
-  power_up: zang.Sampler.Params,
-  monster_impact: zang.Sampler.Params,
-  monster_shot: zang.Sampler.Params,
+pub const Sample = enum {
+  DropWeb,
+  ExtraLife,
+  PlayerScream,
+  PlayerDeath,
+  PlayerCrumble,
+  PowerUp,
+  MonsterImpact,
+  MonsterShot,
 };
-
-// hax!!!! (see above)
-pub var samples: Samples = undefined;
-
-fn loadSample(comptime filename: []const u8) !zang.Sampler.Params {
-  const wav = try zang.readWav(@embedFile(build_options.assets_path ++ "/" ++ filename));
-
-  return zang.Sampler.Params {
-    .freq = 1.0,
-    .sample_data = wav.data,
-    .sample_rate = @intToFloat(f32, wav.sample_rate),
-    .sample_freq = null,
-  };
-}
 
 pub const MainModule = struct {
   initialized: bool,
+
+  drop_web: zang.WavContents,
+  extra_life: zang.WavContents,
+  player_scream: zang.WavContents,
+  player_death: zang.WavContents,
+  player_crumble: zang.WavContents,
+  power_up: zang.WavContents,
+  monster_impact: zang.WavContents,
+  monster_shot: zang.WavContents,
+
   out_buf: []f32,
   // this will fail to compile if there aren't enough temp bufs to supply each
   // of the sound module types being used
@@ -51,17 +44,16 @@ pub const MainModule = struct {
 
   // call this in the main thread before the audio device is set up
   pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
-    samples.drop_web = try loadSample("sfx_sounds_interaction5.wav");
-    samples.extra_life = try loadSample("sfx_sounds_powerup4.wav");
-    samples.player_scream = try loadSample("sfx_deathscream_human2.wav");
-    samples.player_death = try loadSample("sfx_exp_cluster7.wav");
-    samples.player_crumble = try loadSample("sfx_exp_short_soft10.wav");
-    samples.power_up = try loadSample("sfx_sounds_powerup10.wav");
-    samples.monster_impact = try loadSample("sfx_sounds_impact1.wav");
-    samples.monster_shot = try loadSample("sfx_wpn_laser10.wav");
-
     return MainModule {
       .initialized = true,
+      .drop_web = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_interaction5.wav")),
+      .extra_life = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_powerup4.wav")),
+      .player_scream = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_deathscream_human2.wav")),
+      .player_death = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_exp_cluster7.wav")),
+      .player_crumble = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_exp_short_soft10.wav")),
+      .power_up = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_powerup10.wav")),
+      .monster_impact = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_impact1.wav")),
+      .monster_shot = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_wpn_laser10.wav")),
       // these allocations are never freed (but it's ok because this object is
       // create once in the main function)
       .out_buf = try hunk_side.allocator.alloc(f32, audio_buffer_size),
@@ -72,6 +64,26 @@ pub const MainModule = struct {
       },
       .muted = false,
       .speed = 1,
+    };
+  }
+
+  pub fn getSampleParams(self: *MainModule, sample: Sample) zang.Sampler.Params {
+    const wav = switch (sample) {
+      .DropWeb => self.drop_web,
+      .ExtraLife => self.extra_life,
+      .PlayerScream => self.player_scream,
+      .PlayerDeath => self.player_death,
+      .PlayerCrumble => self.player_crumble,
+      .PowerUp => self.power_up,
+      .MonsterImpact => self.monster_impact,
+      .MonsterShot => self.monster_shot,
+    };
+
+    return zang.Sampler.Params {
+      .freq = 1.0,
+      .sample_data = wav.data,
+      .sample_rate = @intToFloat(f32, wav.sample_rate),
+      .sample_freq = null,
     };
   }
 

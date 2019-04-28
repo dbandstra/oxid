@@ -7,6 +7,7 @@ const Constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
+const Audio = @import("audio.zig");
 const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
@@ -247,21 +248,12 @@ pub const EventSaveHighScore = struct{
   high_score: u32,
 };
 
-pub const VoiceEnum = enum {
-  Accelerate,
-  Coin,
-  Explosion,
-  Laser,
-  Sample,
-  WaveBegin,
-};
-
-pub const EventSoundU = union(VoiceEnum) {
+pub const EventSoundU = union(enum) {
   Accelerate: AccelerateVoice.Params,
   Coin: CoinVoice.Params,
   Explosion: ExplosionVoice.Params,
   Laser: LaserVoice.Params,
-  Sample: zang.Sampler.Params,
+  Sample: Audio.Sample,
   WaveBegin: WaveBeginVoice.Params,
 };
 

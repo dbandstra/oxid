@@ -133,7 +133,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
   } else {
     if (self.monster.can_shoot) {
       Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-        .Sample = Audio.samples.monster_shot,
+        .Sample = Audio.Sample.MonsterShot,
       });
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
@@ -150,7 +150,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
       }) catch undefined;
     } else if (self.monster.can_drop_webs) {
       Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-        .Sample = Audio.samples.drop_web,
+        .Sample = Audio.Sample.DropWeb,
       });
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,

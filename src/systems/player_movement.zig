@@ -38,7 +38,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
       Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-        .Sample = Audio.samples.player_crumble,
+        .Sample = Audio.Sample.PlayerCrumble,
       });
     }
     self.phys.speed = 0;

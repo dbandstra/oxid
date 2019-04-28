@@ -248,9 +248,9 @@ fn playSounds(g: *GameState, speed: f32) void {
             wrapper.iq.push(impulse_frame, params);
           }
         },
-        C.EventSoundU.Sample => |params| {
+        C.EventSoundU.Sample => |sample| {
           if (voices.sample) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
+            wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample));
           }
         },
         C.EventSoundU.WaveBegin => |params| {

@@ -29,7 +29,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     const amount = event.amount;
     if (self.creature.hit_points > amount) {
       Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-        .Sample = Audio.samples.monster_impact,
+        .Sample = Audio.Sample.MonsterImpact,
       });
       self.creature.hit_points -= amount;
       self.creature.flinch_timer = 4;
@@ -38,10 +38,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
       if (self.player) |self_player| {
         // player died
         Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-          .Sample = Audio.samples.player_scream,
+          .Sample = Audio.Sample.PlayerScream,
         });
         Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-          .Sample = Audio.samples.player_death,
+          .Sample = Audio.Sample.PlayerDeath,
         });
         self_player.dying_timer = Constants.PlayerDeathAnimTime;
         _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
@@ -72,7 +72,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
           }
         }
         Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-          .Sample = Audio.samples.monster_impact,
+          .Sample = Audio.Sample.MonsterImpact,
         });
         Prototypes.spawnPointSound(gs, ExplosionVoice.SoundDuration, C.EventSoundU {
           .Explosion = ExplosionVoice.Params {},
