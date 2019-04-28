@@ -13,7 +13,6 @@ pub const Sample = enum {
   PlayerCrumble,
   PowerUp,
   MonsterImpact,
-  MonsterShot,
 };
 
 pub const MainModule = struct {
@@ -26,7 +25,6 @@ pub const MainModule = struct {
   player_crumble: zang.WavContents,
   power_up: zang.WavContents,
   monster_impact: zang.WavContents,
-  monster_shot: zang.WavContents,
 
   out_buf: []f32,
   // this will fail to compile if there aren't enough temp bufs to supply each
@@ -53,7 +51,6 @@ pub const MainModule = struct {
       .player_crumble = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_exp_short_soft10.wav")),
       .power_up = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_powerup10.wav")),
       .monster_impact = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_impact1.wav")),
-      .monster_shot = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_wpn_laser10.wav")),
       // these allocations are never freed (but it's ok because this object is
       // create once in the main function)
       .out_buf = try hunk_side.allocator.alloc(f32, audio_buffer_size),
@@ -76,7 +73,6 @@ pub const MainModule = struct {
       .PlayerCrumble => self.player_crumble,
       .PowerUp => self.power_up,
       .MonsterImpact => self.monster_impact,
-      .MonsterShot => self.monster_shot,
     };
 
     return zang.Sampler.Params {

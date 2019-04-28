@@ -11,6 +11,7 @@ const physInWall = @import("../physics.zig").physInWall;
 const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
+const LaserVoice = @import("../audio/laser.zig").LaserVoice;
 
 const SystemData = struct{
   id: gbe.EntityId,
@@ -133,7 +134,12 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
   } else {
     if (self.monster.can_shoot) {
       Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
-        .Sample = Audio.Sample.MonsterShot,
+        .Laser = LaserVoice.Params {
+          .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+          .carrier_mul = 4.0,
+          .modulator_mul = 0.125,
+          .modulator_rad = 1.0,
+        },
       });
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
