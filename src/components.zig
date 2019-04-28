@@ -270,6 +270,8 @@ pub const EventTakeDamage = struct{
 
 pub fn VoiceWrapper(comptime T: type) type {
   return struct {
+    pub const ModuleType = T;
+
     iq: zang.Notes(T.Params).ImpulseQueue,
     module: zang.Triggerable(T),
   };

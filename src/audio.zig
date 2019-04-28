@@ -102,60 +102,12 @@ pub const MainModule = struct {
     var it = gs.iter(C.Voices); while (it.next()) |object| {
       const voices = &object.data;
 
-      if (voices.accelerate) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
-          wrapper.iq.consume(),
-        );
-      }
-      if (voices.coin) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
-          wrapper.iq.consume(),
-        );
-      }
-      if (voices.explosion) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [3][]f32{self.tmp_bufs[0], self.tmp_bufs[1], self.tmp_bufs[2]},
-          wrapper.iq.consume(),
-        );
-      }
-      if (voices.laser) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [3][]f32{self.tmp_bufs[0], self.tmp_bufs[1], self.tmp_bufs[2]},
-          wrapper.iq.consume(),
-        );
-      }
-      if (voices.sample) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [0][]f32{},
-          wrapper.iq.consume(),
-        );
-      }
-      if (voices.wave_begin) |*wrapper| {
-        wrapper.module.paintFromImpulses(
-          mix_freq,
-          [1][]f32{self.out_buf},
-          [0][]f32{},
-          [2][]f32{self.tmp_bufs[0], self.tmp_bufs[1]},
-          wrapper.iq.consume(),
-        );
-      }
+      if (voices.accelerate) |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      if (voices.coin)       |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      if (voices.explosion)  |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      if (voices.laser)      |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      if (voices.sample)     |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      if (voices.wave_begin) |*wrapper| self.paintWrapper(wrapper, mix_freq);
     }
 
     if (self.muted) {
@@ -163,5 +115,15 @@ pub const MainModule = struct {
     }
 
     return self.out_buf;
+  }
+
+  fn paintWrapper(self: *MainModule, wrapper: var, sample_rate: f32) void {
+    std.debug.assert(@typeId(@typeOf(wrapper)) == .Pointer);
+    const ModuleType = @typeInfo(@typeOf(wrapper)).Pointer.child.ModuleType;
+    var temps: [ModuleType.NumTemps][]f32 = undefined;
+    var i: usize = 0; while (i < ModuleType.NumTemps) : (i += 1) {
+      temps[i] = self.tmp_bufs[i];
+    }
+    wrapper.module.paintFromImpulses(sample_rate, [1][]f32{self.out_buf}, [0][]f32{}, temps, wrapper.iq.consume());
   }
 };
