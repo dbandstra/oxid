@@ -80,6 +80,7 @@ pub const MainModule = struct {
       .sample_data = wav.data,
       .sample_rate = @intToFloat(f32, wav.sample_rate),
       .sample_freq = null,
+      .loop = false,
     };
   }
 
