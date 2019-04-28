@@ -13,7 +13,6 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 const LaserVoice = @import("../audio/laser.zig").LaserVoice;
-const SampleVoice = @import("../audio/sample.zig").SampleVoice;
 
 const SystemData = struct{
   id: gbe.EntityId,
@@ -38,10 +37,8 @@ fn think(gs: *GameSession, self: SystemData) bool {
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
-      Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-        .Sample = SampleVoice.Params {
-          .wav = Audio.samples.player_crumble,
-        },
+      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        .Sample = Audio.samples.player_crumble,
       });
     }
     self.phys.speed = 0;

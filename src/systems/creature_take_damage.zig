@@ -7,7 +7,6 @@ const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
 const ExplosionVoice = @import("../audio/explosion.zig").ExplosionVoice;
-const SampleVoice = @import("../audio/sample.zig").SampleVoice;
 
 const SystemData = struct{
   id: gbe.EntityId,
@@ -29,10 +28,8 @@ fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
     const amount = event.amount;
     if (self.creature.hit_points > amount) {
-      Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-        .Sample = SampleVoice.Params {
-          .wav = Audio.samples.monster_impact,
-        },
+      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        .Sample = Audio.samples.monster_impact,
       });
       self.creature.hit_points -= amount;
       self.creature.flinch_timer = 4;
@@ -40,15 +37,11 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.creature.hit_points = 0;
       if (self.player) |self_player| {
         // player died
-        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-          .Sample = SampleVoice.Params {
-            .wav = Audio.samples.player_scream,
-          },
+        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+          .Sample = Audio.samples.player_scream,
         });
-        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-          .Sample = SampleVoice.Params {
-            .wav = Audio.samples.player_death,
-          },
+        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+          .Sample = Audio.samples.player_death,
         });
         self_player.dying_timer = Constants.PlayerDeathAnimTime;
         _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied{
@@ -78,12 +71,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }) catch undefined;
           }
         }
-        Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-          .Sample = SampleVoice.Params {
-            .wav = Audio.samples.monster_impact,
-          },
+        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+          .Sample = Audio.samples.monster_impact,
         });
-        Prototypes.spawnPointSound(gs, ExplosionVoice, C.EventSoundU {
+        Prototypes.spawnPointSound(gs, ExplosionVoice.SoundDuration, C.EventSoundU {
           .Explosion = ExplosionVoice.Params {},
         });
         _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{

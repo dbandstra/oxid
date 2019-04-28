@@ -11,7 +11,6 @@ const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 const LaserVoice = @import("audio/laser.zig").LaserVoice;
-const SampleVoice = @import("audio/sample.zig").SampleVoice;
 const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 pub const MainController = struct{
@@ -262,7 +261,7 @@ pub const EventSoundU = union(VoiceEnum) {
   Coin: CoinVoice.Params,
   Explosion: ExplosionVoice.Params,
   Laser: LaserVoice.Params,
-  Sample: SampleVoice.Params,
+  Sample: zang.Sampler.Params,
   WaveBegin: WaveBeginVoice.Params,
 };
 
@@ -289,6 +288,6 @@ pub const Voices = struct {
   coin: ?VoiceWrapper(CoinVoice),
   explosion: ?VoiceWrapper(ExplosionVoice),
   laser: ?VoiceWrapper(LaserVoice),
-  sample: ?VoiceWrapper(SampleVoice),
+  sample: ?VoiceWrapper(zang.Sampler),
   wave_begin: ?VoiceWrapper(WaveBeginVoice),
 };

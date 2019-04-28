@@ -22,12 +22,6 @@ const drawGame = @import("draw.zig").drawGame;
 const Audio = @import("audio.zig");
 const perf = @import("perf.zig");
 const datafile = @import("datafile.zig");
-const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
-const CoinVoice = @import("audio/coin.zig").CoinVoice;
-const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
-const LaserVoice = @import("audio/laser.zig").LaserVoice;
-const SampleVoice = @import("audio/sample.zig").SampleVoice;
-const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;

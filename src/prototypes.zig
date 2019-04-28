@@ -14,7 +14,6 @@ const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 const LaserVoice = @import("audio/laser.zig").LaserVoice;
-const SampleVoice = @import("audio/sample.zig").SampleVoice;
 const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 fn make_bbox(diameter: u31) Math.BoundingBox {
@@ -500,7 +499,7 @@ pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
 
-pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, params: C.EventSoundU) void {
+pub fn spawnPointSound(gs: *GameSession, duration: f32, params: C.EventSoundU) void {
   const sound_entity_id = gs.spawn();
 
   gs.addComponent(sound_entity_id, C.Voices {
@@ -533,9 +532,9 @@ pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, params: C.Eve
       else => null,
     },
     .sample = switch (params) {
-      C.EventSoundU.Sample => C.VoiceWrapper(SampleVoice) {
-        .iq = zang.Notes(SampleVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(SampleVoice.init()),
+      C.EventSoundU.Sample => C.VoiceWrapper(zang.Sampler) {
+        .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(zang.Sampler.init()),
       },
       else => null,
     },
@@ -552,7 +551,7 @@ pub fn spawnPointSound(gs: *GameSession, comptime VoiceType: type, params: C.Eve
   };
 
   gs.addComponent(sound_entity_id, C.RemoveTimer {
-    .timer = @floatToInt(u32, VoiceType.SoundDuration * 60.0),
+    .timer = @floatToInt(u32, duration * 60.0),
   }) catch {
     gs.undoSpawn(sound_entity_id);
     return;

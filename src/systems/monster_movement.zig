@@ -11,7 +11,6 @@ const physInWall = @import("../physics.zig").physInWall;
 const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
-const SampleVoice = @import("../audio/sample.zig").SampleVoice;
 
 const SystemData = struct{
   id: gbe.EntityId,
@@ -133,10 +132,8 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-        .Sample = SampleVoice.Params {
-          .wav = Audio.samples.monster_shot,
-        },
+      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        .Sample = Audio.samples.monster_shot,
       });
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
@@ -152,10 +149,8 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       }) catch undefined;
     } else if (self.monster.can_drop_webs) {
-      Prototypes.spawnPointSound(gs, SampleVoice, C.EventSoundU {
-        .Sample = SampleVoice.Params {
-          .wav = Audio.samples.drop_web,
-        },
+      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        .Sample = Audio.samples.drop_web,
       });
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
