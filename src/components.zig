@@ -248,20 +248,6 @@ pub const EventSaveHighScore = struct{
   high_score: u32,
 };
 
-pub const EventSound = struct {
-  pub const Params = union(enum) {
-    Accelerate: AccelerateVoice.Params,
-    Coin: CoinVoice.Params,
-    Explosion: ExplosionVoice.Params,
-    Laser: LaserVoice.Params,
-    Sample: Audio.Sample,
-    WaveBegin: WaveBeginVoice.Params,
-  };
-
-  entity_id: Gbe.EntityId,
-  params: Params,
-};
-
 pub const EventTakeDamage = struct{
   inflictor_player_controller_id: ?Gbe.EntityId,
   self_id: Gbe.EntityId,
@@ -273,6 +259,15 @@ pub const Voice = struct {
     return struct {
       pub const ModuleType = T;
 
+      // `initial_params`: set when the Voice entity is spawned. this will be
+      // fed into the impulse queue by the sound middleware at the end of the
+      // frame. (it can't be done when spawning the entity because it requires
+      // a lock on the audio thread and a calculated impulse frame.)
+      initial_params: ?T.Params,
+      // `initial_sample`: this is a hack that is used instead of
+      // initial_params for sample voices. the game code doesn't have access to
+      // the wav file data that is needed to create the params for the sampler.
+      initial_sample: ?Audio.Sample,
       iq: zang.Notes(T.Params).ImpulseQueue,
       module: zang.Triggerable(T),
     };

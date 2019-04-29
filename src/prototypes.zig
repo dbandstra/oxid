@@ -10,6 +10,7 @@ const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const C = @import("components.zig");
+const Audio = @import("audio.zig");
 const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 const CoinVoice = @import("audio/coin.zig").CoinVoice;
 const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
@@ -443,6 +444,86 @@ pub const Pickup = struct{
   }
 };
 
+pub const Sound = struct {
+  pub const Params = struct {
+    duration: f32,
+    voice_params: VoiceParams,
+  };
+
+  pub const VoiceParams = union(enum) {
+    Accelerate: AccelerateVoice.Params,
+    Coin: CoinVoice.Params,
+    Explosion: ExplosionVoice.Params,
+    Laser: LaserVoice.Params,
+    Sample: Audio.Sample,
+    WaveBegin: WaveBeginVoice.Params,
+  };
+
+  pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
+    const entity_id = gs.spawn();
+    errdefer gs.undoSpawn(entity_id);
+
+    try gs.addComponent(entity_id, C.Voice {
+      .wrapper = switch (params.voice_params) {
+        .Accelerate => |voice_params| C.Voice.WrapperU {
+          .Accelerate = C.Voice.Wrapper(AccelerateVoice) {
+            .initial_params = voice_params,
+            .initial_sample = null,
+            .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(AccelerateVoice.init()),
+          },
+        },
+        .Coin => |voice_params| C.Voice.WrapperU {
+          .Coin = C.Voice.Wrapper(CoinVoice) {
+            .initial_params = voice_params,
+            .initial_sample = null,
+            .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(CoinVoice.init()),
+          },
+        },
+        .Explosion => |voice_params| C.Voice.WrapperU {
+          .Explosion = C.Voice.Wrapper(ExplosionVoice) {
+            .initial_params = voice_params,
+            .initial_sample = null,
+            .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(ExplosionVoice.init()),
+          },
+        },
+        .Laser => |voice_params| C.Voice.WrapperU {
+          .Laser = C.Voice.Wrapper(LaserVoice) {
+            .initial_params = voice_params,
+            .initial_sample = null,
+            .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(LaserVoice.init()),
+          },
+        },
+        .Sample => |sample| C.Voice.WrapperU {
+          .Sample = C.Voice.Wrapper(zang.Sampler) {
+            .initial_params = null,
+            .initial_sample = sample,
+            .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(zang.Sampler.init()),
+          },
+        },
+        .WaveBegin => |voice_params| C.Voice.WrapperU {
+          .WaveBegin = C.Voice.Wrapper(WaveBeginVoice) {
+            .initial_params = voice_params,
+            .initial_sample = null,
+            .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
+            .module = zang.initTriggerable(WaveBeginVoice.init()),
+          },
+        },
+      },
+    });
+
+    try gs.addComponent(entity_id, C.RemoveTimer {
+      .timer = @floatToInt(u32, params.duration * 60.0),
+    });
+
+    return entity_id;
+  }
+};
+
 fn Event(comptime T: type) type {
   return struct{
     pub fn spawn(gs: *GameSession, body: T) !Gbe.EntityId {
@@ -469,71 +550,4 @@ pub const EventPlayerOutOfLives = Event(C.EventPlayerOutOfLives);
 pub const EventPostScore = Event(C.EventPostScore);
 pub const EventQuit = Event(C.EventQuit);
 pub const EventSaveHighScore = Event(C.EventSaveHighScore);
-pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
-
-// this is not a regular prototype because it spawns two entities
-pub fn sound(gs: *GameSession, duration: f32, params: C.EventSound.Params) void {
-  const sound_entity_id = gs.spawn();
-
-  gs.addComponent(sound_entity_id, C.Voice {
-    .wrapper = switch (params) {
-      .Accelerate => C.Voice.WrapperU {
-        .Accelerate = C.Voice.Wrapper(AccelerateVoice) {
-          .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(AccelerateVoice.init()),
-        },
-      },
-      .Coin => C.Voice.WrapperU {
-        .Coin = C.Voice.Wrapper(CoinVoice) {
-          .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(CoinVoice.init()),
-        },
-      },
-      .Explosion => C.Voice.WrapperU {
-        .Explosion = C.Voice.Wrapper(ExplosionVoice) {
-          .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(ExplosionVoice.init()),
-        },
-      },
-      .Laser => C.Voice.WrapperU {
-        .Laser = C.Voice.Wrapper(LaserVoice) {
-          .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(LaserVoice.init()),
-        },
-      },
-      .Sample => C.Voice.WrapperU {
-        .Sample = C.Voice.Wrapper(zang.Sampler) {
-          .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(zang.Sampler.init()),
-        },
-      },
-      .WaveBegin => C.Voice.WrapperU {
-        .WaveBegin = C.Voice.Wrapper(WaveBeginVoice) {
-          .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
-          .module = zang.initTriggerable(WaveBeginVoice.init()),
-        },
-      },
-    },
-  }) catch {
-    gs.undoSpawn(sound_entity_id);
-    return;
-  };
-
-  gs.addComponent(sound_entity_id, C.RemoveTimer {
-    .timer = @floatToInt(u32, duration * 60.0),
-  }) catch {
-    gs.undoSpawn(sound_entity_id);
-    return;
-  };
-
-  // TODO - can i get rid of this and have the sound middleware watch for
-  // creation of C.Voice?
-  _ = EventSound.spawn(gs, C.EventSound {
-    .entity_id = sound_entity_id,
-    .params = params,
-  }) catch {
-    gs.undoSpawn(sound_entity_id);
-    return;
-  };
-}

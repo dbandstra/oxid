@@ -133,14 +133,17 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      Prototypes.sound(gs, 2.0, C.EventSound.Params {
-        .Laser = LaserVoice.Params {
-          .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
-          .carrier_mul = 4.0,
-          .modulator_mul = 0.125,
-          .modulator_rad = 1.0,
+      _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+        .duration = 2.0,
+        .voice_params = Prototypes.Sound.VoiceParams {
+          .Laser = LaserVoice.Params {
+            .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+            .carrier_mul = 4.0,
+            .modulator_mul = 0.125,
+            .modulator_rad = 1.0,
+          },
         },
-      });
+      }) catch undefined;
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
       const dir_vec = Math.Direction.normal(self.phys.facing);
@@ -155,9 +158,12 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       }) catch undefined;
     } else if (self.monster.can_drop_webs) {
-      Prototypes.sound(gs, 2.0, C.EventSound.Params {
-        .Sample = Audio.Sample.DropWeb,
-      });
+      _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+        .duration = 2.0,
+        .voice_params = Prototypes.Sound.VoiceParams {
+          .Sample = Audio.Sample.DropWeb,
+        },
+      }) catch undefined;
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
       }) catch undefined;

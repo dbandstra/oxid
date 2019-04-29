@@ -3,14 +3,22 @@ Oxid is an arcade-style game where you fight waves of monsters in a fixed-screen
 
 Oxid is written in the [Zig](https://ziglang.org) programming language.
 
-## How to play
+## Installation
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
 * Install [Zig](https://ziglang.org/download/) (get it from master, version 0.2.0 is too old)
 * Depending on your version of Git, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
-* `zig build play`
 
-To build the release build:
-* `zig build -Drelease-fast=true`
+## How to play
+To run the debug build:
+```
+zig build play
+```
+
+To build and run the release build:
+```
+zig build -Drelease-fast=true
+zig-cache/oxid
+```
 
 Game controls:
 * arrow keys: move

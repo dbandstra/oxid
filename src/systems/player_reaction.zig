@@ -20,9 +20,12 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
     switch (event.pickup_type) {
       ConstantTypes.PickupType.PowerUp => {
-        Prototypes.sound(gs, 2.0, C.EventSound.Params {
-          .Sample = Audio.Sample.PowerUp,
-        });
+        _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+          .duration = 2.0,
+          .voice_params = Prototypes.Sound.VoiceParams {
+            .Sample = Audio.Sample.PowerUp,
+          },
+        }) catch undefined;
         self.player.attack_level = switch (self.player.attack_level) {
           C.Player.AttackLevel.One => C.Player.AttackLevel.Two,
           else => C.Player.AttackLevel.Three,
@@ -30,9 +33,12 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
       },
       ConstantTypes.PickupType.SpeedUp => {
-        Prototypes.sound(gs, 2.0, C.EventSound.Params {
-          .Sample = Audio.Sample.PowerUp,
-        });
+        _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+          .duration = 2.0,
+          .voice_params = Prototypes.Sound.VoiceParams {
+            .Sample = Audio.Sample.PowerUp,
+          },
+        }) catch undefined;
         self.player.speed_level = switch (self.player.speed_level) {
           C.Player.SpeedLevel.One => C.Player.SpeedLevel.Two,
           else => C.Player.SpeedLevel.Three,
@@ -40,19 +46,25 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
       },
       ConstantTypes.PickupType.LifeUp => {
-        Prototypes.sound(gs, 2.0, C.EventSound.Params {
-          .Sample = Audio.Sample.ExtraLife,
-        });
+        _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+          .duration = 2.0,
+          .voice_params = Prototypes.Sound.VoiceParams {
+            .Sample = Audio.Sample.ExtraLife,
+          },
+        }) catch undefined;
         _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
           .player_controller_id = self.player.player_controller_id,
         }) catch undefined;
       },
       ConstantTypes.PickupType.Coin => {
-        Prototypes.sound(gs, CoinVoice.SoundDuration, C.EventSound.Params {
-          .Coin = CoinVoice.Params {
-            .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+        _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
+          .duration = CoinVoice.SoundDuration,
+          .voice_params = Prototypes.Sound.VoiceParams {
+            .Coin = CoinVoice.Params {
+              .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+            },
           },
-        });
+        }) catch undefined;
       },
     }
   }

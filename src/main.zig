@@ -221,42 +221,30 @@ fn playSounds(g: *GameState, speed: f32) void {
   // playing at the beginning of the mix buffer
   const impulse_frame = 0;
 
-  var it = g.session.iter(C.EventSound); while (it.next()) |object| {
-    const entity_id = object.data.entity_id;
-
-    if (g.session.findObject(entity_id, C.Voice)) |voice_object| {
-      const voice = &voice_object.data;
-
-      switch (object.data.params) {
-        .Accelerate => |params| switch (voice.wrapper) {
-          .Accelerate => |*wrapper| wrapper.iq.push(impulse_frame, params),
-          else => {},
-        },
-        .Coin => |params| switch (voice.wrapper) {
-          .Coin => |*wrapper| wrapper.iq.push(impulse_frame, params),
-          else => {},
-        },
-        .Explosion => |params| switch (voice.wrapper) {
-          .Explosion => |*wrapper| wrapper.iq.push(impulse_frame, params),
-          else => {},
-        },
-        .Laser => |params| switch (voice.wrapper) {
-          .Laser => |*wrapper| wrapper.iq.push(impulse_frame, params),
-          else => {},
-        },
-        .Sample => |sample| switch (voice.wrapper) {
-          .Sample => |*wrapper| wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample)),
-          else => {},
-        },
-        .WaveBegin => |params| switch (voice.wrapper) {
-          .WaveBegin => |*wrapper| wrapper.iq.push(impulse_frame, params),
-          else => {},
-        },
-      }
+  var it = g.session.iter(C.Voice); while (it.next()) |object| {
+    switch (object.data.wrapper) {
+      .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
+      .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
+      .Explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
+      .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
+      .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
+      .Sample =>     |*wrapper| {
+        if (wrapper.initial_sample) |sample| {
+          wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample));
+          wrapper.initial_sample = null;
+        }
+      },
     }
   }
 
   Platform.unlockAudio(&g.platform_state);
+}
+
+fn updateVoice(wrapper: var, impulse_frame: usize) void {
+  if (wrapper.initial_params) |params| {
+    wrapper.iq.push(impulse_frame, params);
+    wrapper.initial_params = null;
+  }
 }
 
 fn draw(g: *GameState, blit_alpha: f32) void {
