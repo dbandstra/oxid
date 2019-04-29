@@ -15,7 +15,7 @@ pub const GameSession = Gbe.Session(struct{
   RemoveTimer: Gbe.ComponentList(C.RemoveTimer, 50),
   SimpleGraphic: Gbe.ComponentList(C.SimpleGraphic, 50),
   Transform: Gbe.ComponentList(C.Transform, 100),
-  Voices: Gbe.ComponentList(C.Voices, 100),
+  Voice: Gbe.ComponentList(C.Voice, 100),
   Web: Gbe.ComponentList(C.Web, 100),
   EventAwardLife: Gbe.ComponentList(C.EventAwardLife, 20),
   EventAwardPoints: Gbe.ComponentList(C.EventAwardPoints, 20),

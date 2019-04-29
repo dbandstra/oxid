@@ -133,7 +133,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+      Prototypes.sound(gs, 2.0, C.EventSound.Params {
         .Laser = LaserVoice.Params {
           .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
           .carrier_mul = 4.0,
@@ -155,7 +155,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       }) catch undefined;
     } else if (self.monster.can_drop_webs) {
-      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+      Prototypes.sound(gs, 2.0, C.EventSound.Params {
         .Sample = Audio.Sample.DropWeb,
       });
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{

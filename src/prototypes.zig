@@ -83,21 +83,6 @@ pub const GameController = struct{
       .wave_message_timer = 0,
     });
 
-    try gs.addComponent(entity_id, C.Voices {
-      .accelerate = C.VoiceWrapper(AccelerateVoice) {
-        .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(AccelerateVoice.init()),
-      },
-      .coin = null,
-      .explosion = null,
-      .laser = null,
-      .sample = null,
-      .wave_begin = C.VoiceWrapper(WaveBeginVoice) {
-        .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(WaveBeginVoice.init()),
-      },
-    });
-
     return entity_id;
   }
 };
@@ -168,18 +153,6 @@ pub const Player = struct{
       .in_up = false,
       .in_down = false,
       .in_shoot = false,
-    });
-
-    try gs.addComponent(entity_id, C.Voices {
-      .accelerate = null,
-      .coin = null,
-      .explosion = null,
-      .laser = C.VoiceWrapper(LaserVoice) {
-        .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(LaserVoice.init()),
-      },
-      .sample = null,
-      .wave_begin = null,
     });
 
     return entity_id;
@@ -499,51 +472,48 @@ pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventSound = Event(C.EventSound);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
 
-pub fn spawnPointSound(gs: *GameSession, duration: f32, params: C.EventSoundU) void {
+// this is not a regular prototype because it spawns two entities
+pub fn sound(gs: *GameSession, duration: f32, params: C.EventSound.Params) void {
   const sound_entity_id = gs.spawn();
 
-  gs.addComponent(sound_entity_id, C.Voices {
-    .accelerate = switch (params) {
-      C.EventSoundU.Accelerate => C.VoiceWrapper(AccelerateVoice) {
-        .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(AccelerateVoice.init()),
+  gs.addComponent(sound_entity_id, C.Voice {
+    .wrapper = switch (params) {
+      .Accelerate => C.Voice.WrapperU {
+        .Accelerate = C.Voice.Wrapper(AccelerateVoice) {
+          .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(AccelerateVoice.init()),
+        },
       },
-      else => null,
-    },
-    .coin = switch (params) {
-      C.EventSoundU.Coin => C.VoiceWrapper(CoinVoice) {
-        .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(CoinVoice.init()),
+      .Coin => C.Voice.WrapperU {
+        .Coin = C.Voice.Wrapper(CoinVoice) {
+          .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(CoinVoice.init()),
+        },
       },
-      else => null,
-    },
-    .explosion = switch (params) {
-      C.EventSoundU.Explosion => C.VoiceWrapper(ExplosionVoice) {
-        .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(ExplosionVoice.init()),
+      .Explosion => C.Voice.WrapperU {
+        .Explosion = C.Voice.Wrapper(ExplosionVoice) {
+          .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(ExplosionVoice.init()),
+        },
       },
-      else => null,
-    },
-    .laser = switch (params) {
-      C.EventSoundU.Laser => C.VoiceWrapper(LaserVoice) {
-        .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(LaserVoice.init()),
+      .Laser => C.Voice.WrapperU {
+        .Laser = C.Voice.Wrapper(LaserVoice) {
+          .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(LaserVoice.init()),
+        },
       },
-      else => null,
-    },
-    .sample = switch (params) {
-      C.EventSoundU.Sample => C.VoiceWrapper(zang.Sampler) {
-        .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(zang.Sampler.init()),
+      .Sample => C.Voice.WrapperU {
+        .Sample = C.Voice.Wrapper(zang.Sampler) {
+          .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(zang.Sampler.init()),
+        },
       },
-      else => null,
-    },
-    .wave_begin = switch (params) {
-      C.EventSoundU.WaveBegin => C.VoiceWrapper(WaveBeginVoice) {
-        .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
-        .module = zang.initTriggerable(WaveBeginVoice.init()),
+      .WaveBegin => C.Voice.WrapperU {
+        .WaveBegin = C.Voice.Wrapper(WaveBeginVoice) {
+          .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(WaveBeginVoice.init()),
+        },
       },
-      else => null,
     },
   }) catch {
     gs.undoSpawn(sound_entity_id);
@@ -557,6 +527,8 @@ pub fn spawnPointSound(gs: *GameSession, duration: f32, params: C.EventSoundU) v
     return;
   };
 
+  // TODO - can i get rid of this and have the sound middleware watch for
+  // creation of C.Voice?
   _ = EventSound.spawn(gs, C.EventSound {
     .entity_id = sound_entity_id,
     .params = params,

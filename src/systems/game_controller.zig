@@ -28,12 +28,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
   }
   _ = GameUtil.decrementTimer(&self.gc.wave_message_timer);
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
-    _ = Prototypes.EventSound.spawn(gs, C.EventSound {
-      .entity_id = self.id,
-      .params = C.EventSoundU {
-        .WaveBegin = WaveBeginVoice.Params {},
-      },
-    }) catch undefined;
+    Prototypes.sound(gs, 2.0, C.EventSound.Params {
+      .WaveBegin = WaveBeginVoice.Params {},
+    });
     self.gc.wave_number += 1;
     self.gc.wave_message_timer = 180;
     self.gc.enemy_speed_level = 0;
@@ -47,19 +44,16 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
     if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
       self.gc.enemy_speed_level += 1;
-      _ = Prototypes.EventSound.spawn(gs, C.EventSound {
-        .entity_id = self.id,
-        .params = C.EventSoundU {
-          .Accelerate = AccelerateVoice.Params {
-            .playback_speed = switch (self.gc.enemy_speed_level) {
-              1 => f32(1.25),
-              2 => f32(1.5),
-              3 => f32(1.75),
-              else => f32(2.0),
-            },
+      Prototypes.sound(gs, 2.0, C.EventSound.Params {
+        .Accelerate = AccelerateVoice.Params {
+          .playback_speed = switch (self.gc.enemy_speed_level) {
+            1 => f32(1.25),
+            2 => f32(1.5),
+            3 => f32(1.75),
+            else => f32(2.0),
           },
         },
-      }) catch undefined;
+      });
     }
     self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
   }

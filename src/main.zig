@@ -224,39 +224,33 @@ fn playSounds(g: *GameState, speed: f32) void {
   var it = g.session.iter(C.EventSound); while (it.next()) |object| {
     const entity_id = object.data.entity_id;
 
-    if (g.session.findObject(entity_id, C.Voices)) |voices_object| {
-      const voices = &voices_object.data;
+    if (g.session.findObject(entity_id, C.Voice)) |voice_object| {
+      const voice = &voice_object.data;
 
       switch (object.data.params) {
-        C.EventSoundU.Accelerate => |params| {
-          if (voices.accelerate) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
-          }
+        .Accelerate => |params| switch (voice.wrapper) {
+          .Accelerate => |*wrapper| wrapper.iq.push(impulse_frame, params),
+          else => {},
         },
-        C.EventSoundU.Coin => |params| {
-          if (voices.coin) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
-          }
+        .Coin => |params| switch (voice.wrapper) {
+          .Coin => |*wrapper| wrapper.iq.push(impulse_frame, params),
+          else => {},
         },
-        C.EventSoundU.Explosion => |params| {
-          if (voices.explosion) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
-          }
+        .Explosion => |params| switch (voice.wrapper) {
+          .Explosion => |*wrapper| wrapper.iq.push(impulse_frame, params),
+          else => {},
         },
-        C.EventSoundU.Laser => |params| {
-          if (voices.laser) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
-          }
+        .Laser => |params| switch (voice.wrapper) {
+          .Laser => |*wrapper| wrapper.iq.push(impulse_frame, params),
+          else => {},
         },
-        C.EventSoundU.Sample => |sample| {
-          if (voices.sample) |*wrapper| {
-            wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample));
-          }
+        .Sample => |sample| switch (voice.wrapper) {
+          .Sample => |*wrapper| wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample)),
+          else => {},
         },
-        C.EventSoundU.WaveBegin => |params| {
-          if (voices.wave_begin) |*wrapper| {
-            wrapper.iq.push(impulse_frame, params);
-          }
+        .WaveBegin => |params| switch (voice.wrapper) {
+          .WaveBegin => |*wrapper| wrapper.iq.push(impulse_frame, params),
+          else => {},
         },
       }
     }

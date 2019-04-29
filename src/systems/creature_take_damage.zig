@@ -28,7 +28,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
     const amount = event.amount;
     if (self.creature.hit_points > amount) {
-      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+      Prototypes.sound(gs, 2.0, C.EventSound.Params {
         .Sample = Audio.Sample.MonsterImpact,
       });
       self.creature.hit_points -= amount;
@@ -37,10 +37,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
       self.creature.hit_points = 0;
       if (self.player) |self_player| {
         // player died
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.PlayerScream,
         });
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.PlayerDeath,
         });
         self_player.dying_timer = Constants.PlayerDeathAnimTime;
@@ -71,10 +71,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }) catch undefined;
           }
         }
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.MonsterImpact,
         });
-        Prototypes.spawnPointSound(gs, ExplosionVoice.SoundDuration, C.EventSoundU {
+        Prototypes.sound(gs, ExplosionVoice.SoundDuration, C.EventSound.Params {
           .Explosion = ExplosionVoice.Params {},
         });
         _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{

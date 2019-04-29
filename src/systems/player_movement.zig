@@ -37,7 +37,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
-      Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+      Prototypes.sound(gs, 2.0, C.EventSound.Params {
         .Sample = Audio.Sample.PlayerCrumble,
       });
     }
@@ -75,17 +75,14 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           break slot;
         }
       } else null) |slot| {
-        _ = Prototypes.EventSound.spawn(gs, C.EventSound {
-          .entity_id = self.id,
-          .params = C.EventSoundU {
-            .Laser = LaserVoice.Params {
-              .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
-              .carrier_mul = 2.0,
-              .modulator_mul = 0.5,
-              .modulator_rad = 0.5,
-            },
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
+          .Laser = LaserVoice.Params {
+            .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+            .carrier_mul = 2.0,
+            .modulator_mul = 0.5,
+            .modulator_rad = 0.5,
           },
-        }) catch undefined;
+        });
         // spawn the bullet one quarter of a grid cell in front of the player
         const pos = self.transform.pos;
         const dir_vec = Math.Direction.normal(self.phys.facing);

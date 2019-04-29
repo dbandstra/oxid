@@ -20,7 +20,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
   var it = gs.eventIter(C.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
     switch (event.pickup_type) {
       ConstantTypes.PickupType.PowerUp => {
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.PowerUp,
         });
         self.player.attack_level = switch (self.player.attack_level) {
@@ -30,7 +30,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
       },
       ConstantTypes.PickupType.SpeedUp => {
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.PowerUp,
         });
         self.player.speed_level = switch (self.player.speed_level) {
@@ -40,7 +40,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
       },
       ConstantTypes.PickupType.LifeUp => {
-        Prototypes.spawnPointSound(gs, 2.0, C.EventSoundU {
+        Prototypes.sound(gs, 2.0, C.EventSound.Params {
           .Sample = Audio.Sample.ExtraLife,
         });
         _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife{
@@ -48,7 +48,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         }) catch undefined;
       },
       ConstantTypes.PickupType.Coin => {
-        Prototypes.spawnPointSound(gs, CoinVoice.SoundDuration, C.EventSoundU {
+        Prototypes.sound(gs, CoinVoice.SoundDuration, C.EventSound.Params {
           .Coin = CoinVoice.Params {
             .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
           },

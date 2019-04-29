@@ -248,18 +248,18 @@ pub const EventSaveHighScore = struct{
   high_score: u32,
 };
 
-pub const EventSoundU = union(enum) {
-  Accelerate: AccelerateVoice.Params,
-  Coin: CoinVoice.Params,
-  Explosion: ExplosionVoice.Params,
-  Laser: LaserVoice.Params,
-  Sample: Audio.Sample,
-  WaveBegin: WaveBeginVoice.Params,
-};
-
 pub const EventSound = struct {
+  pub const Params = union(enum) {
+    Accelerate: AccelerateVoice.Params,
+    Coin: CoinVoice.Params,
+    Explosion: ExplosionVoice.Params,
+    Laser: LaserVoice.Params,
+    Sample: Audio.Sample,
+    WaveBegin: WaveBeginVoice.Params,
+  };
+
   entity_id: Gbe.EntityId,
-  params: EventSoundU,
+  params: Params,
 };
 
 pub const EventTakeDamage = struct{
@@ -268,20 +268,24 @@ pub const EventTakeDamage = struct{
   amount: u32,
 };
 
-pub fn VoiceWrapper(comptime T: type) type {
-  return struct {
-    pub const ModuleType = T;
+pub const Voice = struct {
+  pub fn Wrapper(comptime T: type) type {
+    return struct {
+      pub const ModuleType = T;
 
-    iq: zang.Notes(T.Params).ImpulseQueue,
-    module: zang.Triggerable(T),
+      iq: zang.Notes(T.Params).ImpulseQueue,
+      module: zang.Triggerable(T),
+    };
+  }
+
+  pub const WrapperU = union(enum) {
+    Accelerate: Wrapper(AccelerateVoice),
+    Coin: Wrapper(CoinVoice),
+    Explosion: Wrapper(ExplosionVoice),
+    Laser: Wrapper(LaserVoice),
+    Sample: Wrapper(zang.Sampler),
+    WaveBegin: Wrapper(WaveBeginVoice),
   };
-}
 
-pub const Voices = struct {
-  accelerate: ?VoiceWrapper(AccelerateVoice),
-  coin: ?VoiceWrapper(CoinVoice),
-  explosion: ?VoiceWrapper(ExplosionVoice),
-  laser: ?VoiceWrapper(LaserVoice),
-  sample: ?VoiceWrapper(zang.Sampler),
-  wave_begin: ?VoiceWrapper(WaveBeginVoice),
+  wrapper: WrapperU,
 };

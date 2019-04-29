@@ -96,15 +96,17 @@ pub const MainModule = struct {
 
     const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
 
-    var it = gs.iter(C.Voices); while (it.next()) |object| {
-      const voices = &object.data;
+    var it = gs.iter(C.Voice); while (it.next()) |object| {
+      const voice = &object.data;
 
-      if (voices.accelerate) |*wrapper| self.paintWrapper(wrapper, mix_freq);
-      if (voices.coin)       |*wrapper| self.paintWrapper(wrapper, mix_freq);
-      if (voices.explosion)  |*wrapper| self.paintWrapper(wrapper, mix_freq);
-      if (voices.laser)      |*wrapper| self.paintWrapper(wrapper, mix_freq);
-      if (voices.sample)     |*wrapper| self.paintWrapper(wrapper, mix_freq);
-      if (voices.wave_begin) |*wrapper| self.paintWrapper(wrapper, mix_freq);
+      switch (voice.wrapper) {
+        .Accelerate => |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .Coin =>       |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .Explosion =>  |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .Laser =>      |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .Sample =>     |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .WaveBegin =>  |*wrapper| self.paintWrapper(wrapper, mix_freq),
+      }
     }
 
     if (self.muted) {
