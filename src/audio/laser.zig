@@ -11,6 +11,8 @@ pub const LaserVoice = struct {
     modulator_rad: f32,
   };
 
+  pub const SoundDuration = 0.5;
+
   const Notes = zang.Notes(Params);
 
   carrier_curve: zang.Curve,

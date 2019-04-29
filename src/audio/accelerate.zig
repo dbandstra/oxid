@@ -7,6 +7,8 @@ pub const AccelerateVoice = struct {
   pub const Params = struct { playback_speed: f32 };
   pub const InnerParams = struct { freq: f32, note_on: bool };
 
+  pub const SoundDuration = 2.0;
+
   const Notes = zang.Notes(Params);
   const InnerNotes = zang.Notes(InnerParams);
 

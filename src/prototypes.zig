@@ -447,16 +447,7 @@ pub const Pickup = struct{
 pub const Sound = struct {
   pub const Params = struct {
     duration: f32,
-    voice_params: VoiceParams,
-  };
-
-  pub const VoiceParams = union(enum) {
-    Accelerate: AccelerateVoice.Params,
-    Coin: CoinVoice.Params,
-    Explosion: ExplosionVoice.Params,
-    Laser: LaserVoice.Params,
-    Sample: Audio.Sample,
-    WaveBegin: WaveBeginVoice.Params,
+    wrapper: C.Voice.WrapperU,
   };
 
   pub fn spawn(gs: *GameSession, params: Params) !Gbe.EntityId {
@@ -464,56 +455,7 @@ pub const Sound = struct {
     errdefer gs.undoSpawn(entity_id);
 
     try gs.addComponent(entity_id, C.Voice {
-      .wrapper = switch (params.voice_params) {
-        .Accelerate => |voice_params| C.Voice.WrapperU {
-          .Accelerate = C.Voice.Wrapper(AccelerateVoice) {
-            .initial_params = voice_params,
-            .initial_sample = null,
-            .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(AccelerateVoice.init()),
-          },
-        },
-        .Coin => |voice_params| C.Voice.WrapperU {
-          .Coin = C.Voice.Wrapper(CoinVoice) {
-            .initial_params = voice_params,
-            .initial_sample = null,
-            .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(CoinVoice.init()),
-          },
-        },
-        .Explosion => |voice_params| C.Voice.WrapperU {
-          .Explosion = C.Voice.Wrapper(ExplosionVoice) {
-            .initial_params = voice_params,
-            .initial_sample = null,
-            .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(ExplosionVoice.init()),
-          },
-        },
-        .Laser => |voice_params| C.Voice.WrapperU {
-          .Laser = C.Voice.Wrapper(LaserVoice) {
-            .initial_params = voice_params,
-            .initial_sample = null,
-            .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(LaserVoice.init()),
-          },
-        },
-        .Sample => |sample| C.Voice.WrapperU {
-          .Sample = C.Voice.Wrapper(zang.Sampler) {
-            .initial_params = null,
-            .initial_sample = sample,
-            .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(zang.Sampler.init()),
-          },
-        },
-        .WaveBegin => |voice_params| C.Voice.WrapperU {
-          .WaveBegin = C.Voice.Wrapper(WaveBeginVoice) {
-            .initial_params = voice_params,
-            .initial_sample = null,
-            .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
-            .module = zang.initTriggerable(WaveBeginVoice.init()),
-          },
-        },
-      },
+      .wrapper = params.wrapper,
     });
 
     try gs.addComponent(entity_id, C.RemoveTimer {
@@ -551,3 +493,78 @@ pub const EventPostScore = Event(C.EventPostScore);
 pub const EventQuit = Event(C.EventQuit);
 pub const EventSaveHighScore = Event(C.EventSaveHighScore);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
+
+pub fn playSample(gs: *GameSession, sample: Audio.Sample) void {
+  _ = Sound.spawn(gs, Sound.Params {
+    .duration = 2.0,
+    .wrapper = C.Voice.WrapperU {
+      .Sample = C.Voice.Wrapper(zang.Sampler) {
+        .initial_params = null,
+        .initial_sample = sample,
+        .iq = zang.Notes(zang.Sampler.Params).ImpulseQueue.init(),
+        .module = zang.initTriggerable(zang.Sampler.init()),
+      },
+    },
+  }) catch undefined;
+}
+
+pub fn playSynth(gs: *GameSession, params: var) void {
+  _ = Sound.spawn(gs, switch (@typeOf(params)) {
+    AccelerateVoice.Params => Sound.Params {
+      .duration = AccelerateVoice.SoundDuration,
+      .wrapper = C.Voice.WrapperU {
+        .Accelerate = C.Voice.Wrapper(AccelerateVoice) {
+          .initial_params = params,
+          .initial_sample = null,
+          .iq = zang.Notes(AccelerateVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(AccelerateVoice.init()),
+        },
+      },
+    },
+    CoinVoice.Params => Sound.Params {
+      .duration = CoinVoice.SoundDuration,
+      .wrapper = C.Voice.WrapperU {
+        .Coin = C.Voice.Wrapper(CoinVoice) {
+          .initial_params = params,
+          .initial_sample = null,
+          .iq = zang.Notes(CoinVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(CoinVoice.init()),
+        },
+      },
+    },
+    ExplosionVoice.Params => Sound.Params {
+      .duration = ExplosionVoice.SoundDuration,
+      .wrapper = C.Voice.WrapperU {
+        .Explosion = C.Voice.Wrapper(ExplosionVoice) {
+          .initial_params = params,
+          .initial_sample = null,
+          .iq = zang.Notes(ExplosionVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(ExplosionVoice.init()),
+        },
+      },
+    },
+    LaserVoice.Params => Sound.Params {
+      .duration = LaserVoice.SoundDuration,
+      .wrapper = C.Voice.WrapperU {
+        .Laser = C.Voice.Wrapper(LaserVoice) {
+          .initial_params = params,
+          .initial_sample = null,
+          .iq = zang.Notes(LaserVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(LaserVoice.init()),
+        },
+      },
+    },
+    WaveBeginVoice.Params => Sound.Params {
+      .duration = WaveBeginVoice.SoundDuration,
+      .wrapper = C.Voice.WrapperU {
+        .WaveBegin = C.Voice.Wrapper(WaveBeginVoice) {
+          .initial_params = params,
+          .initial_sample = null,
+          .iq = zang.Notes(WaveBeginVoice.Params).ImpulseQueue.init(),
+          .module = zang.initTriggerable(WaveBeginVoice.init()),
+        },
+      },
+    },
+    else => unreachable,
+  }) catch undefined;
+}

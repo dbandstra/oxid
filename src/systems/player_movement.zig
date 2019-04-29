@@ -5,7 +5,6 @@ const gbe = @import("../common/gbe.zig");
 const Constants = @import("../constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("../level.zig").LEVEL;
-const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
@@ -37,12 +36,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     return false;
   } else if (self.player.dying_timer > 0) {
     if (self.player.dying_timer == 30) { // yeesh
-      _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
-        .duration = 2.0,
-        .voice_params = Prototypes.Sound.VoiceParams {
-         .Sample = Audio.Sample.PlayerCrumble,
-        },
-      }) catch undefined;
+      Prototypes.playSample(gs, .PlayerCrumble);
     }
     self.phys.speed = 0;
     self.phys.push_dir = null;
@@ -78,17 +72,12 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           break slot;
         }
       } else null) |slot| {
-        _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
-          .duration = 2.0,
-          .voice_params = Prototypes.Sound.VoiceParams {
-            .Laser = LaserVoice.Params {
-              .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
-              .carrier_mul = 2.0,
-              .modulator_mul = 0.5,
-              .modulator_rad = 0.5,
-            },
-          },
-        }) catch undefined;
+        Prototypes.playSynth(gs, LaserVoice.Params {
+          .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+          .carrier_mul = 2.0,
+          .modulator_mul = 0.5,
+          .modulator_rad = 0.5,
+        });
         // spawn the bullet one quarter of a grid cell in front of the player
         const pos = self.transform.pos;
         const dir_vec = Math.Direction.normal(self.phys.facing);

@@ -4,7 +4,6 @@ const Math = @import("../common/math.zig");
 const absBoxesOverlap = @import("../common/boxes_overlap.zig").absBoxesOverlap;
 const gbe = @import("../common/gbe.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
-const Audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
@@ -133,17 +132,12 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
-        .duration = 2.0,
-        .voice_params = Prototypes.Sound.VoiceParams {
-          .Laser = LaserVoice.Params {
-            .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
-            .carrier_mul = 4.0,
-            .modulator_mul = 0.125,
-            .modulator_rad = 1.0,
-          },
-        },
-      }) catch undefined;
+      Prototypes.playSynth(gs, LaserVoice.Params {
+        .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+        .carrier_mul = 4.0,
+        .modulator_mul = 0.125,
+        .modulator_rad = 1.0,
+      });
       // spawn the bullet one quarter of a grid cell in front of the monster
       const pos = self.transform.pos;
       const dir_vec = Math.Direction.normal(self.phys.facing);
@@ -158,12 +152,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         .cluster_size = 1,
       }) catch undefined;
     } else if (self.monster.can_drop_webs) {
-      _ = Prototypes.Sound.spawn(gs, Prototypes.Sound.Params {
-        .duration = 2.0,
-        .voice_params = Prototypes.Sound.VoiceParams {
-          .Sample = Audio.Sample.DropWeb,
-        },
-      }) catch undefined;
+      Prototypes.playSample(gs, .DropWeb);
       _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params{
         .pos = self.transform.pos,
       }) catch undefined;
