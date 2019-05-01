@@ -21,6 +21,11 @@ fn collide(gs: *GameSession, self: SystemData) bool {
       .player_controller_id = other_player.player_controller_id,
       .points = self.pickup.get_points,
     }) catch undefined;
+    if (self.pickup.message) |message| {
+      _ = Prototypes.EventShowMessage.spawn(gs, C.EventShowMessage{
+        .message = message,
+      }) catch undefined;
+    }
     return false;
   }
   return true;

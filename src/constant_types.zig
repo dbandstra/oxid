@@ -25,6 +25,7 @@ pub const PickupType = enum{
 pub const PickupValues = struct{
   lifetime: u32,
   get_points: u32,
+  message: ?[]const u8,
 };
 
 pub const Wave = struct{

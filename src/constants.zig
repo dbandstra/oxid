@@ -70,15 +70,22 @@ pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     PickupType.Coin => PickupValues{
       .lifetime = 6*60,
       .get_points = 20,
+      .message = null,
     },
     PickupType.LifeUp => PickupValues{
       .lifetime = 15*60,
       .get_points = 0,
+      .message = "Life up!",
     },
-    PickupType.PowerUp,
+    PickupType.PowerUp => PickupValues{
+      .lifetime = 12*60,
+      .get_points = 0,
+      .message = "Power up!",
+    },
     PickupType.SpeedUp => PickupValues{
       .lifetime = 12*60,
       .get_points = 0,
+      .message = "Speed up!",
     },
   };
 }

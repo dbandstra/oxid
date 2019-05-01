@@ -152,6 +152,7 @@ pub const PhysObjectInternal = struct{
 pub const Pickup = struct{
   pickup_type: ConstantTypes.PickupType,
   get_points: u32,
+  message: ?[]const u8,
 };
 
 pub const Player = struct{
@@ -246,6 +247,10 @@ pub const EventQuit = struct{};
 
 pub const EventSaveHighScore = struct{
   high_score: u32,
+};
+
+pub const EventShowMessage = struct {
+  message: []const u8,
 };
 
 pub const EventTakeDamage = struct{

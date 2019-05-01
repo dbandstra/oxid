@@ -40,5 +40,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
       }
     }
   }
+  var it3 = gs.iter(C.EventShowMessage); while (it3.next()) |object| {
+    self.gc.wave_message = object.data.message;
+    self.gc.wave_message_timer = 180;
+  }
   return true;
 }

@@ -30,5 +30,6 @@ pub const GameSession = Gbe.Session(struct{
   EventPostScore: Gbe.ComponentList(C.EventPostScore, 20),
   EventQuit: Gbe.ComponentList(C.EventQuit, 5),
   EventSaveHighScore: Gbe.ComponentList(C.EventSaveHighScore, 5),
+  EventShowMessage: Gbe.ComponentList(C.EventShowMessage, 5),
   EventTakeDamage: Gbe.ComponentList(C.EventTakeDamage, 20),
 });

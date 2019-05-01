@@ -434,6 +434,7 @@ pub const Pickup = struct{
     try gs.addComponent(entity_id, C.Pickup{
       .pickup_type = params.pickup_type,
       .get_points = pickup_values.get_points,
+      .message = pickup_values.message,
     });
 
     try gs.addComponent(entity_id, C.RemoveTimer {
@@ -492,6 +493,7 @@ pub const EventPlayerOutOfLives = Event(C.EventPlayerOutOfLives);
 pub const EventPostScore = Event(C.EventPostScore);
 pub const EventQuit = Event(C.EventQuit);
 pub const EventSaveHighScore = Event(C.EventSaveHighScore);
+pub const EventShowMessage = Event(C.EventShowMessage);
 pub const EventTakeDamage = Event(C.EventTakeDamage);
 
 pub fn playSample(gs: *GameSession, sample: Audio.Sample) void {
