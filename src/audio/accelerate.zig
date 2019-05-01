@@ -12,7 +12,7 @@ pub const AccelerateVoice = struct {
   const Notes = zang.Notes(Params);
   const InnerNotes = zang.Notes(InnerParams);
 
-  osc: zang.Triggerable(zang.Oscillator),
+  osc: zang.Triggerable(zang.PulseOsc),
   env: zang.Triggerable(zang.Envelope),
   note_tracker: InnerNotes.NoteTracker,
 
@@ -20,7 +20,7 @@ pub const AccelerateVoice = struct {
     const speed = 0.125;
 
     return AccelerateVoice {
-      .osc = zang.initTriggerable(zang.Oscillator.init()),
+      .osc = zang.initTriggerable(zang.PulseOsc.init()),
       .env = zang.initTriggerable(zang.Envelope.init(zang.EnvParams {
         .attack_duration = 0.01,
         .decay_duration = 0.1,
@@ -53,10 +53,9 @@ pub const AccelerateVoice = struct {
 
     zang.zero(temps[0]);
     {
-      var conv = zang.ParamsConverter(InnerParams, zang.Oscillator.Params).init();
+      var conv = zang.ParamsConverter(InnerParams, zang.PulseOsc.Params).init();
       for (conv.getPairs(impulses)) |*pair| {
-        pair.dest = zang.Oscillator.Params {
-          .waveform = .Square,
+        pair.dest = zang.PulseOsc.Params {
           .freq = pair.source.freq * params.playback_speed,
           .colour = 0.5,
         };
