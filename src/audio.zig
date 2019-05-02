@@ -123,6 +123,6 @@ pub const MainModule = struct {
     var i: usize = 0; while (i < ModuleType.NumTemps) : (i += 1) {
       temps[i] = self.tmp_bufs[i];
     }
-    wrapper.module.paintFromImpulses(sample_rate, [1][]f32{self.out_buf}, [0][]f32{}, temps, wrapper.iq.consume());
+    wrapper.module.paintFromImpulses(sample_rate, [1][]f32{self.out_buf}, temps, wrapper.iq.consume());
   }
 };

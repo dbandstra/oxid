@@ -2,7 +2,6 @@ const zang = @import("zang");
 
 pub const ExplosionVoice = struct {
   pub const NumOutputs = 1;
-  pub const NumInputs = 0;
   pub const NumTemps = 3;
   pub const Params = struct {};
 
@@ -37,13 +36,13 @@ pub const ExplosionVoice = struct {
     self.volume_curve.reset();
   }
 
-  pub fn paintSpan(self: *ExplosionVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+  pub fn paint(self: *ExplosionVoice, sample_rate: f32, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, params: Params) void {
     const out = outputs[0];
 
     zang.zero(temps[0]);
-    self.noise.paintSpan(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, zang.Noise.Params {});
+    self.noise.paint(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, zang.Noise.Params {});
     zang.zero(temps[1]);
-    self.cutoff_curve.paintSpan(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, zang.Curve.Params {
+    self.cutoff_curve.paint(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, zang.Curve.Params {
       .freq_mul = 1.0,
     });
     // FIXME - apply this to the curve nodes before interpolation, to save
@@ -52,9 +51,14 @@ pub const ExplosionVoice = struct {
       temps[1][i] = zang.cutoffFromFrequency(temps[1][i], sample_rate);
     }
     zang.zero(temps[2]);
-    self.filter.paintControlledCutoff(sample_rate, temps[2], temps[0], .LowPass, temps[1], 0.0);
+    self.filter.paint(sample_rate, [1][]f32{temps[2]}, [0][]f32{}, zang.Filter.Params {
+      .input = temps[0],
+      .filterType = .LowPass,
+      .cutoff = zang.buffer(temps[1]),
+      .resonance = 0.0,
+    });
     zang.zero(temps[1]);
-    self.volume_curve.paintSpan(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, zang.Curve.Params {
+    self.volume_curve.paint(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, zang.Curve.Params {
       .freq_mul = 1.0,
     });
     zang.multiply(out, temps[2], temps[1]);

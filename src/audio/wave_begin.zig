@@ -2,7 +2,6 @@ const zang = @import("zang");
 
 pub const WaveBeginVoice = struct {
   pub const NumOutputs = 1;
-  pub const NumInputs = 0;
   pub const NumTemps = 2;
   pub const Params = struct {};
   pub const InnerParams = struct { freq: f32, note_on: bool };
@@ -50,7 +49,7 @@ pub const WaveBeginVoice = struct {
     self.note_tracker.reset();
   }
 
-  pub fn paintSpan(self: *WaveBeginVoice, sample_rate: f32, outputs: [NumOutputs][]f32, inputs: [NumInputs][]f32, temps: [NumTemps][]f32, params: Params) void {
+  pub fn paint(self: *WaveBeginVoice, sample_rate: f32, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, params: Params) void {
     const out = outputs[0];
     const impulses = self.note_tracker.getImpulses(sample_rate, out.len);
 
@@ -63,12 +62,12 @@ pub const WaveBeginVoice = struct {
           .colour = 0.5,
         };
       }
-      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, [0][]f32{}, conv.getImpulses());
+      self.osc.paintFromImpulses(sample_rate, [1][]f32{temps[0]}, [0][]f32{}, conv.getImpulses());
     }
     zang.zero(temps[1]);
     {
       var conv = zang.ParamsConverter(InnerParams, zang.Envelope.Params).init();
-      self.env.paintFromImpulses(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, [0][]f32{}, conv.autoStructural(impulses));
+      self.env.paintFromImpulses(sample_rate, [1][]f32{temps[1]}, [0][]f32{}, conv.autoStructural(impulses));
     }
     zang.multiplyWithScalar(temps[1], 0.25);
     zang.multiply(out, temps[0], temps[1]);
