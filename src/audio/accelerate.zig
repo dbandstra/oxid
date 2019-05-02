@@ -4,7 +4,7 @@ pub const AccelerateVoice = struct {
   pub const NumOutputs = 1;
   pub const NumTemps = 2;
   pub const Params = struct { playback_speed: f32 };
-  pub const InnerParams = struct { freq: f32, note_on: bool };
+  const InnerParams = struct { freq: f32, note_on: bool };
 
   pub const SoundDuration = 2.0;
 
@@ -27,7 +27,7 @@ pub const AccelerateVoice = struct {
         .release_duration = 0.15,
       })),
       .note_tracker = InnerNotes.NoteTracker.init([]InnerNotes.SongNote {
-        // same as wave begin but with some notes chopped off
+        // same as wave_begin but with some notes chopped off
         InnerNotes.SongNote{ .params = InnerParams { .freq = 43.0, .note_on = true }, .t = 0.0 * speed },
         InnerNotes.SongNote{ .params = InnerParams { .freq = 36.0, .note_on = true }, .t = 1.0 * speed },
         InnerNotes.SongNote{ .params = InnerParams { .freq = 40.0, .note_on = true }, .t = 2.0 * speed },

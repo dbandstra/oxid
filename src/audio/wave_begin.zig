@@ -4,7 +4,7 @@ pub const WaveBeginVoice = struct {
   pub const NumOutputs = 1;
   pub const NumTemps = 2;
   pub const Params = struct {};
-  pub const InnerParams = struct { freq: f32, note_on: bool };
+  const InnerParams = struct { freq: f32, note_on: bool };
 
   pub const SoundDuration = 2.0;
 
