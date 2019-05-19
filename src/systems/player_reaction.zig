@@ -41,7 +41,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
         }) catch undefined;
       },
       ConstantTypes.PickupType.Coin => {
-        Prototypes.playSynth(gs, CoinVoice.Params {
+        Prototypes.playSynth(gs, CoinVoice.NoteParams {
           .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
         });
       },

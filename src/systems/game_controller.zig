@@ -28,7 +28,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
   }
   _ = GameUtil.decrementTimer(&self.gc.wave_message_timer);
   if (GameUtil.decrementTimer(&self.gc.next_wave_timer)) {
-    Prototypes.playSynth(gs, WaveBeginVoice.Params {});
+    Prototypes.playSynth(gs, WaveBeginVoice.NoteParams {
+      .unused = false,
+    });
     self.gc.wave_number += 1;
     self.gc.wave_message_timer = 180;
     self.gc.enemy_speed_level = 0;
@@ -42,7 +44,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
   if (GameUtil.decrementTimer(&self.gc.enemy_speed_timer)) {
     if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
       self.gc.enemy_speed_level += 1;
-      Prototypes.playSynth(gs, AccelerateVoice.Params {
+      Prototypes.playSynth(gs, AccelerateVoice.NoteParams {
         .playback_speed = switch (self.gc.enemy_speed_level) {
           1 => f32(1.25),
           2 => f32(1.5),

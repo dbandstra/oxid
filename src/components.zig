@@ -260,31 +260,33 @@ pub const EventTakeDamage = struct{
 };
 
 pub const Voice = struct {
-  pub fn Wrapper(comptime T: type) type {
+  pub fn Wrapper(comptime T: type, comptime P: type) type {
     return struct {
       pub const ModuleType = T;
+      pub const NoteParams = P;
 
       // `initial_params`: set when the Voice entity is spawned. this will be
       // fed into the impulse queue by the sound middleware at the end of the
       // frame. (it can't be done when spawning the entity because it requires
       // a lock on the audio thread and a calculated impulse frame.)
-      initial_params: ?T.Params,
+      initial_params: ?NoteParams,
       // `initial_sample`: this is a hack that is used instead of
       // initial_params for sample voices. the game code doesn't have access to
       // the wav file data that is needed to create the params for the sampler.
       initial_sample: ?Audio.Sample,
-      iq: zang.Notes(T.Params).ImpulseQueue,
-      module: zang.Triggerable(T),
+      iq: zang.Notes(NoteParams).ImpulseQueue,
+      module: T,
+      trigger: zang.Trigger(NoteParams),
     };
   }
 
   pub const WrapperU = union(enum) {
-    Accelerate: Wrapper(AccelerateVoice),
-    Coin: Wrapper(CoinVoice),
-    Explosion: Wrapper(ExplosionVoice),
-    Laser: Wrapper(LaserVoice),
-    Sample: Wrapper(zang.Sampler),
-    WaveBegin: Wrapper(WaveBeginVoice),
+    Accelerate: Wrapper(AccelerateVoice, AccelerateVoice.NoteParams),
+    Coin: Wrapper(CoinVoice, CoinVoice.NoteParams),
+    Explosion: Wrapper(ExplosionVoice, ExplosionVoice.NoteParams),
+    Laser: Wrapper(LaserVoice, LaserVoice.NoteParams),
+    Sample: Wrapper(zang.Sampler, Audio.SamplerNoteParams),
+    WaveBegin: Wrapper(WaveBeginVoice, WaveBeginVoice.NoteParams),
   };
 
   wrapper: WrapperU,

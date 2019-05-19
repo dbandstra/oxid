@@ -65,7 +65,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
           }
         }
         Prototypes.playSample(gs, .MonsterImpact);
-        Prototypes.playSynth(gs, ExplosionVoice.Params {});
+        Prototypes.playSynth(gs, ExplosionVoice.NoteParams {
+          .unused = false,
+        });
         _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params{
           .pos = self.transform.pos,
           .simple_anim = SimpleAnim.Explosion,

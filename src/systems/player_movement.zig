@@ -72,7 +72,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
           break slot;
         }
       } else null) |slot| {
-        Prototypes.playSynth(gs, LaserVoice.Params {
+        Prototypes.playSynth(gs, LaserVoice.NoteParams {
           .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
           .carrier_mul = 2.0,
           .modulator_mul = 0.5,

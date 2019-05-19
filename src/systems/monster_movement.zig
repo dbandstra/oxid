@@ -132,7 +132,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
     self.monster.next_attack_timer -= 1;
   } else {
     if (self.monster.can_shoot) {
-      Prototypes.playSynth(gs, LaserVoice.Params {
+      Prototypes.playSynth(gs, LaserVoice.NoteParams {
         .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
         .carrier_mul = 4.0,
         .modulator_mul = 0.125,

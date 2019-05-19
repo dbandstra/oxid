@@ -15,6 +15,11 @@ pub const Sample = enum {
   MonsterImpact,
 };
 
+pub const SamplerNoteParams = struct {
+  wav: zang.WavContents,
+  loop: bool,
+};
+
 pub const MainModule = struct {
   initialized: bool,
 
@@ -64,22 +69,17 @@ pub const MainModule = struct {
     };
   }
 
-  pub fn getSampleParams(self: *MainModule, sample: Sample) zang.Sampler.Params {
-    const wav = switch (sample) {
-      .DropWeb => self.drop_web,
-      .ExtraLife => self.extra_life,
-      .PlayerScream => self.player_scream,
-      .PlayerDeath => self.player_death,
-      .PlayerCrumble => self.player_crumble,
-      .PowerUp => self.power_up,
-      .MonsterImpact => self.monster_impact,
-    };
-
-    return zang.Sampler.Params {
-      .freq = 1.0,
-      .sample_data = wav.data,
-      .sample_rate = @intToFloat(f32, wav.sample_rate),
-      .sample_freq = null,
+  pub fn getSampleParams(self: *MainModule, sample: Sample) SamplerNoteParams {
+    return SamplerNoteParams {
+      .wav = switch (sample) {
+        .DropWeb => self.drop_web,
+        .ExtraLife => self.extra_life,
+        .PlayerScream => self.player_scream,
+        .PlayerDeath => self.player_death,
+        .PlayerCrumble => self.player_crumble,
+        .PowerUp => self.power_up,
+        .MonsterImpact => self.monster_impact,
+      },
       .loop = false,
     };
   }
@@ -92,7 +92,12 @@ pub const MainModule = struct {
   // painting, so that the thread doesn't need to be locked during the actual
   // painting
   pub fn paint(self: *MainModule, sample_rate: u32, gs: *GameSession) []const f32 {
-    zang.zero(self.out_buf);
+    const span = zang.Span {
+      .start = 0,
+      .end = self.out_buf.len,
+    };
+
+    zang.zero(span, self.out_buf);
 
     const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
 
@@ -100,29 +105,47 @@ pub const MainModule = struct {
       const voice = &object.data;
 
       switch (voice.wrapper) {
-        .Accelerate => |*wrapper| self.paintWrapper(wrapper, mix_freq),
-        .Coin =>       |*wrapper| self.paintWrapper(wrapper, mix_freq),
-        .Explosion =>  |*wrapper| self.paintWrapper(wrapper, mix_freq),
-        .Laser =>      |*wrapper| self.paintWrapper(wrapper, mix_freq),
-        .Sample =>     |*wrapper| self.paintWrapper(wrapper, mix_freq),
-        .WaveBegin =>  |*wrapper| self.paintWrapper(wrapper, mix_freq),
+        .Accelerate => |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        .Explosion =>  |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        .Laser =>      |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        .Sample =>     |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+        else => {},
       }
     }
 
     if (self.muted) {
-      zang.zero(self.out_buf);
+      zang.zero(span, self.out_buf);
     }
 
     return self.out_buf;
   }
 
-  fn paintWrapper(self: *MainModule, wrapper: var, sample_rate: f32) void {
+  fn paintWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
     std.debug.assert(@typeId(@typeOf(wrapper)) == .Pointer);
     const ModuleType = @typeInfo(@typeOf(wrapper)).Pointer.child.ModuleType;
     var temps: [ModuleType.NumTemps][]f32 = undefined;
     var i: usize = 0; while (i < ModuleType.NumTemps) : (i += 1) {
       temps[i] = self.tmp_bufs[i];
     }
-    wrapper.module.paintFromImpulses(sample_rate, [1][]f32{self.out_buf}, temps, wrapper.iq.consume());
+
+    const NoteParamsType =
+      if (ModuleType == zang.Sampler)
+        SamplerNoteParams
+      else
+        ModuleType.NoteParams;
+
+    var ctr = wrapper.trigger.counter(span, wrapper.iq.consume());
+    while (wrapper.trigger.next(&ctr)) |result| {
+      var params: ModuleType.Params = undefined;
+
+      inline for (@typeInfo(NoteParamsType).Struct.fields) |field| {
+        @field(params, field.name) = @field(result.params, field.name);
+      }
+      params.sample_rate = sample_rate;
+
+      wrapper.module.paint(result.span, [1][]f32{self.out_buf}, temps, result.note_id_changed, params);
+    }
   }
 };
