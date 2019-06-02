@@ -83,13 +83,7 @@ pub fn main() void {
   };
   defer Platform.deinit(&g.platform_state);
 
-  const rand_seed = blk: {
-    var seed_bytes: [4]u8 = undefined;
-    std.os.getRandomBytes(seed_bytes[0..]) catch {
-      break :blk 0;
-    };
-    break :blk std.mem.readIntSliceLittle(u32, seed_bytes);
-  };
+  const rand_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF);
 
   // TODO - is it really a good idea to set high score to 0 if it failed to
   // load? i think we should disable high score functionality for this session

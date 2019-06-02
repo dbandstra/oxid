@@ -6,25 +6,25 @@ const Mode = enum{
   Write,
 };
 
-fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.os.File {
+fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.fs.File {
   const mark = hunk_side.getMark();
   defer hunk_side.freeToMark(mark);
 
-  const dir_path = try std.os.getAppDataDir(&hunk_side.allocator, "Oxid");
+  const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, "Oxid");
 
   if (mode == Mode.Write) {
-    std.os.makeDir(dir_path) catch |err| {
+    std.fs.makeDir(dir_path) catch |err| {
       if (err != error.PathAlreadyExists) {
         return err;
       }
     };
   }
 
-  const file_path = try std.os.path.join(&hunk_side.allocator, [][]const u8{dir_path, filename});
+  const file_path = try std.fs.path.join(&hunk_side.allocator, [][]const u8{dir_path, filename});
 
   return switch (mode) {
-    Mode.Read => std.os.File.openRead(file_path),
-    Mode.Write => std.os.File.openWrite(file_path),
+    Mode.Read => std.fs.File.openRead(file_path),
+    Mode.Write => std.fs.File.openWrite(file_path),
   };
 }
 
@@ -37,7 +37,7 @@ pub fn loadHighScore(hunk_side: *HunkSide) !u32 {
   };
   defer file.close();
 
-  var fis = std.os.File.inStream(file);
+  var fis = std.fs.File.inStream(file);
 
   return fis.stream.readIntLittle(u32);
 }
@@ -46,7 +46,7 @@ pub fn saveHighScore(hunk_side: *HunkSide, high_score: u32) !void {
   const file = try openDataFile(hunk_side, "highscore.dat", Mode.Write);
   defer file.close();
 
-  var fos = std.os.File.outStream(file);
+  var fos = std.fs.File.outStream(file);
 
   try fos.stream.writeIntLittle(u32, high_score);
 }
