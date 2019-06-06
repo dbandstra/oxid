@@ -1,5 +1,5 @@
+const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const gbe = @import("../../gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const C = @import("../components.zig");

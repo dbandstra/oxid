@@ -1,4 +1,4 @@
-const gbe = @import("../gbe.zig");
+const gbe = @import("gbe");
 const C = @import("components.zig");
 
 pub const GameSession = gbe.Session(struct {

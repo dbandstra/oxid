@@ -1,4 +1,4 @@
-const gbe = @import("../../gbe.zig");
+const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 const C = @import("../components.zig");

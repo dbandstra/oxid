@@ -1,5 +1,5 @@
 const std = @import("std");
-const gbe = @import("../../gbe.zig");
+const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const input = @import("../input.zig");

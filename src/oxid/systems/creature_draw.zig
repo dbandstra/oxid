@@ -1,6 +1,6 @@
+const gbe = @import("gbe");
 const draw = @import("../../common/draw.zig");
 const math = @import("../../common/math.zig");
-const gbe = @import("../../gbe.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");

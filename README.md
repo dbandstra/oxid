@@ -56,7 +56,7 @@ Here are the main gameplay-related files:
 * [src/oxid/prototypes.zig](src/prototypes.zig) - entity spawning functions
 * [src/oxid/systems/*.zig](src/systems/) - all of the systems (i.e. think functions)
 
-The ECS framework itself is located in `src/common/gbe/`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
+The ECS framework itself is located in `gbe/`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
 
 Actually using the ECS requires very little boilerplate.
 * To add a component type, add a struct to `components.zig` and register it in `game.zig`.

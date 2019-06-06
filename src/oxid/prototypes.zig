@@ -1,6 +1,6 @@
 const zang = @import("zang");
+const gbe = @import("gbe");
 const math = @import("../common/math.zig");
-const gbe = @import("../gbe.zig");
 const Graphic = @import("graphics.zig").Graphic;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;

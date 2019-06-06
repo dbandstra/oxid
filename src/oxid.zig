@@ -1,6 +1,7 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const zang = @import("zang");
+const gbe = @import("gbe");
 
 const platform = @import("platform.zig");
 const Event = @import("common/event.zig").Event;
@@ -8,7 +9,6 @@ const Key = @import("common/event.zig").Key;
 const draw = @import("common/draw.zig");
 const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
-const gbe = @import("gbe.zig");
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const GRIDSIZE_PIXELS = @import("oxid/level.zig").GRIDSIZE_PIXELS;
 const LEVEL = @import("oxid/level.zig").LEVEL;
