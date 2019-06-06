@@ -4,13 +4,13 @@ const C = @import("../components.zig");
 const GameUtil = @import("../util.zig");
 
 const SystemData = struct{
-  creature: *C.Creature,
+    creature: *C.Creature,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  _ = GameUtil.decrementTimer(&self.creature.invulnerability_timer);
-  _ = GameUtil.decrementTimer(&self.creature.flinch_timer);
-  return true;
+    _ = GameUtil.decrementTimer(&self.creature.invulnerability_timer);
+    _ = GameUtil.decrementTimer(&self.creature.flinch_timer);
+    return true;
 }

@@ -10,22 +10,22 @@ const Graphic = @import("../graphics.zig").Graphic;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
 const SystemData = struct{
-  bullet: *const C.Bullet,
+    bullet: *const C.Bullet,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  if (self.bullet.line_of_fire) |box| {
-    _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox{
-      .box = box,
-      .color = Draw.Color{
-        .r = 0,
-        .g = 0,
-        .b = 0,
-        .a = 255,
-      },
-    }) catch undefined;
-  }
-  return true;
+    if (self.bullet.line_of_fire) |box| {
+        _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox{
+            .box = box,
+            .color = Draw.Color{
+                .r = 0,
+                .g = 0,
+                .b = 0,
+                .a = 255,
+            },
+        }) catch undefined;
+    }
+    return true;
 }

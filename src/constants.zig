@@ -21,73 +21,73 @@ pub const PlayerRespawnTime: u32 = 150; // 2.5 seconds
 pub const PlayerNumLives: u32 = 3;
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
-  return switch (monster_type) {
-    MonsterType.Spider => MonsterValues{
-      .hit_points = 1,
-      .move_speed = [4]u31{ 6, 9, 12, 15 },
-      .kill_points = 10,
-      .first_shooting_level = null,
-      .can_drop_webs = false,
-      .persistent = false,
-    },
-    MonsterType.Knight => MonsterValues{
-      .hit_points = 2,
-      .move_speed = [4]u31{ 6, 9, 12, 15 },
-      .kill_points = 20,
-      .first_shooting_level = 9,
-      .can_drop_webs = false,
-      .persistent = false,
-    },
-    MonsterType.FastBug => MonsterValues{
-      .hit_points = 1,
-      .move_speed = [4]u31{ 12, 16, 20, 24 },
-      .kill_points = 10,
-      .first_shooting_level = null,
-      .can_drop_webs = false,
-      .persistent = false,
-    },
-    MonsterType.Squid => MonsterValues{
-      .hit_points = 5,
-      .move_speed = [4]u31{ 3, 4, 6, 8 },
-      .kill_points = 80,
-      .first_shooting_level = null,
-      .can_drop_webs = true,
-      .persistent = false,
-    },
-    MonsterType.Juggernaut => MonsterValues{
-      .hit_points = 9999,
-      .move_speed = [4]u31{ 4, 4, 4, 4 },
-      .kill_points = 0,
-      .first_shooting_level = null,
-      .can_drop_webs = false,
-      .persistent = true,
-    },
-  };
+    return switch (monster_type) {
+        MonsterType.Spider => MonsterValues{
+            .hit_points = 1,
+            .move_speed = [4]u31{ 6, 9, 12, 15 },
+            .kill_points = 10,
+            .first_shooting_level = null,
+            .can_drop_webs = false,
+            .persistent = false,
+        },
+        MonsterType.Knight => MonsterValues{
+            .hit_points = 2,
+            .move_speed = [4]u31{ 6, 9, 12, 15 },
+            .kill_points = 20,
+            .first_shooting_level = 9,
+            .can_drop_webs = false,
+            .persistent = false,
+        },
+        MonsterType.FastBug => MonsterValues{
+            .hit_points = 1,
+            .move_speed = [4]u31{ 12, 16, 20, 24 },
+            .kill_points = 10,
+            .first_shooting_level = null,
+            .can_drop_webs = false,
+            .persistent = false,
+        },
+        MonsterType.Squid => MonsterValues{
+            .hit_points = 5,
+            .move_speed = [4]u31{ 3, 4, 6, 8 },
+            .kill_points = 80,
+            .first_shooting_level = null,
+            .can_drop_webs = true,
+            .persistent = false,
+        },
+        MonsterType.Juggernaut => MonsterValues{
+            .hit_points = 9999,
+            .move_speed = [4]u31{ 4, 4, 4, 4 },
+            .kill_points = 0,
+            .first_shooting_level = null,
+            .can_drop_webs = false,
+            .persistent = true,
+        },
+    };
 }
 
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
-  return switch (pickup_type) {
-    PickupType.Coin => PickupValues{
-      .lifetime = 6*60,
-      .get_points = 20,
-      .message = null,
-    },
-    PickupType.LifeUp => PickupValues{
-      .lifetime = 15*60,
-      .get_points = 0,
-      .message = "Life up!",
-    },
-    PickupType.PowerUp => PickupValues{
-      .lifetime = 12*60,
-      .get_points = 0,
-      .message = "Power up!",
-    },
-    PickupType.SpeedUp => PickupValues{
-      .lifetime = 12*60,
-      .get_points = 0,
-      .message = "Speed up!",
-    },
-  };
+    return switch (pickup_type) {
+        PickupType.Coin => PickupValues{
+            .lifetime = 6*60,
+            .get_points = 20,
+            .message = null,
+        },
+        PickupType.LifeUp => PickupValues{
+            .lifetime = 15*60,
+            .get_points = 0,
+            .message = "Life up!",
+        },
+        PickupType.PowerUp => PickupValues{
+            .lifetime = 12*60,
+            .get_points = 0,
+            .message = "Power up!",
+        },
+        PickupType.SpeedUp => PickupValues{
+            .lifetime = 12*60,
+            .get_points = 0,
+            .message = "Speed up!",
+        },
+    };
 }
 
 pub const InvulnerabilityTime: u32 = 2*60;
@@ -108,11 +108,11 @@ pub const ZIndexWeb: u32 = 25;
 pub const ZIndexCorpse: u32 = 20;
 
 pub const ExtraLifeScoreThresholds = []u32{
-  1500,
-  3000,
-  6000,
-  10000,
-  15000,
-  20000,
-  25000,
+    1500,
+    3000,
+    6000,
+    10000,
+    15000,
+    20000,
+    25000,
 };

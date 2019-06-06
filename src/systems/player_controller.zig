@@ -7,27 +7,27 @@ const Prototypes = @import("../prototypes.zig");
 const GameUtil = @import("../util.zig");
 
 const SystemData = struct{
-  id: gbe.EntityId,
-  pc: *C.PlayerController,
+    id: gbe.EntityId,
+    pc: *C.PlayerController,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-  if (GameUtil.decrementTimer(&self.pc.respawn_timer)) {
-    spawnPlayer(gs, self);
-  }
-  return true;
+    if (GameUtil.decrementTimer(&self.pc.respawn_timer)) {
+        spawnPlayer(gs, self);
+    }
+    return true;
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {
-  if (Prototypes.Player.spawn(gs, Prototypes.Player.Params{
-    .player_controller_id = self.id,
-    .pos = Math.Vec2.init(
-      9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
-      5 * GRIDSIZE_SUBPIXELS,
-    ),
-  })) |player_id| {
-    self.pc.player_id = player_id;
-  } else |_| {}
+    if (Prototypes.Player.spawn(gs, Prototypes.Player.Params{
+        .player_controller_id = self.id,
+        .pos = Math.Vec2.init(
+            9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,
+            5 * GRIDSIZE_SUBPIXELS,
+        ),
+    })) |player_id| {
+        self.pc.player_id = player_id;
+    } else |_| {}
 }

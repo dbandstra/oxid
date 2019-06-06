@@ -1,4 +1,4 @@
 pub use @cImport({
-  @cInclude("SDL2/SDL.h");
-  @cInclude("epoxy/gl.h");
+    @cInclude("SDL2/SDL.h");
+    @cInclude("epoxy/gl.h");
 });
