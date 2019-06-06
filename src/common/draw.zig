@@ -1,17 +1,17 @@
-const Platform = @import("platform/index.zig");
+const platform = @import("../platform.zig");
 
-pub const Tileset = struct{
-    texture: Platform.Texture,
+pub const Tileset = struct {
+    texture: platform.Texture,
     xtiles: u32,
     ytiles: u32,
 };
 
-pub const Tile = struct{
+pub const Tile = struct {
     tx: u32,
     ty: u32,
 };
 
-pub const Transform = enum{
+pub const Transform = enum {
     Identity,
     FlipHorizontal,
     FlipVertical,
@@ -20,22 +20,22 @@ pub const Transform = enum{
 };
 
 // FIXME - use the palette!
-pub const Color = struct{
+pub const Color = struct {
     r: u8,
     g: u8,
     b: u8,
     a: u8,
 };
 
-pub const SolidParams = struct{
+pub const SolidParams = struct {
     color: Color,
 };
 
-pub const OutlineParams = struct{
+pub const OutlineParams = struct {
     color: Color,
 };
 
-pub const RectStyle = union(enum){
+pub const RectStyle = union(enum) {
     Solid: SolidParams,
     Outline: OutlineParams,
 };

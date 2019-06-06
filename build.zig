@@ -14,7 +14,7 @@ pub fn build(b: *Builder) void {
     }
 
     {
-        var exe = b.addExecutable("oxid", "src/main.zig");
+        var exe = b.addExecutable("oxid", "src/oxid.zig");
         exe.setBuildMode(mode);
 
         if (windows) {
