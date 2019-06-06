@@ -5,6 +5,12 @@ const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
 const C = @import("components.zig");
 
+pub const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
+pub const CoinVoice = @import("audio/coin.zig").CoinVoice;
+pub const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
+pub const LaserVoice = @import("audio/laser.zig").LaserVoice;
+pub const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
+
 pub const Sample = enum {
     DropWeb,
     ExtraLife,

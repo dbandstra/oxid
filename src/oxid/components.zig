@@ -7,12 +7,7 @@ const Constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
-const Audio = @import("audio.zig");
-const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
-const CoinVoice = @import("audio/coin.zig").CoinVoice;
-const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
-const LaserVoice = @import("audio/laser.zig").LaserVoice;
-const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
+const audio = @import("audio.zig");
 
 pub const MainController = struct {
     pub const GameRunningState = struct {
@@ -273,7 +268,7 @@ pub const Voice = struct {
             // `initial_sample`: this is a hack that is used instead of
             // initial_params for sample voices. the game code doesn't have access to
             // the wav file data that is needed to create the params for the sampler.
-            initial_sample: ?Audio.Sample,
+            initial_sample: ?audio.Sample,
             iq: zang.Notes(NoteParams).ImpulseQueue,
             module: T,
             trigger: zang.Trigger(NoteParams),
@@ -281,12 +276,12 @@ pub const Voice = struct {
     }
 
     pub const WrapperU = union(enum) {
-        Accelerate: Wrapper(AccelerateVoice, AccelerateVoice.NoteParams),
-        Coin: Wrapper(CoinVoice, CoinVoice.NoteParams),
-        Explosion: Wrapper(ExplosionVoice, ExplosionVoice.NoteParams),
-        Laser: Wrapper(LaserVoice, LaserVoice.NoteParams),
-        Sample: Wrapper(zang.Sampler, Audio.SamplerNoteParams),
-        WaveBegin: Wrapper(WaveBeginVoice, WaveBeginVoice.NoteParams),
+        Accelerate: Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams),
+        Coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
+        Explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
+        Laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
+        Sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
+        WaveBegin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
     };
 
     wrapper: WrapperU,

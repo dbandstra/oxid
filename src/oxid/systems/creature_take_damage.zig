@@ -5,7 +5,7 @@ const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
-const ExplosionVoice = @import("../audio/explosion.zig").ExplosionVoice;
+const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -65,7 +65,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                     }
                 }
                 Prototypes.playSample(gs, .MonsterImpact);
-                Prototypes.playSynth(gs, ExplosionVoice.NoteParams {
+                Prototypes.playSynth(gs, audio.ExplosionVoice.NoteParams {
                     .unused = false,
                 });
                 _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params {

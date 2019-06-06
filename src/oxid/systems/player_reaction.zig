@@ -3,7 +3,7 @@ const ConstantTypes = @import("../constant_types.zig");
 const GameSession = @import("../game.zig").GameSession;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
-const CoinVoice = @import("../audio/coin.zig").CoinVoice;
+const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -36,12 +36,12 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
             },
             ConstantTypes.PickupType.LifeUp => {
                 Prototypes.playSample(gs, .ExtraLife);
-                _ = Prototypes.EventAwardLife.spawn(gs,  C.EventAwardLife {
+                _ = Prototypes.EventAwardLife.spawn(gs, C.EventAwardLife {
                     .player_controller_id = self.player.player_controller_id,
                 }) catch undefined;
             },
             ConstantTypes.PickupType.Coin => {
-                Prototypes.playSynth(gs, CoinVoice.NoteParams {
+                Prototypes.playSynth(gs, audio.CoinVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },

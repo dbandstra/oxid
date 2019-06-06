@@ -11,11 +11,6 @@ const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const C = @import("components.zig");
 const audio = @import("audio.zig");
-const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
-const CoinVoice = @import("audio/coin.zig").CoinVoice;
-const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
-const LaserVoice = @import("audio/laser.zig").LaserVoice;
-const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 fn make_bbox(diameter: u31) math.BoundingBox {
     const graphic_diameter = GRIDSIZE_SUBPIXELS;
@@ -513,63 +508,63 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
 
 pub fn playSynth(gs: *GameSession, params: var) void {
     _ = Sound.spawn(gs, switch (@typeOf(params)) {
-        AccelerateVoice.NoteParams => Sound.Params {
-            .duration = AccelerateVoice.SoundDuration,
+        audio.AccelerateVoice.NoteParams => Sound.Params {
+            .duration = audio.AccelerateVoice.SoundDuration,
             .wrapper = C.Voice.WrapperU {
-                .Accelerate = C.Voice.Wrapper(AccelerateVoice, AccelerateVoice.NoteParams) {
+                .Accelerate = C.Voice.Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
-                    .iq = zang.Notes(AccelerateVoice.NoteParams).ImpulseQueue.init(),
-                    .module = AccelerateVoice.init(),
-                    .trigger = zang.Trigger(AccelerateVoice.NoteParams).init(),
+                    .iq = zang.Notes(audio.AccelerateVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.AccelerateVoice.init(),
+                    .trigger = zang.Trigger(audio.AccelerateVoice.NoteParams).init(),
                 },
             },
         },
-        CoinVoice.NoteParams => Sound.Params {
-            .duration = CoinVoice.SoundDuration,
+        audio.CoinVoice.NoteParams => Sound.Params {
+            .duration = audio.CoinVoice.SoundDuration,
             .wrapper = C.Voice.WrapperU {
-                .Coin = C.Voice.Wrapper(CoinVoice, CoinVoice.NoteParams) {
+                .Coin = C.Voice.Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
-                    .iq = zang.Notes(CoinVoice.NoteParams).ImpulseQueue.init(),
-                    .module = CoinVoice.init(),
-                    .trigger = zang.Trigger(CoinVoice.NoteParams).init(),
+                    .iq = zang.Notes(audio.CoinVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.CoinVoice.init(),
+                    .trigger = zang.Trigger(audio.CoinVoice.NoteParams).init(),
                 },
             },
         },
-        ExplosionVoice.NoteParams => Sound.Params {
-            .duration = ExplosionVoice.SoundDuration,
+        audio.ExplosionVoice.NoteParams => Sound.Params {
+            .duration = audio.ExplosionVoice.SoundDuration,
             .wrapper = C.Voice.WrapperU {
-                .Explosion = C.Voice.Wrapper(ExplosionVoice, ExplosionVoice.NoteParams) {
+                .Explosion = C.Voice.Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
-                    .iq = zang.Notes(ExplosionVoice.NoteParams).ImpulseQueue.init(),
-                    .module = ExplosionVoice.init(),
-                    .trigger = zang.Trigger(ExplosionVoice.NoteParams).init(),
+                    .iq = zang.Notes(audio.ExplosionVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.ExplosionVoice.init(),
+                    .trigger = zang.Trigger(audio.ExplosionVoice.NoteParams).init(),
                 },
             },
         },
-        LaserVoice.NoteParams => Sound.Params {
-            .duration = LaserVoice.SoundDuration,
+        audio.LaserVoice.NoteParams => Sound.Params {
+            .duration = audio.LaserVoice.SoundDuration,
             .wrapper = C.Voice.WrapperU {
-                .Laser = C.Voice.Wrapper(LaserVoice, LaserVoice.NoteParams) {
+                .Laser = C.Voice.Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
-                    .iq = zang.Notes(LaserVoice.NoteParams).ImpulseQueue.init(),
-                    .module = LaserVoice.init(),
-                    .trigger = zang.Trigger(LaserVoice.NoteParams).init(),
+                    .iq = zang.Notes(audio.LaserVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.LaserVoice.init(),
+                    .trigger = zang.Trigger(audio.LaserVoice.NoteParams).init(),
                 },
             },
         },
-        WaveBeginVoice.NoteParams => Sound.Params {
-            .duration = WaveBeginVoice.SoundDuration,
+        audio.WaveBeginVoice.NoteParams => Sound.Params {
+            .duration = audio.WaveBeginVoice.SoundDuration,
             .wrapper = C.Voice.WrapperU {
-                .WaveBegin = C.Voice.Wrapper(WaveBeginVoice, WaveBeginVoice.NoteParams) {
+                .WaveBegin = C.Voice.Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
-                    .iq = zang.Notes(WaveBeginVoice.NoteParams).ImpulseQueue.init(),
-                    .module = WaveBeginVoice.init(),
-                    .trigger = zang.Trigger(WaveBeginVoice.NoteParams).init(),
+                    .iq = zang.Notes(audio.WaveBeginVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.WaveBeginVoice.init(),
+                    .trigger = zang.Trigger(audio.WaveBeginVoice.NoteParams).init(),
                 },
             },
         },

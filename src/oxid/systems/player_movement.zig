@@ -11,7 +11,7 @@ const physInWall = @import("../physics.zig").physInWall;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const C = @import("../components.zig");
 const Prototypes = @import("../prototypes.zig");
-const LaserVoice = @import("../audio/laser.zig").LaserVoice;
+const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -72,7 +72,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                     break slot;
                 }
             } else null) |slot| {
-                Prototypes.playSynth(gs, LaserVoice.NoteParams {
+                Prototypes.playSynth(gs, audio.LaserVoice.NoteParams {
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,

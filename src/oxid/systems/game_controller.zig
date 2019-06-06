@@ -11,8 +11,6 @@ const Prototypes = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
-const AccelerateVoice = @import("../audio/accelerate.zig").AccelerateVoice;
-const WaveBeginVoice = @import("../audio/wave_begin.zig").WaveBeginVoice;
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -28,7 +26,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     }
     _ = util.decrementTimer(&self.gc.wave_message_timer);
     if (util.decrementTimer(&self.gc.next_wave_timer)) {
-        Prototypes.playSynth(gs, WaveBeginVoice.NoteParams {
+        Prototypes.playSynth(gs, audio.WaveBeginVoice.NoteParams {
             .unused = false,
         });
         self.gc.wave_number += 1;
@@ -44,7 +42,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (util.decrementTimer(&self.gc.enemy_speed_timer)) {
         if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
             self.gc.enemy_speed_level += 1;
-            Prototypes.playSynth(gs, AccelerateVoice.NoteParams {
+            Prototypes.playSynth(gs, audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (self.gc.enemy_speed_level) {
                     1 => f32(1.25),
                     2 => f32(1.5),
