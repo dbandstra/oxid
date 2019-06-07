@@ -1,20 +1,20 @@
 const gbe = @import("gbe");
 const draw = @import("../../common/draw.zig");
 const GameSession = @import("../game.zig").GameSession;
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 
 const SystemData = struct{
-    transform: *const C.Transform,
-    phys: ?*const C.PhysObject,
-    simple_graphic: *const C.SimpleGraphic,
+    transform: *const c.Transform,
+    phys: ?*const c.PhysObject,
+    simple_graphic: *const c.SimpleGraphic,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    _ = Prototypes.EventDraw.spawn(gs, C.EventDraw{
+    _ = p.EventDraw.spawn(gs, c.EventDraw{
         .pos = self.transform.pos,
         .graphic = self.simple_graphic.graphic,
         .transform =

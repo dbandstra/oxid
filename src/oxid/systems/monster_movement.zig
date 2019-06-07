@@ -7,17 +7,17 @@ const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const Constants = @import("../constants.zig");
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 const util = @import("../util.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
-    creature: *C.Creature,
-    phys: *C.PhysObject,
-    monster: *C.Monster,
-    transform: *const C.Transform,
+    creature: *c.Creature,
+    phys: *c.PhysObject,
+    monster: *c.Monster,
+    transform: *const c.Transform,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -38,7 +38,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {
-    const gc = gs.findFirst(C.GameController).?;
+    const gc = gs.findFirst(c.GameController).?;
 
     self.phys.push_dir = null;
 
@@ -48,7 +48,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     }
 
     if (gc.monster_count < 5) {
-        self.monster.personality = C.Monster.Personality.Chase;
+        self.monster.personality = c.Monster.Personality.Chase;
     }
 
     const monster_values = Constants.getMonsterValues(self.monster.monster_type);
@@ -124,7 +124,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
 }
 
 fn monsterAttack(gs: *GameSession, self: SystemData) void {
-    const gc = gs.findFirst(C.GameController).?;
+    const gc = gs.findFirst(c.GameController).?;
     if (gc.freeze_monsters_timer > 0) {
         return;
     }
@@ -132,7 +132,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         self.monster.next_attack_timer -= 1;
     } else {
         if (self.monster.can_shoot) {
-            Prototypes.playSynth(gs, audio.LaserVoice.NoteParams {
+            p.playSynth(gs, audio.LaserVoice.NoteParams {
                 .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                 .carrier_mul = 4.0,
                 .modulator_mul = 0.125,
@@ -143,17 +143,17 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
             const dir_vec = math.Direction.normal(self.phys.facing);
             const ofs = math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
             const bullet_pos = math.Vec2.add(pos, ofs);
-            _ = Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params {
+            _ = p.Bullet.spawn(gs, p.Bullet.Params {
                 .inflictor_player_controller_id = null,
                 .owner_id = self.id,
                 .pos = bullet_pos,
                 .facing = self.phys.facing,
-                .bullet_type = Prototypes.Bullet.BulletType.MonsterBullet,
+                .bullet_type = p.Bullet.BulletType.MonsterBullet,
                 .cluster_size = 1,
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
-            Prototypes.playSample(gs, .DropWeb);
-            _ = Prototypes.Web.spawn(gs, Prototypes.Web.Params {
+            p.playSample(gs, .DropWeb);
+            _ = p.Web.spawn(gs, p.Web.Params {
                 .pos = self.transform.pos,
             }) catch undefined;
         }
@@ -164,8 +164,8 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
 // this function needs more args if this is going to be any good
 fn getChaseTarget(gs: *GameSession) ?math.Vec2 {
     // chase the first player in the entity list
-    if (gs.findFirstObject(C.Player)) |player| {
-        if (gs.find(player.entity_id, C.Transform)) |player_transform| {
+    if (gs.findFirstObject(c.Player)) |player| {
+        if (gs.find(player.entity_id, c.Transform)) |player_transform| {
             return player_transform.pos;
         }
     }
@@ -174,7 +174,7 @@ fn getChaseTarget(gs: *GameSession) ?math.Vec2 {
 
 fn chooseTurn(
     gs: *GameSession,
-    personality: C.Monster.Personality,
+    personality: c.Monster.Personality,
     pos: math.Vec2,
     facing: math.Direction,
     can_go_forward: bool,
@@ -186,7 +186,7 @@ fn chooseTurn(
 
     var choices = GameUtil.Choices.init();
 
-    if (personality == C.Monster.Personality.Chase) {
+    if (personality == c.Monster.Personality.Chase) {
         if (getChaseTarget(gs)) |target_pos| {
             const fwd = math.Direction.normal(facing);
             const left_normal = math.Direction.normal(left);
@@ -259,18 +259,18 @@ fn isInLineOfFire(
 ) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
-    var it = gs.iter(C.Player); while (it.next()) |object| {
+    var it = gs.iter(c.Player); while (it.next()) |object| {
         if (object.data.line_of_fire) |box| {
             if (absBoxesOverlap(self_absbox, box)) {
-                const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
+                const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
                 return phys.facing;
             }
         }
     }
-    var it2 = gs.iter(C.Bullet); while (it2.next()) |object| {
+    var it2 = gs.iter(c.Bullet); while (it2.next()) |object| {
         if (object.data.line_of_fire) |box| {
             if (absBoxesOverlap(self_absbox, box)) {
-                const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
+                const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
                 return phys.facing;
             }
         }

@@ -6,16 +6,16 @@ const boxesOverlap = @import("../common/boxes_overlap.zig").boxesOverlap;
 const Constants = @import("constants.zig");
 const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
-const C = @import("components.zig");
-const Prototypes = @import("prototypes.zig");
+const c = @import("components.zig");
+const p = @import("prototypes.zig");
 
 // convenience function
-pub fn physInWall(phys: *C.PhysObject, pos: math.Vec2) bool {
+pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
     return LEVEL.boxInWall(pos, phys.world_bbox, phys.ignore_pits);
 }
 
 const MoveGroupMember = struct{
-    phys: *C.PhysObject,
+    phys: *c.PhysObject,
     next: ?*MoveGroupMember,
     entity_id: gbe.EntityId,
     progress: u31,
@@ -27,16 +27,16 @@ const MoveGroup = struct{
     is_active: bool,
 };
 
-const max_phys_objects = comptime GameSession.getCapacity(C.PhysObject);
+const max_phys_objects = comptime GameSession.getCapacity(c.PhysObject);
 
 var move_group_members: [max_phys_objects]MoveGroupMember = undefined;
 var move_groups: [max_phys_objects]MoveGroup = undefined;
 
 pub fn physicsFrame(gs: *GameSession) void {
     // calculate move bboxes
-    var it = gs.iter(C.PhysObject); while (it.next()) |object| {
+    var it = gs.iter(c.PhysObject); while (it.next()) |object| {
         const phys = &object.data;
-        const transform = gs.find(object.entity_id, C.Transform) orelse continue;
+        const transform = gs.find(object.entity_id, c.Transform) orelse continue;
         phys.internal.move_bbox.mins = math.Vec2.add(transform.pos, phys.entity_bbox.mins);
         phys.internal.move_bbox.maxs = math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
         if (phys.speed != 0) {
@@ -66,7 +66,7 @@ pub fn physicsFrame(gs: *GameSession) void {
     // group intersecting moves
     var num_move_groups: usize = 0;
     var i: usize = 0;
-    it = gs.iter(C.PhysObject); while (it.next()) |object| : (i += 1) {
+    it = gs.iter(c.PhysObject); while (it.next()) |object| : (i += 1) {
         const phys = &object.data;
         var my_move_group: ?*MoveGroup = null;
         // try to add to an existing move_group
@@ -186,7 +186,7 @@ pub fn physicsFrame(gs: *GameSession) void {
 
             if (lowest) |m| {
                 // try to move this guy one subpixel
-                const transform = gs.find(m.entity_id, C.Transform).?;
+                const transform = gs.find(m.entity_id, c.Transform).?;
                 var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
 
                 // if push_dir differs from velocity direction, and we can move in that
@@ -204,7 +204,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 var hit_something = false;
 
                 if (physInWall(m.phys, new_pos)) {
-                    _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
+                    _ = p.EventCollide.spawn(gs, c.EventCollide{
                         .self_id = m.entity_id,
                         .other_id = gbe.EntityId{ .id = 0 },
                         .propelled = true,
@@ -215,7 +215,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 var other: ?*MoveGroupMember = move_group.head;
                 while (other) |o| : (other = o.next) {
                     if (couldObjectsCollide(m.entity_id, m.phys, o.entity_id, o.phys)) {
-                        const other_transform = gs.find(o.entity_id, C.Transform).?;
+                        const other_transform = gs.find(o.entity_id, c.Transform).?;
                         if (boxesOverlap(
                             new_pos, m.phys.entity_bbox,
                             other_transform.pos, o.phys.entity_bbox,
@@ -248,7 +248,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
-        _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
+        _ = p.EventCollide.spawn(gs, c.EventCollide{
             .self_id = self_id,
             .other_id = other_id,
             .propelled = true,
@@ -256,7 +256,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     }
 
     if (findCollisionEvent(gs, other_id, self_id) == null) {
-        _ = Prototypes.EventCollide.spawn(gs, C.EventCollide{
+        _ = p.EventCollide.spawn(gs, c.EventCollide{
             .self_id = other_id,
             .other_id = self_id,
             .propelled = false,
@@ -264,8 +264,8 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     }
 }
 
-fn findCollisionEvent(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) ?*C.EventCollide {
-    var it = gs.eventIter(C.EventCollide, "self_id", self_id); while (it.next()) |event| {
+fn findCollisionEvent(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) ?*c.EventCollide {
+    var it = gs.eventIter(c.EventCollide, "self_id", self_id); while (it.next()) |event| {
         if (gbe.EntityId.eql(event.other_id, other_id)) {
             return event;
         }
@@ -293,7 +293,7 @@ fn mergeMoveGroups(dest: *MoveGroup, src: *MoveGroup) void {
     std.debug.assert(new_dest_count == old_dest_count + old_src_count);
 }
 
-fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
+fn phys_overlaps_move_group(phys: *c.PhysObject, move_group: *MoveGroup) bool {
     var member: ?*MoveGroupMember = move_group.head;
     while (member) |m| : (member = m.next) {
         if (absBoxesOverlap(phys.internal.move_bbox, m.phys.internal.move_bbox)) {
@@ -306,9 +306,9 @@ fn phys_overlaps_move_group(phys: *C.PhysObject, move_group: *MoveGroup) bool {
 // a and b params in this function should be commutative
 fn couldObjectsCollide(
     a_id: gbe.EntityId,
-    a_phys: *C.PhysObject,
+    a_phys: *c.PhysObject,
     b_id: gbe.EntityId,
-    b_phys: *C.PhysObject,
+    b_phys: *c.PhysObject,
 ) bool {
     if (gbe.EntityId.eql(a_id, b_id)) {
         return false;
@@ -329,15 +329,15 @@ fn couldObjectsCollide(
 }
 
 fn assertNoOverlaps(gs: *GameSession) void {
-    var it = gs.iter(C.PhysObject); while (it.next()) |self| {
+    var it = gs.iter(c.PhysObject); while (it.next()) |self| {
         if (self.data.illusory) continue;
-        const self_transform = gs.find(self.entity_id, C.Transform) orelse continue;
-        var it2 = gs.iter(C.PhysObject); while (it2.next()) |other| {
+        const self_transform = gs.find(self.entity_id, c.Transform) orelse continue;
+        var it2 = gs.iter(c.PhysObject); while (it2.next()) |other| {
             if (other.data.illusory) continue;
             if (!couldObjectsCollide(self.entity_id, &self.data, other.entity_id, &other.data)) {
                 continue;
             }
-            const other_transform = gs.find(other.entity_id, C.Transform) orelse continue;
+            const other_transform = gs.find(other.entity_id, c.Transform) orelse continue;
             if (boxesOverlap(
                 self_transform.pos, self.data.entity_bbox,
                 other_transform.pos, other.data.entity_bbox,

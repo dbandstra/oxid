@@ -5,14 +5,14 @@ const GameSession = @import("../game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("../level.zig").LEVEL;
 const TerrainType = @import("../level.zig").TerrainType;
-const C = @import("../components.zig");
+const c = @import("../components.zig");
 
 const PickSpawnLocations = struct {
     gridmask: [LEVEL.w * LEVEL.h]bool,
 
     fn avoidObject(self: *PickSpawnLocations, gs: *GameSession, entity_id: gbe.EntityId) void {
-        if (gs.find(entity_id, C.Transform)) |transform| {
-            if (gs.find(entity_id, C.PhysObject)) |phys| {
+        if (gs.find(entity_id, c.Transform)) |transform| {
+            if (gs.find(entity_id, c.PhysObject)) |phys| {
                 const pad = 16 * math.SUBPIXELS;
                 const mins_x = transform.pos.x + phys.entity_bbox.mins.x - pad;
                 const mins_y = transform.pos.y + phys.entity_bbox.mins.y - pad;
@@ -53,10 +53,10 @@ const PickSpawnLocations = struct {
 
         // also, don't spawn anything within 16 screen pixels of a player or
         // monster
-        var it = gs.iter(C.Player); while (it.next()) |object| {
+        var it = gs.iter(c.Player); while (it.next()) |object| {
             self.avoidObject(gs, object.entity_id);
         }
-        var it2 = gs.iter(C.Monster); while (it2.next()) |object| {
+        var it2 = gs.iter(c.Monster); while (it2.next()) |object| {
             self.avoidObject(gs, object.entity_id);
         }
 

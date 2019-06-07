@@ -3,16 +3,16 @@ const GameSession = @import("../game.zig").GameSession;
 const SimpleAnim = @import("../graphics.zig").SimpleAnim;
 const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
-    creature: *C.Creature,
-    transform: *const C.Transform,
-    monster: ?*const C.Monster,
-    player: ?*C.Player,
+    creature: *c.Creature,
+    transform: *const c.Transform,
+    monster: ?*const c.Monster,
+    player: ?*c.Player,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -24,24 +24,24 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (self.creature.god_mode) {
         return true;
     }
-    var it = gs.eventIter(C.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
+    var it = gs.eventIter(c.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
         const amount = event.amount;
         if (self.creature.hit_points > amount) {
-            Prototypes.playSample(gs, .MonsterImpact);
+            p.playSample(gs, .MonsterImpact);
             self.creature.hit_points -= amount;
             self.creature.flinch_timer = 4;
         } else if (self.creature.hit_points > 0) {
             self.creature.hit_points = 0;
             if (self.player) |self_player| {
                 // player died
-                Prototypes.playSample(gs, .PlayerScream);
-                Prototypes.playSample(gs, .PlayerDeath);
+                p.playSample(gs, .PlayerScream);
+                p.playSample(gs, .PlayerDeath);
                 self_player.dying_timer = Constants.PlayerDeathAnimTime;
-                _ = Prototypes.EventPlayerDied.spawn(gs, C.EventPlayerDied {
+                _ = p.EventPlayerDied.spawn(gs, c.EventPlayerDied {
                     .player_controller_id = self_player.player_controller_id,
                 }) catch undefined;
                 if (self_player.last_pickup) |pickup_type| {
-                    _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params {
+                    _ = p.Pickup.spawn(gs, p.Pickup.Params {
                         .pos = self.transform.pos,
                         .pickup_type = pickup_type,
                     }) catch undefined;
@@ -50,25 +50,25 @@ fn think(gs: *GameSession, self: SystemData) bool {
             } else {
                 // something other than a player died
                 if (self.monster) |self_monster| {
-                    _ = Prototypes.EventMonsterDied.spawn(gs, C.EventMonsterDied{}) catch undefined;
+                    _ = p.EventMonsterDied.spawn(gs, c.EventMonsterDied {}) catch undefined;
                     if (event.inflictor_player_controller_id) |player_controller_id| {
-                        _ = Prototypes.EventAwardPoints.spawn(gs, C.EventAwardPoints {
+                        _ = p.EventAwardPoints.spawn(gs, c.EventAwardPoints {
                             .player_controller_id = player_controller_id,
                             .points = self_monster.kill_points,
                         }) catch undefined;
                     }
                     if (self_monster.has_coin) {
-                        _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params {
+                        _ = p.Pickup.spawn(gs, p.Pickup.Params {
                             .pos = self.transform.pos,
                             .pickup_type = ConstantTypes.PickupType.Coin,
                         }) catch undefined;
                     }
                 }
-                Prototypes.playSample(gs, .MonsterImpact);
-                Prototypes.playSynth(gs, audio.ExplosionVoice.NoteParams {
+                p.playSample(gs, .MonsterImpact);
+                p.playSynth(gs, audio.ExplosionVoice.NoteParams {
                     .unused = false,
                 });
-                _ = Prototypes.Animation.spawn(gs, Prototypes.Animation.Params {
+                _ = p.Animation.spawn(gs, p.Animation.Params {
                     .pos = self.transform.pos,
                     .simple_anim = SimpleAnim.Explosion,
                     .z_index = Constants.ZIndexExplosion,

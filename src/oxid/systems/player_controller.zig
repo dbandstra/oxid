@@ -2,13 +2,13 @@ const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
-    pc: *C.PlayerController,
+    pc: *c.PlayerController,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -21,7 +21,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {
-    if (Prototypes.Player.spawn(gs, Prototypes.Player.Params {
+    if (p.Player.spawn(gs, p.Player.Params {
         .player_controller_id = self.id,
         .pos = math.Vec2.init(
             9 * GRIDSIZE_SUBPIXELS + GRIDSIZE_SUBPIXELS / 2,

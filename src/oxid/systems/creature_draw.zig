@@ -4,18 +4,18 @@ const math = @import("../../common/math.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const GameUtil = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 
 const SystemData = struct{
-    transform: *const C.Transform,
-    phys: *const C.PhysObject,
-    creature: *const C.Creature,
-    player: ?*const C.Player,
-    monster: ?*const C.Monster,
-    web: ?*const C.Web,
+    transform: *const c.Transform,
+    phys: *const c.PhysObject,
+    creature: *const c.Creature,
+    player: ?*const c.Player,
+    monster: ?*const c.Monster,
+    web: ?*const c.Web,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -23,7 +23,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
-            _ = Prototypes.EventDraw.spawn(gs, C.EventDraw {
+            _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
                     if (player.dying_timer > 30)
@@ -53,7 +53,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 
     if (self.monster) |monster| {
         if (monster.spawning_timer > 0) {
-            _ = Prototypes.EventDraw.spawn(gs, C.EventDraw {
+            _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
                     if (alternation(u32, monster.spawning_timer, 8))
@@ -141,7 +141,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
     };
     const sxpos = @divFloor(xpos, math.SUBPIXELS);
 
-    _ = Prototypes.EventDraw.spawn(gs, C.EventDraw {
+    _ = p.EventDraw.spawn(gs, c.EventDraw {
         .pos = self.transform.pos,
         // animate legs every 6 screen pixels
         .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,

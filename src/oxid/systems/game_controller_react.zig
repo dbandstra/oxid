@@ -1,28 +1,28 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 
 const SystemData = struct{
-    gc: *C.GameController,
+    gc: *c.GameController,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    if (gs.findFirst(C.EventPlayerDied) != null) {
+    if (gs.findFirst(c.EventPlayerDied) != null) {
         self.gc.freeze_monsters_timer = Constants.MonsterFreezeTime;
     }
-    var it = gs.iter(C.EventPlayerOutOfLives); while (it.next()) |object| {
+    var it = gs.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
         self.gc.game_over = true;
-        if (gs.find(object.data.player_controller_id, C.PlayerController)) |pc| {
-            _ = Prototypes.EventPostScore.spawn(gs, C.EventPostScore{
+        if (gs.find(object.data.player_controller_id, c.PlayerController)) |pc| {
+            _ = p.EventPostScore.spawn(gs, c.EventPostScore {
                 .score = pc.score,
             }) catch undefined;
         }
     }
-    var it2 = gs.iter(C.EventMonsterDied); while (it2.next()) |_| {
+    var it2 = gs.iter(c.EventMonsterDied); while (it2.next()) |_| {
         if (self.gc.monster_count > 0) {
             self.gc.monster_count -= 1;
             if (self.gc.monster_count == 4 and self.gc.enemy_speed_level < 1) {
@@ -39,7 +39,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }
         }
     }
-    var it3 = gs.iter(C.EventShowMessage); while (it3.next()) |object| {
+    var it3 = gs.iter(c.EventShowMessage); while (it3.next()) |object| {
         self.gc.wave_message = object.data.message;
         self.gc.wave_message_timer = 180;
     }

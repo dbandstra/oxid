@@ -17,12 +17,12 @@ const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
 const input = @import("oxid/input.zig");
-const Prototypes = @import("oxid/prototypes.zig");
+const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const datafile = @import("oxid/datafile.zig");
-const C = @import("oxid/components.zig");
+const c = @import("oxid/components.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const HUD_HEIGHT = 16;
@@ -129,7 +129,7 @@ pub fn main() void {
             switch (event) {
                 Event.KeyDown => |key| {
                     if (input.getCommandForKey(key)) |command| {
-                        _ = Prototypes.EventInput.spawn(&g.session, C.EventInput {
+                        _ = p.EventInput.spawn(&g.session, c.EventInput {
                             .command = command,
                             .down = true,
                         }) catch undefined;
@@ -153,7 +153,7 @@ pub fn main() void {
                 },
                 Event.KeyUp => |key| {
                     if (input.getCommandForKey(key)) |command| {
-                        _ = Prototypes.EventInput.spawn(&g.session, C.EventInput {
+                        _ = p.EventInput.spawn(&g.session, c.EventInput {
                             .command = command,
                             .down = false,
                         }) catch undefined;
@@ -178,7 +178,7 @@ pub fn main() void {
             gameFrame(&g.session);
             perf.end(&perf.timers.Frame, g.perf_spam);
 
-            if (g.session.findFirst(C.EventQuit) != null) {
+            if (g.session.findFirst(c.EventQuit) != null) {
                 quit = true;
                 break;
             }
@@ -197,7 +197,7 @@ pub fn main() void {
 // "middleware"
 
 fn saveHighScore(g: *GameState) void {
-    var it = g.session.iter(C.EventSaveHighScore); while (it.next()) |object| {
+    var it = g.session.iter(c.EventSaveHighScore); while (it.next()) |object| {
         datafile.saveHighScore(&g.platform_state.hunk.low(), object.data.high_score) catch |err| {
             std.debug.warn("Failed to save high score to disk: {}\n", err);
         };
@@ -214,7 +214,7 @@ fn playSounds(g: *GameState, speed: f32) void {
     // playing at the beginning of the mix buffer
     const impulse_frame = 0;
 
-    var it = g.session.iter(C.Voice); while (it.next()) |object| {
+    var it = g.session.iter(c.Voice); while (it.next()) |object| {
         switch (object.data.wrapper) {
             .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
             .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),

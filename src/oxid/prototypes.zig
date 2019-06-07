@@ -9,7 +9,7 @@ const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
-const C = @import("components.zig");
+const c = @import("components.zig");
 const audio = @import("audio.zig");
 
 fn make_bbox(diameter: u31) math.BoundingBox {
@@ -50,7 +50,7 @@ pub const MainController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.MainController{
+        try gs.addComponent(entity_id, c.MainController{
             .high_score = params.high_score,
             .new_high_score = false,
             .game_running_state = null,
@@ -65,7 +65,7 @@ pub const GameController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.GameController{
+        try gs.addComponent(entity_id, c.GameController{
             .game_over = false,
             .monster_count = 0,
             .enemy_speed_level = 0,
@@ -88,7 +88,7 @@ pub const PlayerController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.PlayerController{
+        try gs.addComponent(entity_id, c.PlayerController{
             .player_id = null,
             .lives = Constants.PlayerNumLives,
             .score = 0,
@@ -109,11 +109,11 @@ pub const Player = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = math.Vec2.init(params.pos.x, params.pos.y + GRIDSIZE_SUBPIXELS),
         });
 
-        try gs.addComponent(entity_id, C.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject{
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
@@ -127,19 +127,19 @@ pub const Player = struct {
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, C.Creature{
+        try gs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = Constants.InvulnerabilityTime,
             .hit_points = 1,
             .flinch_timer = 0,
             .god_mode = false,
         });
 
-        try gs.addComponent(entity_id, C.Player{
+        try gs.addComponent(entity_id, c.Player{
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = []?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
-            .attack_level = C.Player.AttackLevel.One,
-            .speed_level = C.Player.SpeedLevel.One,
+            .attack_level = c.Player.AttackLevel.One,
+            .speed_level = c.Player.SpeedLevel.One,
             .spawn_anim_y_remaining = GRIDSIZE_SUBPIXELS, // will animate upwards 1 tile upon spawning
             .dying_timer = 0,
             .last_pickup = null,
@@ -164,11 +164,11 @@ pub const PlayerCorpse = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = Graphic.ManDying6,
             .z_index = Constants.ZIndexCorpse,
             .directional = false,
@@ -192,11 +192,11 @@ pub const Monster = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject{
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -205,12 +205,12 @@ pub const Monster = struct {
             .push_dir = null,
             .owner_id = gbe.EntityId{ .id = 0 },
             .ignore_pits = false,
-            .flags = C.PhysObject.FLAG_MONSTER,
+            .flags = c.PhysObject.FLAG_MONSTER,
             .ignore_flags = 0,
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, C.Creature{
+        try gs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = 0,
             .hit_points = 999, // invulnerable while spawning
             .flinch_timer = 0,
@@ -223,17 +223,17 @@ pub const Monster = struct {
             else
                 false;
 
-        try gs.addComponent(entity_id, C.Monster{
+        try gs.addComponent(entity_id, c.Monster{
             .monster_type = params.monster_type,
             .spawning_timer = Constants.MonsterSpawnTime,
             .full_hit_points = monster_values.hit_points,
             .personality =
                 if (params.monster_type == ConstantTypes.MonsterType.Juggernaut)
-                    C.Monster.Personality.Chase
+                    c.Monster.Personality.Chase
                 else
                     switch (gs.getRand().range(u32, 0, 2)) {
-                        0 => C.Monster.Personality.Chase,
-                        else => C.Monster.Personality.Wander,
+                        0 => c.Monster.Personality.Chase,
+                        else => c.Monster.Personality.Wander,
                     },
             .kill_points = monster_values.kill_points,
             .can_shoot = can_shoot,
@@ -260,11 +260,11 @@ pub const Web = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -273,14 +273,14 @@ pub const Web = struct {
             .push_dir = null,
             .owner_id = gbe.EntityId{ .id = 0 },
             .ignore_pits = false,
-            .flags = C.PhysObject.FLAG_WEB,
+            .flags = c.PhysObject.FLAG_WEB,
             .ignore_flags = 0,
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, C.Web{});
+        try gs.addComponent(entity_id, c.Web{});
 
-        try gs.addComponent(entity_id, C.Creature{
+        try gs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
@@ -310,11 +310,11 @@ pub const Bullet = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = bullet_bbox,
             .entity_bbox = bullet_bbox,
@@ -326,23 +326,23 @@ pub const Bullet = struct {
             .push_dir = null,
             .owner_id = params.owner_id,
             .ignore_pits = true,
-            .flags = C.PhysObject.FLAG_BULLET,
-            .ignore_flags = C.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
+            .flags = c.PhysObject.FLAG_BULLET,
+            .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
                 // monster bullets ignore all monsters and webs
-                BulletType.MonsterBullet => C.PhysObject.FLAG_MONSTER | C.PhysObject.FLAG_WEB,
+                BulletType.MonsterBullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
                 // player bullets ignore only the player that shot it (via `owner_id`)
                 BulletType.PlayerBullet => 0,
             },
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, C.Bullet{
+        try gs.addComponent(entity_id, c.Bullet{
             .inflictor_player_controller_id = params.inflictor_player_controller_id,
             .damage = params.cluster_size,
             .line_of_fire = null,
         });
 
-        try gs.addComponent(entity_id, C.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = switch (params.bullet_type) {
                 BulletType.MonsterBullet => Graphic.MonBullet,
                 BulletType.PlayerBullet => switch (params.cluster_size) {
@@ -370,11 +370,11 @@ pub const Animation = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.Animation{
+        try gs.addComponent(entity_id, c.Animation{
             .simple_anim = params.simple_anim,
             .frame_index = 0,
             .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -397,11 +397,11 @@ pub const Pickup = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Transform{
+        try gs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, C.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = switch (params.pickup_type) {
                 ConstantTypes.PickupType.PowerUp => Graphic.PowerUp,
                 ConstantTypes.PickupType.SpeedUp => Graphic.SpeedUp,
@@ -412,7 +412,7 @@ pub const Pickup = struct {
             .directional = false,
         });
 
-        try gs.addComponent(entity_id, C.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
@@ -422,17 +422,17 @@ pub const Pickup = struct {
             .owner_id = gbe.EntityId{ .id = 0 },
             .ignore_pits = false,
             .flags = 0,
-            .ignore_flags = C.PhysObject.FLAG_BULLET | C.PhysObject.FLAG_MONSTER,
+            .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, C.Pickup{
+        try gs.addComponent(entity_id, c.Pickup{
             .pickup_type = params.pickup_type,
             .get_points = pickup_values.get_points,
             .message = pickup_values.message,
         });
 
-        try gs.addComponent(entity_id, C.RemoveTimer {
+        try gs.addComponent(entity_id, c.RemoveTimer {
             .timer = pickup_values.lifetime,
         });
 
@@ -443,18 +443,18 @@ pub const Pickup = struct {
 pub const Sound = struct {
     pub const Params = struct {
         duration: f32,
-        wrapper: C.Voice.WrapperU,
+        wrapper: c.Voice.WrapperU,
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, C.Voice {
+        try gs.addComponent(entity_id, c.Voice {
             .wrapper = params.wrapper,
         });
 
-        try gs.addComponent(entity_id, C.RemoveTimer {
+        try gs.addComponent(entity_id, c.RemoveTimer {
             .timer = @floatToInt(u32, params.duration * 60.0),
         });
 
@@ -475,27 +475,27 @@ fn Event(comptime T: type) type {
     };
 }
 
-pub const EventAwardLife = Event(C.EventAwardLife);
-pub const EventAwardPoints = Event(C.EventAwardPoints);
-pub const EventCollide = Event(C.EventCollide);
-pub const EventConferBonus = Event(C.EventConferBonus);
-pub const EventDraw = Event(C.EventDraw);
-pub const EventDrawBox = Event(C.EventDrawBox);
-pub const EventInput = Event(C.EventInput);
-pub const EventMonsterDied = Event(C.EventMonsterDied);
-pub const EventPlayerDied = Event(C.EventPlayerDied);
-pub const EventPlayerOutOfLives = Event(C.EventPlayerOutOfLives);
-pub const EventPostScore = Event(C.EventPostScore);
-pub const EventQuit = Event(C.EventQuit);
-pub const EventSaveHighScore = Event(C.EventSaveHighScore);
-pub const EventShowMessage = Event(C.EventShowMessage);
-pub const EventTakeDamage = Event(C.EventTakeDamage);
+pub const EventAwardLife = Event(c.EventAwardLife);
+pub const EventAwardPoints = Event(c.EventAwardPoints);
+pub const EventCollide = Event(c.EventCollide);
+pub const EventConferBonus = Event(c.EventConferBonus);
+pub const EventDraw = Event(c.EventDraw);
+pub const EventDrawBox = Event(c.EventDrawBox);
+pub const EventInput = Event(c.EventInput);
+pub const EventMonsterDied = Event(c.EventMonsterDied);
+pub const EventPlayerDied = Event(c.EventPlayerDied);
+pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);
+pub const EventPostScore = Event(c.EventPostScore);
+pub const EventQuit = Event(c.EventQuit);
+pub const EventSaveHighScore = Event(c.EventSaveHighScore);
+pub const EventShowMessage = Event(c.EventShowMessage);
+pub const EventTakeDamage = Event(c.EventTakeDamage);
 
 pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
     _ = Sound.spawn(gs, Sound.Params {
         .duration = 2.0,
-        .wrapper = C.Voice.WrapperU {
-            .Sample = C.Voice.Wrapper(zang.Sampler, audio.SamplerNoteParams) {
+        .wrapper = c.Voice.WrapperU {
+            .Sample = c.Voice.Wrapper(zang.Sampler, audio.SamplerNoteParams) {
                 .initial_params = null,
                 .initial_sample = sample,
                 .iq = zang.Notes(audio.SamplerNoteParams).ImpulseQueue.init(),
@@ -510,8 +510,8 @@ pub fn playSynth(gs: *GameSession, params: var) void {
     _ = Sound.spawn(gs, switch (@typeOf(params)) {
         audio.AccelerateVoice.NoteParams => Sound.Params {
             .duration = audio.AccelerateVoice.SoundDuration,
-            .wrapper = C.Voice.WrapperU {
-                .Accelerate = C.Voice.Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams) {
+            .wrapper = c.Voice.WrapperU {
+                .Accelerate = c.Voice.Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
                     .iq = zang.Notes(audio.AccelerateVoice.NoteParams).ImpulseQueue.init(),
@@ -522,8 +522,8 @@ pub fn playSynth(gs: *GameSession, params: var) void {
         },
         audio.CoinVoice.NoteParams => Sound.Params {
             .duration = audio.CoinVoice.SoundDuration,
-            .wrapper = C.Voice.WrapperU {
-                .Coin = C.Voice.Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams) {
+            .wrapper = c.Voice.WrapperU {
+                .Coin = c.Voice.Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
                     .iq = zang.Notes(audio.CoinVoice.NoteParams).ImpulseQueue.init(),
@@ -534,8 +534,8 @@ pub fn playSynth(gs: *GameSession, params: var) void {
         },
         audio.ExplosionVoice.NoteParams => Sound.Params {
             .duration = audio.ExplosionVoice.SoundDuration,
-            .wrapper = C.Voice.WrapperU {
-                .Explosion = C.Voice.Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams) {
+            .wrapper = c.Voice.WrapperU {
+                .Explosion = c.Voice.Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
                     .iq = zang.Notes(audio.ExplosionVoice.NoteParams).ImpulseQueue.init(),
@@ -546,8 +546,8 @@ pub fn playSynth(gs: *GameSession, params: var) void {
         },
         audio.LaserVoice.NoteParams => Sound.Params {
             .duration = audio.LaserVoice.SoundDuration,
-            .wrapper = C.Voice.WrapperU {
-                .Laser = C.Voice.Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams) {
+            .wrapper = c.Voice.WrapperU {
+                .Laser = c.Voice.Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
                     .iq = zang.Notes(audio.LaserVoice.NoteParams).ImpulseQueue.init(),
@@ -558,8 +558,8 @@ pub fn playSynth(gs: *GameSession, params: var) void {
         },
         audio.WaveBeginVoice.NoteParams => Sound.Params {
             .duration = audio.WaveBeginVoice.SoundDuration,
-            .wrapper = C.Voice.WrapperU {
-                .WaveBegin = C.Voice.Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams) {
+            .wrapper = c.Voice.WrapperU {
+                .WaveBegin = c.Voice.Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams) {
                     .initial_params = params,
                     .initial_sample = null,
                     .iq = zang.Notes(audio.WaveBeginVoice.NoteParams).ImpulseQueue.init(),

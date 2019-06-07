@@ -9,16 +9,16 @@ const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
-    creature: *const C.Creature,
-    phys: *C.PhysObject,
-    player: *C.Player,
-    transform: *C.Transform,
+    creature: *const c.Creature,
+    phys: *c.PhysObject,
+    player: *c.Player,
+    transform: *c.Transform,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -30,13 +30,13 @@ fn think(gs: *GameSession, self: SystemData) bool {
         self.player.spawn_anim_y_remaining -= dy;
         return true;
     } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
-        _ = Prototypes.PlayerCorpse.spawn(gs, Prototypes.PlayerCorpse.Params{
+        _ = p.PlayerCorpse.spawn(gs, p.PlayerCorpse.Params{
             .pos = self.transform.pos,
         }) catch undefined;
         return false;
     } else if (self.player.dying_timer > 0) {
         if (self.player.dying_timer == 30) { // yeesh
-            Prototypes.playSample(gs, .PlayerCrumble);
+            p.playSample(gs, .PlayerCrumble);
         }
         self.phys.speed = 0;
         self.phys.push_dir = null;
@@ -65,14 +65,14 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
             // non-existent entity (old bullet is gone)
             if (for (self.player.bullets) |*slot| {
                 if (slot.*) |bullet_id| {
-                    if (gs.find(bullet_id, C.Bullet) == null) {
+                    if (gs.find(bullet_id, c.Bullet) == null) {
                         break slot;
                     }
                 } else {
                     break slot;
                 }
             } else null) |slot| {
-                Prototypes.playSynth(gs, audio.LaserVoice.NoteParams {
+                p.playSynth(gs, audio.LaserVoice.NoteParams {
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,
@@ -83,16 +83,16 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                 const dir_vec = math.Direction.normal(self.phys.facing);
                 const ofs = math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
                 const bullet_pos = math.Vec2.add(pos, ofs);
-                if (Prototypes.Bullet.spawn(gs, Prototypes.Bullet.Params{
+                if (p.Bullet.spawn(gs, p.Bullet.Params{
                     .inflictor_player_controller_id = self.player.player_controller_id,
                     .owner_id = self.id,
                     .pos = bullet_pos,
                     .facing = self.phys.facing,
-                    .bullet_type = Prototypes.Bullet.BulletType.PlayerBullet,
+                    .bullet_type = p.Bullet.BulletType.PlayerBullet,
                     .cluster_size = switch (self.player.attack_level) {
-                        C.Player.AttackLevel.One => u32(1),
-                        C.Player.AttackLevel.Two => u32(2),
-                        C.Player.AttackLevel.Three => u32(3),
+                        c.Player.AttackLevel.One => u32(1),
+                        c.Player.AttackLevel.Two => u32(2),
+                        c.Player.AttackLevel.Three => u32(3),
                     },
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;
@@ -106,9 +106,9 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
 }
 
 fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
-    var it = gs.iter(C.Web); while (it.next()) |object| {
-        const transform = gs.find(object.entity_id, C.Transform) orelse continue;
-        const phys = gs.find(object.entity_id, C.PhysObject) orelse continue;
+    var it = gs.iter(c.Web); while (it.next()) |object| {
+        const transform = gs.find(object.entity_id, c.Transform) orelse continue;
+        const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
 
         if (boxesOverlap(
             self.transform.pos, self.phys.entity_bbox,
@@ -123,9 +123,9 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
 
 fn playerMove(gs: *GameSession, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
-        C.Player.SpeedLevel.One => Constants.PlayerMoveSpeed[0],
-        C.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed[1],
-        C.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed[2],
+        c.Player.SpeedLevel.One => Constants.PlayerMoveSpeed[0],
+        c.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed[1],
+        c.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed[2],
     };
 
     if (isTouchingWeb(gs, self)) {
@@ -171,7 +171,7 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
     }
 }
 
-fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *C.PhysObject) void {
+fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *c.PhysObject) void {
     const pos1 = math.Vec2.add(pos, math.Direction.normal(dir));
 
     if (!physInWall(self_phys, pos1)) {
@@ -226,5 +226,5 @@ fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
     const ofs = math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
     const bullet_pos = math.Vec2.add(pos, ofs);
 
-    self.player.line_of_fire = getLineOfFire(bullet_pos, Prototypes.bullet_bbox, self.phys.facing);
+    self.player.line_of_fire = getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);
 }

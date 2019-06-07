@@ -1,12 +1,12 @@
 const std = @import("std");
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
-const C = @import("components.zig");
-const Prototypes = @import("prototypes.zig");
+const c = @import("components.zig");
+const p = @import("prototypes.zig");
 const datafile = @import("datafile.zig");
 
 pub fn gameInit(gs: *GameSession, high_score: u32) !void {
-    _ = try Prototypes.MainController.spawn(gs, Prototypes.MainController.Params{
+    _ = try p.MainController.spawn(gs, p.MainController.Params {
         .high_score = high_score,
     });
 }
@@ -20,7 +20,7 @@ pub fn gameFrame(gs: *GameSession) void {
     @import("systems/game_controller_input.zig").run(gs);
     @import("systems/player_input.zig").run(gs);
 
-    if (gs.findFirst(C.MainController).?.game_running_state) |grs| {
+    if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
         if (!grs.exit_dialog_open) {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
@@ -62,7 +62,7 @@ pub fn gameFrame(gs: *GameSession) void {
     @import("systems/creature_draw.zig").run(gs);
     @import("systems/simple_graphic_draw.zig").run(gs);
 
-    if (gs.findFirst(C.MainController).?.game_running_state) |grs| {
+    if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
         if (grs.render_move_boxes) {
             @import("systems/bullet_draw_box.zig").run(gs);
             @import("systems/physobject_draw_box.zig").run(gs);

@@ -2,18 +2,18 @@ const std = @import("std");
 const gbe = @import("gbe");
 const draw = @import("../../common/draw.zig");
 const GameSession = @import("../game.zig").GameSession;
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 
 const SystemData = struct{
-    phys: *const C.PhysObject,
+    phys: *const c.PhysObject,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
     const int = self.phys.internal;
-    _ = Prototypes.EventDrawBox.spawn(gs, C.EventDrawBox {
+    _ = p.EventDrawBox.spawn(gs, c.EventDrawBox {
         .box = int.move_bbox,
         .color = draw.Color {
             .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),

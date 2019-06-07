@@ -14,7 +14,7 @@ const getGraphicTile = @import("graphics.zig").getGraphicTile;
 const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
 const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("level.zig").LEVEL;
-const C = @import("components.zig");
+const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
 
@@ -23,11 +23,11 @@ const HEART_FONT_COLOUR_INDEX = 6; // red
 const SKULL_FONT_COLOUR_INDEX = 10; // light grey
 
 pub fn drawGame(g: *GameState) void {
-    const mc = g.session.findFirst(C.MainController) orelse return;
+    const mc = g.session.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
-        const max_drawables = comptime GameSession.getCapacity(C.EventDraw);
-        var sort_buffer: [max_drawables]*const C.EventDraw = undefined;
+        const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
+        var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
         Platform.drawBegin(&g.platform_state, g.tileset.texture.handle, null);
@@ -54,19 +54,19 @@ pub fn drawGame(g: *GameState) void {
 
 ///////////////////////////////////////
 
-fn getSortedDrawables(g: *GameState, sort_buffer: []*const C.EventDraw) []*const C.EventDraw {
+fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
     perf.begin(&perf.timers.DrawSort);
     defer perf.end(&perf.timers.DrawSort, g.perf_spam);
 
     var num_drawables: usize = 0;
-    var it = g.session.iter(C.EventDraw); while (it.next()) |object| {
+    var it = g.session.iter(c.EventDraw); while (it.next()) |object| {
         if (object.is_active) {
             sort_buffer[num_drawables] = &object.data;
             num_drawables += 1;
         }
     }
     var sorted_drawables = sort_buffer[0..num_drawables];
-    std.sort.sort(*const C.EventDraw, sorted_drawables, util.lessThanField(*const C.EventDraw, "z_index"));
+    std.sort.sort(*const c.EventDraw, sorted_drawables, util.lessThanField(*const c.EventDraw, "z_index"));
     return sorted_drawables;
 }
 
@@ -123,7 +123,7 @@ fn drawMapForeground(g: *GameState) void {
     }
 }
 
-fn drawEntities(g: *GameState, sorted_drawables: []*const C.EventDraw) void {
+fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
     perf.begin(&perf.timers.DrawEntities);
     defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
@@ -143,7 +143,7 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const C.EventDraw) void {
 }
 
 fn drawBoxes(g: *GameState) void {
-    var it = g.session.iter(C.EventDrawBox); while (it.next()) |object| {
+    var it = g.session.iter(c.EventDrawBox); while (it.next()) |object| {
         if (object.is_active) {
             const abs_bbox = object.data.box;
             const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, math.SUBPIXELS));
@@ -179,9 +179,9 @@ fn drawHud(g: *GameState, game_active: bool) void {
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
 
-    const mc = g.session.findFirst(C.MainController).?;
-    const gc_maybe = g.session.findFirst(C.GameController);
-    const pc_maybe = g.session.findFirst(C.PlayerController);
+    const mc = g.session.findFirst(c.MainController).?;
+    const gc_maybe = g.session.findFirst(c.GameController);
+    const pc_maybe = g.session.findFirst(c.PlayerController);
 
     Platform.drawUntexturedRect(
         &g.platform_state,
@@ -197,7 +197,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
         if (pc_maybe) |pc| {
             const maybe_player_creature =
                 if (pc.player_id) |player_id|
-                    g.session.find(player_id, C.Creature)
+                    g.session.find(player_id, c.Creature)
                 else
                     null;
 
@@ -277,8 +277,8 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
 
     {
         var tx: u31 = 0;
-        for (text) |c| {
-            if (c == '\n') {
+        for (text) |ch| {
+            if (ch == '\n') {
                 tx = 0;
                 th += 1;
             } else {

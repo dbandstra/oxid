@@ -1,11 +1,11 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
-const C = @import("../components.zig");
+const c = @import("../components.zig");
 const util = @import("../util.zig");
 
 const SystemData = struct {
-    animation: *C.Animation,
+    animation: *c.Animation,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);

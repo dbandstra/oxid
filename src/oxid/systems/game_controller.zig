@@ -6,15 +6,15 @@ const GameSession = @import("../game.zig").GameSession;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
-const C = @import("../components.zig");
-const Prototypes = @import("../prototypes.zig");
+const c = @import("../components.zig");
+const p = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
 
 const SystemData = struct {
     id: gbe.EntityId,
-    gc: *C.GameController,
+    gc: *c.GameController,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -26,7 +26,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     }
     _ = util.decrementTimer(&self.gc.wave_message_timer);
     if (util.decrementTimer(&self.gc.next_wave_timer)) {
-        Prototypes.playSynth(gs, audio.WaveBeginVoice.NoteParams {
+        p.playSynth(gs, audio.WaveBeginVoice.NoteParams {
             .unused = false,
         });
         self.gc.wave_number += 1;
@@ -42,7 +42,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (util.decrementTimer(&self.gc.enemy_speed_timer)) {
         if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
             self.gc.enemy_speed_level += 1;
-            Prototypes.playSynth(gs, audio.AccelerateVoice.NoteParams {
+            p.playSynth(gs, audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (self.gc.enemy_speed_level) {
                     1 => f32(1.25),
                     2 => f32(1.5),
@@ -78,7 +78,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 
 fn getPlayerScore(gs: *GameSession) ?u32 {
     // FIXME - what if there is multiplayer?
-    var it = gs.iter(C.PlayerController); while (it.next()) |object| {
+    var it = gs.iter(c.PlayerController); while (it.next()) |object| {
         return object.data.score;
     }
     return null;
@@ -86,7 +86,7 @@ fn getPlayerScore(gs: *GameSession) ?u32 {
 
 fn countNonPersistentMonsters(gs: *GameSession) u32 {
     var count: u32 = 0;
-    var it = gs.iter(C.Monster); while (it.next()) |object| {
+    var it = gs.iter(c.Monster); while (it.next()) |object| {
         if (!object.data.persistent) {
             count += 1;
         }
@@ -102,7 +102,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
     var spawn_locs = spawn_locs_buf[0..count];
     pickSpawnLocations(gs, spawn_locs);
     for (spawn_locs) |loc, i| {
-        _ = Prototypes.Monster.spawn(gs, Prototypes.Monster.Params {
+        _ = p.Monster.spawn(gs, p.Monster.Params {
             .wave_number = wave_number,
             .pos = math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
             .monster_type =
@@ -126,7 +126,7 @@ fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
     var spawn_locs: [1]math.Vec2 = undefined;
     pickSpawnLocations(gs, spawn_locs[0..]);
     const pos = math.Vec2.scale(spawn_locs[0], GRIDSIZE_SUBPIXELS);
-    _ = Prototypes.Pickup.spawn(gs, Prototypes.Pickup.Params {
+    _ = p.Pickup.spawn(gs, p.Pickup.Params {
         .pos = pos,
         .pickup_type = pickup_type,
     }) catch undefined;

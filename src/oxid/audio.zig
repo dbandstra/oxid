@@ -3,7 +3,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
-const C = @import("components.zig");
+const c = @import("components.zig");
 
 pub const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 pub const CoinVoice = @import("audio/coin.zig").CoinVoice;
@@ -107,7 +107,7 @@ pub const MainModule = struct {
 
         const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
 
-        var it = gs.iter(C.Voice); while (it.next()) |object| {
+        var it = gs.iter(c.Voice); while (it.next()) |object| {
             const voice = &object.data;
 
             switch (voice.wrapper) {
