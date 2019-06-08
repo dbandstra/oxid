@@ -1,8 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../common/math.zig");
-const absBoxesOverlap = @import("../common/boxes_overlap.zig").absBoxesOverlap;
-const boxesOverlap = @import("../common/boxes_overlap.zig").boxesOverlap;
 const Constants = @import("constants.zig");
 const LEVEL = @import("level.zig").LEVEL;
 const GameSession = @import("game.zig").GameSession;
@@ -216,7 +214,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 while (other) |o| : (other = o.next) {
                     if (couldObjectsCollide(m.entity_id, m.phys, o.entity_id, o.phys)) {
                         const other_transform = gs.find(o.entity_id, c.Transform).?;
-                        if (boxesOverlap(
+                        if (math.boxesOverlap(
                             new_pos, m.phys.entity_bbox,
                             other_transform.pos, o.phys.entity_bbox,
                         )) {
@@ -296,7 +294,7 @@ fn mergeMoveGroups(dest: *MoveGroup, src: *MoveGroup) void {
 fn phys_overlaps_move_group(phys: *c.PhysObject, move_group: *MoveGroup) bool {
     var member: ?*MoveGroupMember = move_group.head;
     while (member) |m| : (member = m.next) {
-        if (absBoxesOverlap(phys.internal.move_bbox, m.phys.internal.move_bbox)) {
+        if (math.absBoxesOverlap(phys.internal.move_bbox, m.phys.internal.move_bbox)) {
             return true;
         }
     }
@@ -338,7 +336,7 @@ fn assertNoOverlaps(gs: *GameSession) void {
                 continue;
             }
             const other_transform = gs.find(other.entity_id, c.Transform) orelse continue;
-            if (boxesOverlap(
+            if (math.boxesOverlap(
                 self_transform.pos, self.data.entity_bbox,
                 other_transform.pos, other.data.entity_bbox,
             )) {

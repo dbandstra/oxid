@@ -1,21 +1,10 @@
 const draw = @import("platform/opengl/draw.zig");
 const texture = @import("platform/opengl/texture.zig");
-const platform = @import("platform/platform.zig");
 
 pub const Colour = draw.Colour;
-pub const InitParams = platform.InitParams;
-pub const State = platform.State;
 pub const Texture = texture.Texture;
 
-pub const init = platform.init;
-pub const deinit = platform.deinit;
-pub const pollEvent = platform.pollEvent;
-pub const preDraw = platform.preDraw;
-pub const postDraw = platform.postDraw;
-pub const swapWindow = platform.swapWindow;
-pub const lockAudio = platform.lockAudio;
-pub const unlockAudio = platform.unlockAudio;
-
+pub const DrawState = draw.DrawState;
 pub const cycleGlitchMode = draw.cycleGlitchMode;
 pub const drawBegin = draw.begin;
 pub const drawEnd = draw.end;

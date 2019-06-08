@@ -1,7 +1,10 @@
+const std = @import("std");
+
 // there are 16 subpixels to a screen pixel
+// TODO - move this to another file
 pub const SUBPIXELS = 16;
 
-pub const Direction = enum{
+pub const Direction = enum {
     N,
     E,
     S,
@@ -44,26 +47,26 @@ pub const Direction = enum{
     }
 };
 
-pub const Vec2 = struct{
+pub const Vec2 = struct {
     x: i32,
     y: i32,
 
     pub fn init(x: i32, y: i32) Vec2 {
-        return Vec2{
+        return Vec2 {
             .x = x,
             .y = y,
         };
     }
 
     pub fn add(a: Vec2, b: Vec2) Vec2 {
-        return Vec2{
+        return Vec2 {
             .x = a.x + b.x,
             .y = a.y + b.y,
         };
     }
 
     pub fn scale(a: Vec2, f: i32) Vec2 {
-        return Vec2{
+        return Vec2 {
             .x = a.x * f,
             .y = a.y * f,
         };
@@ -87,9 +90,54 @@ pub const BoundingBox = struct{
     maxs: Vec2,
 
     pub fn move(bbox: BoundingBox, vec: Vec2) BoundingBox {
-        return BoundingBox{
+        return BoundingBox {
             .mins = Vec2.add(bbox.mins, vec),
             .maxs = Vec2.add(bbox.maxs, vec),
         };
     }
 };
+
+pub fn absBoxesOverlap(a: BoundingBox, b: BoundingBox) bool {
+    std.debug.assert(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
+    std.debug.assert(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
+
+    return
+        a.maxs.x >= b.mins.x and
+        b.maxs.x >= a.mins.x and
+        a.maxs.y >= b.mins.y and
+        b.maxs.y >= a.mins.y;
+}
+
+pub fn boxesOverlap(
+    a_pos: Vec2, a_bbox: BoundingBox,
+    b_pos: Vec2, b_bbox: BoundingBox,
+) bool {
+    return absBoxesOverlap(
+        BoundingBox.move(a_bbox, a_pos),
+        BoundingBox.move(b_bbox, b_pos),
+    );
+}
+
+test "boxesOverlap" {
+    const bbox = BoundingBox {
+        .mins = Vec2.init(0, 0),
+        .maxs = Vec2.init(15, 15),
+    };
+
+    std.testing.expect(!boxesOverlap(
+        Vec2.init(0, 0), bbox,
+        Vec2.init(16, 0), bbox,
+    ));
+    std.testing.expect(boxesOverlap(
+        Vec2.init(0, 0), bbox,
+        Vec2.init(15, 0), bbox,
+    ));
+    std.testing.expect(!boxesOverlap(
+        Vec2.init(0, 0), bbox,
+        Vec2.init(-16, 0), bbox,
+    ));
+    std.testing.expect(boxesOverlap(
+        Vec2.init(0, 0), bbox,
+        Vec2.init(-15, 0), bbox,
+    ));
+}

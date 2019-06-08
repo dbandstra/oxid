@@ -16,9 +16,3 @@ pub const Key = enum {
     N,
     Y,
 };
-
-pub const Event = union(enum) {
-    KeyDown: Key,
-    KeyUp: Key,
-    Quit,
-};

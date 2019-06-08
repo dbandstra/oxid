@@ -1,7 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const absBoxesOverlap = @import("../../common/boxes_overlap.zig").absBoxesOverlap;
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
@@ -261,7 +260,7 @@ fn isInLineOfFire(
 
     var it = gs.iter(c.Player); while (it.next()) |object| {
         if (object.data.line_of_fire) |box| {
-            if (absBoxesOverlap(self_absbox, box)) {
+            if (math.absBoxesOverlap(self_absbox, box)) {
                 const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
                 return phys.facing;
             }
@@ -269,7 +268,7 @@ fn isInLineOfFire(
     }
     var it2 = gs.iter(c.Bullet); while (it2.next()) |object| {
         if (object.data.line_of_fire) |box| {
-            if (absBoxesOverlap(self_absbox, box)) {
+            if (math.absBoxesOverlap(self_absbox, box)) {
                 const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
                 return phys.facing;
             }

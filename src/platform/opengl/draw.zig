@@ -1,4 +1,5 @@
 const std = @import("std");
+const Hunk = @import("zig-hunk").Hunk;
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const debug_gl = @import("debug_gl.zig");
@@ -8,8 +9,6 @@ const shader_textured = @import("shader_textured.zig");
 const static_geometry = @import("static_geometry.zig");
 const BUFFER_VERTICES = static_geometry.BUFFER_VERTICES;
 const updateVbo = static_geometry.updateVbo;
-const State = @import("../platform.zig").State;
-const InitParams = @import("../platform.zig").InitParams;
 const draw = @import("../../common/draw.zig");
 
 pub const Colour = struct {
@@ -24,21 +23,17 @@ pub const GlitchMode = enum {
     WholeTilesets,
 };
 
-pub fn cycleGlitchMode(ps: *State) void {
-    const i = @enumToInt(ps.glitch_mode);
-    const count = @memberCount(GlitchMode);
-    ps.glitch_mode =
-        if (i + 1 < count)
-            @intToEnum(GlitchMode, i + 1)
-        else
-            @intToEnum(GlitchMode, 0);
-}
-
 const DrawBuffer = struct {
     active: bool,
     vertex2f: [2 * BUFFER_VERTICES]c.GLfloat,
     texcoord2f: [2 * BUFFER_VERTICES]c.GLfloat,
     num_vertices: usize,
+};
+
+pub const DrawInitParams = struct {
+    hunk: *Hunk,
+    virtual_window_width: u32,
+    virtual_window_height: u32,
 };
 
 pub const DrawState = struct {
@@ -58,6 +53,9 @@ pub const DrawState = struct {
     static_geometry: static_geometry.StaticGeometry,
     draw_buffer: DrawBuffer,
     projection: math3d.Mat4x4,
+    // some stuff
+    glitch_mode: GlitchMode,
+    clear_screen: bool,
 };
 
 pub const InitError = error {
@@ -65,7 +63,7 @@ pub const InitError = error {
     FailedToCreateFramebuffer,
 } || shaders.InitError;
 
-pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height: u32) InitError!void {
+pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_height: u32) InitError!void {
     const glsl_version = blk: {
         const v = c.glGetString(c.GL_VERSION);
 
@@ -132,6 +130,9 @@ pub fn init(ds: *DrawState, params: InitParams, window_width: u32, window_height
     ds.fb = fb;
     ds.rt = rt;
     ds.draw_buffer.num_vertices = 0;
+
+    ds.glitch_mode = GlitchMode.Normal;
+    ds.clear_screen = true;
 }
 
 pub fn deinit(ds: *DrawState) void {
@@ -140,7 +141,18 @@ pub fn deinit(ds: *DrawState) void {
     shaders.destroy(ds.shader_textured.program);
 }
 
-pub fn preDraw(ds: *DrawState, clear_screen: bool) void {
+pub fn cycleGlitchMode(ds: *DrawState) void {
+    const i = @enumToInt(ds.glitch_mode);
+    const count = @memberCount(GlitchMode);
+    ds.glitch_mode =
+        if (i + 1 < count)
+            @intToEnum(GlitchMode, i + 1)
+        else
+            @intToEnum(GlitchMode, 0);
+    ds.clear_screen = true;
+}
+
+pub fn preDraw(ds: *DrawState) void {
     const w = ds.virtual_window_width;
     const h = ds.virtual_window_height;
     const fw = @intToFloat(f32, w);
@@ -148,9 +160,10 @@ pub fn preDraw(ds: *DrawState, clear_screen: bool) void {
     ds.projection = math3d.mat4x4_ortho(0, fw, fh, 0);
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, ds.fb);
     c.glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
-    if (clear_screen) {
+    if (ds.clear_screen) {
         c.glClearColor(0, 0, 0, 0);
         c.glClear(c.GL_COLOR_BUFFER_BIT);
+        ds.clear_screen = false;
     }
 }
 
@@ -184,13 +197,8 @@ pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
     c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
 }
 
-// the following functions take PlatformState instead of DrawState, because
-// they are exposed outside the platform/ folder (DrawState is internal).
-
 // this function must be called outside begin/end
-pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: draw.Color, outline: bool) void {
-    const ds = &ps.draw_state;
-
+pub fn untexturedRect(ds: *DrawState, x: f32, y: f32, w: f32, h: f32, color: draw.Color, outline: bool) void {
     std.debug.assert(!ds.draw_buffer.active);
 
     const model = math3d.mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
@@ -216,9 +224,7 @@ pub fn untexturedRect(ps: *State, x: f32, y: f32, w: f32, h: f32, color: draw.Co
     }
 }
 
-pub fn begin(ps: *State, tex_id: c.GLuint, maybe_colour: ?Colour) void {
-    const ds = &ps.draw_state;
-
+pub fn begin(ds: *DrawState, tex_id: c.GLuint, maybe_colour: ?Colour) void {
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
@@ -250,25 +256,21 @@ pub fn begin(ps: *State, tex_id: c.GLuint, maybe_colour: ?Colour) void {
     ds.draw_buffer.active = true;
 }
 
-pub fn end(ps: *State) void {
-    const ds = &ps.draw_state;
-
+pub fn end(ds: *DrawState) void {
     std.debug.assert(ds.draw_buffer.active);
 
-    flush(ps);
+    flush(ds);
 
     ds.draw_buffer.active = false;
 }
 
 pub fn tile(
-    ps: *State,
+    ds: *DrawState,
     tileset: *const draw.Tileset,
     dtile: draw.Tile,
     x0: f32, y0: f32, w: f32, h: f32,
     transform: draw.Transform,
 ) void {
-    const ds = &ps.draw_state;
-
     std.debug.assert(ds.draw_buffer.active);
     const x1 = x0 + w;
     const y1 = y0 + h;
@@ -280,7 +282,7 @@ pub fn tile(
     var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    if (ps.glitch_mode == GlitchMode.WholeTilesets) {
+    if (ds.glitch_mode == GlitchMode.WholeTilesets) {
         // draw the whole tileset scaled down. with transparency this leads to
         // smearing. it's interesting how the level itself is "hidden" to begin
         // with
@@ -291,7 +293,7 @@ pub fn tile(
     }
 
     if (ds.draw_buffer.num_vertices + 4 > BUFFER_VERTICES) {
-        flush(ps);
+        flush(ds);
     }
     const num_vertices = ds.draw_buffer.num_vertices;
     std.debug.assert(num_vertices + 4 <= BUFFER_VERTICES);
@@ -322,7 +324,7 @@ pub fn tile(
         },
     );
 
-    if (ps.glitch_mode == GlitchMode.QuadStrips) {
+    if (ds.glitch_mode == GlitchMode.QuadStrips) {
         // swap last two vertices so that the order becomes top left, bottom left,
         // top right, bottom right (suitable for quad strips rather than individual
         // quads)
@@ -335,9 +337,7 @@ pub fn tile(
     ds.draw_buffer.num_vertices = num_vertices + 4;
 }
 
-fn flush(ps: *State) void {
-    const ds = &ps.draw_state;
-
+fn flush(ds: *DrawState) void {
     if (ds.draw_buffer.num_vertices == 0) {
         return;
     }
@@ -350,7 +350,7 @@ fn flush(ps: *State) void {
     });
 
     c.glDrawArrays(
-        if (ps.glitch_mode == GlitchMode.QuadStrips)
+        if (ds.glitch_mode == GlitchMode.QuadStrips)
             c.GLenum(c.GL_QUAD_STRIP)
         else
             c.GLenum(c.GL_QUADS),

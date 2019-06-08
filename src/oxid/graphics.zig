@@ -107,13 +107,13 @@ pub fn getGraphicTile(graphic: Graphic) draw.Tile {
     };
 }
 
-pub const SimpleAnim = enum{
+pub const SimpleAnim = enum {
     PlaSparks,
     MonSparks,
     Explosion,
 };
 
-pub const SimpleAnimConfig = struct{
+pub const SimpleAnimConfig = struct {
     frames: []const Graphic,
     ticks_per_frame: u32,
 };

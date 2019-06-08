@@ -2,7 +2,7 @@ const std = @import("std");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const Platform = @import("../platform.zig");
+const platform = @import("../platform.zig");
 const VWIN_W = @import("../oxid.zig").VWIN_W;
 const VWIN_H = @import("../oxid.zig").VWIN_H;
 const HUD_HEIGHT = @import("../oxid.zig").HUD_HEIGHT;
@@ -30,11 +30,11 @@ pub fn drawGame(g: *GameState) void {
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-        Platform.drawBegin(&g.platform_state, g.tileset.texture.handle, null);
+        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null);
         drawMap(g);
         drawEntities(g, sorted_drawables);
         drawMapForeground(g);
-        Platform.drawEnd(&g.platform_state);
+        platform.drawEnd(&g.draw_state);
 
         drawBoxes(g);
         drawHud(g, true);
@@ -43,9 +43,9 @@ pub fn drawGame(g: *GameState) void {
             drawExitDialog(g);
         }
     } else {
-        Platform.drawBegin(&g.platform_state, g.tileset.texture.handle, null);
+        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null);
         drawMap(g);
-        Platform.drawEnd(&g.platform_state);
+        platform.drawEnd(&g.draw_state);
 
         drawHud(g, false);
         drawMainMenu(g);
@@ -88,8 +88,8 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
         const dy = @intToFloat(f32, @divFloor(pos.y, math.SUBPIXELS)) + HUD_HEIGHT;
         const dw = GRIDSIZE_PIXELS;
         const dh = GRIDSIZE_PIXELS;
-        Platform.drawTile(
-            &g.platform_state,
+        platform.drawTile(
+            &g.draw_state,
             &g.tileset,
             getGraphicTile(graphic),
             dx, dy, dw, dh,
@@ -132,8 +132,8 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
         const y = @intToFloat(f32, @divFloor(drawable.pos.y, math.SUBPIXELS)) + HUD_HEIGHT;
         const w = GRIDSIZE_PIXELS;
         const h = GRIDSIZE_PIXELS;
-        Platform.drawTile(
-            &g.platform_state,
+        platform.drawTile(
+            &g.draw_state,
             &g.tileset,
             getGraphicTile(drawable.graphic),
             x, y, w, h,
@@ -152,8 +152,8 @@ fn drawBoxes(g: *GameState) void {
             const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, math.SUBPIXELS)) + HUD_HEIGHT;
             const w = x1 - x0;
             const h = y1 - y0;
-            Platform.drawUntexturedRect(
-                &g.platform_state,
+            platform.drawUntexturedRect(
+                &g.draw_state,
                 x0, y0, w, h,
                 object.data.color,
                 true,
@@ -162,10 +162,10 @@ fn drawBoxes(g: *GameState) void {
     }
 }
 
-fn getColour(g: *GameState, index: usize) Platform.Colour {
+fn getColour(g: *GameState, index: usize) platform.Colour {
     std.debug.assert(index < 16);
 
-    return Platform.Colour{
+    return platform.Colour{
         .r = g.palette[index * 3 + 0],
         .g = g.palette[index * 3 + 1],
         .b = g.palette[index * 3 + 2],
@@ -183,15 +183,15 @@ fn drawHud(g: *GameState, game_active: bool) void {
     const gc_maybe = g.session.findFirst(c.GameController);
     const pc_maybe = g.session.findFirst(c.PlayerController);
 
-    Platform.drawUntexturedRect(
-        &g.platform_state,
+    platform.drawUntexturedRect(
+        &g.draw_state,
         0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
         draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
         false,
     );
 
     const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
-    Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
+    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
 
     if (gc_maybe) |gc| {
         if (pc_maybe) |pc| {
@@ -202,50 +202,50 @@ fn drawHud(g: *GameState, game_active: bool) void {
                     null;
 
             _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
-            fontDrawString(&g.platform_state, &g.font, 0, 0, dest.getWritten());
+            fontDrawString(&g.draw_state, &g.font, 0, 0, dest.getWritten());
             dest.reset();
-            fontDrawString(&g.platform_state, &g.font, 8*8, 0, "Lives:");
+            fontDrawString(&g.draw_state, &g.font, 8*8, 0, "Lives:");
 
-            Platform.drawEnd(&g.platform_state);
+            platform.drawEnd(&g.draw_state);
             const heartFontColour = getColour(g, HEART_FONT_COLOUR_INDEX);
-            Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, heartFontColour);
+            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, heartFontColour);
             var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-                fontDrawString(&g.platform_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
+                fontDrawString(&g.draw_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
             }
-            Platform.drawEnd(&g.platform_state);
+            platform.drawEnd(&g.draw_state);
 
             if (pc.lives == 0) {
                 const skullFontColour = getColour(g, SKULL_FONT_COLOUR_INDEX);
-                Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, skullFontColour);
-                fontDrawString(&g.platform_state, &g.font, 14*8, 0, "\x1F"); // skull
-                Platform.drawEnd(&g.platform_state);
+                platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, skullFontColour);
+                fontDrawString(&g.draw_state, &g.font, 14*8, 0, "\x1F"); // skull
+                platform.drawEnd(&g.draw_state);
             }
 
-            Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
+            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
 
             if (maybe_player_creature) |player_creature| {
                 if (player_creature.god_mode) {
-                    fontDrawString(&g.platform_state, &g.font, 8*8, 8, "god mode");
+                    fontDrawString(&g.draw_state, &g.font, 8*8, 8, "god mode");
                 }
             }
             _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
-            fontDrawString(&g.platform_state, &g.font, 19*8, 0, dest.getWritten());
+            fontDrawString(&g.draw_state, &g.font, 19*8, 0, dest.getWritten());
             dest.reset();
         }
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = 320 / 2 - message.len * 8 / 2;
-                fontDrawString(&g.platform_state, &g.font, @intCast(i32, x), 28*8, message);
+                fontDrawString(&g.draw_state, &g.font, @intCast(i32, x), 28*8, message);
             }
         }
     }
 
     _ = dest.stream.print("High:{}", mc.high_score) catch unreachable; // FIXME
-    fontDrawString(&g.platform_state, &g.font, 30*8, 0, dest.getWritten());
+    fontDrawString(&g.draw_state, &g.font, 30*8, 0, dest.getWritten());
     dest.reset();
 
-    Platform.drawEnd(&g.platform_state);
+    platform.drawEnd(&g.draw_state);
 
     if (if (gc_maybe) |gc| gc.game_over else false) {
         const y = 8*4;
@@ -302,8 +302,8 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
         DrawCoord.Exact => |y| y,
     };
 
-    Platform.drawUntexturedRect(
-        &g.platform_state,
+    platform.drawUntexturedRect(
+        &g.draw_state,
         @intToFloat(f32, x), @intToFloat(f32, y),
         @intToFloat(f32, w), @intToFloat(f32, h),
         draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
@@ -311,7 +311,7 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     );
 
     const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
-    Platform.drawBegin(&g.platform_state, g.font.tileset.texture.handle, fontColour);
+    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
     {
         var start: usize = 0;
         var sy = y + 8;
@@ -320,11 +320,11 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
                 const slice = text[start..i];
                 const sw = 8 * @intCast(u31, slice.len);
                 const sx = x + i32(w / 2 - sw / 2);
-                fontDrawString(&g.platform_state, &g.font, sx, sy, slice);
+                fontDrawString(&g.draw_state, &g.font, sx, sy, slice);
                 sy += 8;
                 start = i + 1;
             }
         }
     }
-    Platform.drawEnd(&g.platform_state);
+    platform.drawEnd(&g.draw_state);
 }

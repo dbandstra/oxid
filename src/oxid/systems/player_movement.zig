@@ -1,7 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const boxesOverlap = @import("../../common/boxes_overlap.zig").boxesOverlap;
 const Constants = @import("../constants.zig");
 const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
 const LEVEL = @import("../level.zig").LEVEL;
@@ -110,7 +109,7 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
         const transform = gs.find(object.entity_id, c.Transform) orelse continue;
         const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
 
-        if (boxesOverlap(
+        if (math.boxesOverlap(
             self.transform.pos, self.phys.entity_bbox,
             transform.pos, phys.entity_bbox,
         )) {
