@@ -36,7 +36,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
         spiders = 8;
         // first dreadnaut
     } else {
-        const choices = []WaveChoice {
+        const choices = [_]WaveChoice {
             WaveChoice {
                 // all regular spiders
                 .weight = if (wavenum < 20) u32(10) else u32(0),

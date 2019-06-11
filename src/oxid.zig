@@ -270,7 +270,7 @@ pub fn main() void {
         while (c.SDL_PollEvent(&sdl_event) != 0) {
             switch (sdl_event.type) {
                 c.SDL_KEYDOWN => {
-                    if (sdl_event.key.repeat != 0) {
+                    if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
                             if (input.getCommandForKey(key)) |command| {
                                 _ = p.EventInput.spawn(&g.session, components.EventInput {

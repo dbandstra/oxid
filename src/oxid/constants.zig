@@ -107,7 +107,7 @@ pub const ZIndexPickup: u32 = 30;
 pub const ZIndexWeb: u32 = 25;
 pub const ZIndexCorpse: u32 = 20;
 
-pub const ExtraLifeScoreThresholds = []u32{
+pub const ExtraLifeScoreThresholds = [_]u32{
     1500,
     3000,
     6000,

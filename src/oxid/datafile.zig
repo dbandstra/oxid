@@ -20,7 +20,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.fs.
         };
     }
 
-    const file_path = try std.fs.path.join(&hunk_side.allocator, [][]const u8{dir_path, filename});
+    const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, filename});
 
     return switch (mode) {
         Mode.Read => std.fs.File.openRead(file_path),

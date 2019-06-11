@@ -107,7 +107,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_he
 
     c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, rt, 0);
 
-    var draw_buffers = []c.GLenum { c.GL_COLOR_ATTACHMENT0 };
+    var draw_buffers = [_]c.GLenum { c.GL_COLOR_ATTACHMENT0 };
     c.glDrawBuffers(1, &draw_buffers[0]);
 
     if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {

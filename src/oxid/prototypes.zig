@@ -137,7 +137,7 @@ pub const Player = struct {
         try gs.addComponent(entity_id, c.Player{
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
-            .bullets = []?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
+            .bullets = [_]?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
             .attack_level = c.Player.AttackLevel.One,
             .speed_level = c.Player.SpeedLevel.One,
             .spawn_anim_y_remaining = GRIDSIZE_SUBPIXELS, // will animate upwards 1 tile upon spawning

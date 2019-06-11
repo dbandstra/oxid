@@ -56,7 +56,7 @@ pub const WaveBeginVoice = struct {
         return WaveBeginVoice {
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([]SongNote {
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongNote {
                 SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = true }, .t = 0.0 * speed },
                 SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 1.0 * speed },
                 SongNote { .params = Instrument.NoteParams { .freq = 36.0, .note_on = true }, .t = 2.0 * speed },

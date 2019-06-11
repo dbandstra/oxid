@@ -116,7 +116,7 @@ pub const LEVEL = Level(20, 14).init(blk: {
     const C = 0x85;
     const D = 0x86;
 
-    break :blk []const u8{
+    break :blk [_]u8{
         O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
         O,e,e,e,e,e,e,e,e,e,e,e,O,e,e,e,e,e,e,O,
         O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,

@@ -31,7 +31,7 @@ pub const ExplosionVoice = struct {
         self.cutoff_curve.paint(span, [1][]f32{temps[1]}, [0][]f32{}, note_id_changed, zang.Curve.Params {
             .sample_rate = params.sample_rate,
             .function = .SmoothStep,
-            .curve = []zang.CurveNode {
+            .curve = [_]zang.CurveNode {
                 zang.CurveNode { .t = 0.0, .value = 3000.0 },
                 zang.CurveNode { .t = 0.5, .value = 1000.0 },
                 zang.CurveNode { .t = 0.7, .value = 200.0 },
@@ -54,7 +54,7 @@ pub const ExplosionVoice = struct {
         self.volume_curve.paint(span, [1][]f32{temps[1]}, [0][]f32{}, note_id_changed, zang.Curve.Params {
             .sample_rate = params.sample_rate,
             .function = .SmoothStep,
-            .curve = []zang.CurveNode {
+            .curve = [_]zang.CurveNode {
                 zang.CurveNode { .t = 0.0, .value = 0.0 },
                 zang.CurveNode { .t = 0.004, .value = 0.75 },
                 zang.CurveNode { .t = 0.7, .value = 0.0 },

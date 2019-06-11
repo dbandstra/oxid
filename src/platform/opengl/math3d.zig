@@ -4,26 +4,26 @@ pub const Mat4x4 = struct{
     /// matrix multiplication
     pub fn mult(m: *const Mat4x4, other: *const Mat4x4) Mat4x4 {
         return Mat4x4{
-            .data = [][4]f32{
-                []f32{
+            .data = [_][4]f32{
+                [_]f32{
                     m.data[0][0]*other.data[0][0] + m.data[0][1]*other.data[1][0] + m.data[0][2]*other.data[2][0] + m.data[0][3]*other.data[3][0],
                     m.data[0][0]*other.data[0][1] + m.data[0][1]*other.data[1][1] + m.data[0][2]*other.data[2][1] + m.data[0][3]*other.data[3][1],
                     m.data[0][0]*other.data[0][2] + m.data[0][1]*other.data[1][2] + m.data[0][2]*other.data[2][2] + m.data[0][3]*other.data[3][2],
                     m.data[0][0]*other.data[0][3] + m.data[0][1]*other.data[1][3] + m.data[0][2]*other.data[2][3] + m.data[0][3]*other.data[3][3],
                 },
-                []f32{
+                [_]f32{
                     m.data[1][0]*other.data[0][0] + m.data[1][1]*other.data[1][0] + m.data[1][2]*other.data[2][0] + m.data[1][3]*other.data[3][0],
                     m.data[1][0]*other.data[0][1] + m.data[1][1]*other.data[1][1] + m.data[1][2]*other.data[2][1] + m.data[1][3]*other.data[3][1],
                     m.data[1][0]*other.data[0][2] + m.data[1][1]*other.data[1][2] + m.data[1][2]*other.data[2][2] + m.data[1][3]*other.data[3][2],
                     m.data[1][0]*other.data[0][3] + m.data[1][1]*other.data[1][3] + m.data[1][2]*other.data[2][3] + m.data[1][3]*other.data[3][3],
                 },
-                []f32{
+                [_]f32{
                     m.data[2][0]*other.data[0][0] + m.data[2][1]*other.data[1][0] + m.data[2][2]*other.data[2][0] + m.data[2][3]*other.data[3][0],
                     m.data[2][0]*other.data[0][1] + m.data[2][1]*other.data[1][1] + m.data[2][2]*other.data[2][1] + m.data[2][3]*other.data[3][1],
                     m.data[2][0]*other.data[0][2] + m.data[2][1]*other.data[1][2] + m.data[2][2]*other.data[2][2] + m.data[2][3]*other.data[3][2],
                     m.data[2][0]*other.data[0][3] + m.data[2][1]*other.data[1][3] + m.data[2][2]*other.data[2][3] + m.data[2][3]*other.data[3][3],
                 },
-                []f32{
+                [_]f32{
                     m.data[3][0]*other.data[0][0] + m.data[3][1]*other.data[1][0] + m.data[3][2]*other.data[2][0] + m.data[3][3]*other.data[3][0],
                     m.data[3][0]*other.data[0][1] + m.data[3][1]*other.data[1][1] + m.data[3][2]*other.data[2][1] + m.data[3][3]*other.data[3][1],
                     m.data[3][0]*other.data[0][2] + m.data[3][1]*other.data[1][2] + m.data[3][2]*other.data[2][2] + m.data[3][3]*other.data[3][2],
@@ -37,11 +37,11 @@ pub const Mat4x4 = struct{
     /// Input matrix multiplied by this translation matrix.
     pub fn translate(m: *const Mat4x4, x: f32, y: f32, z: f32) Mat4x4 {
         return Mat4x4{
-            .data = [][4]f32 {
-                []f32{m.data[0][0], m.data[0][1], m.data[0][2], m.data[0][3] + m.data[0][0] * x + m.data[0][1] * y + m.data[0][2] * z},
-                []f32{m.data[1][0], m.data[1][1], m.data[1][2], m.data[1][3] + m.data[1][0] * x + m.data[1][1] * y + m.data[1][2] * z},
-                []f32{m.data[2][0], m.data[2][1], m.data[2][2], m.data[2][3] + m.data[2][0] * x + m.data[2][1] * y + m.data[2][2] * z},
-                []f32{m.data[3][0], m.data[3][1], m.data[3][2], m.data[3][3]},
+            .data = [_][4]f32 {
+                [_]f32{m.data[0][0], m.data[0][1], m.data[0][2], m.data[0][3] + m.data[0][0] * x + m.data[0][1] * y + m.data[0][2] * z},
+                [_]f32{m.data[1][0], m.data[1][1], m.data[1][2], m.data[1][3] + m.data[1][0] * x + m.data[1][1] * y + m.data[1][2] * z},
+                [_]f32{m.data[2][0], m.data[2][1], m.data[2][2], m.data[2][3] + m.data[2][0] * x + m.data[2][1] * y + m.data[2][2] * z},
+                [_]f32{m.data[3][0], m.data[3][1], m.data[3][2], m.data[3][3]},
             },
         };
     }
@@ -50,11 +50,11 @@ pub const Mat4x4 = struct{
     /// Input matrix multiplied by this scale matrix.
     pub fn scale(m: *const Mat4x4, x: f32, y: f32, z: f32) Mat4x4 {
         return Mat4x4{
-            .data = [][4]f32{
-                []f32{m.data[0][0] * x, m.data[0][1] * y, m.data[0][2] * z, m.data[0][3]},
-                []f32{m.data[1][0] * x, m.data[1][1] * y, m.data[1][2] * z, m.data[1][3]},
-                []f32{m.data[2][0] * x, m.data[2][1] * y, m.data[2][2] * z, m.data[2][3]},
-                []f32{m.data[3][0] * x, m.data[3][1] * y, m.data[3][2] * z, m.data[3][3]},
+            .data = [_][4]f32{
+                [_]f32{m.data[0][0] * x, m.data[0][1] * y, m.data[0][2] * z, m.data[0][3]},
+                [_]f32{m.data[1][0] * x, m.data[1][1] * y, m.data[1][2] * z, m.data[1][3]},
+                [_]f32{m.data[2][0] * x, m.data[2][1] * y, m.data[2][2] * z, m.data[2][3]},
+                [_]f32{m.data[3][0] * x, m.data[3][1] * y, m.data[3][2] * z, m.data[3][3]},
             },
         };
     }
@@ -62,21 +62,21 @@ pub const Mat4x4 = struct{
     pub fn transpose(m: *const Mat4x4) Mat4x4 {
         return Mat4x4{
             .data = [][4]f32 {
-                []f32{m.data[0][0], m.data[1][0], m.data[2][0], m.data[3][0]},
-                []f32{m.data[0][1], m.data[1][1], m.data[2][1], m.data[3][1]},
-                []f32{m.data[0][2], m.data[1][2], m.data[2][2], m.data[3][2]},
-                []f32{m.data[0][3], m.data[1][3], m.data[2][3], m.data[3][3]},
+                [_]f32{m.data[0][0], m.data[1][0], m.data[2][0], m.data[3][0]},
+                [_]f32{m.data[0][1], m.data[1][1], m.data[2][1], m.data[3][1]},
+                [_]f32{m.data[0][2], m.data[1][2], m.data[2][2], m.data[3][2]},
+                [_]f32{m.data[0][3], m.data[1][3], m.data[2][3], m.data[3][3]},
             },
         };
     }
 };
 
 pub const mat4x4_identity = Mat4x4{
-    .data = [][4]f32{
-        []f32{1.0, 0.0, 0.0, 0.0},
-        []f32{0.0, 1.0, 0.0, 0.0},
-        []f32{0.0, 0.0, 1.0, 0.0},
-        []f32{0.0, 0.0, 0.0, 1.0},
+    .data = [_][4]f32{
+        [_]f32{1.0, 0.0, 0.0, 0.0},
+        [_]f32{0.0, 1.0, 0.0, 0.0},
+        [_]f32{0.0, 0.0, 1.0, 0.0},
+        [_]f32{0.0, 0.0, 0.0, 1.0},
     },
 };
 

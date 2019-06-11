@@ -38,21 +38,21 @@ pub fn createStaticGeometry() StaticGeometry {
     c.glGenBuffers(1, &sg.dyn_texcoord_buffer);
     updateVbo(sg.dyn_texcoord_buffer, null);
 
-    const rect_2d_vertexes = [][2]c.GLfloat{
-        []c.GLfloat{ 0.0, 0.0 },
-        []c.GLfloat{ 0.0, 1.0 },
-        []c.GLfloat{ 1.0, 0.0 },
-        []c.GLfloat{ 1.0, 1.0 },
+    const rect_2d_vertexes = [_][2]c.GLfloat{
+        [_]c.GLfloat{ 0.0, 0.0 },
+        [_]c.GLfloat{ 0.0, 1.0 },
+        [_]c.GLfloat{ 1.0, 0.0 },
+        [_]c.GLfloat{ 1.0, 1.0 },
     };
     c.glGenBuffers(1, &sg.rect_2d_vertex_buffer);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_vertex_buffer);
     c.glBufferData(c.GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(c.GLfloat), &rect_2d_vertexes[0][0], c.GL_STATIC_DRAW);
 
-    const rect_2d_blit_texcoords = [][2]c.GLfloat{
-        []c.GLfloat{ 0.0, 1.0 },
-        []c.GLfloat{ 0.0, 0.0 },
-        []c.GLfloat{ 1.0, 1.0 },
-        []c.GLfloat{ 1.0, 0.0 },
+    const rect_2d_blit_texcoords = [_][2]c.GLfloat{
+        [_]c.GLfloat{ 0.0, 1.0 },
+        [_]c.GLfloat{ 0.0, 0.0 },
+        [_]c.GLfloat{ 1.0, 1.0 },
+        [_]c.GLfloat{ 1.0, 0.0 },
     };
     c.glGenBuffers(1, &sg.rect_2d_blit_texcoord_buffer);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_blit_texcoord_buffer);
