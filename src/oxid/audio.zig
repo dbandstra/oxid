@@ -75,21 +75,6 @@ pub const MainModule = struct {
         };
     }
 
-    pub fn getSampleParams(self: *MainModule, sample: Sample) SamplerNoteParams {
-        return SamplerNoteParams {
-            .wav = switch (sample) {
-                .DropWeb => self.drop_web,
-                .ExtraLife => self.extra_life,
-                .PlayerScream => self.player_scream,
-                .PlayerDeath => self.player_death,
-                .PlayerCrumble => self.player_crumble,
-                .PowerUp => self.power_up,
-                .MonsterImpact => self.monster_impact,
-            },
-            .loop = false,
-        };
-    }
-
     // called in the audio thread.
     // note: this works under the assumption the thread mutex is locked during
     // the entire audio callback call. this is just how SDL2 works. if we switch
@@ -154,4 +139,41 @@ pub const MainModule = struct {
             wrapper.module.paint(result.span, [1][]f32{self.out_buf}, temps, result.note_id_changed, params);
         }
     }
+
+    // called in the main thread
+    pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
+        var it = gs.iter(c.Voice); while (it.next()) |object| {
+            switch (object.data.wrapper) {
+                .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
+                .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
+                .Explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
+                .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
+                .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
+                .Sample =>     |*wrapper| {
+                    if (wrapper.initial_sample) |sample| {
+                        wrapper.initial_sample = null;
+                        wrapper.iq.push(impulse_frame, SamplerNoteParams {
+                            .loop = false,
+                            .wav = switch (sample) {
+                                .DropWeb => self.drop_web,
+                                .ExtraLife => self.extra_life,
+                                .PlayerScream => self.player_scream,
+                                .PlayerDeath => self.player_death,
+                                .PlayerCrumble => self.player_crumble,
+                                .PowerUp => self.power_up,
+                                .MonsterImpact => self.monster_impact,
+                            },
+                        });
+                    }
+                },
+            }
+        }
+    }
 };
+
+fn updateVoice(wrapper: var, impulse_frame: usize) void {
+    if (wrapper.initial_params) |params| {
+        wrapper.iq.push(impulse_frame, params);
+        wrapper.initial_params = null;
+    }
+}

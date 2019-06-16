@@ -360,31 +360,11 @@ fn playSounds(g: *GameState, muted: bool, speed: f32) void {
     g.audio_module.speed = speed;
 
     // FIXME - impulse_frame being 0 means that sounds will always start
-    // playing at the beginning of the mix buffer
-    const impulse_frame = 0;
+    // playing at the beginning of the mix buffer. need to implement some
+    // "syncing" to guess where we are in the middle of a mix frame
+    const impulse_frame: usize = 0;
 
-    var it = g.session.iter(components.Voice); while (it.next()) |object| {
-        switch (object.data.wrapper) {
-            .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
-            .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
-            .Explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
-            .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
-            .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
-            .Sample =>     |*wrapper| {
-                if (wrapper.initial_sample) |sample| {
-                    wrapper.iq.push(impulse_frame, g.audio_module.getSampleParams(sample));
-                    wrapper.initial_sample = null;
-                }
-            },
-        }
-    }
-}
-
-fn updateVoice(wrapper: var, impulse_frame: usize) void {
-    if (wrapper.initial_params) |params| {
-        wrapper.iq.push(impulse_frame, params);
-        wrapper.initial_params = null;
-    }
+    g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
 fn drawMain(g: *GameState, blit_alpha: f32) void {
