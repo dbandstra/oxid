@@ -1,34 +1,37 @@
+usingnamespace @cImport({
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 
 pub const BindParams = struct{
     mvp: *const math3d.Mat4x4,
     color: [4]f32,
-    vertex_buffer: c.GLuint,
+    vertex_buffer: GLuint,
 };
 
 pub const Shader = struct{
     program: shaders.Program,
-    attrib_position: c.GLint,
-    uniform_mvp: c.GLint,
-    uniform_color: c.GLint,
+    attrib_position: GLint,
+    uniform_mvp: GLint,
+    uniform_color: GLint,
 
     pub fn bind(self: Shader, params: BindParams) void {
-        c.glUseProgram(self.program.program_id);
+        glUseProgram(self.program.program_id);
 
         if (self.uniform_color != -1) {
-            c.glUniform4fv(self.uniform_color, 1, params.color[0..].ptr);
+            glUniform4fv(self.uniform_color, 1, params.color[0..].ptr);
         }
         if (self.uniform_mvp != -1) {
-            c.glUniformMatrix4fv(self.uniform_mvp, 1, c.GL_FALSE, params.mvp.data[0][0..].ptr);
+            glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.data[0][0..].ptr);
         }
 
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, params.vertex_buffer);
-        c.glEnableVertexAttribArray(@intCast(c.GLuint, self.attrib_position));
-        c.glVertexAttribPointer(@intCast(c.GLuint, self.attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+        glBindBuffer(GL_ARRAY_BUFFER, params.vertex_buffer);
+        glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
+        glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
     }
 };
 

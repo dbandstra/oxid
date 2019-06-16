@@ -1,6 +1,9 @@
+usingnamespace @cImport({
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 const shader_primitive = @import("shader_primitive.zig");
@@ -24,8 +27,8 @@ pub const GlitchMode = enum {
 
 const DrawBuffer = struct {
     active: bool,
-    vertex2f: [2 * BUFFER_VERTICES]c.GLfloat,
-    texcoord2f: [2 * BUFFER_VERTICES]c.GLfloat,
+    vertex2f: [2 * BUFFER_VERTICES]GLfloat,
+    texcoord2f: [2 * BUFFER_VERTICES]GLfloat,
     num_vertices: usize,
 };
 
@@ -44,9 +47,9 @@ pub const DrawState = struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
     // frame buffer object
-    fb: c.GLuint,
+    fb: GLuint,
     // render texture
-    rt: c.GLuint,
+    rt: GLuint,
     shader_primitive: shader_primitive.Shader,
     shader_textured: shader_textured.Shader,
     static_geometry: static_geometry.StaticGeometry,
@@ -64,7 +67,7 @@ pub const InitError = error {
 
 pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_height: u32) InitError!void {
     const glsl_version = blk: {
-        const v = c.glGetString(c.GL_VERSION);
+        const v = glGetString(GL_VERSION);
 
         if (v != 0) { // null check
             if (v[1] == '.') {
@@ -91,34 +94,34 @@ pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_he
     ds.static_geometry = static_geometry.createStaticGeometry();
     errdefer ds.static_geometry.destroy();
 
-    var fb: c.GLuint = 0;
-    c.glGenFramebuffers(1, &fb);
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, fb);
+    var fb: GLuint = 0;
+    glGenFramebuffers(1, &fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
-    var rt: c.GLuint = 0;
-    c.glGenTextures(1, &rt);
-    c.glBindTexture(c.GL_TEXTURE_2D, rt);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-    c.glTexParameterf(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
-    c.glTexParameterf(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
+    var rt: GLuint = 0;
+    glGenTextures(1, &rt);
+    glBindTexture(GL_TEXTURE_2D, rt);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, rt, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
 
-    var draw_buffers = [_]c.GLenum { c.GL_COLOR_ATTACHMENT0 };
-    c.glDrawBuffers(1, &draw_buffers[0]);
+    var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, &draw_buffers[0]);
 
-    if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE) {
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std.debug.warn("Failed to create framebuffer.\n");
         return error.FailedToCreateFramebuffer;
     }
 
-    c.glDisable(c.GL_DEPTH_TEST);
-    c.glEnable(c.GL_CULL_FACE);
-    c.glFrontFace(c.GL_CCW);
-    c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
-    c.glEnable(c.GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
 
     ds.window_width = window_width;
     ds.window_height = window_height;
@@ -155,24 +158,24 @@ pub fn preDraw(ds: *DrawState) void {
     const fw = @intToFloat(f32, w);
     const fh = @intToFloat(f32, h);
     ds.projection = math3d.mat4x4_ortho(0, fw, fh, 0);
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, ds.fb);
-    c.glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
+    glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
+    glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
     if (ds.clear_screen) {
-        c.glClearColor(0, 0, 0, 0);
-        c.glClear(c.GL_COLOR_BUFFER_BIT);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
         ds.clear_screen = false;
     }
 }
 
 pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
     ds.projection = math3d.mat4x4_ortho(0, 1, 1, 0);
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-    c.glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
     blit(ds, ds.rt, blit_alpha);
 }
 
 // this function must be called outside begin/end
-pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
+pub fn blit(ds: *DrawState, tex_id: GLuint, alpha: f32) void {
     std.debug.assert(!ds.draw_buffer.active);
 
     ds.shader_textured.bind(shader_textured.BindParams {
@@ -188,10 +191,10 @@ pub fn blit(ds: *DrawState, tex_id: c.GLuint, alpha: f32) void {
         .texcoord_buffer = ds.static_geometry.rect_2d_blit_texcoord_buffer,
     });
 
-    c.glActiveTexture(c.GL_TEXTURE0);
-    c.glBindTexture(c.GL_TEXTURE_2D, tex_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex_id);
 
-    c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 // this function must be called outside begin/end
@@ -213,15 +216,15 @@ pub fn untexturedRect(ds: *DrawState, x: f32, y: f32, w: f32, h: f32, color: dra
     });
 
     if (outline) {
-        c.glPolygonMode(c.GL_FRONT, c.GL_LINE);
-        c.glDrawArrays(c.GL_QUAD_STRIP, 0, 4);
-        c.glPolygonMode(c.GL_FRONT, c.GL_FILL);
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glDrawArrays(GL_QUAD_STRIP, 0, 4);
+        glPolygonMode(GL_FRONT, GL_FILL);
     } else {
-        c.glDrawArrays(c.GL_TRIANGLE_STRIP, 0, 4);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
 
-pub fn begin(ds: *DrawState, tex_id: c.GLuint, maybe_colour: ?Colour) void {
+pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_colour: ?Colour) void {
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
@@ -247,8 +250,8 @@ pub fn begin(ds: *DrawState, tex_id: c.GLuint, maybe_colour: ?Colour) void {
         .texcoord_buffer = null,
     });
 
-    c.glActiveTexture(c.GL_TEXTURE0);
-    c.glBindTexture(c.GL_TEXTURE_2D, tex_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex_id);
 
     ds.draw_buffer.active = true;
 }
@@ -300,12 +303,12 @@ pub fn tile(
 
     // top left, bottom left, bottom right, top right
     std.mem.copy(
-        c.GLfloat,
+        GLfloat,
         vertex2f,
-        [8]c.GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
+        [8]GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
     );
     std.mem.copy(
-        c.GLfloat,
+        GLfloat,
         texcoord2f,
         switch (transform) {
             draw.Transform.Identity =>
@@ -325,10 +328,10 @@ pub fn tile(
         // swap last two vertices so that the order becomes top left, bottom left,
         // top right, bottom right (suitable for quad strips rather than individual
         // quads)
-        std.mem.swap(c.GLfloat, &vertex2f[4], &vertex2f[6]);
-        std.mem.swap(c.GLfloat, &vertex2f[5], &vertex2f[7]);
-        std.mem.swap(c.GLfloat, &texcoord2f[4], &texcoord2f[6]);
-        std.mem.swap(c.GLfloat, &texcoord2f[5], &texcoord2f[7]);
+        std.mem.swap(GLfloat, &vertex2f[4], &vertex2f[6]);
+        std.mem.swap(GLfloat, &vertex2f[5], &vertex2f[7]);
+        std.mem.swap(GLfloat, &texcoord2f[4], &texcoord2f[6]);
+        std.mem.swap(GLfloat, &texcoord2f[5], &texcoord2f[7]);
     }
 
     ds.draw_buffer.num_vertices = num_vertices + 4;
@@ -346,11 +349,11 @@ fn flush(ds: *DrawState) void {
         .texcoord2f = ds.draw_buffer.texcoord2f[0..],
     });
 
-    c.glDrawArrays(
+    glDrawArrays(
         if (ds.glitch_mode == GlitchMode.QuadStrips)
-            c.GLenum(c.GL_QUAD_STRIP)
+            GLenum(GL_QUAD_STRIP)
         else
-            c.GLenum(c.GL_QUADS),
+            GLenum(GL_QUADS),
         0,
         @intCast(c_int, ds.draw_buffer.num_vertices),
     );

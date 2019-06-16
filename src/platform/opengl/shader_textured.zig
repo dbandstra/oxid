@@ -1,6 +1,9 @@
+usingnamespace @cImport({
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 const static_geometry = @import("static_geometry.zig");
@@ -14,59 +17,59 @@ pub const Colour = struct{
 
 pub const BindParams = struct{
     mvp: *const math3d.Mat4x4,
-    tex: c.GLint,
+    tex: GLint,
     colour: Colour,
-    vertex_buffer: ?c.GLuint,
-    texcoord_buffer: ?c.GLuint,
+    vertex_buffer: ?GLuint,
+    texcoord_buffer: ?GLuint,
 };
 
 pub const UpdateParams = struct{
-    vertex_buffer: c.GLuint,
-    texcoord_buffer: c.GLuint,
+    vertex_buffer: GLuint,
+    texcoord_buffer: GLuint,
     vertex2f: []f32,
     texcoord2f: []f32,
 };
 
 pub const Shader = struct{
     program: shaders.Program,
-    attrib_texcoord: c.GLint,
-    attrib_position: c.GLint,
-    uniform_mvp: c.GLint,
-    uniform_tex: c.GLint,
-    uniform_colour: c.GLint,
+    attrib_texcoord: GLint,
+    attrib_position: GLint,
+    uniform_mvp: GLint,
+    uniform_tex: GLint,
+    uniform_colour: GLint,
 
     pub fn bind(self: Shader, params: BindParams) void {
-        c.glUseProgram(self.program.program_id);
+        glUseProgram(self.program.program_id);
 
         if (self.uniform_tex != -1) {
-            c.glUniform1i(self.uniform_tex, params.tex);
+            glUniform1i(self.uniform_tex, params.tex);
         }
         if (self.uniform_colour != -1) {
-            c.glUniform4f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b, params.colour.a);
+            glUniform4f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b, params.colour.a);
         }
         if (self.uniform_mvp != -1) {
-            c.glUniformMatrix4fv(self.uniform_mvp, 1, c.GL_FALSE, params.mvp.data[0][0..].ptr);
+            glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.data[0][0..].ptr);
         }
 
-        c.glEnableVertexAttribArray(@intCast(c.GLuint, self.attrib_position));
+        glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
         if (params.vertex_buffer) |vertex_buffer| {
-            c.glBindBuffer(c.GL_ARRAY_BUFFER, vertex_buffer);
-            c.glVertexAttribPointer(@intCast(c.GLuint, self.attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+            glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
 
-        c.glEnableVertexAttribArray(@intCast(c.GLuint, self.attrib_texcoord));
+        glEnableVertexAttribArray(@intCast(GLuint, self.attrib_texcoord));
         if (params.texcoord_buffer) |texcoord_buffer| {
-            c.glBindBuffer(c.GL_ARRAY_BUFFER, texcoord_buffer);
-            c.glVertexAttribPointer(@intCast(c.GLuint, self.attrib_texcoord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+            glBindBuffer(GL_ARRAY_BUFFER, texcoord_buffer);
+            glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
     }
 
     pub fn update(self: Shader, params: UpdateParams) void {
         static_geometry.updateVbo(params.vertex_buffer, params.vertex2f);
-        c.glVertexAttribPointer(@intCast(c.GLuint, self.attrib_position), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+        glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
 
         static_geometry.updateVbo(params.texcoord_buffer, params.texcoord2f);
-        c.glVertexAttribPointer(@intCast(c.GLuint, self.attrib_texcoord), 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+        glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
     }
 };
 

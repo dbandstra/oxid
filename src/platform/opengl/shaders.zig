@@ -1,6 +1,9 @@
+usingnamespace @cImport({
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
 
 pub const GLSLVersion = enum{ V120, V130 };
@@ -11,9 +14,9 @@ pub const ShaderSource = struct{
 };
 
 pub const Program = struct{
-    program_id: c.GLuint,
-    vertex_id: c.GLuint,
-    fragment_id: c.GLuint,
+    program_id: GLuint,
+    vertex_id: GLuint,
+    fragment_id: GLuint,
 };
 
 pub const InitError = error{
@@ -25,16 +28,16 @@ pub const InitError = error{
 pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
     errdefer std.debug.warn("Failed to compile and link shader program \"{}\".\n", description);
 
-    const vertex_id = try compile(hunk_side, source.vertex, "vertex", c.GL_VERTEX_SHADER);
-    const fragment_id = try compile(hunk_side, source.fragment, "fragment", c.GL_FRAGMENT_SHADER);
+    const vertex_id = try compile(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
+    const fragment_id = try compile(hunk_side, source.fragment, "fragment", GL_FRAGMENT_SHADER);
 
-    const program_id = c.glCreateProgram();
-    c.glAttachShader(program_id, vertex_id);
-    c.glAttachShader(program_id, fragment_id);
-    c.glLinkProgram(program_id);
+    const program_id = glCreateProgram();
+    glAttachShader(program_id, vertex_id);
+    glAttachShader(program_id, fragment_id);
+    glLinkProgram(program_id);
 
-    var ok: c.GLint = undefined;
-    c.glGetProgramiv(program_id, c.GL_LINK_STATUS, &ok);
+    var ok: GLint = undefined;
+    glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
     if (ok != 0) {
         return Program{
             .program_id = program_id,
@@ -42,12 +45,12 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
             .fragment_id = fragment_id,
         };
     } else {
-        var error_size: c.GLint = undefined;
-        c.glGetProgramiv(program_id, c.GL_INFO_LOG_LENGTH, &error_size);
+        var error_size: GLint = undefined;
+        glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &error_size);
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
         if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-            c.glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
+            glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
             std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
         } else |_| {
             std.debug.warn("Failed to retrieve program info log (out of memory).\n");
@@ -56,26 +59,26 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
     }
 }
 
-fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: c.GLenum) InitError!c.GLuint {
+fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
     errdefer std.debug.warn("Failed to compile {} shader.\n", shader_type);
 
-    const shader_id = c.glCreateShader(kind);
+    const shader_id = glCreateShader(kind);
     const source_ptr: ?[*]const u8 = source.ptr;
-    const source_len = @intCast(c.GLint, source.len);
-    c.glShaderSource(shader_id, 1, &source_ptr, &source_len);
-    c.glCompileShader(shader_id);
+    const source_len = @intCast(GLint, source.len);
+    glShaderSource(shader_id, 1, &source_ptr, &source_len);
+    glCompileShader(shader_id);
 
-    var ok: c.GLint = undefined;
-    c.glGetShaderiv(shader_id, c.GL_COMPILE_STATUS, &ok);
+    var ok: GLint = undefined;
+    glGetShaderiv(shader_id, GL_COMPILE_STATUS, &ok);
     if (ok != 0) {
         return shader_id;
     } else {
-        var error_size: c.GLint = undefined;
-        c.glGetShaderiv(shader_id, c.GL_INFO_LOG_LENGTH, &error_size);
+        var error_size: GLint = undefined;
+        glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &error_size);
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
         if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-            c.glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
+            glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
             std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
         } else |_| {
             std.debug.warn("Failed to retrieve shader info log (out of memory).\n");
@@ -85,17 +88,17 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
 }
 
 pub fn destroy(sp: Program) void {
-    c.glDetachShader(sp.program_id, sp.fragment_id);
-    c.glDetachShader(sp.program_id, sp.vertex_id);
+    glDetachShader(sp.program_id, sp.fragment_id);
+    glDetachShader(sp.program_id, sp.vertex_id);
 
-    c.glDeleteShader(sp.fragment_id);
-    c.glDeleteShader(sp.vertex_id);
+    glDeleteShader(sp.fragment_id);
+    glDeleteShader(sp.vertex_id);
 
-    c.glDeleteProgram(sp.program_id);
+    glDeleteProgram(sp.program_id);
 }
 
-pub fn getAttribLocation(sp: Program, name: [*]const u8) !c.GLint {
-    const id = c.glGetAttribLocation(sp.program_id, name);
+pub fn getAttribLocation(sp: Program, name: [*]const u8) !GLint {
+    const id = glGetAttribLocation(sp.program_id, name);
     if (id == -1) {
         std.debug.warn("invalid attrib: {s}\n", name);
         return error.ShaderInvalidAttrib;
@@ -103,8 +106,8 @@ pub fn getAttribLocation(sp: Program, name: [*]const u8) !c.GLint {
     return id;
 }
 
-pub fn getUniformLocation(sp: Program, name: [*]const u8) c.GLint {
-    const id = c.glGetUniformLocation(sp.program_id, name);
+pub fn getUniformLocation(sp: Program, name: [*]const u8) GLint {
+    const id = glGetUniformLocation(sp.program_id, name);
     if (id == -1) {
         std.debug.warn("(warning) invalid uniform: {s}\n", name);
     }

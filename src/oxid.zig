@@ -1,9 +1,12 @@
+usingnamespace @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
-
-const c = @import("platform/c.zig");
 
 const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
@@ -22,13 +25,13 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const datafile = @import("oxid/datafile.zig");
-const components = @import("oxid/components.zig");
+const c = @import("oxid/components.zig");
 
 // See https://github.com/zig-lang/zig/issues/565
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_DISPLAY(X)  (SDL_WINDOWPOS_UNDEFINED_MASK|(X))
 // SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
-const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, c.SDL_WINDOWPOS_UNDEFINED_MASK);
+const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
 // this many pixels is added to the top of the window for font stuff
 // TODO - move to another file
@@ -72,24 +75,24 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
     }
 }
 
-fn translateKey(sym: c.SDL_Keycode) ?Key {
+fn translateKey(sym: SDL_Keycode) ?Key {
     return switch (sym) {
-        c.SDLK_ESCAPE => Key.Escape,
-        c.SDLK_BACKSPACE => Key.Backspace,
-        c.SDLK_RETURN => Key.Return,
-        c.SDLK_F2 => Key.F2,
-        c.SDLK_F3 => Key.F3,
-        c.SDLK_F4 => Key.F4,
-        c.SDLK_F5 => Key.F5,
-        c.SDLK_UP => Key.Up,
-        c.SDLK_DOWN => Key.Down,
-        c.SDLK_LEFT => Key.Left,
-        c.SDLK_RIGHT => Key.Right,
-        c.SDLK_SPACE => Key.Space,
-        c.SDLK_BACKQUOTE => Key.Backquote,
-        c.SDLK_m => Key.M,
-        c.SDLK_n => Key.N,
-        c.SDLK_y => Key.Y,
+        SDLK_ESCAPE => Key.Escape,
+        SDLK_BACKSPACE => Key.Backspace,
+        SDLK_RETURN => Key.Return,
+        SDLK_F2 => Key.F2,
+        SDLK_F3 => Key.F3,
+        SDLK_F4 => Key.F4,
+        SDLK_F5 => Key.F5,
+        SDLK_UP => Key.Up,
+        SDLK_DOWN => Key.Down,
+        SDLK_LEFT => Key.Left,
+        SDLK_RIGHT => Key.Right,
+        SDLK_SPACE => Key.Space,
+        SDLK_BACKQUOTE => Key.Backquote,
+        SDLK_m => Key.M,
+        SDLK_n => Key.N,
+        SDLK_y => Key.Y,
         else => null,
     };
 }
@@ -108,11 +111,11 @@ pub fn main() void {
     const g = &game_state;
     g.audio_module.initialized = false;
 
-    if (c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_AUDIO) != 0) {
-        c.SDL_Log(c"Unable to initialize SDL: %s", c.SDL_GetError());
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+        SDL_Log(c"Unable to initialize SDL: %s", SDL_GetError());
         return;
     }
-    defer c.SDL_Quit();
+    defer SDL_Quit();
 
     const virtual_window_width: u32 = VWIN_W;
     const virtual_window_height: u32 = VWIN_H;
@@ -124,9 +127,9 @@ pub fn main() void {
     const max_scale = 4;
 
     // get the desktop resolution (for the first display)
-    var dm: c.SDL_DisplayMode = undefined;
+    var dm: SDL_DisplayMode = undefined;
 
-    if (c.SDL_GetDesktopDisplayMode(0, &dm) != 0) {
+    if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
         std.debug.warn("Failed to query desktop display mode.\n");
     } else {
         // pick a window size that isn't bigger than the desktop resolution
@@ -146,36 +149,36 @@ pub fn main() void {
         }
     }
 
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_DOUBLEBUFFER), 1);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_BUFFER_SIZE), 32);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_RED_SIZE), 8);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_GREEN_SIZE), 8);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_BLUE_SIZE), 8);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_ALPHA_SIZE), 8);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_DEPTH_SIZE), 24);
-    _ = c.SDL_GL_SetAttribute(@intToEnum(c.SDL_GLattr, c.SDL_GL_STENCIL_SIZE), 8);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DOUBLEBUFFER), 1);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BUFFER_SIZE), 32);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_RED_SIZE), 8);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_GREEN_SIZE), 8);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BLUE_SIZE), 8);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_ALPHA_SIZE), 8);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DEPTH_SIZE), 24);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_STENCIL_SIZE), 8);
 
-    const window = c.SDL_CreateWindow(
+    const window = SDL_CreateWindow(
         c"Oxid",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         @intCast(c_int, window_width),
         @intCast(c_int, window_height),
-        c.SDL_WINDOW_OPENGL,
+        SDL_WINDOW_OPENGL,
     ) orelse {
-        c.SDL_Log(c"Unable to create window: %s", c.SDL_GetError());
+        SDL_Log(c"Unable to create window: %s", SDL_GetError());
         return;
     };
-    defer c.SDL_DestroyWindow(window);
+    defer SDL_DestroyWindow(window);
 
     var audio_user_data = AudioUserData {
         .g = g,
         .sample_rate = audio_sample_rate,
     };
 
-    var want: c.SDL_AudioSpec = undefined;
+    var want: SDL_AudioSpec = undefined;
     want.freq = @intCast(c_int, audio_sample_rate);
-    want.format = c.AUDIO_S16LSB;
+    want.format = AUDIO_S16LSB;
     want.channels = 1;
     want.samples = audio_buffer_size;
     want.callback = audioCallback;
@@ -183,7 +186,7 @@ pub fn main() void {
 
     // TODO - allow SDL to pick something different? (make sure to update
     // ps.audio_user_data.sample_rate)
-    const device: c.SDL_AudioDeviceID = c.SDL_OpenAudioDevice(
+    const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
         0, // device name (NULL)
         0, // non-zero to open for recording instead of playback
         &want, // desired output format
@@ -191,18 +194,18 @@ pub fn main() void {
         0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
     );
     if (device == 0) {
-        c.SDL_Log(c"Failed to open audio: %s", c.SDL_GetError());
+        SDL_Log(c"Failed to open audio: %s", SDL_GetError());
         return; // error.SDLInitializationFailed;
     }
-    defer c.SDL_CloseAudio();
+    defer SDL_CloseAudio();
 
-    const glcontext = c.SDL_GL_CreateContext(window) orelse {
-        c.SDL_Log(c"SDL_GL_CreateContext failed: %s", c.SDL_GetError());
+    const glcontext = SDL_GL_CreateContext(window) orelse {
+        SDL_Log(c"SDL_GL_CreateContext failed: %s", SDL_GetError());
         return; // error.SDLInitializationFailed;
     };
-    defer c.SDL_GL_DeleteContext(glcontext);
+    defer SDL_GL_DeleteContext(glcontext);
 
-    _ = c.SDL_GL_MakeCurrent(window, glcontext);
+    _ = SDL_GL_MakeCurrent(window, glcontext);
 
     platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
@@ -216,11 +219,11 @@ pub fn main() void {
     defer platform_draw.deinit(&g.draw_state);
 
     // FIXME can i move this lower down and get rid of the `initialized` field in the audio module
-    c.SDL_PauseAudioDevice(device, 0); // unpause
+    SDL_PauseAudioDevice(device, 0); // unpause
 
     defer {
-        c.SDL_PauseAudioDevice(device, 1);
-        c.SDL_CloseAudioDevice(device);
+        SDL_PauseAudioDevice(device, 1);
+        SDL_CloseAudioDevice(device);
     }
 
     const rand_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF);
@@ -264,15 +267,15 @@ pub fn main() void {
 
     var quit = false;
     while (!quit) {
-        var sdl_event: c.SDL_Event = undefined;
+        var sdl_event: SDL_Event = undefined;
 
-        while (c.SDL_PollEvent(&sdl_event) != 0) {
+        while (SDL_PollEvent(&sdl_event) != 0) {
             switch (sdl_event.type) {
-                c.SDL_KEYDOWN => {
+                SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
                             if (input.getCommandForKey(key)) |command| {
-                                _ = p.EventInput.spawn(&g.session, components.EventInput {
+                                _ = p.EventInput.spawn(&g.session, c.EventInput {
                                     .command = command,
                                     .down = true,
                                 }) catch undefined;
@@ -295,10 +298,10 @@ pub fn main() void {
                         }
                     }
                 },
-                c.SDL_KEYUP => {
+                SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
                         if (input.getCommandForKey(key)) |command| {
-                            _ = p.EventInput.spawn(&g.session, components.EventInput {
+                            _ = p.EventInput.spawn(&g.session, c.EventInput {
                                 .command = command,
                                 .down = false,
                             }) catch undefined;
@@ -311,7 +314,7 @@ pub fn main() void {
                         }
                     }
                 },
-                c.SDL_QUIT => {
+                SDL_QUIT => {
                     quit = true;
                 },
                 else => {},
@@ -324,31 +327,31 @@ pub fn main() void {
             gameFrame(&g.session);
             perf.end(&perf.timers.Frame, g.perf_spam);
 
-            if (g.session.findFirst(components.EventQuit) != null) {
+            if (g.session.findFirst(c.EventQuit) != null) {
                 quit = true;
                 break;
             }
 
             saveHighScore(g, &hunk.low());
 
-            c.SDL_LockAudioDevice(device);
+            SDL_LockAudioDevice(device);
             playSounds(g, muted, @intToFloat(f32, num_frames));
-            c.SDL_UnlockAudioDevice(device);
+            SDL_UnlockAudioDevice(device);
 
             drawMain(g, 1.0 / @intToFloat(f32, i + 1));
 
             gameFrameCleanup(&g.session);
         }
 
-        c.SDL_GL_SwapWindow(window);
+        SDL_GL_SwapWindow(window);
 
         // FIXME - try to detect if vsync is enabled...
-        // c.SDL_Delay(17);
+        // SDL_Delay(17);
     }
 }
 
 fn saveHighScore(g: *GameState, hunk_side: *HunkSide) void {
-    var it = g.session.iter(components.EventSaveHighScore); while (it.next()) |object| {
+    var it = g.session.iter(c.EventSaveHighScore); while (it.next()) |object| {
         datafile.saveHighScore(hunk_side, object.data.high_score) catch |err| {
             std.debug.warn("Failed to save high score to disk: {}\n", err);
         };

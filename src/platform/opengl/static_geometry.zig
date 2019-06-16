@@ -1,62 +1,65 @@
+usingnamespace @cImport({
+    @cInclude("epoxy/gl.h");
+});
+
 const std = @import("std");
-const c = @import("../c.zig");
 
 pub const BUFFER_VERTICES = 4*512; // render up to 512 quads at once
 
 pub const StaticGeometry = struct{
-    rect_2d_vertex_buffer: c.GLuint,
-    rect_2d_blit_texcoord_buffer: c.GLuint,
+    rect_2d_vertex_buffer: GLuint,
+    rect_2d_blit_texcoord_buffer: GLuint,
 
-    dyn_vertex_buffer: c.GLuint,
-    dyn_texcoord_buffer: c.GLuint,
+    dyn_vertex_buffer: GLuint,
+    dyn_texcoord_buffer: GLuint,
 
     pub fn destroy(sg: *StaticGeometry) void {
-        c.glDeleteBuffers(1, &sg.rect_2d_vertex_buffer);
-        c.glDeleteBuffers(1, &sg.rect_2d_blit_texcoord_buffer);
-        c.glDeleteBuffers(1, &sg.dyn_vertex_buffer);
-        c.glDeleteBuffers(1, &sg.dyn_texcoord_buffer);
+        glDeleteBuffers(1, &sg.rect_2d_vertex_buffer);
+        glDeleteBuffers(1, &sg.rect_2d_blit_texcoord_buffer);
+        glDeleteBuffers(1, &sg.dyn_vertex_buffer);
+        glDeleteBuffers(1, &sg.dyn_texcoord_buffer);
     }
 };
 
-pub fn updateVbo(vbo: c.GLuint, maybe_data2f: ?[]f32) void {
-    const size = BUFFER_VERTICES * 2 * @sizeOf(c.GLfloat);
+pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
+    const size = BUFFER_VERTICES * 2 * @sizeOf(GLfloat);
     const null_data = @intToPtr(?*const c_void, 0);
 
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-    c.glBufferData(c.GL_ARRAY_BUFFER, size, null_data, c.GL_STREAM_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
     if (maybe_data2f) |data2f| {
         std.debug.assert(data2f.len == 2 * BUFFER_VERTICES);
-        c.glBufferData(c.GL_ARRAY_BUFFER, size, &data2f[0], c.GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, size, &data2f[0], GL_STREAM_DRAW);
     }
 }
 
 pub fn createStaticGeometry() StaticGeometry {
     var sg: StaticGeometry = undefined;
 
-    c.glGenBuffers(1, &sg.dyn_vertex_buffer);
+    glGenBuffers(1, &sg.dyn_vertex_buffer);
     updateVbo(sg.dyn_vertex_buffer, null);
-    c.glGenBuffers(1, &sg.dyn_texcoord_buffer);
+    glGenBuffers(1, &sg.dyn_texcoord_buffer);
     updateVbo(sg.dyn_texcoord_buffer, null);
 
-    const rect_2d_vertexes = [_][2]c.GLfloat{
-        [_]c.GLfloat{ 0.0, 0.0 },
-        [_]c.GLfloat{ 0.0, 1.0 },
-        [_]c.GLfloat{ 1.0, 0.0 },
-        [_]c.GLfloat{ 1.0, 1.0 },
+    const rect_2d_vertexes = [_][2]GLfloat{
+        [_]GLfloat{ 0.0, 0.0 },
+        [_]GLfloat{ 0.0, 1.0 },
+        [_]GLfloat{ 1.0, 0.0 },
+        [_]GLfloat{ 1.0, 1.0 },
     };
-    c.glGenBuffers(1, &sg.rect_2d_vertex_buffer);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_vertex_buffer);
-    c.glBufferData(c.GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(c.GLfloat), &rect_2d_vertexes[0][0], c.GL_STATIC_DRAW);
+    glGenBuffers(1, &sg.rect_2d_vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, sg.rect_2d_vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(GLfloat), &rect_2d_vertexes[0][0], GL_STATIC_DRAW);
 
-    const rect_2d_blit_texcoords = [_][2]c.GLfloat{
-        [_]c.GLfloat{ 0.0, 1.0 },
-        [_]c.GLfloat{ 0.0, 0.0 },
-        [_]c.GLfloat{ 1.0, 1.0 },
-        [_]c.GLfloat{ 1.0, 0.0 },
+    const rect_2d_blit_texcoords = [_][2]GLfloat{
+        [_]GLfloat{ 0.0, 1.0 },
+        [_]GLfloat{ 0.0, 0.0 },
+        [_]GLfloat{ 1.0, 1.0 },
+        [_]GLfloat{ 1.0, 0.0 },
     };
-    c.glGenBuffers(1, &sg.rect_2d_blit_texcoord_buffer);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sg.rect_2d_blit_texcoord_buffer);
-    c.glBufferData(c.GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(c.GLfloat), &rect_2d_blit_texcoords, c.GL_STATIC_DRAW);
+    glGenBuffers(1, &sg.rect_2d_blit_texcoord_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, sg.rect_2d_blit_texcoord_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * @sizeOf(GLfloat), &rect_2d_blit_texcoords, GL_STATIC_DRAW);
 
     return sg;
 }
