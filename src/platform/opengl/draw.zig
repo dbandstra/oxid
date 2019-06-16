@@ -6,14 +6,16 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const shaders = @import("shaders.zig");
 const shader_textured = @import("shader_textured.zig");
-const Texture = @import("texture.zig").Texture;
-const uploadTexture = @import("texture.zig").uploadTexture;
 const draw = @import("../../common/draw.zig");
 
 pub const GlitchMode = enum {
     Normal,
     QuadStrips,
     WholeTilesets,
+};
+
+pub const Texture = struct {
+    handle: GLuint,
 };
 
 const DrawBuffer = struct {
@@ -158,6 +160,31 @@ pub fn deinit(ds: *DrawState) void {
     glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     shaders.destroy(ds.shader_textured.program);
+}
+
+pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
+    var texid: GLuint = undefined;
+    glGenTextures(1, &texid);
+    glBindTexture(GL_TEXTURE_2D, texid);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glTexImage2D(
+        GL_TEXTURE_2D, // target
+        0, // level
+        GL_RGBA, // internalFormat
+        @intCast(GLsizei, width),
+        @intCast(GLsizei, height),
+        0, // border
+        GL_RGBA, // format
+        GL_UNSIGNED_BYTE, // type
+        &pixels[0],
+    );
+    return Texture {
+        .handle = texid,
+    };
 }
 
 pub fn cycleGlitchMode(ds: *DrawState) void {

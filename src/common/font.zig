@@ -1,8 +1,8 @@
 const build_options = @import("build_options");
 const HunkSide = @import("zig-hunk").HunkSide;
 
+const pdraw = @import("pdraw");
 const draw = @import("draw.zig");
-const platform = @import("../platform.zig");
 const pcx_helper = @import("pcx_helper.zig");
 
 const FONT_FILENAME = build_options.assets_path ++ "/font.pcx";
@@ -22,13 +22,13 @@ pub fn loadFont(hunk_side: *HunkSide, font: *Font) pcx_helper.LoadPcxError!void 
     const img = try pcx_helper.loadPcx(hunk_side, FONT_FILENAME, 0);
 
     font.tileset = draw.Tileset {
-        .texture = platform.uploadTexture(img.width, img.height, img.pixels),
+        .texture = pdraw.uploadTexture(img.width, img.height, img.pixels),
         .xtiles = FONT_NUM_COLS,
         .ytiles = FONT_NUM_ROWS,
     };
 }
 
-pub fn fontDrawString(ds: *platform.DrawState, font: *const Font, x: i32, y: i32, string: []const u8) void {
+pub fn fontDrawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, string: []const u8) void {
     var ix = x;
     const w = FONT_CHAR_WIDTH;
     const h = FONT_CHAR_HEIGHT;
@@ -37,7 +37,7 @@ pub fn fontDrawString(ds: *platform.DrawState, font: *const Font, x: i32, y: i32
             .tx = char % FONT_NUM_COLS,
             .ty = char / FONT_NUM_COLS,
         };
-        platform.drawTile(ds, font.tileset, tile, ix, y, w, h, draw.Transform.Identity);
+        pdraw.tile(ds, font.tileset, tile, ix, y, w, h, draw.Transform.Identity);
         ix += FONT_CHAR_WIDTH;
     }
 }

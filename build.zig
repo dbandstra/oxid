@@ -22,6 +22,7 @@ pub fn build(b: *Builder) void {
         }
 
         exe.addPackagePath("gbe", "gbe/src/gbe.zig");
+        exe.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
         exe.addPackagePath("zang", "zang/src/zang.zig");
         exe.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
         exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");

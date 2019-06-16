@@ -1,7 +1,7 @@
-const platform = @import("../platform.zig");
+const pdraw = @import("pdraw");
 
 pub const Tileset = struct {
-    texture: platform.Texture,
+    texture: pdraw.Texture,
     xtiles: u32,
     ytiles: u32,
 };
