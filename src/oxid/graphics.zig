@@ -154,7 +154,7 @@ pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *draw.Tileset, out_palette
 
     const img = try pcx_helper.loadPcx(hunk_side, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
 
-    out_tileset.texture = platform.uploadTexture(img);
+    out_tileset.texture = platform.uploadTexture(img.width, img.height, img.pixels);
     out_tileset.xtiles = 8;
     out_tileset.ytiles = 8;
 

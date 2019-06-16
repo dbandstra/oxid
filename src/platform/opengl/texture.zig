@@ -2,13 +2,11 @@ usingnamespace @cImport({
     @cInclude("epoxy/gl.h");
 });
 
-const pcx_helper = @import("../../common/pcx_helper.zig"); // FIXME - remove this dependency
-
 pub const Texture = struct {
     handle: GLuint,
 };
 
-pub fn uploadTexture(img: pcx_helper.PcxImage) Texture {
+pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     var texid: GLuint = undefined;
     glGenTextures(1, &texid);
     glBindTexture(GL_TEXTURE_2D, texid);
@@ -21,12 +19,12 @@ pub fn uploadTexture(img: pcx_helper.PcxImage) Texture {
         GL_TEXTURE_2D, // target
         0, // level
         GL_RGBA, // internalFormat
-        @intCast(GLsizei, img.width), // width
-        @intCast(GLsizei, img.height), // height
+        @intCast(GLsizei, width),
+        @intCast(GLsizei, height),
         0, // border
         GL_RGBA, // format
         GL_UNSIGNED_BYTE, // type
-        &img.pixels[0], // data
+        &pixels[0],
     );
     return Texture {
         .handle = texid,

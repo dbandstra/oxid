@@ -22,7 +22,7 @@ pub fn loadFont(hunk_side: *HunkSide, font: *Font) pcx_helper.LoadPcxError!void 
     const img = try pcx_helper.loadPcx(hunk_side, FONT_FILENAME, 0);
 
     font.tileset = draw.Tileset {
-        .texture = platform.uploadTexture(img),
+        .texture = platform.uploadTexture(img.width, img.height, img.pixels),
         .xtiles = FONT_NUM_COLS,
         .ytiles = FONT_NUM_ROWS,
     };
