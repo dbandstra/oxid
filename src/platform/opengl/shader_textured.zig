@@ -1,7 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const c = @import("../c.zig");
-const debug_gl = @import("debug_gl.zig");
 const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 const static_geometry = @import("static_geometry.zig");
@@ -115,8 +114,6 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
 
 pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
     errdefer std.debug.warn("Failed to create textured shader program.\n");
-
-    defer debug_gl.assertNoError();
 
     const program = try shaders.compileAndLink(
         hunk_side,

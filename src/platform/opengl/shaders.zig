@@ -2,7 +2,6 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
-const debug_gl = @import("debug_gl.zig");
 
 pub const GLSLVersion = enum{ V120, V130 };
 

@@ -1,7 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const c = @import("../c.zig");
-const debug_gl = @import("debug_gl.zig");
 const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
 
@@ -67,8 +66,6 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
 
 pub fn create(hunk_side: *HunkSide, version: shaders.GLSLVersion) shaders.InitError!Shader {
     errdefer std.debug.warn("Failed to create primitive shader program.\n");
-
-    defer debug_gl.assertNoError();
 
     const program = try shaders.compileAndLink(
         hunk_side,

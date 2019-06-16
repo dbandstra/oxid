@@ -2,7 +2,6 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const c = @import("../c.zig");
 const math3d = @import("math3d.zig");
-const debug_gl = @import("debug_gl.zig");
 const shaders = @import("shaders.zig");
 const shader_primitive = @import("shader_primitive.zig");
 const shader_textured = @import("shader_textured.zig");
@@ -120,8 +119,6 @@ pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_he
     c.glFrontFace(c.GL_CCW);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
     c.glEnable(c.GL_BLEND);
-
-    debug_gl.assertNoError();
 
     ds.window_width = window_width;
     ds.window_height = window_height;
