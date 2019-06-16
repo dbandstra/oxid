@@ -28,7 +28,7 @@ pub fn drawGame(g: *GameState) void {
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null);
+        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
         drawMap(g);
         drawEntities(g, sorted_drawables);
         drawMapForeground(g);
@@ -41,7 +41,7 @@ pub fn drawGame(g: *GameState) void {
             drawExitDialog(g);
         }
     } else {
-        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null);
+        platform.drawBegin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
         drawMap(g);
         platform.drawEnd(&g.draw_state);
 
@@ -82,13 +82,13 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
         else => null,
     }) |graphic| {
         const pos = math.Vec2.scale(gridpos, levels.SUBPIXELS_PER_TILE);
-        const dx = @intToFloat(f32, @divFloor(pos.x, levels.SUBPIXELS_PER_PIXEL));
-        const dy = @intToFloat(f32, @divFloor(pos.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+        const dx = @divFloor(pos.x, levels.SUBPIXELS_PER_PIXEL);
+        const dy = @divFloor(pos.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
         const dw = levels.PIXELS_PER_TILE;
         const dh = levels.PIXELS_PER_TILE;
         platform.drawTile(
             &g.draw_state,
-            &g.tileset,
+            g.tileset,
             getGraphicTile(graphic),
             dx, dy, dw, dh,
             draw.Transform.Identity,
@@ -126,13 +126,13 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
     defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
     for (sorted_drawables) |drawable| {
-        const x = @intToFloat(f32, @divFloor(drawable.pos.x, levels.SUBPIXELS_PER_PIXEL));
-        const y = @intToFloat(f32, @divFloor(drawable.pos.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+        const x = @divFloor(drawable.pos.x, levels.SUBPIXELS_PER_PIXEL);
+        const y = @divFloor(drawable.pos.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
         const w = levels.PIXELS_PER_TILE;
         const h = levels.PIXELS_PER_TILE;
         platform.drawTile(
             &g.draw_state,
-            &g.tileset,
+            g.tileset,
             getGraphicTile(drawable.graphic),
             x, y, w, h,
             drawable.transform,
@@ -144,26 +144,29 @@ fn drawBoxes(g: *GameState) void {
     var it = g.session.iter(c.EventDrawBox); while (it.next()) |object| {
         if (object.is_active) {
             const abs_bbox = object.data.box;
-            const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, levels.SUBPIXELS_PER_PIXEL));
-            const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
-            const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, levels.SUBPIXELS_PER_PIXEL));
-            const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+            const x0 = @divFloor(abs_bbox.mins.x, levels.SUBPIXELS_PER_PIXEL);
+            const y0 = @divFloor(abs_bbox.mins.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
+            const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.SUBPIXELS_PER_PIXEL);
+            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
             const w = x1 - x0;
             const h = y1 - y0;
-            platform.drawUntexturedRect(
+            platform.drawBegin(&g.draw_state, g.draw_state.blank_tex.handle, object.data.color, 1.0, true);
+            platform.drawTile(
                 &g.draw_state,
+                g.draw_state.blank_tileset,
+                draw.Tile { .tx = 0, .ty = 0 },
                 x0, y0, w, h,
-                object.data.color,
-                true,
+                draw.Transform.Identity,
             );
+            platform.drawEnd(&g.draw_state);
         }
     }
 }
 
-fn getColour(g: *GameState, index: usize) platform.Colour {
+fn getColour(g: *GameState, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
-    return platform.Colour{
+    return draw.Color {
         .r = g.palette[index * 3 + 0],
         .g = g.palette[index * 3 + 1],
         .b = g.palette[index * 3 + 2],
@@ -181,15 +184,18 @@ fn drawHud(g: *GameState, game_active: bool) void {
     const gc_maybe = g.session.findFirst(c.GameController);
     const pc_maybe = g.session.findFirst(c.PlayerController);
 
-    platform.drawUntexturedRect(
+    platform.drawBegin(&g.draw_state, g.draw_state.blank_tex.handle, draw.Black, 1.0, false);
+    platform.drawTile(
         &g.draw_state,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
         0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
-        draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
-        false,
+        draw.Transform.Identity,
     );
+    platform.drawEnd(&g.draw_state);
 
     const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
-    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
+    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
 
     if (gc_maybe) |gc| {
         if (pc_maybe) |pc| {
@@ -206,7 +212,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
 
             platform.drawEnd(&g.draw_state);
             const heartFontColour = getColour(g, HEART_FONT_COLOUR_INDEX);
-            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, heartFontColour);
+            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, heartFontColour, 1.0, false);
             var i: u31 = 0; while (i < pc.lives) : (i += 1) {
                 fontDrawString(&g.draw_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
             }
@@ -214,12 +220,12 @@ fn drawHud(g: *GameState, game_active: bool) void {
 
             if (pc.lives == 0) {
                 const skullFontColour = getColour(g, SKULL_FONT_COLOUR_INDEX);
-                platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, skullFontColour);
+                platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, skullFontColour, 1.0, false);
                 fontDrawString(&g.draw_state, &g.font, 14*8, 0, "\x1F"); // skull
                 platform.drawEnd(&g.draw_state);
             }
 
-            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
+            platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
 
             if (maybe_player_creature) |player_creature| {
                 if (player_creature.god_mode) {
@@ -300,16 +306,18 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
         DrawCoord.Exact => |y| y,
     };
 
-    platform.drawUntexturedRect(
+    platform.drawBegin(&g.draw_state, g.draw_state.blank_tex.handle, draw.Black, 1.0, false);
+    platform.drawTile(
         &g.draw_state,
-        @intToFloat(f32, x), @intToFloat(f32, y),
-        @intToFloat(f32, w), @intToFloat(f32, h),
-        draw.Color{ .r = 0, .g = 0, .b = 0, .a = 255 },
-        false,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
+        x, y, w, h,
+        draw.Transform.Identity,
     );
+    platform.drawEnd(&g.draw_state);
 
     const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
-    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour);
+    platform.drawBegin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
     {
         var start: usize = 0;
         var sy = y + 8;

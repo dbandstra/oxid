@@ -4,11 +4,10 @@ usingnamespace @cImport({
 
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
-const static_geometry = @import("static_geometry.zig");
+const updateVbo = @import("draw.zig").updateVbo;
 
-pub const Colour = struct{
+pub const Color = struct{
     r: f32,
     g: f32,
     b: f32,
@@ -16,9 +15,9 @@ pub const Colour = struct{
 };
 
 pub const BindParams = struct{
-    mvp: *const math3d.Mat4x4,
+    mvp: []f32,
     tex: GLint,
-    colour: Colour,
+    color: Color,
     vertex_buffer: ?GLuint,
     texcoord_buffer: ?GLuint,
 };
@@ -45,10 +44,11 @@ pub const Shader = struct{
             glUniform1i(self.uniform_tex, params.tex);
         }
         if (self.uniform_colour != -1) {
-            glUniform4f(self.uniform_colour, params.colour.r, params.colour.g, params.colour.b, params.colour.a);
+            glUniform4f(self.uniform_colour, params.color.r, params.color.g, params.color.b, params.color.a);
         }
         if (self.uniform_mvp != -1) {
-            glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.data[0][0..].ptr);
+            std.debug.assert(params.mvp.len == 16);
+            glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.ptr);
         }
 
         glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
@@ -65,10 +65,10 @@ pub const Shader = struct{
     }
 
     pub fn update(self: Shader, params: UpdateParams) void {
-        static_geometry.updateVbo(params.vertex_buffer, params.vertex2f);
+        updateVbo(params.vertex_buffer, params.vertex2f);
         glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
 
-        static_geometry.updateVbo(params.texcoord_buffer, params.texcoord2f);
+        updateVbo(params.texcoord_buffer, params.texcoord2f);
         glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
     }
 };
@@ -102,13 +102,13 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
             (if (old) "" else "out vec4 FragColor;\n")
             ++
             \\uniform sampler2D Tex;
-            \\uniform vec4 Colour;
+            \\uniform vec4 Color;
             \\
             \\void main(void)
             \\{
             \\
             ++
-            "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Colour;\n"
+            "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n"
             ++
             \\}
         ,
@@ -133,6 +133,6 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
         .attrib_texcoord = try shaders.getAttribLocation(program, c"TexCoord"),
         .uniform_mvp = shaders.getUniformLocation(program, c"MVP"),
         .uniform_tex = shaders.getUniformLocation(program, c"Tex"),
-        .uniform_colour = shaders.getUniformLocation(program, c"Colour"),
+        .uniform_colour = shaders.getUniformLocation(program, c"Color"),
     };
 }

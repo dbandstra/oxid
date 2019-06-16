@@ -4,7 +4,6 @@ usingnamespace @cImport({
 
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const math3d = @import("math3d.zig");
 
 pub const GLSLVersion = enum{ V120, V130 };
 

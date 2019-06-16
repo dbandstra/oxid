@@ -4,20 +4,11 @@ usingnamespace @cImport({
 
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const math3d = @import("math3d.zig");
 const shaders = @import("shaders.zig");
-const shader_primitive = @import("shader_primitive.zig");
 const shader_textured = @import("shader_textured.zig");
-const static_geometry = @import("static_geometry.zig");
-const BUFFER_VERTICES = static_geometry.BUFFER_VERTICES;
-const updateVbo = static_geometry.updateVbo;
+const Texture = @import("texture.zig").Texture;
+const uploadTexture = @import("texture.zig").uploadTexture;
 const draw = @import("../../common/draw.zig");
-
-pub const Colour = struct {
-    r: u8,
-    g: u8,
-    b: u8,
-};
 
 pub const GlitchMode = enum {
     Normal,
@@ -27,6 +18,7 @@ pub const GlitchMode = enum {
 
 const DrawBuffer = struct {
     active: bool,
+    outline: bool,
     vertex2f: [2 * BUFFER_VERTICES]GLfloat,
     texcoord2f: [2 * BUFFER_VERTICES]GLfloat,
     num_vertices: usize,
@@ -37,6 +29,8 @@ pub const DrawInitParams = struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
 };
+
+pub const BUFFER_VERTICES = 4*512; // render up to 512 quads at once
 
 pub const DrawState = struct {
     // dimensions of the system window
@@ -50,15 +44,29 @@ pub const DrawState = struct {
     fb: GLuint,
     // render texture
     rt: GLuint,
-    shader_primitive: shader_primitive.Shader,
     shader_textured: shader_textured.Shader,
-    static_geometry: static_geometry.StaticGeometry,
+    dyn_vertex_buffer: GLuint,
+    dyn_texcoord_buffer: GLuint,
     draw_buffer: DrawBuffer,
-    projection: math3d.Mat4x4,
+    projection: [16]f32,
+    blank_tex: Texture,
+    blank_tileset: draw.Tileset,
     // some stuff
     glitch_mode: GlitchMode,
     clear_screen: bool,
 };
+
+pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
+    const size = BUFFER_VERTICES * 2 * @sizeOf(GLfloat);
+    const null_data = @intToPtr(?*const c_void, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
+    if (maybe_data2f) |data2f| {
+        std.debug.assert(data2f.len == 2 * BUFFER_VERTICES);
+        glBufferData(GL_ARRAY_BUFFER, size, &data2f[0], GL_STREAM_DRAW);
+    }
+}
 
 pub const InitError = error {
     UnsupportedOpenGLVersion,
@@ -86,13 +94,16 @@ pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_he
         return error.UnsupportedOpenGLVersion;
     };
 
-    ds.shader_primitive = try shader_primitive.create(&params.hunk.low(), glsl_version);
-    errdefer shaders.destroy(ds.shader_primitive.program);
     ds.shader_textured = try shader_textured.create(&params.hunk.low(), glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);
 
-    ds.static_geometry = static_geometry.createStaticGeometry();
-    errdefer ds.static_geometry.destroy();
+    glGenBuffers(1, &ds.dyn_vertex_buffer);
+    updateVbo(ds.dyn_vertex_buffer, null);
+    errdefer glDeleteBuffers(1, &ds.dyn_vertex_buffer);
+
+    glGenBuffers(1, &ds.dyn_texcoord_buffer);
+    updateVbo(ds.dyn_texcoord_buffer, null);
+    errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
 
     var fb: GLuint = 0;
     glGenFramebuffers(1, &fb);
@@ -131,13 +142,21 @@ pub fn init(ds: *DrawState, params: DrawInitParams, window_width: u32, window_he
     ds.rt = rt;
     ds.draw_buffer.num_vertices = 0;
 
+    const blank_tex_pixels = [_]u8{255, 255, 255, 255};
+    ds.blank_tex = uploadTexture(1, 1, blank_tex_pixels);
+    ds.blank_tileset = draw.Tileset {
+        .texture = ds.blank_tex,
+        .xtiles = 1,
+        .ytiles = 1,
+    };
+
     ds.glitch_mode = GlitchMode.Normal;
     ds.clear_screen = true;
 }
 
 pub fn deinit(ds: *DrawState) void {
-    ds.static_geometry.destroy();
-    shaders.destroy(ds.shader_primitive.program);
+    glDeleteBuffers(1, &ds.dyn_vertex_buffer);
+    glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     shaders.destroy(ds.shader_textured.program);
 }
 
@@ -152,12 +171,21 @@ pub fn cycleGlitchMode(ds: *DrawState) void {
     ds.clear_screen = true;
 }
 
+fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
+    return [16]f32 {
+        2.0 / (right - left), 0.0, 0.0, -(right + left) / (right - left),
+        0.0, 2.0 / (top - bottom), 0.0, -(top + bottom) / (top - bottom),
+        0.0, 0.0, -1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    };
+}
+
 pub fn preDraw(ds: *DrawState) void {
     const w = ds.virtual_window_width;
     const h = ds.virtual_window_height;
     const fw = @intToFloat(f32, w);
     const fh = @intToFloat(f32, h);
-    ds.projection = math3d.mat4x4_ortho(0, fw, fh, 0);
+    ds.projection = ortho(0, fw, fh, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
     if (ds.clear_screen) {
@@ -168,84 +196,37 @@ pub fn preDraw(ds: *DrawState) void {
 }
 
 pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
-    ds.projection = math3d.mat4x4_ortho(0, 1, 1, 0);
+    // blit renderbuffer to screen
+    ds.projection = ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
-    blit(ds, ds.rt, blit_alpha);
+    begin(ds, ds.rt, draw.White, blit_alpha, false);
+    tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, draw.Transform.FlipVertical);
+    end(ds);
 }
 
-// this function must be called outside begin/end
-pub fn blit(ds: *DrawState, tex_id: GLuint, alpha: f32) void {
-    std.debug.assert(!ds.draw_buffer.active);
-
-    ds.shader_textured.bind(shader_textured.BindParams {
-        .tex = 0,
-        .mvp = &ds.projection,
-        .colour = shader_textured.Colour {
-            .r = 1.0,
-            .g = 1.0,
-            .b = 1.0,
-            .a = alpha,
-        },
-        .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
-        .texcoord_buffer = ds.static_geometry.rect_2d_blit_texcoord_buffer,
-    });
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex_id);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-// this function must be called outside begin/end
-pub fn untexturedRect(ds: *DrawState, x: f32, y: f32, w: f32, h: f32, color: draw.Color, outline: bool) void {
-    std.debug.assert(!ds.draw_buffer.active);
-
-    const model = math3d.mat4x4_identity.translate(x, y, 0.0).scale(w, h, 0.0);
-    const mvp = ds.projection.mult(&model);
-
-    ds.shader_primitive.bind(shader_primitive.BindParams {
-        .color = [4]f32{
-            @intToFloat(f32, color.r) / 255.0,
-            @intToFloat(f32, color.g) / 255.0,
-            @intToFloat(f32, color.b) / 255.0,
-            @intToFloat(f32, color.a) / 255.0,
-        },
-        .mvp = &mvp,
-        .vertex_buffer = ds.static_geometry.rect_2d_vertex_buffer,
-    });
-
-    if (outline) {
-        glPolygonMode(GL_FRONT, GL_LINE);
-        glDrawArrays(GL_QUAD_STRIP, 0, 4);
-        glPolygonMode(GL_FRONT, GL_FILL);
-    } else {
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
-}
-
-pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_colour: ?Colour) void {
+pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
     ds.shader_textured.bind(shader_textured.BindParams {
         .tex = 0,
-        .colour =
-            if (maybe_colour) |colour|
-                shader_textured.Colour {
-                    .r = @intToFloat(f32, colour.r) / 255.0,
-                    .g = @intToFloat(f32, colour.g) / 255.0,
-                    .b = @intToFloat(f32, colour.b) / 255.0,
-                    .a = 1.0,
+        .color =
+            if (maybe_color) |color|
+                shader_textured.Color {
+                    .r = @intToFloat(f32, color.r) / 255.0,
+                    .g = @intToFloat(f32, color.g) / 255.0,
+                    .b = @intToFloat(f32, color.b) / 255.0,
+                    .a = alpha,
                 }
             else
-                shader_textured.Colour {
+                shader_textured.Color {
                     .r = 1.0,
                     .g = 1.0,
                     .b = 1.0,
-                    .a = 1.0,
+                    .a = alpha,
                 },
-        .mvp = &ds.projection,
+        .mvp = ds.projection[0..],
         .vertex_buffer = null,
         .texcoord_buffer = null,
     });
@@ -254,6 +235,7 @@ pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_colour: ?Colour) void {
     glBindTexture(GL_TEXTURE_2D, tex_id);
 
     ds.draw_buffer.active = true;
+    ds.draw_buffer.outline = outline;
 }
 
 pub fn end(ds: *DrawState) void {
@@ -266,17 +248,20 @@ pub fn end(ds: *DrawState) void {
 
 pub fn tile(
     ds: *DrawState,
-    tileset: *const draw.Tileset,
+    tileset: draw.Tileset,
     dtile: draw.Tile,
-    x0: f32, y0: f32, w: f32, h: f32,
+    x0: i32, y0: i32, w: i32, h: i32,
     transform: draw.Transform,
 ) void {
     std.debug.assert(ds.draw_buffer.active);
-    const x1 = x0 + w;
-    const y1 = y0 + h;
     if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles) {
         return;
     }
+    const fx0 = @intToFloat(f32, x0);
+    const fy0 = @intToFloat(f32, y0);
+    const fx1 = fx0 + @intToFloat(f32, w);
+    const fy1 = fy0 + @intToFloat(f32, h);
+
     var s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
     var t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
     var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
@@ -305,7 +290,7 @@ pub fn tile(
     std.mem.copy(
         GLfloat,
         vertex2f,
-        [8]GLfloat{x0, y0, x0, y1, x1, y1, x1, y0},
+        [8]GLfloat{fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0},
     );
     std.mem.copy(
         GLfloat,
@@ -342,12 +327,16 @@ fn flush(ds: *DrawState) void {
         return;
     }
 
-    ds.shader_textured.update(shader_textured.UpdateParams{
-        .vertex_buffer = ds.static_geometry.dyn_vertex_buffer,
+    ds.shader_textured.update(shader_textured.UpdateParams {
+        .vertex_buffer = ds.dyn_vertex_buffer,
         .vertex2f = ds.draw_buffer.vertex2f[0..],
-        .texcoord_buffer = ds.static_geometry.dyn_texcoord_buffer,
+        .texcoord_buffer = ds.dyn_texcoord_buffer,
         .texcoord2f = ds.draw_buffer.texcoord2f[0..],
     });
+
+    if (ds.draw_buffer.outline) {
+        glPolygonMode(GL_FRONT, GL_LINE);
+    }
 
     glDrawArrays(
         if (ds.glitch_mode == GlitchMode.QuadStrips)
@@ -357,6 +346,10 @@ fn flush(ds: *DrawState) void {
         0,
         @intCast(c_int, ds.draw_buffer.num_vertices),
     );
+
+    if (ds.draw_buffer.outline) {
+        glPolygonMode(GL_FRONT, GL_FILL);
+    }
 
     ds.draw_buffer.num_vertices = 0;
 }

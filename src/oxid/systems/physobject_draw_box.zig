@@ -19,7 +19,6 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),
             .g = @intCast(u8, 64 + ((int.group_index * 901) % 192)),
             .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
-            .a = 255,
         },
     }) catch undefined;
     return true;
