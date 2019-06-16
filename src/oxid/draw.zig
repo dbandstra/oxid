@@ -11,9 +11,7 @@ const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
-const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
-const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
-const LEVEL = @import("level.zig").LEVEL;
+const levels = @import("levels.zig");
 const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
@@ -72,7 +70,7 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const
 
 fn drawMapTile(g: *GameState, x: u31, y: u31) void {
     const gridpos = math.Vec2.init(x, y);
-    if (switch (LEVEL.getGridValue(gridpos).?) {
+    if (switch (levels.LEVEL1.getGridValue(gridpos).?) {
         0x00 => Graphic.Floor,
         0x80 => Graphic.Wall,
         0x81 => Graphic.Wall2,
@@ -83,11 +81,11 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
         0x86 => Graphic.EvilWallBR,
         else => null,
     }) |graphic| {
-        const pos = math.Vec2.scale(gridpos, GRIDSIZE_SUBPIXELS);
-        const dx = @intToFloat(f32, @divFloor(pos.x, math.SUBPIXELS));
-        const dy = @intToFloat(f32, @divFloor(pos.y, math.SUBPIXELS)) + HUD_HEIGHT;
-        const dw = GRIDSIZE_PIXELS;
-        const dh = GRIDSIZE_PIXELS;
+        const pos = math.Vec2.scale(gridpos, levels.SUBPIXELS_PER_TILE);
+        const dx = @intToFloat(f32, @divFloor(pos.x, levels.SUBPIXELS_PER_PIXEL));
+        const dy = @intToFloat(f32, @divFloor(pos.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+        const dw = levels.PIXELS_PER_TILE;
+        const dh = levels.PIXELS_PER_TILE;
         platform.drawTile(
             &g.draw_state,
             &g.tileset,
@@ -102,8 +100,8 @@ fn drawMap(g: *GameState) void {
     perf.begin(&perf.timers.DrawMap);
     defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
-    var y: u31 = 0; while (y < LEVEL.h) : (y += 1) {
-        var x: u31 = 0; while (x < LEVEL.w) : (x += 1) {
+    var y: u31 = 0; while (y < levels.H) : (y += 1) {
+        var x: u31 = 0; while (x < levels.W) : (x += 1) {
             drawMapTile(g, x, y);
         }
     }
@@ -128,10 +126,10 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
     defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
     for (sorted_drawables) |drawable| {
-        const x = @intToFloat(f32, @divFloor(drawable.pos.x, math.SUBPIXELS));
-        const y = @intToFloat(f32, @divFloor(drawable.pos.y, math.SUBPIXELS)) + HUD_HEIGHT;
-        const w = GRIDSIZE_PIXELS;
-        const h = GRIDSIZE_PIXELS;
+        const x = @intToFloat(f32, @divFloor(drawable.pos.x, levels.SUBPIXELS_PER_PIXEL));
+        const y = @intToFloat(f32, @divFloor(drawable.pos.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+        const w = levels.PIXELS_PER_TILE;
+        const h = levels.PIXELS_PER_TILE;
         platform.drawTile(
             &g.draw_state,
             &g.tileset,
@@ -146,10 +144,10 @@ fn drawBoxes(g: *GameState) void {
     var it = g.session.iter(c.EventDrawBox); while (it.next()) |object| {
         if (object.is_active) {
             const abs_bbox = object.data.box;
-            const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, math.SUBPIXELS));
-            const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, math.SUBPIXELS)) + HUD_HEIGHT;
-            const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, math.SUBPIXELS));
-            const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, math.SUBPIXELS)) + HUD_HEIGHT;
+            const x0 = @intToFloat(f32, @divFloor(abs_bbox.mins.x, levels.SUBPIXELS_PER_PIXEL));
+            const y0 = @intToFloat(f32, @divFloor(abs_bbox.mins.y, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
+            const x1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.x + 1, levels.SUBPIXELS_PER_PIXEL));
+            const y1 = @intToFloat(f32, @divFloor(abs_bbox.maxs.y + 1, levels.SUBPIXELS_PER_PIXEL)) + HUD_HEIGHT;
             const w = x1 - x0;
             const h = y1 - y0;
             platform.drawUntexturedRect(

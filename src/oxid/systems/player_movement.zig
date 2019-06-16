@@ -2,8 +2,7 @@ const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const Constants = @import("../constants.zig");
-const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
-const LEVEL = @import("../level.zig").LEVEL;
+const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
@@ -80,7 +79,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                 // spawn the bullet one quarter of a grid cell in front of the player
                 const pos = self.transform.pos;
                 const dir_vec = math.Direction.normal(self.phys.facing);
-                const ofs = math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+                const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
                 const bullet_pos = math.Vec2.add(pos, ofs);
                 if (p.Bullet.spawn(gs, p.Bullet.Params{
                     .inflictor_player_controller_id = self.player.player_controller_id,
@@ -222,7 +221,7 @@ fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
     // well, and make monsters avoid those too
     const pos = self.transform.pos;
     const dir_vec = math.Direction.normal(self.phys.facing);
-    const ofs = math.Vec2.scale(dir_vec, GRIDSIZE_SUBPIXELS / 4);
+    const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
     const bullet_pos = math.Vec2.add(pos, ofs);
 
     self.player.line_of_fire = getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);

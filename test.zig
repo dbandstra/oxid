@@ -1,5 +1,5 @@
 comptime {
     _ = @import("gbe/test.zig");
-    _ = @import("src/common/boxes_overlap.zig");
-    _ = @import("src/oxid/level_test.zig");
+    _ = @import("src/common/math.zig");
+    _ = @import("src/oxid/levels_test.zig");
 }

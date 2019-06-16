@@ -1,6 +1,6 @@
 const std = @import("std");
 const math = @import("../../common/math.zig");
-const LEVEL = @import("../level.zig").LEVEL;
+const levels = @import("../levels.zig");
 
 pub fn getLineOfFire(
     bullet_pos: math.Vec2,
@@ -22,7 +22,7 @@ pub fn getLineOfFire(
             math.Direction.W => box.mins.x -= 1,
         }
 
-        if (LEVEL.absBoxInWall(box, true)) {
+        if (levels.LEVEL1.absBoxInWall(box, true)) {
             switch (facing) {
                 math.Direction.N => box.mins.y += 1,
                 math.Direction.E => box.maxs.x -= 1,

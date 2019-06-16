@@ -1,6 +1,7 @@
 const gbe = @import("gbe");
 const draw = @import("../../common/draw.zig");
 const math = @import("../../common/math.zig");
+const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");
@@ -139,7 +140,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
         math.Direction.W, math.Direction.E => self.transform.pos.x,
         math.Direction.N, math.Direction.S => self.transform.pos.y,
     };
-    const sxpos = @divFloor(xpos, math.SUBPIXELS);
+    const sxpos = @divFloor(xpos, levels.SUBPIXELS_PER_PIXEL);
 
     _ = p.EventDraw.spawn(gs, c.EventDraw {
         .pos = self.transform.pos,

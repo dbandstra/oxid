@@ -1,9 +1,5 @@
 const std = @import("std");
 
-// there are 16 subpixels to a screen pixel
-// TODO - move this to another file
-pub const SUBPIXELS = 16;
-
 pub const Direction = enum {
     N,
     E,

@@ -5,15 +5,14 @@ const Graphic = @import("graphics.zig").Graphic;
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
-const GRIDSIZE_PIXELS = @import("level.zig").GRIDSIZE_PIXELS;
-const GRIDSIZE_SUBPIXELS = @import("level.zig").GRIDSIZE_SUBPIXELS;
+const levels = @import("levels.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const c = @import("components.zig");
 const audio = @import("audio.zig");
 
 fn make_bbox(diameter: u31) math.BoundingBox {
-    const graphic_diameter = GRIDSIZE_SUBPIXELS;
+    const graphic_diameter = levels.SUBPIXELS_PER_TILE;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
     return math.BoundingBox{
@@ -23,19 +22,19 @@ fn make_bbox(diameter: u31) math.BoundingBox {
 }
 
 // all entities are full size for colliding with the level
-const world_bbox = make_bbox(GRIDSIZE_SUBPIXELS);
+const world_bbox = make_bbox(levels.SUBPIXELS_PER_TILE);
 // player's ent-vs-ent bbox is 50% size
-const player_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS / 2);
+const player_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE / 2);
 // monster's ent-vs-ent bbox is 75% size
-const monster_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
+const monster_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE * 3 / 4);
 // pickups are 75% size
-const pickup_entity_bbox = make_bbox(GRIDSIZE_SUBPIXELS * 3 / 4);
+const pickup_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE * 3 / 4);
 
 pub const bullet_bbox = blk: {
-    const bullet_size = 4 * GRIDSIZE_PIXELS;
-    const min = GRIDSIZE_SUBPIXELS / 2 - bullet_size / 2;
+    const bullet_size = 4 * levels.PIXELS_PER_TILE;
+    const min = levels.SUBPIXELS_PER_TILE / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
-    break :blk math.BoundingBox{
+    break :blk math.BoundingBox {
         .mins = math.Vec2.init(min, min),
         .maxs = math.Vec2.init(max, max),
     };
@@ -50,7 +49,7 @@ pub const MainController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.MainController{
+        try gs.addComponent(entity_id, c.MainController {
             .high_score = params.high_score,
             .new_high_score = false,
             .game_running_state = null,
@@ -65,7 +64,7 @@ pub const GameController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.GameController{
+        try gs.addComponent(entity_id, c.GameController {
             .game_over = false,
             .monster_count = 0,
             .enemy_speed_level = 0,
@@ -88,7 +87,7 @@ pub const PlayerController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.PlayerController{
+        try gs.addComponent(entity_id, c.PlayerController {
             .player_id = null,
             .lives = Constants.PlayerNumLives,
             .score = 0,
@@ -109,38 +108,38 @@ pub const Player = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
-            .pos = math.Vec2.init(params.pos.x, params.pos.y + GRIDSIZE_SUBPIXELS),
+        try gs.addComponent(entity_id, c.Transform {
+            .pos = math.Vec2.init(params.pos.x, params.pos.y + levels.SUBPIXELS_PER_TILE),
         });
 
-        try gs.addComponent(entity_id, c.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject {
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
             .facing = math.Direction.E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId{ .id = 0 },
+            .owner_id = gbe.EntityId { .id = 0 },
             .ignore_pits = false,
             .flags = 0,
             .ignore_flags = 0,
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, c.Creature{
+        try gs.addComponent(entity_id, c.Creature {
             .invulnerability_timer = Constants.InvulnerabilityTime,
             .hit_points = 1,
             .flinch_timer = 0,
             .god_mode = false,
         });
 
-        try gs.addComponent(entity_id, c.Player{
+        try gs.addComponent(entity_id, c.Player {
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
             .attack_level = c.Player.AttackLevel.One,
             .speed_level = c.Player.SpeedLevel.One,
-            .spawn_anim_y_remaining = GRIDSIZE_SUBPIXELS, // will animate upwards 1 tile upon spawning
+            .spawn_anim_y_remaining = levels.SUBPIXELS_PER_TILE, // will animate upwards 1 tile upon spawning
             .dying_timer = 0,
             .last_pickup = null,
             .line_of_fire = null,
@@ -164,11 +163,11 @@ pub const PlayerCorpse = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = Graphic.ManDying6,
             .z_index = Constants.ZIndexCorpse,
             .directional = false,
@@ -192,11 +191,11 @@ pub const Monster = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject {
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -210,7 +209,7 @@ pub const Monster = struct {
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, c.Creature{
+        try gs.addComponent(entity_id, c.Creature {
             .invulnerability_timer = 0,
             .hit_points = 999, // invulnerable while spawning
             .flinch_timer = 0,
@@ -223,7 +222,7 @@ pub const Monster = struct {
             else
                 false;
 
-        try gs.addComponent(entity_id, c.Monster{
+        try gs.addComponent(entity_id, c.Monster {
             .monster_type = params.monster_type,
             .spawning_timer = Constants.MonsterSpawnTime,
             .full_hit_points = monster_values.hit_points,
@@ -260,11 +259,11 @@ pub const Web = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -278,9 +277,9 @@ pub const Web = struct {
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, c.Web{});
+        try gs.addComponent(entity_id, c.Web {});
 
-        try gs.addComponent(entity_id, c.Creature{
+        try gs.addComponent(entity_id, c.Creature {
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
@@ -310,11 +309,11 @@ pub const Bullet = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject {
             .illusory = true,
             .world_bbox = bullet_bbox,
             .entity_bbox = bullet_bbox,
@@ -336,13 +335,13 @@ pub const Bullet = struct {
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, c.Bullet{
+        try gs.addComponent(entity_id, c.Bullet {
             .inflictor_player_controller_id = params.inflictor_player_controller_id,
             .damage = params.cluster_size,
             .line_of_fire = null,
         });
 
-        try gs.addComponent(entity_id, c.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.bullet_type) {
                 BulletType.MonsterBullet => Graphic.MonBullet,
                 BulletType.PlayerBullet => switch (params.cluster_size) {
@@ -370,11 +369,11 @@ pub const Animation = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.Animation{
+        try gs.addComponent(entity_id, c.Animation {
             .simple_anim = params.simple_anim,
             .frame_index = 0,
             .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -397,11 +396,11 @@ pub const Pickup = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.Transform{
+        try gs.addComponent(entity_id, c.Transform {
             .pos = params.pos,
         });
 
-        try gs.addComponent(entity_id, c.SimpleGraphic{
+        try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.pickup_type) {
                 ConstantTypes.PickupType.PowerUp => Graphic.PowerUp,
                 ConstantTypes.PickupType.SpeedUp => Graphic.SpeedUp,
@@ -412,21 +411,21 @@ pub const Pickup = struct {
             .directional = false,
         });
 
-        try gs.addComponent(entity_id, c.PhysObject{
+        try gs.addComponent(entity_id, c.PhysObject {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
             .facing = math.Direction.E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId{ .id = 0 },
+            .owner_id = gbe.EntityId { .id = 0 },
             .ignore_pits = false,
             .flags = 0,
             .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,
         });
 
-        try gs.addComponent(entity_id, c.Pickup{
+        try gs.addComponent(entity_id, c.Pickup {
             .pickup_type = params.pickup_type,
             .get_points = pickup_values.get_points,
             .message = pickup_values.message,

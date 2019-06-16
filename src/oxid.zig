@@ -11,8 +11,7 @@ const draw = @import("common/draw.zig");
 const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
-const GRIDSIZE_PIXELS = @import("oxid/level.zig").GRIDSIZE_PIXELS;
-const LEVEL = @import("oxid/level.zig").LEVEL;
+const levels = @import("oxid/levels.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
@@ -37,8 +36,8 @@ pub const HUD_HEIGHT = 16;
 
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
-pub const VWIN_W: u31 = LEVEL.w * GRIDSIZE_PIXELS; // 320
-pub const VWIN_H: u31 = LEVEL.h * GRIDSIZE_PIXELS + HUD_HEIGHT; // 240
+pub const VWIN_W: u31 = levels.W * levels.PIXELS_PER_TILE; // 320
+pub const VWIN_H: u31 = levels.H * levels.PIXELS_PER_TILE + HUD_HEIGHT; // 240
 
 // this is a global singleton
 pub const GameState = struct {

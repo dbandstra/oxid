@@ -2,14 +2,14 @@ const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../common/math.zig");
 const Constants = @import("constants.zig");
-const LEVEL = @import("level.zig").LEVEL;
+const levels = @import("levels.zig");
 const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
 // convenience function
 pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
-    return LEVEL.boxInWall(pos, phys.world_bbox, phys.ignore_pits);
+    return levels.LEVEL1.boxInWall(pos, phys.world_bbox, phys.ignore_pits);
 }
 
 const MoveGroupMember = struct{

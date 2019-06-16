@@ -3,7 +3,7 @@ const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
-const GRIDSIZE_SUBPIXELS = @import("../level.zig").GRIDSIZE_SUBPIXELS;
+const levels = @import("../levels.zig");
 const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
@@ -104,7 +104,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
     for (spawn_locs) |loc, i| {
         _ = p.Monster.spawn(gs, p.Monster.Params {
             .wave_number = wave_number,
-            .pos = math.Vec2.scale(loc, GRIDSIZE_SUBPIXELS),
+            .pos = math.Vec2.scale(loc, levels.SUBPIXELS_PER_TILE),
             .monster_type =
                 if (i < wave.spiders)
                     ConstantTypes.MonsterType.Spider
@@ -125,7 +125,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
 fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
     var spawn_locs: [1]math.Vec2 = undefined;
     pickSpawnLocations(gs, spawn_locs[0..]);
-    const pos = math.Vec2.scale(spawn_locs[0], GRIDSIZE_SUBPIXELS);
+    const pos = math.Vec2.scale(spawn_locs[0], levels.SUBPIXELS_PER_TILE);
     _ = p.Pickup.spawn(gs, p.Pickup.Params {
         .pos = pos,
         .pickup_type = pickup_type,
