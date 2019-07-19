@@ -150,7 +150,10 @@ pub const MainModule = struct {
                 .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
                 .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
                 .Sample =>     |*wrapper| {
-                    if (wrapper.initial_sample) |sample| {
+                    if (wrapper.initial_sample) |sample_alias| {
+                        // https://github.com/ziglang/zig/issues/2915
+                        const sample = sample_alias;
+
                         wrapper.initial_sample = null;
                         wrapper.iq.push(impulse_frame, SamplerNoteParams {
                             .loop = false,
