@@ -15,7 +15,7 @@ fn make_bbox(diameter: u31) math.BoundingBox {
     const graphic_diameter = levels.SUBPIXELS_PER_TILE;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
-    return math.BoundingBox{
+    return math.BoundingBox {
         .mins = math.Vec2.init(min, min),
         .maxs = math.Vec2.init(max, max),
     };
@@ -116,7 +116,7 @@ pub const Player = struct {
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
-            .facing = math.Direction.E,
+            .facing = .E,
             .speed = 0,
             .push_dir = null,
             .owner_id = gbe.EntityId { .id = 0 },
@@ -137,8 +137,8 @@ pub const Player = struct {
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
-            .attack_level = c.Player.AttackLevel.One,
-            .speed_level = c.Player.SpeedLevel.One,
+            .attack_level = .One,
+            .speed_level = .One,
             .spawn_anim_y_remaining = levels.SUBPIXELS_PER_TILE, // will animate upwards 1 tile upon spawning
             .dying_timer = 0,
             .last_pickup = null,
@@ -168,7 +168,7 @@ pub const PlayerCorpse = struct {
         });
 
         try gs.addComponent(entity_id, c.SimpleGraphic {
-            .graphic = Graphic.ManDying6,
+            .graphic = .ManDying6,
             .z_index = Constants.ZIndexCorpse,
             .directional = false,
         });
@@ -199,10 +199,10 @@ pub const Monster = struct {
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
-            .facing = math.Direction.E,
+            .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId{ .id = 0 },
+            .owner_id = gbe.EntityId { .id = 0 },
             .ignore_pits = false,
             .flags = c.PhysObject.FLAG_MONSTER,
             .ignore_flags = 0,
@@ -267,10 +267,10 @@ pub const Web = struct {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
-            .facing = math.Direction.E,
+            .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId{ .id = 0 },
+            .owner_id = gbe.EntityId { .id = 0 },
             .ignore_pits = false,
             .flags = c.PhysObject.FLAG_WEB,
             .ignore_flags = 0,
@@ -319,8 +319,8 @@ pub const Bullet = struct {
             .entity_bbox = bullet_bbox,
             .facing = params.facing,
             .speed = switch (params.bullet_type) {
-                BulletType.MonsterBullet => Constants.MonsterBulletSpeed,
-                BulletType.PlayerBullet => Constants.PlayerBulletSpeed,
+                .MonsterBullet => Constants.MonsterBulletSpeed,
+                .PlayerBullet => Constants.PlayerBulletSpeed,
             },
             .push_dir = null,
             .owner_id = params.owner_id,
@@ -328,9 +328,9 @@ pub const Bullet = struct {
             .flags = c.PhysObject.FLAG_BULLET,
             .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
                 // monster bullets ignore all monsters and webs
-                BulletType.MonsterBullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
+                .MonsterBullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
                 // player bullets ignore only the player that shot it (via `owner_id`)
-                BulletType.PlayerBullet => 0,
+                .PlayerBullet => 0,
             },
             .internal = undefined,
         });
@@ -343,8 +343,8 @@ pub const Bullet = struct {
 
         try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.bullet_type) {
-                BulletType.MonsterBullet => Graphic.MonBullet,
-                BulletType.PlayerBullet => switch (params.cluster_size) {
+                .MonsterBullet => Graphic.MonBullet,
+                .PlayerBullet => switch (params.cluster_size) {
                     1 => Graphic.PlaBullet,
                     2 => Graphic.PlaBullet2,
                     else => Graphic.PlaBullet3,
@@ -402,10 +402,10 @@ pub const Pickup = struct {
 
         try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.pickup_type) {
-                ConstantTypes.PickupType.PowerUp => Graphic.PowerUp,
-                ConstantTypes.PickupType.SpeedUp => Graphic.SpeedUp,
-                ConstantTypes.PickupType.LifeUp => Graphic.LifeUp,
-                ConstantTypes.PickupType.Coin => Graphic.Coin,
+                .PowerUp => Graphic.PowerUp,
+                .SpeedUp => Graphic.SpeedUp,
+                .LifeUp => Graphic.LifeUp,
+                .Coin => Graphic.Coin,
             },
             .z_index = Constants.ZIndexPickup,
             .directional = false,
@@ -415,7 +415,7 @@ pub const Pickup = struct {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
-            .facing = math.Direction.E,
+            .facing = .E,
             .speed = 0,
             .push_dir = null,
             .owner_id = gbe.EntityId { .id = 0 },

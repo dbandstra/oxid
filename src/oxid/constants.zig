@@ -22,7 +22,7 @@ pub const PlayerNumLives: u32 = 3;
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
     return switch (monster_type) {
-        MonsterType.Spider => MonsterValues{
+        .Spider => MonsterValues {
             .hit_points = 1,
             .move_speed = [4]u31{ 6, 9, 12, 15 },
             .kill_points = 10,
@@ -30,7 +30,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        MonsterType.Knight => MonsterValues{
+        .Knight => MonsterValues {
             .hit_points = 2,
             .move_speed = [4]u31{ 6, 9, 12, 15 },
             .kill_points = 20,
@@ -38,7 +38,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        MonsterType.FastBug => MonsterValues{
+        .FastBug => MonsterValues {
             .hit_points = 1,
             .move_speed = [4]u31{ 12, 16, 20, 24 },
             .kill_points = 10,
@@ -46,7 +46,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        MonsterType.Squid => MonsterValues{
+        .Squid => MonsterValues {
             .hit_points = 5,
             .move_speed = [4]u31{ 3, 4, 6, 8 },
             .kill_points = 80,
@@ -54,7 +54,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = true,
             .persistent = false,
         },
-        MonsterType.Juggernaut => MonsterValues{
+        .Juggernaut => MonsterValues {
             .hit_points = 9999,
             .move_speed = [4]u31{ 4, 4, 4, 4 },
             .kill_points = 0,
@@ -67,22 +67,22 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
 
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     return switch (pickup_type) {
-        PickupType.Coin => PickupValues{
+        .Coin => PickupValues {
             .lifetime = 6*60,
             .get_points = 20,
             .message = null,
         },
-        PickupType.LifeUp => PickupValues{
+        .LifeUp => PickupValues {
             .lifetime = 15*60,
             .get_points = 0,
             .message = "Life up!",
         },
-        PickupType.PowerUp => PickupValues{
+        .PowerUp => PickupValues {
             .lifetime = 12*60,
             .get_points = 0,
             .message = "Power up!",
         },
-        PickupType.SpeedUp => PickupValues{
+        .SpeedUp => PickupValues {
             .lifetime = 12*60,
             .get_points = 0,
             .message = "Speed up!",

@@ -94,12 +94,12 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     // if monster is in a player's line of fire, try to get out of the way
     if (isInLineOfFire(gs, self)) |bullet_dir| {
         const bullet_x_axis = switch (bullet_dir) {
-            math.Direction.N, math.Direction.S => false,
-            math.Direction.W, math.Direction.E => true,
+            .N, .S => false,
+            .W, .E => true,
         };
         const self_x_axis = switch (self.phys.facing) {
-            math.Direction.N, math.Direction.S => false,
-            math.Direction.W, math.Direction.E => true,
+            .N, .S => false,
+            .W, .E => true,
         };
         if (bullet_x_axis == self_x_axis) {
             // bullet is travelling along the same axis as me. prefer to make a turn
@@ -185,7 +185,7 @@ fn chooseTurn(
 
     var choices = GameUtil.Choices.init();
 
-    if (personality == c.Monster.Personality.Chase) {
+    if (personality == .Chase) {
         if (getChaseTarget(gs)) |target_pos| {
             const fwd = math.Direction.normal(facing);
             const left_normal = math.Direction.normal(left);

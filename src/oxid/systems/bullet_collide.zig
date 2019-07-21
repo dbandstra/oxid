@@ -1,6 +1,5 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const SimpleAnim = @import("../graphics.zig").SimpleAnim;
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -17,7 +16,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
         _ = p.Animation.spawn(gs, p.Animation.Params {
             .pos = self.transform.pos,
-            .simple_anim = SimpleAnim.PlaSparks,
+            .simple_anim = .PlaSparks,
             .z_index = Constants.ZIndexSparks,
         }) catch undefined;
         if (!gbe.EntityId.isZero(event.other_id)) {

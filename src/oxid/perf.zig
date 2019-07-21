@@ -21,49 +21,49 @@ pub const Timers = struct{
 pub var timers: Timers = undefined;
 
 pub fn init() void {
-    timers.Frame = Timer{
+    timers.Frame = Timer {
         .label = "Frame",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.Draw = Timer{
+    timers.Draw = Timer {
         .label = "Draw",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.DrawSort = Timer{
+    timers.DrawSort = Timer {
         .label = "DrawSort",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.DrawMap = Timer{
+    timers.DrawMap = Timer {
         .label = "DrawMap",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.DrawMapForeground = Timer{
+    timers.DrawMapForeground = Timer {
         .label = "DrawMapForeground",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.DrawEntities = Timer{
+    timers.DrawEntities = Timer {
         .label = "DrawEntities",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.DrawHud = Timer{
+    timers.DrawHud = Timer {
         .label = "DrawHud",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
-    timers.WholeDraw = Timer{
+    timers.WholeDraw = Timer {
         .label = "WholeDraw",
         .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
         .samples = [1]u64{0} ** 60,

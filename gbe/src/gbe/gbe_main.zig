@@ -1,13 +1,12 @@
 // (g)ame (b)ack (e)nd
 
-const builtin = @import("builtin");
 const std = @import("std");
 const assert = std.debug.assert;
 
 const GbeConstants = @import("gbe_constants.zig");
 const GbeIterators = @import("gbe_iterators.zig");
 
-pub const EntityId = struct{
+pub const EntityId = struct {
     id: usize,
 
     pub fn eql(a: EntityId, b: EntityId) bool {
@@ -20,7 +19,7 @@ pub const EntityId = struct{
 };
 
 pub fn ComponentObject(comptime T: type) type {
-    return struct{
+    return struct {
         is_active: bool,
         entity_id: EntityId,
         data: T,
@@ -28,7 +27,7 @@ pub fn ComponentObject(comptime T: type) type {
 }
 
 pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
-    return struct{
+    return struct {
         const Self = @This();
 
         pub const ComponentType = T;
@@ -40,7 +39,7 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
 }
 
 pub fn Session(comptime ComponentLists: type) type {
-    assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
+    assert(@typeId(ComponentLists) == .Struct);
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         // ?! is it possible to assert that a type == ComponentList(X)?
 
@@ -50,7 +49,7 @@ pub fn Session(comptime ComponentLists: type) type {
         // @compileError(@typeName(field.field_type));
     }
 
-    return struct{
+    return struct {
         const Self = @This();
         pub const ComponentListsType = ComponentLists;
 
@@ -152,7 +151,7 @@ pub fn Session(comptime ComponentLists: type) type {
         // entities to make room for new ones is not always the right choice)
         pub fn addComponent(self: *Self, entity_id: EntityId, data: var) !void {
             const T: type = @typeOf(data);
-            assert(@typeId(T) == builtin.TypeId.Struct);
+            assert(@typeId(T) == .Struct);
             var list = &@field(&self.components, @typeName(T));
             const slot = blk: {
                 var i: usize = 0;

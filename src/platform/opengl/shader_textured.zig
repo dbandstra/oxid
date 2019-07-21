@@ -7,14 +7,14 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const shaders = @import("shaders.zig");
 const updateVbo = @import("draw.zig").updateVbo;
 
-pub const Color = struct{
+pub const Color = struct {
     r: f32,
     g: f32,
     b: f32,
     a: f32,
 };
 
-pub const BindParams = struct{
+pub const BindParams = struct {
     mvp: []f32,
     tex: GLint,
     color: Color,
@@ -22,14 +22,14 @@ pub const BindParams = struct{
     texcoord_buffer: ?GLuint,
 };
 
-pub const UpdateParams = struct{
+pub const UpdateParams = struct {
     vertex_buffer: GLuint,
     texcoord_buffer: GLuint,
     vertex2f: []f32,
     texcoord2f: []f32,
 };
 
-pub const Shader = struct{
+pub const Shader = struct {
     program: shaders.Program,
     attrib_texcoord: GLint,
     attrib_position: GLint,
@@ -73,10 +73,10 @@ pub const Shader = struct{
     }
 };
 
-fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
+fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
     const old = version == shaders.GLSLVersion.V120;
 
-    return shaders.ShaderSource{
+    return shaders.ShaderSource {
         .vertex =
             "#version " ++ (if (old) "120" else "130") ++ "\n"
             ++
@@ -115,17 +115,17 @@ fn getSource(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
     };
 }
 
+fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
+    return switch (version) {
+        .V120 => getSourceComptime(.V120),
+        .V130 => getSourceComptime(.V130),
+    };
+}
+
 pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
     errdefer std.debug.warn("Failed to create textured shader program.\n");
 
-    const program = try shaders.compileAndLink(
-        hunk_side,
-        "textured",
-        switch (glsl_version) {
-            shaders.GLSLVersion.V120 => getSource(shaders.GLSLVersion.V120),
-            shaders.GLSLVersion.V130 => getSource(shaders.GLSLVersion.V130),
-        },
-    );
+    const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 
     return Shader{
         .program = program,

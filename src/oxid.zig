@@ -68,7 +68,7 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
     if (g.audio_module.initialized) {
         const buf = g.audio_module.paint(sample_rate, &g.session);
 
-        zang.mixDown(out_bytes, buf, zang.AudioFormat.S16LSB, 1, 0, 0.5);
+        zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, 0.5);
     } else {
         // note to self: change this if we ever use an unsigned audio format
         std.mem.set(u8, out_bytes, 0);
@@ -281,16 +281,16 @@ pub fn main() void {
                                 }) catch undefined;
                             }
                             switch (key) {
-                                Key.Backquote => {
+                                .Backquote => {
                                     fast_forward = true;
                                 },
-                                Key.F4 => {
+                                .F4 => {
                                     g.perf_spam = !g.perf_spam;
                                 },
-                                Key.F5 => {
+                                .F5 => {
                                     platform_draw.cycleGlitchMode(&g.draw_state);
                                 },
-                                Key.M => {
+                                .M => {
                                     muted = !muted;
                                 },
                                 else => {},
@@ -307,7 +307,7 @@ pub fn main() void {
                             }) catch undefined;
                         }
                         switch (key) {
-                            Key.Backquote => {
+                            .Backquote => {
                                 fast_forward = false;
                             },
                             else => {},

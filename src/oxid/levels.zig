@@ -13,11 +13,11 @@ pub const TerrainType = enum {
 
 pub fn getTerrainType(value: u8) TerrainType {
     if (value == 0x82) {
-        return TerrainType.Pit;
+        return .Pit;
     } else if ((value & 0x80) != 0) {
-        return TerrainType.Wall;
+        return .Wall;
     } else {
-        return TerrainType.Floor;
+        return .Floor;
     }
 }
 
@@ -64,7 +64,7 @@ pub fn GenLevel(comptime w: u31, comptime h: u31) type {
                 while (gx <= gx1) : (gx += 1) {
                     if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
                         const tt = getTerrainType(value);
-                        if (tt == TerrainType.Wall or (!ignore_pits and tt == TerrainType.Pit)) {
+                        if (tt == .Wall or (!ignore_pits and tt == .Pit)) {
                             return true;
                         }
                     }
@@ -95,7 +95,7 @@ pub fn GenLevel(comptime w: u31, comptime h: u31) type {
             if (self.getGridValue(pos)) |value| {
                 return getTerrainType(value);
             } else {
-                return TerrainType.Wall;
+                return .Wall;
             }
         }
     };
@@ -116,7 +116,7 @@ pub const LEVEL1 = Level.init(blk: {
     const C = 0x85;
     const D = 0x86;
 
-    break :blk [_]u8{
+    break :blk [_]u8 {
         O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
         O,e,e,e,e,e,e,e,e,e,e,e,O,e,e,e,e,e,e,O,
         O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,

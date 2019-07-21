@@ -28,10 +28,10 @@ pub fn decrementTimer(timer: *u32) bool {
 
 pub fn getDirTransform(direction: math.Direction) draw.Transform {
     return switch (direction) {
-        math.Direction.N => draw.Transform.RotateCounterClockwise,
-        math.Direction.E => draw.Transform.Identity,
-        math.Direction.S => draw.Transform.RotateClockwise,
-        math.Direction.W => draw.Transform.FlipHorizontal,
+        .N => draw.Transform.RotateCounterClockwise,
+        .E => draw.Transform.Identity,
+        .S => draw.Transform.RotateClockwise,
+        .W => draw.Transform.FlipHorizontal,
     };
 }
 

@@ -16,18 +16,18 @@ pub fn getLineOfFire(
     var sanity: usize = 0;
     while (sanity < 10000) : (sanity += 1) {
         switch (facing) {
-            math.Direction.N => box.mins.y -= 1,
-            math.Direction.E => box.maxs.x += 1,
-            math.Direction.S => box.maxs.y += 1,
-            math.Direction.W => box.mins.x -= 1,
+            .N => box.mins.y -= 1,
+            .E => box.maxs.x += 1,
+            .S => box.maxs.y += 1,
+            .W => box.mins.x -= 1,
         }
 
         if (levels.LEVEL1.absBoxInWall(box, true)) {
             switch (facing) {
-                math.Direction.N => box.mins.y += 1,
-                math.Direction.E => box.maxs.x -= 1,
-                math.Direction.S => box.maxs.y -= 1,
-                math.Direction.W => box.mins.x += 1,
+                .N => box.mins.y += 1,
+                .E => box.maxs.x -= 1,
+                .S => box.maxs.y -= 1,
+                .W => box.mins.x += 1,
             }
 
             return box;

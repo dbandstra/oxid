@@ -91,7 +91,7 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
             g.tileset,
             getGraphicTile(graphic),
             dx, dy, dw, dh,
-            draw.Transform.Identity,
+            .Identity,
         );
     }
 }
@@ -156,7 +156,7 @@ fn drawBoxes(g: *GameState) void {
                 g.draw_state.blank_tileset,
                 draw.Tile { .tx = 0, .ty = 0 },
                 x0, y0, w, h,
-                draw.Transform.Identity,
+                .Identity,
             );
             pdraw.end(&g.draw_state);
         }
@@ -190,7 +190,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
         g.draw_state.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
         0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
-        draw.Transform.Identity,
+        .Identity,
     );
     pdraw.end(&g.draw_state);
 
@@ -255,19 +255,19 @@ fn drawHud(g: *GameState, game_active: bool) void {
         const y = 8*4;
 
         if (mc.new_high_score) {
-            drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER\n\nNew high score!");
+            drawTextBox(g, .Centered, DrawCoord{ .Exact = y }, "GAME OVER\n\nNew high score!");
         } else {
-            drawTextBox(g, DrawCoord.Centered, DrawCoord{ .Exact = y }, "GAME OVER");
+            drawTextBox(g, .Centered, DrawCoord{ .Exact = y }, "GAME OVER");
         }
     }
 }
 
 fn drawExitDialog(g: *GameState) void {
-    drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "Leave game? [Y/N]");
+    drawTextBox(g, .Centered, .Centered, "Leave game? [Y/N]");
 }
 
 fn drawMainMenu(g: *GameState) void {
-    drawTextBox(g, DrawCoord.Centered, DrawCoord.Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
+    drawTextBox(g, .Centered, .Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
 }
 
 const DrawCoord = union(enum){
@@ -298,12 +298,12 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     const h = 8 * (th + 2);
 
     const x = switch (dx) {
-        DrawCoord.Centered => i32(VWIN_W / 2 - w / 2),
-        DrawCoord.Exact => |x| x,
+        .Centered => i32(VWIN_W / 2 - w / 2),
+        .Exact => |x| x,
     };
     const y = switch (dy) {
-        DrawCoord.Centered => i32(VWIN_H / 2 - h / 2),
-        DrawCoord.Exact => |y| y,
+        .Centered => i32(VWIN_H / 2 - h / 2),
+        .Exact => |y| y,
     };
 
     pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.Black, 1.0, false);
@@ -312,7 +312,7 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
         g.draw_state.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
         x, y, w, h,
-        draw.Transform.Identity,
+        .Identity,
     );
     pdraw.end(&g.draw_state);
 

@@ -1,4 +1,3 @@
-const builtin = @import("builtin");
 const std = @import("std");
 const Gbe = @import("gbe_main.zig");
 
@@ -12,9 +11,9 @@ pub fn buildSystem(
     comptime SelfType: type,
     comptime think: fn(*SessionType, SelfType)bool,
 ) fn(*SessionType)void {
-    std.debug.assert(@typeId(SelfType) == builtin.TypeId.Struct);
+    std.debug.assert(@typeId(SelfType) == .Struct);
 
-    const Impl = struct{
+    const Impl = struct {
         fn runOne(
             gs: *SessionType,
             self_id: Gbe.EntityId,
@@ -35,7 +34,7 @@ pub fn buildSystem(
                 @field(self, field.name) =
                     if (ComponentType == MainComponentType)
                         main_component
-                    else if (@typeId(field.field_type) == builtin.TypeId.Optional)
+                    else if (@typeId(field.field_type) == .Optional)
                         gs.find(self_id, ComponentType)
                     else
                         gs.find(self_id, ComponentType) orelse return true;
@@ -74,7 +73,7 @@ pub fn buildSystem(
 
             inline for (@typeInfo(SelfType).Struct.fields) |field| {
                 if (field.field_type != Gbe.EntityId and
-                        @typeId(field.field_type) != builtin.TypeId.Optional) {
+                        @typeId(field.field_type) != .Optional) {
                     all_fields_optional = false;
                 }
             }
@@ -91,7 +90,7 @@ pub fn buildSystem(
                     continue;
                 }
                 // skip optional fields, unless all fields are optional
-                if (@typeId(field.field_type) == builtin.TypeId.Optional and !all_fields_optional) {
+                if (@typeId(field.field_type) == .Optional and !all_fields_optional) {
                     continue;
                 }
                 comptime const field_type = unpackComponentType(field.field_type);
@@ -121,10 +120,10 @@ pub fn buildSystem(
 
         fn unpackComponentType(comptime field_type: type) type {
             comptime var ft = field_type;
-            if (@typeId(ft) == builtin.TypeId.Optional) {
+            if (@typeId(ft) == .Optional) {
                 ft = @typeInfo(ft).Optional.child;
             }
-            if (@typeId(ft) != builtin.TypeId.Pointer) {
+            if (@typeId(ft) != .Pointer) {
                 @compileError("field must be a pointer");
                 unreachable;
             }

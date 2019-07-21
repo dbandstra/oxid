@@ -1,5 +1,4 @@
 const gbe = @import("gbe");
-const draw = @import("../../common/draw.zig");
 const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
@@ -38,13 +37,13 @@ fn think(gs: *GameSession, self: SystemData) bool {
                         Graphic.ManDying4
                     else
                         Graphic.ManDying5,
-                .transform = draw.Transform.Identity,
+                .transform = .Identity,
                 .z_index = Constants.ZIndexPlayer,
             }) catch undefined;
         } else {
             drawCreature(gs, self, DrawCreatureParams {
-                .graphic1 = Graphic.Man1,
-                .graphic2 = Graphic.Man2,
+                .graphic1 = .Man1,
+                .graphic2 = .Man2,
                 .rotates = true,
                 .z_index = Constants.ZIndexPlayer,
             });
@@ -61,38 +60,38 @@ fn think(gs: *GameSession, self: SystemData) bool {
                         Graphic.Spawn1
                     else
                         Graphic.Spawn2,
-                .transform = draw.Transform.Identity,
+                .transform = .Identity,
                 .z_index = Constants.ZIndexEnemy,
             }) catch undefined;
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
                 ConstantTypes.MonsterType.Spider => DrawCreatureParams {
-                    .graphic1 = Graphic.Spider1,
-                    .graphic2 = Graphic.Spider2,
+                    .graphic1 = .Spider1,
+                    .graphic2 = .Spider2,
                     .rotates = true,
                     .z_index = Constants.ZIndexEnemy,
                 },
                 ConstantTypes.MonsterType.Knight => DrawCreatureParams {
-                    .graphic1 = Graphic.Knight1,
-                    .graphic2 = Graphic.Knight2,
+                    .graphic1 = .Knight1,
+                    .graphic2 = .Knight2,
                     .rotates = true,
                     .z_index = Constants.ZIndexEnemy,
                 },
                 ConstantTypes.MonsterType.FastBug => DrawCreatureParams {
-                    .graphic1 = Graphic.FastBug1,
-                    .graphic2 = Graphic.FastBug2,
+                    .graphic1 = .FastBug1,
+                    .graphic2 = .FastBug2,
                     .rotates = true,
                     .z_index = Constants.ZIndexEnemy,
                 },
                 ConstantTypes.MonsterType.Squid => DrawCreatureParams {
-                    .graphic1 = Graphic.Squid1,
-                    .graphic2 = Graphic.Squid2,
+                    .graphic1 = .Squid1,
+                    .graphic2 = .Squid2,
                     .rotates = true,
                     .z_index = Constants.ZIndexEnemy,
                 },
                 ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams {
-                    .graphic1 = Graphic.Juggernaut,
-                    .graphic2 = Graphic.Juggernaut,
+                    .graphic1 = .Juggernaut,
+                    .graphic2 = .Juggernaut,
                     .rotates = false,
                     .z_index = Constants.ZIndexEnemy,
                 },
@@ -137,8 +136,8 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
     }
 
     const xpos = switch (self.phys.facing) {
-        math.Direction.W, math.Direction.E => self.transform.pos.x,
-        math.Direction.N, math.Direction.S => self.transform.pos.y,
+        .W, .E => self.transform.pos.x,
+        .N, .S => self.transform.pos.y,
     };
     const sxpos = @divFloor(xpos, levels.SUBPIXELS_PER_PIXEL);
 
@@ -150,7 +149,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
             if (params.rotates)
                 GameUtil.getDirTransform(self.phys.facing)
             else
-                draw.Transform.Identity,
+                .Identity,
         .z_index = params.z_index,
     }) catch undefined;
 }

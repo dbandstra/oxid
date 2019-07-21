@@ -1,4 +1,4 @@
-pub const MonsterType = enum{
+pub const MonsterType = enum {
     Spider,
     Knight,
     FastBug,
@@ -6,7 +6,7 @@ pub const MonsterType = enum{
     Juggernaut,
 };
 
-pub const MonsterValues = struct{
+pub const MonsterValues = struct {
     hit_points: u32,
     move_speed: [4]u31,
     kill_points: u32,
@@ -15,20 +15,20 @@ pub const MonsterValues = struct{
     persistent: bool,
 };
 
-pub const PickupType = enum{
+pub const PickupType = enum {
     Coin,
     LifeUp,
     PowerUp,
     SpeedUp,
 };
 
-pub const PickupValues = struct{
+pub const PickupValues = struct {
     lifetime: u32,
     get_points: u32,
     message: ?[]const u8,
 };
 
-pub const Wave = struct{
+pub const Wave = struct {
     spiders: u32,
     knights: u32,
     fastbugs: u32,

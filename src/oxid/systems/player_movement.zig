@@ -28,7 +28,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         self.player.spawn_anim_y_remaining -= dy;
         return true;
     } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
-        _ = p.PlayerCorpse.spawn(gs, p.PlayerCorpse.Params{
+        _ = p.PlayerCorpse.spawn(gs, p.PlayerCorpse.Params {
             .pos = self.transform.pos,
         }) catch undefined;
         return false;
@@ -81,16 +81,16 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                 const dir_vec = math.Direction.normal(self.phys.facing);
                 const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
                 const bullet_pos = math.Vec2.add(pos, ofs);
-                if (p.Bullet.spawn(gs, p.Bullet.Params{
+                if (p.Bullet.spawn(gs, p.Bullet.Params {
                     .inflictor_player_controller_id = self.player.player_controller_id,
                     .owner_id = self.id,
                     .pos = bullet_pos,
                     .facing = self.phys.facing,
-                    .bullet_type = p.Bullet.BulletType.PlayerBullet,
+                    .bullet_type = .PlayerBullet,
                     .cluster_size = switch (self.player.attack_level) {
-                        c.Player.AttackLevel.One => u32(1),
-                        c.Player.AttackLevel.Two => u32(2),
-                        c.Player.AttackLevel.Three => u32(3),
+                        .One => u32(1),
+                        .Two => u32(2),
+                        .Three => u32(3),
                     },
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;
@@ -121,9 +121,9 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
 
 fn playerMove(gs: *GameSession, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
-        c.Player.SpeedLevel.One => Constants.PlayerMoveSpeed[0],
-        c.Player.SpeedLevel.Two => Constants.PlayerMoveSpeed[1],
-        c.Player.SpeedLevel.Three => Constants.PlayerMoveSpeed[2],
+        .One => Constants.PlayerMoveSpeed[0],
+        .Two => Constants.PlayerMoveSpeed[1],
+        .Three => Constants.PlayerMoveSpeed[2],
     };
 
     if (isTouchingWeb(gs, self)) {
@@ -183,7 +183,7 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *c.PhysOb
 
     var i: i32 = 1;
     while (i < Constants.PlayerSlipThreshold) : (i += 1) {
-        if (dir == math.Direction.W or dir == math.Direction.E) {
+        if (dir == .W or dir == .E) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
                 slip_dir = math.Direction.N;
                 break;
@@ -193,7 +193,7 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *c.PhysOb
                 break;
             }
         }
-        if (dir == math.Direction.N or dir == math.Direction.S) {
+        if (dir == .N or dir == .S) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x - i, pos1.y))) {
                 slip_dir = math.Direction.W;
                 break;

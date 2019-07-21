@@ -12,7 +12,7 @@ pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
     return levels.LEVEL1.boxInWall(pos, phys.world_bbox, phys.ignore_pits);
 }
 
-const MoveGroupMember = struct{
+const MoveGroupMember = struct {
     phys: *c.PhysObject,
     next: ?*MoveGroupMember,
     entity_id: gbe.EntityId,
@@ -20,7 +20,7 @@ const MoveGroupMember = struct{
     step: u31,
 };
 
-const MoveGroup = struct{
+const MoveGroup = struct {
     head: *MoveGroupMember,
     is_active: bool,
 };
@@ -39,20 +39,20 @@ pub fn physicsFrame(gs: *GameSession) void {
         phys.internal.move_bbox.maxs = math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
         if (phys.speed != 0) {
             switch (phys.facing) {
-                math.Direction.W => phys.internal.move_bbox.mins.x -= phys.speed,
-                math.Direction.E => phys.internal.move_bbox.maxs.x += phys.speed,
-                math.Direction.N => phys.internal.move_bbox.mins.y -= phys.speed,
-                math.Direction.S => phys.internal.move_bbox.maxs.y += phys.speed,
+                .W => phys.internal.move_bbox.mins.x -= phys.speed,
+                .E => phys.internal.move_bbox.maxs.x += phys.speed,
+                .N => phys.internal.move_bbox.mins.y -= phys.speed,
+                .S => phys.internal.move_bbox.maxs.y += phys.speed,
             }
             // push_dir represents the possibility of changing direction in mid-move,
             // so factor that into the move box as well
             if (phys.push_dir) |push_dir| {
                 if (push_dir != phys.facing) {
                     switch (push_dir) {
-                        math.Direction.W => phys.internal.move_bbox.mins.x -= phys.speed,
-                        math.Direction.E => phys.internal.move_bbox.maxs.x += phys.speed,
-                        math.Direction.N => phys.internal.move_bbox.mins.y -= phys.speed,
-                        math.Direction.S => phys.internal.move_bbox.maxs.y += phys.speed,
+                        .W => phys.internal.move_bbox.mins.x -= phys.speed,
+                        .E => phys.internal.move_bbox.maxs.x += phys.speed,
+                        .N => phys.internal.move_bbox.mins.y -= phys.speed,
+                        .S => phys.internal.move_bbox.maxs.y += phys.speed,
                     }
                 }
             }
@@ -82,7 +82,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                     my_move_group = move_group;
                     // add self to the move group
                     const member = &move_group_members[i];
-                    member.* = MoveGroupMember{
+                    member.* = MoveGroupMember {
                         .phys = phys,
                         .entity_id = object.entity_id,
                         .progress = 0,
@@ -96,7 +96,7 @@ pub fn physicsFrame(gs: *GameSession) void {
         if (my_move_group == null) {
             // create a new move group
             const member = &move_group_members[i];
-            member.* = MoveGroupMember{
+            member.* = MoveGroupMember {
                 .phys = phys,
                 .entity_id = object.entity_id,
                 .progress = 0,
@@ -112,7 +112,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 num_move_groups += 1;
                 break :blk mg;
             };
-            move_group.* = MoveGroup{
+            move_group.* = MoveGroup {
                 .is_active = true,
                 .head = member,
             };
@@ -202,9 +202,9 @@ pub fn physicsFrame(gs: *GameSession) void {
                 var hit_something = false;
 
                 if (physInWall(m.phys, new_pos)) {
-                    _ = p.EventCollide.spawn(gs, c.EventCollide{
+                    _ = p.EventCollide.spawn(gs, c.EventCollide {
                         .self_id = m.entity_id,
-                        .other_id = gbe.EntityId{ .id = 0 },
+                        .other_id = gbe.EntityId { .id = 0 },
                         .propelled = true,
                     }) catch undefined;
                     hit_something = true;
@@ -246,7 +246,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
-        _ = p.EventCollide.spawn(gs, c.EventCollide{
+        _ = p.EventCollide.spawn(gs, c.EventCollide {
             .self_id = self_id,
             .other_id = other_id,
             .propelled = true,
@@ -254,7 +254,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     }
 
     if (findCollisionEvent(gs, other_id, self_id) == null) {
-        _ = p.EventCollide.spawn(gs, c.EventCollide{
+        _ = p.EventCollide.spawn(gs, c.EventCollide {
             .self_id = other_id,
             .other_id = self_id,
             .propelled = false,

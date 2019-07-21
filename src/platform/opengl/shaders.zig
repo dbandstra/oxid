@@ -5,20 +5,20 @@ usingnamespace @cImport({
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
-pub const GLSLVersion = enum{ V120, V130 };
+pub const GLSLVersion = enum { V120, V130 };
 
-pub const ShaderSource = struct{
+pub const ShaderSource = struct {
     vertex: []const u8,
     fragment: []const u8,
 };
 
-pub const Program = struct{
+pub const Program = struct {
     program_id: GLuint,
     vertex_id: GLuint,
     fragment_id: GLuint,
 };
 
-pub const InitError = error{
+pub const InitError = error {
     ShaderCompileFailed,
     ShaderLinkFailed,
     ShaderInvalidAttrib,

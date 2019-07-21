@@ -18,29 +18,29 @@ pub const run = gbe.buildSystem(GameSession, SystemData, playerReact);
 fn playerReact(gs: *GameSession, self: SystemData) bool {
     var it = gs.eventIter(c.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
         switch (event.pickup_type) {
-            ConstantTypes.PickupType.PowerUp => {
+            .PowerUp => {
                 p.playSample(gs, .PowerUp);
                 self.player.attack_level = switch (self.player.attack_level) {
-                    c.Player.AttackLevel.One => c.Player.AttackLevel.Two,
+                    .One => c.Player.AttackLevel.Two,
                     else => c.Player.AttackLevel.Three,
                 };
                 self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
             },
-            ConstantTypes.PickupType.SpeedUp => {
+            .SpeedUp => {
                 p.playSample(gs, .PowerUp);
                 self.player.speed_level = switch (self.player.speed_level) {
-                    c.Player.SpeedLevel.One => c.Player.SpeedLevel.Two,
+                    .One => c.Player.SpeedLevel.Two,
                     else => c.Player.SpeedLevel.Three,
                 };
                 self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
             },
-            ConstantTypes.PickupType.LifeUp => {
+            .LifeUp => {
                 p.playSample(gs, .ExtraLife);
                 _ = p.EventAwardLife.spawn(gs, c.EventAwardLife {
                     .player_controller_id = self.player.player_controller_id,
                 }) catch undefined;
             },
-            ConstantTypes.PickupType.Coin => {
+            .Coin => {
                 p.playSynth(gs, audio.CoinVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });

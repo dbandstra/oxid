@@ -60,7 +60,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                     if (self_monster.has_coin) {
                         _ = p.Pickup.spawn(gs, p.Pickup.Params {
                             .pos = self.transform.pos,
-                            .pickup_type = ConstantTypes.PickupType.Coin,
+                            .pickup_type = .Coin,
                         }) catch undefined;
                     }
                 }

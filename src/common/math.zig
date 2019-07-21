@@ -8,37 +8,37 @@ pub const Direction = enum {
 
     pub fn normal(direction: Direction) Vec2 {
         return switch (direction) {
-            Direction.N => Vec2.init(0, -1),
-            Direction.E => Vec2.init(1, 0),
-            Direction.S => Vec2.init(0, 1),
-            Direction.W => Vec2.init(-1, 0),
+            .N => Vec2.init(0, -1),
+            .E => Vec2.init(1, 0),
+            .S => Vec2.init(0, 1),
+            .W => Vec2.init(-1, 0),
         };
     }
 
     pub fn invert(direction: Direction) Direction {
         return switch (direction) {
-            Direction.N => Direction.S,
-            Direction.E => Direction.W,
-            Direction.S => Direction.N,
-            Direction.W => Direction.E,
+            .N => Direction.S,
+            .E => Direction.W,
+            .S => Direction.N,
+            .W => Direction.E,
         };
     }
 
     pub fn rotateCw(direction: Direction) Direction {
         return switch (direction) {
-            Direction.N => Direction.E,
-            Direction.E => Direction.S,
-            Direction.S => Direction.W,
-            Direction.W => Direction.N,
+            .N => Direction.E,
+            .E => Direction.S,
+            .S => Direction.W,
+            .W => Direction.N,
         };
     }
 
     pub fn rotateCcw(direction: Direction) Direction {
         return switch (direction) {
-            Direction.N => Direction.W,
-            Direction.E => Direction.N,
-            Direction.S => Direction.E,
-            Direction.W => Direction.S,
+            .N => Direction.W,
+            .E => Direction.N,
+            .S => Direction.E,
+            .W => Direction.S,
         };
     }
 };

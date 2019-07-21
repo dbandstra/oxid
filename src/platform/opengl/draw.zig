@@ -228,7 +228,7 @@ pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
     begin(ds, ds.rt, draw.White, blit_alpha, false);
-    tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, draw.Transform.FlipVertical);
+    tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
     end(ds);
 }
 
@@ -294,7 +294,7 @@ pub fn tile(
     var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    if (ds.glitch_mode == GlitchMode.WholeTilesets) {
+    if (ds.glitch_mode == .WholeTilesets) {
         // draw the whole tileset scaled down. with transparency this leads to
         // smearing. it's interesting how the level itself is "hidden" to begin
         // with
@@ -323,20 +323,20 @@ pub fn tile(
         GLfloat,
         texcoord2f,
         switch (transform) {
-            draw.Transform.Identity =>
+            .Identity =>
                 [8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
-            draw.Transform.FlipVertical =>
+            .FlipVertical =>
                 [8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
-            draw.Transform.FlipHorizontal =>
+            .FlipHorizontal =>
                 [8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
-            draw.Transform.RotateClockwise =>
+            .RotateClockwise =>
                 [8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
-            draw.Transform.RotateCounterClockwise =>
+            .RotateCounterClockwise =>
                 [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
         },
     );
 
-    if (ds.glitch_mode == GlitchMode.QuadStrips) {
+    if (ds.glitch_mode == .QuadStrips) {
         // swap last two vertices so that the order becomes top left, bottom left,
         // top right, bottom right (suitable for quad strips rather than individual
         // quads)
@@ -366,7 +366,7 @@ fn flush(ds: *DrawState) void {
     }
 
     glDrawArrays(
-        if (ds.glitch_mode == GlitchMode.QuadStrips)
+        if (ds.glitch_mode == .QuadStrips)
             GLenum(GL_QUAD_STRIP)
         else
             GLenum(GL_QUADS),

@@ -18,17 +18,17 @@ pub const Command = enum {
 // TODO - user-configurable
 pub fn getCommandForKey(key: Key) ?Command {
     return switch (key) {
-        Key.Up => Command.Up,
-        Key.Down => Command.Down,
-        Key.Left => Command.Left,
-        Key.Right => Command.Right,
-        Key.Space => Command.Shoot,
-        Key.Return => Command.KillAllMonsters,
-        Key.F2 => Command.ToggleDrawBoxes,
-        Key.F3 => Command.ToggleGodMode,
-        Key.Escape => Command.Escape,
-        Key.Y => Command.Yes,
-        Key.N => Command.No,
+        .Up => Command.Up,
+        .Down => Command.Down,
+        .Left => Command.Left,
+        .Right => Command.Right,
+        .Space => Command.Shoot,
+        .Return => Command.KillAllMonsters,
+        .F2 => Command.ToggleDrawBoxes,
+        .F3 => Command.ToggleGodMode,
+        .Escape => Command.Escape,
+        .Y => Command.Yes,
+        .N => Command.No,
         else => null,
     };
 }

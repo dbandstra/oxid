@@ -2,7 +2,6 @@ const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const input = @import("../input.zig");
 
 const SystemData = struct {
     mc: *c.MainController,
@@ -26,13 +25,13 @@ fn think(gs: *GameSession, self: SystemData) bool {
 fn handleExitDialogInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainController.GameRunningState) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         switch (event.data.command) {
-            input.Command.Escape,
-            input.Command.No => {
+            .Escape,
+            .No => {
                 if (event.data.down) {
                     grs.exit_dialog_open = false;
                 }
             },
-            input.Command.Yes => {
+            .Yes => {
                 if (event.data.down) {
                     leaveGame(gs, mc);
                 }
@@ -45,12 +44,12 @@ fn handleExitDialogInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainCo
 fn handleGameRunningInput(gs: *GameSession, grs: *c.MainController.GameRunningState) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         switch (event.data.command) {
-            input.Command.Escape => {
+            .Escape => {
                 if (event.data.down) {
                     grs.exit_dialog_open = true;
                 }
             },
-            input.Command.ToggleDrawBoxes => {
+            .ToggleDrawBoxes => {
                 if (event.data.down) {
                     grs.render_move_boxes = !grs.render_move_boxes;
                 }
@@ -63,12 +62,12 @@ fn handleGameRunningInput(gs: *GameSession, grs: *c.MainController.GameRunningSt
 fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         switch (event.data.command) {
-            input.Command.Escape => {
+            .Escape => {
                 if (event.data.down) {
                     _ = p.EventQuit.spawn(gs, c.EventQuit {}) catch undefined;
                 }
             },
-            input.Command.Shoot => {
+            .Shoot => {
                 if (event.data.down) {
                     startGame(gs, mc);
                 }
@@ -103,8 +102,7 @@ fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
     // remove all entities except the MainController and EventPostScore
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
-        if (ComponentType != c.MainController and
-                ComponentType != c.EventPostScore) {
+        if (ComponentType != c.MainController and ComponentType != c.EventPostScore) {
             var it = gs.iter(ComponentType); while (it.next()) |object| {
                 gs.markEntityForRemoval(object.entity_id);
             }

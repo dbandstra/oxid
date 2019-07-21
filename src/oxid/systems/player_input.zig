@@ -2,7 +2,6 @@ const std = @import("std");
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
-const input = @import("../input.zig");
 
 const SystemData = struct {
     player: *c.Player,
@@ -14,22 +13,22 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         switch (event.data.command) {
-            input.Command.Up => {
+            .Up => {
                 self.player.in_up = event.data.down;
             },
-            input.Command.Down => {
+            .Down => {
                 self.player.in_down = event.data.down;
             },
-            input.Command.Left => {
+            .Left => {
                 self.player.in_left = event.data.down;
             },
-            input.Command.Right => {
+            .Right => {
                 self.player.in_right = event.data.down;
             },
-            input.Command.Shoot => {
+            .Shoot => {
                 self.player.in_shoot = event.data.down;
             },
-            input.Command.ToggleGodMode => {
+            .ToggleGodMode => {
                 if (event.data.down) {
                     self.creature.god_mode = !self.creature.god_mode;
                 }

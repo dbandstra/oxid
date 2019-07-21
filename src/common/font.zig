@@ -37,7 +37,7 @@ pub fn fontDrawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, s
             .tx = char % FONT_NUM_COLS,
             .ty = char / FONT_NUM_COLS,
         };
-        pdraw.tile(ds, font.tileset, tile, ix, y, w, h, draw.Transform.Identity);
+        pdraw.tile(ds, font.tileset, tile, ix, y, w, h, .Identity);
         ix += FONT_CHAR_WIDTH;
     }
 }
