@@ -57,7 +57,7 @@ pub fn Session(comptime ComponentLists: type) type {
 
         next_entity_id: usize,
 
-        removals: [GbeConstants.MaxRemovalsPerFrame]EntityId,
+        removals: [GbeConstants.max_removals_per_frame]EntityId,
         num_removals: usize,
 
         components: ComponentLists,
@@ -133,7 +133,7 @@ pub fn Session(comptime ComponentLists: type) type {
         }
 
         pub fn markEntityForRemoval(self: *Self, entity_id: EntityId) void {
-            if (self.num_removals >= GbeConstants.MaxRemovalsPerFrame) {
+            if (self.num_removals >= GbeConstants.max_removals_per_frame) {
                 @panic("markEntityForRemoval: no removal slots available");
             }
             self.removals[self.num_removals] = entity_id;

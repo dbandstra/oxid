@@ -43,7 +43,7 @@ pub const WaveBeginVoice = struct {
     pub const Params = struct { sample_rate: f32, unused: bool };
     pub const NoteParams = struct { unused: bool };
 
-    pub const SoundDuration = 2.0;
+    pub const sound_duration = 2.0;
 
     instrument: Instrument,
     trigger: zang.Trigger(Instrument.NoteParams),

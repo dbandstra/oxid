@@ -6,7 +6,7 @@ pub const ExplosionVoice = struct {
     pub const Params = struct { sample_rate: f32, unused: bool };
     pub const NoteParams = struct { unused: bool };
 
-    pub const SoundDuration = 0.7;
+    pub const sound_duration = 0.7;
 
     cutoff_curve: zang.Curve,
     volume_curve: zang.Curve,

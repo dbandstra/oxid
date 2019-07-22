@@ -15,7 +15,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
     if (self.bullet.line_of_fire) |box| {
         _ = p.EventDrawBox.spawn(gs, c.EventDrawBox {
             .box = box,
-            .color = draw.Black,
+            .color = draw.black,
         }) catch undefined;
     }
     return true;

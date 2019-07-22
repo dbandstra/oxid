@@ -36,7 +36,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 // player died
                 p.playSample(gs, .PlayerScream);
                 p.playSample(gs, .PlayerDeath);
-                self_player.dying_timer = Constants.PlayerDeathAnimTime;
+                self_player.dying_timer = Constants.player_death_anim_time;
                 _ = p.EventPlayerDied.spawn(gs, c.EventPlayerDied {
                     .player_controller_id = self_player.player_controller_id,
                 }) catch undefined;
@@ -71,7 +71,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 _ = p.Animation.spawn(gs, p.Animation.Params {
                     .pos = self.transform.pos,
                     .simple_anim = SimpleAnim.Explosion,
-                    .z_index = Constants.ZIndexExplosion,
+                    .z_index = Constants.z_index_explosion,
                 }) catch undefined;
                 return false;
             }

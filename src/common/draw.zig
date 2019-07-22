@@ -26,8 +26,8 @@ pub const Color = struct {
     b: u8,
 };
 
-pub const White = Color { .r = 255, .g = 255, .b = 255 };
-pub const Black = Color { .r = 0, .g = 0, .b = 0 };
+pub const white = Color { .r = 255, .g = 255, .b = 255 };
+pub const black = Color { .r = 0, .g = 0, .b = 0 };
 
 pub const SolidParams = struct {
     color: Color,

@@ -79,7 +79,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                 // spawn the bullet one quarter of a grid cell in front of the player
                 const pos = self.transform.pos;
                 const dir_vec = math.Direction.normal(self.phys.facing);
-                const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
+                const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
                 const bullet_pos = math.Vec2.add(pos, ofs);
                 if (p.Bullet.spawn(gs, p.Bullet.Params {
                     .inflictor_player_controller_id = self.player.player_controller_id,
@@ -121,9 +121,9 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
 
 fn playerMove(gs: *GameSession, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
-        .One => Constants.PlayerMoveSpeed[0],
-        .Two => Constants.PlayerMoveSpeed[1],
-        .Three => Constants.PlayerMoveSpeed[2],
+        .One => Constants.player_move_speed[0],
+        .Two => Constants.player_move_speed[1],
+        .Three => Constants.player_move_speed[2],
     };
 
     if (isTouchingWeb(gs, self)) {
@@ -182,7 +182,7 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *c.PhysOb
     var slip_dir: ?math.Direction = null;
 
     var i: i32 = 1;
-    while (i < Constants.PlayerSlipThreshold) : (i += 1) {
+    while (i < Constants.player_slip_threshold) : (i += 1) {
         if (dir == .W or dir == .E) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
                 slip_dir = math.Direction.N;
@@ -221,7 +221,7 @@ fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
     // well, and make monsters avoid those too
     const pos = self.transform.pos;
     const dir_vec = math.Direction.normal(self.phys.facing);
-    const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
+    const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
     const bullet_pos = math.Vec2.add(pos, ofs);
 
     self.player.line_of_fire = getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);

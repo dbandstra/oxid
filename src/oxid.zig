@@ -35,12 +35,12 @@ const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
 // this many pixels is added to the top of the window for font stuff
 // TODO - move to another file
-pub const HUD_HEIGHT = 16;
+pub const hud_height = 16;
 
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
-pub const VWIN_W: u31 = levels.W * levels.PIXELS_PER_TILE; // 320
-pub const VWIN_H: u31 = levels.H * levels.PIXELS_PER_TILE + HUD_HEIGHT; // 240
+pub const vwin_w: u31 = levels.width * levels.pixels_per_tile; // 320
+pub const vwin_h: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 // this is a global singleton
 pub const GameState = struct {
@@ -117,8 +117,8 @@ pub fn main() void {
     }
     defer SDL_Quit();
 
-    const virtual_window_width: u32 = VWIN_W;
-    const virtual_window_height: u32 = VWIN_H;
+    const virtual_window_width: u32 = vwin_w;
+    const virtual_window_height: u32 = vwin_h;
     var window_width = virtual_window_width;
     var window_height = virtual_window_height;
     // the actual window size will be a multiple of the virtual window size. this

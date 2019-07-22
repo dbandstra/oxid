@@ -140,7 +140,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
             // spawn the bullet one quarter of a grid cell in front of the monster
             const pos = self.transform.pos;
             const dir_vec = math.Direction.normal(self.phys.facing);
-            const ofs = math.Vec2.scale(dir_vec, levels.SUBPIXELS_PER_TILE / 4);
+            const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
             const bullet_pos = math.Vec2.add(pos, ofs);
             _ = p.Bullet.spawn(gs, p.Bullet.Params {
                 .inflictor_player_controller_id = null,
@@ -191,9 +191,9 @@ fn chooseTurn(
             const left_normal = math.Direction.normal(left);
             const right_normal = math.Direction.normal(right);
 
-            const forward_point = math.Vec2.add(pos, math.Vec2.scale(fwd, levels.SUBPIXELS_PER_TILE));
-            const left_point = math.Vec2.add(pos, math.Vec2.scale(left_normal, levels.SUBPIXELS_PER_TILE));
-            const right_point = math.Vec2.add(pos, math.Vec2.scale(right_normal, levels.SUBPIXELS_PER_TILE));
+            const forward_point = math.Vec2.add(pos, math.Vec2.scale(fwd, levels.subpixels_per_tile));
+            const left_point = math.Vec2.add(pos, math.Vec2.scale(left_normal, levels.subpixels_per_tile));
+            const right_point = math.Vec2.add(pos, math.Vec2.scale(right_normal, levels.subpixels_per_tile));
 
             const forward_point_dist = math.Vec2.manhattanDistance(forward_point, target_pos);
             const left_point_dist = math.Vec2.manhattanDistance(left_point, target_pos);

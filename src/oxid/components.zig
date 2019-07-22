@@ -34,7 +34,7 @@ pub const Creature = struct {
 };
 
 pub const Monster = struct {
-    pub const Personality = enum{
+    pub const Personality = enum {
         Chase,
         Wander,
     };
@@ -151,13 +151,13 @@ pub const Pickup = struct {
 };
 
 pub const Player = struct {
-    pub const AttackLevel = enum{
+    pub const AttackLevel = enum {
         One,
         Two,
         Three,
     };
 
-    pub const SpeedLevel = enum{
+    pub const SpeedLevel = enum {
         One,
         Two,
         Three,
@@ -165,7 +165,7 @@ pub const Player = struct {
 
     player_controller_id: gbe.EntityId,
     trigger_released: bool,
-    bullets: [Constants.PlayerMaxBullets]?gbe.EntityId,
+    bullets: [Constants.player_max_bullets]?gbe.EntityId,
     attack_level: AttackLevel,
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,

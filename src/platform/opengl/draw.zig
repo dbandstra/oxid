@@ -21,8 +21,8 @@ pub const Texture = struct {
 const DrawBuffer = struct {
     active: bool,
     outline: bool,
-    vertex2f: [2 * BUFFER_VERTICES]GLfloat,
-    texcoord2f: [2 * BUFFER_VERTICES]GLfloat,
+    vertex2f: [2 * buffer_vertices]GLfloat,
+    texcoord2f: [2 * buffer_vertices]GLfloat,
     num_vertices: usize,
 };
 
@@ -32,7 +32,7 @@ pub const DrawInitParams = struct {
     virtual_window_height: u32,
 };
 
-pub const BUFFER_VERTICES = 4*512; // render up to 512 quads at once
+pub const buffer_vertices = 4*512; // render up to 512 quads at once
 
 pub const DrawState = struct {
     // dimensions of the system window
@@ -59,13 +59,13 @@ pub const DrawState = struct {
 };
 
 pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
-    const size = BUFFER_VERTICES * 2 * @sizeOf(GLfloat);
+    const size = buffer_vertices * 2 * @sizeOf(GLfloat);
     const null_data = @intToPtr(?*const c_void, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
     if (maybe_data2f) |data2f| {
-        std.debug.assert(data2f.len == 2 * BUFFER_VERTICES);
+        std.debug.assert(data2f.len == 2 * buffer_vertices);
         glBufferData(GL_ARRAY_BUFFER, size, &data2f[0], GL_STREAM_DRAW);
     }
 }
@@ -227,7 +227,7 @@ pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
     ds.projection = ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, @intCast(c_int, ds.window_width), @intCast(c_int, ds.window_height));
-    begin(ds, ds.rt, draw.White, blit_alpha, false);
+    begin(ds, ds.rt, draw.white, blit_alpha, false);
     tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
     end(ds);
 }
@@ -304,11 +304,11 @@ pub fn tile(
         t1 = 1;
     }
 
-    if (ds.draw_buffer.num_vertices + 4 > BUFFER_VERTICES) {
+    if (ds.draw_buffer.num_vertices + 4 > buffer_vertices) {
         flush(ds);
     }
     const num_vertices = ds.draw_buffer.num_vertices;
-    std.debug.assert(num_vertices + 4 <= BUFFER_VERTICES);
+    std.debug.assert(num_vertices + 4 <= buffer_vertices);
 
     const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + 4) * 2];
     const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + 4) * 2];

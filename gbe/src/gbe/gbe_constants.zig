@@ -1,1 +1,1 @@
-pub const MaxRemovalsPerFrame: usize = 1000;
+pub const max_removals_per_frame: usize = 1000;

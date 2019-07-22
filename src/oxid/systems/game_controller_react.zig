@@ -12,7 +12,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
     if (gs.findFirst(c.EventPlayerDied) != null) {
-        self.gc.freeze_monsters_timer = Constants.MonsterFreezeTime;
+        self.gc.freeze_monsters_timer = Constants.monster_freeze_time;
     }
     var it = gs.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
         self.gc.game_over = true;

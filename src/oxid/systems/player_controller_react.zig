@@ -16,7 +16,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         if (self.pc.lives > 0) {
             self.pc.lives -= 1;
             if (self.pc.lives > 0) {
-                self.pc.respawn_timer = Constants.PlayerRespawnTime;
+                self.pc.respawn_timer = Constants.player_respawn_time;
             } else {
                 _ = p.EventPlayerOutOfLives.spawn(gs, c.EventPlayerOutOfLives {
                     .player_controller_id = self.id,

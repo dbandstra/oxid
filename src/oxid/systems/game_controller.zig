@@ -22,7 +22,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) bool {
     // if all non-persistent monsters are dead, prepare next wave
     if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
-        self.gc.next_wave_timer = Constants.NextWaveTime;
+        self.gc.next_wave_timer = Constants.next_wave_time;
     }
     _ = util.decrementTimer(&self.gc.wave_message_timer);
     if (util.decrementTimer(&self.gc.next_wave_timer)) {
@@ -32,7 +32,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         self.gc.wave_number += 1;
         self.gc.wave_message_timer = 180;
         self.gc.enemy_speed_level = 0;
-        self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
+        self.gc.enemy_speed_timer = Constants.enemy_speed_ticks;
         const wave = createWave(gs, self.gc);
         spawnWave(gs, self.gc.wave_number, &wave);
         self.gc.enemy_speed_level = wave.speed;
@@ -40,7 +40,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         self.gc.wave_message = wave.message;
     }
     if (util.decrementTimer(&self.gc.enemy_speed_timer)) {
-        if (self.gc.enemy_speed_level < Constants.MaxEnemySpeedLevel) {
+        if (self.gc.enemy_speed_level < Constants.max_enemy_speed_level) {
             self.gc.enemy_speed_level += 1;
             p.playSynth(gs, audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (self.gc.enemy_speed_level) {
@@ -51,7 +51,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 },
             });
         }
-        self.gc.enemy_speed_timer = Constants.EnemySpeedTicks;
+        self.gc.enemy_speed_timer = Constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&self.gc.next_pickup_timer)) {
         const pickup_type =
@@ -60,15 +60,15 @@ fn think(gs: *GameSession, self: SystemData) bool {
             else
                 ConstantTypes.PickupType.PowerUp;
         spawnPickup(gs, pickup_type);
-        self.gc.next_pickup_timer = Constants.PickupSpawnTime;
+        self.gc.next_pickup_timer = Constants.pickup_spawn_time;
     }
     _ = util.decrementTimer(&self.gc.freeze_monsters_timer);
     if (getPlayerScore(gs)) |score| {
         const i  = self.gc.extra_lives_spawned;
-        if (i < Constants.ExtraLifeScoreThresholds.len) {
-            const threshold = Constants.ExtraLifeScoreThresholds[i];
+        if (i < Constants.extra_life_score_thresholds.len) {
+            const threshold = Constants.extra_life_score_thresholds[i];
             if (score >= threshold) {
-                spawnPickup(gs, ConstantTypes.PickupType.LifeUp);
+                spawnPickup(gs, .LifeUp);
                 self.gc.extra_lives_spawned += 1;
             }
         }
@@ -104,7 +104,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
     for (spawn_locs) |loc, i| {
         _ = p.Monster.spawn(gs, p.Monster.Params {
             .wave_number = wave_number,
-            .pos = math.Vec2.scale(loc, levels.SUBPIXELS_PER_TILE),
+            .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
             .monster_type =
                 if (i < wave.spiders)
                     ConstantTypes.MonsterType.Spider
@@ -125,7 +125,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
 fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
     var spawn_locs: [1]math.Vec2 = undefined;
     pickSpawnLocations(gs, spawn_locs[0..]);
-    const pos = math.Vec2.scale(spawn_locs[0], levels.SUBPIXELS_PER_TILE);
+    const pos = math.Vec2.scale(spawn_locs[0], levels.subpixels_per_tile);
     _ = p.Pickup.spawn(gs, p.Pickup.Params {
         .pos = pos,
         .pickup_type = pickup_type,

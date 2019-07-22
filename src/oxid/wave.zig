@@ -20,15 +20,15 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
     var fastbugs: u31 = 0;
     var squids: u31 = 0;
 
-    const SQUID_INTRO = u31(4);
-    const FASTBUG_INTRO = u31(6);
+    const squid_intro: u31 = 4;
+    const fastbug_intro: u31 = 6;
 
     if (wavenum == 1) {
         spiders = 6;
-    } else if (wavenum == SQUID_INTRO) {
+    } else if (wavenum == squid_intro) {
         spiders = 6;
         squids = 2;
-    } else if (wavenum == FASTBUG_INTRO) {
+    } else if (wavenum == fastbug_intro) {
         fastbugs = 6;
     } else if (wavenum == 9) {
         knights = 6;
@@ -55,7 +55,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             WaveChoice {
                 // all fastbugs
-                .weight = if (wavenum > FASTBUG_INTRO) u32(10) else u32(0),
+                .weight = if (wavenum > fastbug_intro) u32(10) else u32(0),
                 .spider_basecount = 0,
                 .knight_basecount = 0,
                 .fastbug_basecount = 5,
@@ -79,7 +79,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             WaveChoice {
                 // spiders, red spiders and squids
-                .weight = if (wavenum > SQUID_INTRO) u32(10) else u32(0),
+                .weight = if (wavenum > squid_intro) u32(10) else u32(0),
                 .spider_basecount = 4,
                 .knight_basecount = 2,
                 .fastbug_basecount = 0,
@@ -87,7 +87,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             WaveChoice {
                 // red spiders and squids
-                .weight = if (wavenum > SQUID_INTRO) u32(10) else u32(0),
+                .weight = if (wavenum > squid_intro) u32(10) else u32(0),
                 .spider_basecount = 0,
                 .knight_basecount = 5,
                 .fastbug_basecount = 0,
@@ -95,7 +95,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             WaveChoice {
                 // regular spiders, fastbugs, and squids
-                .weight = if (wavenum > FASTBUG_INTRO) u32(10) else u32(0),
+                .weight = if (wavenum > fastbug_intro) u32(10) else u32(0),
                 .spider_basecount = 4,
                 .knight_basecount = 0,
                 .fastbug_basecount = 2,

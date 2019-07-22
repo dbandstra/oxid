@@ -24,8 +24,8 @@ fn spawnPlayer(gs: *GameSession, self: SystemData) void {
     if (p.Player.spawn(gs, p.Player.Params {
         .player_controller_id = self.id,
         .pos = math.Vec2.init(
-            9 * levels.SUBPIXELS_PER_TILE + levels.SUBPIXELS_PER_TILE / 2,
-            5 * levels.SUBPIXELS_PER_TILE,
+            9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2,
+            5 * levels.subpixels_per_tile,
         ),
     })) |player_id| {
         self.pc.player_id = player_id;

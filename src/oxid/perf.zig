@@ -1,13 +1,13 @@
 const std = @import("std");
 
-pub const Timer = struct{
+pub const Timer = struct {
     label: []const u8,
     timer: std.time.Timer,
     samples: [60]u64,
     cursor: usize,
 };
 
-pub const Timers = struct{
+pub const Timers = struct {
     Frame: Timer,
     Draw: Timer,
     DrawSort: Timer,

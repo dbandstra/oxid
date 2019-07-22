@@ -12,7 +12,7 @@ const c = @import("components.zig");
 const audio = @import("audio.zig");
 
 fn make_bbox(diameter: u31) math.BoundingBox {
-    const graphic_diameter = levels.SUBPIXELS_PER_TILE;
+    const graphic_diameter = levels.subpixels_per_tile;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
     return math.BoundingBox {
@@ -22,17 +22,17 @@ fn make_bbox(diameter: u31) math.BoundingBox {
 }
 
 // all entities are full size for colliding with the level
-const world_bbox = make_bbox(levels.SUBPIXELS_PER_TILE);
+const world_bbox = make_bbox(levels.subpixels_per_tile);
 // player's ent-vs-ent bbox is 50% size
-const player_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE / 2);
+const player_entity_bbox = make_bbox(levels.subpixels_per_tile / 2);
 // monster's ent-vs-ent bbox is 75% size
-const monster_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE * 3 / 4);
+const monster_entity_bbox = make_bbox(levels.subpixels_per_tile * 3 / 4);
 // pickups are 75% size
-const pickup_entity_bbox = make_bbox(levels.SUBPIXELS_PER_TILE * 3 / 4);
+const pickup_entity_bbox = make_bbox(levels.subpixels_per_tile * 3 / 4);
 
 pub const bullet_bbox = blk: {
-    const bullet_size = 4 * levels.PIXELS_PER_TILE;
-    const min = levels.SUBPIXELS_PER_TILE / 2 - bullet_size / 2;
+    const bullet_size = 4 * levels.pixels_per_tile;
+    const min = levels.subpixels_per_tile / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
     break :blk math.BoundingBox {
         .mins = math.Vec2.init(min, min),
@@ -68,7 +68,7 @@ pub const GameController = struct {
             .game_over = false,
             .monster_count = 0,
             .enemy_speed_level = 0,
-            .enemy_speed_timer = Constants.EnemySpeedTicks,
+            .enemy_speed_timer = Constants.enemy_speed_ticks,
             .wave_number = 0,
             .next_wave_timer = 90,
             .next_pickup_timer = 15*60,
@@ -89,7 +89,7 @@ pub const PlayerController = struct {
 
         try gs.addComponent(entity_id, c.PlayerController {
             .player_id = null,
-            .lives = Constants.PlayerNumLives,
+            .lives = Constants.player_num_lives,
             .score = 0,
             .respawn_timer = 1,
         });
@@ -109,7 +109,7 @@ pub const Player = struct {
         errdefer gs.undoSpawn(entity_id);
 
         try gs.addComponent(entity_id, c.Transform {
-            .pos = math.Vec2.init(params.pos.x, params.pos.y + levels.SUBPIXELS_PER_TILE),
+            .pos = math.Vec2.init(params.pos.x, params.pos.y + levels.subpixels_per_tile),
         });
 
         try gs.addComponent(entity_id, c.PhysObject {
@@ -127,7 +127,7 @@ pub const Player = struct {
         });
 
         try gs.addComponent(entity_id, c.Creature {
-            .invulnerability_timer = Constants.InvulnerabilityTime,
+            .invulnerability_timer = Constants.invulnerability_time,
             .hit_points = 1,
             .flinch_timer = 0,
             .god_mode = false,
@@ -136,10 +136,10 @@ pub const Player = struct {
         try gs.addComponent(entity_id, c.Player {
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
-            .bullets = [_]?gbe.EntityId{null} ** Constants.PlayerMaxBullets,
+            .bullets = [_]?gbe.EntityId{null} ** Constants.player_max_bullets,
             .attack_level = .One,
             .speed_level = .One,
-            .spawn_anim_y_remaining = levels.SUBPIXELS_PER_TILE, // will animate upwards 1 tile upon spawning
+            .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
             .dying_timer = 0,
             .last_pickup = null,
             .line_of_fire = null,
@@ -169,7 +169,7 @@ pub const PlayerCorpse = struct {
 
         try gs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = .ManDying6,
-            .z_index = Constants.ZIndexCorpse,
+            .z_index = Constants.z_index_corpse,
             .directional = false,
         });
 
@@ -224,7 +224,7 @@ pub const Monster = struct {
 
         try gs.addComponent(entity_id, c.Monster {
             .monster_type = params.monster_type,
-            .spawning_timer = Constants.MonsterSpawnTime,
+            .spawning_timer = Constants.monster_spawn_time,
             .full_hit_points = monster_values.hit_points,
             .personality =
                 if (params.monster_type == ConstantTypes.MonsterType.Juggernaut)
@@ -319,8 +319,8 @@ pub const Bullet = struct {
             .entity_bbox = bullet_bbox,
             .facing = params.facing,
             .speed = switch (params.bullet_type) {
-                .MonsterBullet => Constants.MonsterBulletSpeed,
-                .PlayerBullet => Constants.PlayerBulletSpeed,
+                .MonsterBullet => Constants.monster_bullet_speed,
+                .PlayerBullet => Constants.player_bullet_speed,
             },
             .push_dir = null,
             .owner_id = params.owner_id,
@@ -350,7 +350,7 @@ pub const Bullet = struct {
                     else => Graphic.PlaBullet3,
                 },
             },
-            .z_index = Constants.ZIndexBullet,
+            .z_index = Constants.z_index_bullet,
             .directional = true,
         });
 
@@ -407,7 +407,7 @@ pub const Pickup = struct {
                 .LifeUp => Graphic.LifeUp,
                 .Coin => Graphic.Coin,
             },
-            .z_index = Constants.ZIndexPickup,
+            .z_index = Constants.z_index_pickup,
             .directional = false,
         });
 
@@ -508,7 +508,7 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
 pub fn playSynth(gs: *GameSession, params: var) void {
     _ = Sound.spawn(gs, switch (@typeOf(params)) {
         audio.AccelerateVoice.NoteParams => Sound.Params {
-            .duration = audio.AccelerateVoice.SoundDuration,
+            .duration = audio.AccelerateVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
                 .Accelerate = c.Voice.Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams) {
                     .initial_params = params,
@@ -520,7 +520,7 @@ pub fn playSynth(gs: *GameSession, params: var) void {
             },
         },
         audio.CoinVoice.NoteParams => Sound.Params {
-            .duration = audio.CoinVoice.SoundDuration,
+            .duration = audio.CoinVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
                 .Coin = c.Voice.Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams) {
                     .initial_params = params,
@@ -532,7 +532,7 @@ pub fn playSynth(gs: *GameSession, params: var) void {
             },
         },
         audio.ExplosionVoice.NoteParams => Sound.Params {
-            .duration = audio.ExplosionVoice.SoundDuration,
+            .duration = audio.ExplosionVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
                 .Explosion = c.Voice.Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams) {
                     .initial_params = params,
@@ -544,7 +544,7 @@ pub fn playSynth(gs: *GameSession, params: var) void {
             },
         },
         audio.LaserVoice.NoteParams => Sound.Params {
-            .duration = audio.LaserVoice.SoundDuration,
+            .duration = audio.LaserVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
                 .Laser = c.Voice.Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams) {
                     .initial_params = params,
@@ -556,7 +556,7 @@ pub fn playSynth(gs: *GameSession, params: var) void {
             },
         },
         audio.WaveBeginVoice.NoteParams => Sound.Params {
-            .duration = audio.WaveBeginVoice.SoundDuration,
+            .duration = audio.WaveBeginVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
                 .WaveBegin = c.Voice.Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams) {
                     .initial_params = params,

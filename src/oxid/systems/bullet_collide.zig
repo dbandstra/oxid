@@ -17,7 +17,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         _ = p.Animation.spawn(gs, p.Animation.Params {
             .pos = self.transform.pos,
             .simple_anim = .PlaSparks,
-            .z_index = Constants.ZIndexSparks,
+            .z_index = Constants.z_index_sparks,
         }) catch undefined;
         if (!gbe.EntityId.isZero(event.other_id)) {
             _ = p.EventTakeDamage.spawn(gs, c.EventTakeDamage {

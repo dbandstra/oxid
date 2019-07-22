@@ -48,7 +48,7 @@ pub const CoinVoice = struct {
         freq_mul: f32,
     };
 
-    pub const SoundDuration = 2.0;
+    pub const sound_duration = 2.0;
 
     instrument: Instrument,
     trigger: zang.Trigger(Instrument.NoteParams),

@@ -3,9 +3,9 @@ const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const VWIN_W = @import("../oxid.zig").VWIN_W;
-const VWIN_H = @import("../oxid.zig").VWIN_H;
-const HUD_HEIGHT = @import("../oxid.zig").HUD_HEIGHT;
+const vwin_w = @import("../oxid.zig").vwin_w;
+const vwin_h = @import("../oxid.zig").vwin_h;
+const hud_height = @import("../oxid.zig").hud_height;
 const GameState = @import("../oxid.zig").GameState;
 const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
@@ -16,9 +16,9 @@ const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
 
-const PRIMARY_FONT_COLOUR_INDEX = 15; // near-white
-const HEART_FONT_COLOUR_INDEX = 6; // red
-const SKULL_FONT_COLOUR_INDEX = 10; // light grey
+const primary_font_color_index = 15; // near-white
+const heart_font_color_index = 6; // red
+const skull_font_color_index = 10; // light grey
 
 pub fn drawGame(g: *GameState) void {
     const mc = g.session.findFirst(c.MainController) orelse return;
@@ -70,7 +70,7 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const
 
 fn drawMapTile(g: *GameState, x: u31, y: u31) void {
     const gridpos = math.Vec2.init(x, y);
-    if (switch (levels.LEVEL1.getGridValue(gridpos).?) {
+    if (switch (levels.level1.getGridValue(gridpos).?) {
         0x00 => Graphic.Floor,
         0x80 => Graphic.Wall,
         0x81 => Graphic.Wall2,
@@ -81,11 +81,11 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
         0x86 => Graphic.EvilWallBR,
         else => null,
     }) |graphic| {
-        const pos = math.Vec2.scale(gridpos, levels.SUBPIXELS_PER_TILE);
-        const dx = @divFloor(pos.x, levels.SUBPIXELS_PER_PIXEL);
-        const dy = @divFloor(pos.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
-        const dw = levels.PIXELS_PER_TILE;
-        const dh = levels.PIXELS_PER_TILE;
+        const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
+        const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
+        const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + hud_height;
+        const dw = levels.pixels_per_tile;
+        const dh = levels.pixels_per_tile;
         pdraw.tile(
             &g.draw_state,
             g.tileset,
@@ -100,8 +100,8 @@ fn drawMap(g: *GameState) void {
     perf.begin(&perf.timers.DrawMap);
     defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
-    var y: u31 = 0; while (y < levels.H) : (y += 1) {
-        var x: u31 = 0; while (x < levels.W) : (x += 1) {
+    var y: u31 = 0; while (y < levels.height) : (y += 1) {
+        var x: u31 = 0; while (x < levels.width) : (x += 1) {
             drawMapTile(g, x, y);
         }
     }
@@ -126,10 +126,10 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
     defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
     for (sorted_drawables) |drawable| {
-        const x = @divFloor(drawable.pos.x, levels.SUBPIXELS_PER_PIXEL);
-        const y = @divFloor(drawable.pos.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
-        const w = levels.PIXELS_PER_TILE;
-        const h = levels.PIXELS_PER_TILE;
+        const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
+        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + hud_height;
+        const w = levels.pixels_per_tile;
+        const h = levels.pixels_per_tile;
         pdraw.tile(
             &g.draw_state,
             g.tileset,
@@ -144,10 +144,10 @@ fn drawBoxes(g: *GameState) void {
     var it = g.session.iter(c.EventDrawBox); while (it.next()) |object| {
         if (object.is_active) {
             const abs_bbox = object.data.box;
-            const x0 = @divFloor(abs_bbox.mins.x, levels.SUBPIXELS_PER_PIXEL);
-            const y0 = @divFloor(abs_bbox.mins.y, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
-            const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.SUBPIXELS_PER_PIXEL);
-            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.SUBPIXELS_PER_PIXEL) + HUD_HEIGHT;
+            const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
+            const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + hud_height;
+            const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
+            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + hud_height;
             const w = x1 - x0;
             const h = y1 - y0;
             pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, object.data.color, 1.0, true);
@@ -184,17 +184,17 @@ fn drawHud(g: *GameState, game_active: bool) void {
     const gc_maybe = g.session.findFirst(c.GameController);
     const pc_maybe = g.session.findFirst(c.PlayerController);
 
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.Black, 1.0, false);
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
         &g.draw_state,
         g.draw_state.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
-        0, 0, @intToFloat(f32, VWIN_W), @intToFloat(f32, HUD_HEIGHT),
+        0, 0, @intToFloat(f32, vwin_w), @intToFloat(f32, hud_height),
         .Identity,
     );
     pdraw.end(&g.draw_state);
 
-    const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
+    const fontColour = getColour(g, primary_font_color_index);
     pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
 
     if (gc_maybe) |gc| {
@@ -211,7 +211,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
             fontDrawString(&g.draw_state, &g.font, 8*8, 0, "Lives:");
 
             pdraw.end(&g.draw_state);
-            const heartFontColour = getColour(g, HEART_FONT_COLOUR_INDEX);
+            const heartFontColour = getColour(g, heart_font_color_index);
             pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, heartFontColour, 1.0, false);
             var i: u31 = 0; while (i < pc.lives) : (i += 1) {
                 fontDrawString(&g.draw_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
@@ -219,7 +219,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
             pdraw.end(&g.draw_state);
 
             if (pc.lives == 0) {
-                const skullFontColour = getColour(g, SKULL_FONT_COLOUR_INDEX);
+                const skullFontColour = getColour(g, skull_font_color_index);
                 pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, skullFontColour, 1.0, false);
                 fontDrawString(&g.draw_state, &g.font, 14*8, 0, "\x1F"); // skull
                 pdraw.end(&g.draw_state);
@@ -270,7 +270,7 @@ fn drawMainMenu(g: *GameState) void {
     drawTextBox(g, .Centered, .Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
 }
 
-const DrawCoord = union(enum){
+const DrawCoord = union(enum) {
     Centered,
     Exact: i32,
 };
@@ -298,15 +298,15 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     const h = 8 * (th + 2);
 
     const x = switch (dx) {
-        .Centered => i32(VWIN_W / 2 - w / 2),
+        .Centered => i32(vwin_w / 2 - w / 2),
         .Exact => |x| x,
     };
     const y = switch (dy) {
-        .Centered => i32(VWIN_H / 2 - h / 2),
+        .Centered => i32(vwin_h / 2 - h / 2),
         .Exact => |y| y,
     };
 
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.Black, 1.0, false);
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
         &g.draw_state,
         g.draw_state.blank_tileset,
@@ -316,7 +316,7 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     );
     pdraw.end(&g.draw_state);
 
-    const fontColour = getColour(g, PRIMARY_FONT_COLOUR_INDEX);
+    const fontColour = getColour(g, primary_font_color_index);
     pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
     {
         var start: usize = 0;

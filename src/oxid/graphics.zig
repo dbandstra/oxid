@@ -6,8 +6,8 @@ const pdraw = @import("pdraw");
 const pcx_helper = @import("../common/pcx_helper.zig");
 const draw = @import("../common/draw.zig");
 
-const GRAPHICS_FILENAME = build_options.assets_path ++ "/mytiles.pcx";
-const TRANSPARENT_COLOR_INDEX = 27;
+const graphics_filename = build_options.assets_path ++ "/mytiles.pcx";
+const transparent_color_index = 27;
 
 pub const Graphic = enum {
     Pit,
@@ -141,7 +141,7 @@ pub fn loadTileset(hunk_side: *HunkSide, out_tileset: *draw.Tileset, out_palette
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
-    const img = try pcx_helper.loadPcx(hunk_side, GRAPHICS_FILENAME, TRANSPARENT_COLOR_INDEX);
+    const img = try pcx_helper.loadPcx(hunk_side, graphics_filename, transparent_color_index);
 
     out_tileset.texture = pdraw.uploadTexture(img.width, img.height, img.pixels);
     out_tileset.xtiles = 8;
