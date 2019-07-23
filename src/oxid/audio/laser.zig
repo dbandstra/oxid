@@ -1,8 +1,8 @@
 const zang = @import("zang");
 
 pub const LaserVoice = struct {
-    pub const NumOutputs = 1;
-    pub const NumTemps = 3;
+    pub const num_outputs = 1;
+    pub const num_temps = 3;
     pub const Params = struct {
         sample_rate: f32,
         freq_mul: f32,
@@ -35,7 +35,7 @@ pub const LaserVoice = struct {
         };
     }
 
-    pub fn paint(self: *LaserVoice, span: zang.Span, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *LaserVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         const out = outputs[0];
 
         zang.zero(span, temps[0]);

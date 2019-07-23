@@ -1,8 +1,8 @@
 const zang = @import("zang");
 
 pub const ExplosionVoice = struct {
-    pub const NumOutputs = 1;
-    pub const NumTemps = 3;
+    pub const num_outputs = 1;
+    pub const num_temps = 3;
     pub const Params = struct { sample_rate: f32, unused: bool };
     pub const NoteParams = struct { unused: bool };
 
@@ -22,7 +22,7 @@ pub const ExplosionVoice = struct {
         };
     }
 
-    pub fn paint(self: *ExplosionVoice, span: zang.Span, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *ExplosionVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         const out = outputs[0];
 
         zang.zero(span, temps[0]);
@@ -46,7 +46,7 @@ pub const ExplosionVoice = struct {
         zang.zero(span, temps[2]);
         self.filter.paint(span, [1][]f32{temps[2]}, [0][]f32{}, zang.Filter.Params {
             .input = temps[0],
-            .filterType = .LowPass,
+            .filter_type = .LowPass,
             .cutoff = zang.buffer(temps[1]),
             .resonance = 0.0,
         });

@@ -3,8 +3,8 @@ const zang = @import("zang");
 const Instrument = @import("wave_begin.zig").Instrument;
 
 pub const AccelerateVoice = struct {
-    pub const NumOutputs = 1;
-    pub const NumTemps = 2;
+    pub const num_outputs = 1;
+    pub const num_temps = 2;
     pub const Params = struct {
         sample_rate: f32,
         playback_speed: f32,
@@ -40,7 +40,7 @@ pub const AccelerateVoice = struct {
         };
     }
 
-    pub fn paint(self: *AccelerateVoice, span: zang.Span, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *AccelerateVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.trigger.reset();
             self.note_tracker.reset();

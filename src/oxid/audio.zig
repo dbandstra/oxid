@@ -116,8 +116,8 @@ pub const MainModule = struct {
     fn paintWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
         std.debug.assert(@typeId(@typeOf(wrapper)) == .Pointer);
         const ModuleType = @typeInfo(@typeOf(wrapper)).Pointer.child.ModuleType;
-        var temps: [ModuleType.NumTemps][]f32 = undefined;
-        var i: usize = 0; while (i < ModuleType.NumTemps) : (i += 1) {
+        var temps: [ModuleType.num_temps][]f32 = undefined;
+        var i: usize = 0; while (i < ModuleType.num_temps) : (i += 1) {
             temps[i] = self.tmp_bufs[i];
         }
 

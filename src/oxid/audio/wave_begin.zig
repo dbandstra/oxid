@@ -1,8 +1,8 @@
 const zang = @import("zang");
 
 pub const Instrument = struct {
-    pub const NumOutputs = 1;
-    pub const NumTemps = 2;
+    pub const num_outputs = 1;
+    pub const num_temps = 2;
     pub const Params = struct { sample_rate: f32, freq: f32, note_on: bool };
     pub const NoteParams = struct { freq: f32, note_on: bool };
 
@@ -16,7 +16,7 @@ pub const Instrument = struct {
         };
     }
 
-    pub fn paint(self: *Instrument, span: zang.Span, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *Instrument, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
         self.osc.paint(span, [1][]f32{temps[0]}, [0][]f32{}, zang.PulseOsc.Params {
             .sample_rate = params.sample_rate,
@@ -38,8 +38,8 @@ pub const Instrument = struct {
 };
 
 pub const WaveBeginVoice = struct {
-    pub const NumOutputs = 1;
-    pub const NumTemps = 2;
+    pub const num_outputs = 1;
+    pub const num_temps = 2;
     pub const Params = struct { sample_rate: f32, unused: bool };
     pub const NoteParams = struct { unused: bool };
 
@@ -73,7 +73,7 @@ pub const WaveBeginVoice = struct {
         };
     }
 
-    pub fn paint(self: *WaveBeginVoice, span: zang.Span, outputs: [NumOutputs][]f32, temps: [NumTemps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *WaveBeginVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.trigger.reset();
             self.note_tracker.reset();
