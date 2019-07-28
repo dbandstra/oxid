@@ -232,14 +232,9 @@ pub fn preDraw(ds: *DrawState) void {
 
 pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
     // blit renderbuffer to screen
-    const w = @intCast(c_int, ds.blit_w);
-    const h = @intCast(c_int, ds.blit_h);
-    const x = @intCast(c_int, ds.blit_x);
-    const y = @intCast(c_int, ds.blit_y);
-
     ds.projection = ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(x, y, w, h);
+    glViewport(ds.blit_x, ds.blit_y, ds.blit_w, ds.blit_h);
     begin(ds, ds.rt, draw.white, blit_alpha, false);
     tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
     end(ds);
