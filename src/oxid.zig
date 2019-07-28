@@ -39,8 +39,8 @@ pub const hud_height = 16;
 
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
-pub const vwin_w: u31 = levels.width * levels.pixels_per_tile; // 320
-pub const vwin_h: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
+pub const virtual_window_width: u31 = levels.width * levels.pixels_per_tile; // 320
+pub const virtual_window_height: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 // this is a global singleton
 pub const GameState = struct {
@@ -117,35 +117,77 @@ pub fn main() void {
     }
     defer SDL_Quit();
 
-    const virtual_window_width: u32 = vwin_w;
-    const virtual_window_height: u32 = vwin_h;
     var window_width = virtual_window_width;
     var window_height = virtual_window_height;
-    // the actual window size will be a multiple of the virtual window size. this
-    // value puts a limit on high big it will be scaled (it will also be limited
-    // by the user's screen resolution)
-    const max_scale = 4;
+
+    const fullscreen = false;
+
+    var blit_x: i32 = 0;
+    var blit_y: i32 = 0;
+    var blit_w: u31 = virtual_window_width;
+    var blit_h: u31 = virtual_window_height;
 
     // get the desktop resolution (for the first display)
     var dm: SDL_DisplayMode = undefined;
 
     if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
+        // if this happens we'll just stick with a small 1:1 scale window
         std.debug.warn("Failed to query desktop display mode.\n");
     } else {
-        // pick a window size that isn't bigger than the desktop resolution
-        const max_w = @intCast(u32, dm.w);
-        const max_h = @intCast(u32, dm.h) - 40; // bias for menubars/taskbars
+        const native_w = @intCast(u31, dm.w);
+        const native_h = @intCast(u31, dm.h);
 
-        var scale: u32 = 1; while (scale <= max_scale) : (scale += 1) {
-            const w = scale * virtual_window_width;
-            const h = scale * virtual_window_height;
+        if (fullscreen) {
+            // scale the game view up as far as possible, maintaining the
+            // aspect ratio
+            const scaled_w = native_h * virtual_window_width / virtual_window_height;
+            const scaled_h = native_w * virtual_window_height / virtual_window_width;
 
-            if (w > max_w or h > max_h) {
-                break;
+            if (scaled_w < native_w) {
+                blit_w = scaled_w;
+                blit_h = native_h;
+                blit_x = native_w / 2 - scaled_w / 2;
+                blit_y = 0;
+            } else if (scaled_h < native_h) {
+                blit_w = native_w;
+                blit_h = scaled_h;
+                blit_x = 0;
+                blit_y = native_h / 2 - scaled_h / 2;
+            } else {
+                blit_w = native_w;
+                blit_h = native_h;
+                blit_x = 0;
+                blit_y = 0;
             }
 
-            window_width = w;
-            window_height = h;
+            window_width = native_w;
+            window_height = native_h;
+        } else {
+            // pick a window size that isn't bigger than the desktop
+            // resolution
+
+            // the actual window size will be an integer multiple of the
+            // virtual window size. this value puts a limit on high big it
+            // will be scaled (it will also be limited by the user's screen
+            // resolution)
+            const max_scale = 4;
+            const max_w = native_w;
+            const max_h = native_h - 40; // bias for menubars/taskbars
+
+            var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
+                const w = scale * virtual_window_width;
+                const h = scale * virtual_window_height;
+
+                if (w > max_w or h > max_h) {
+                    break;
+                }
+
+                window_width = w;
+                window_height = h;
+            }
+
+            blit_w = window_width;
+            blit_h = window_height;
         }
     }
 
@@ -164,7 +206,7 @@ pub fn main() void {
         SDL_WINDOWPOS_UNDEFINED,
         @intCast(c_int, window_width),
         @intCast(c_int, window_height),
-        SDL_WINDOW_OPENGL,
+        SDL_WINDOW_OPENGL | (if (fullscreen) SDL_WINDOW_FULLSCREEN else 0),
     ) orelse {
         SDL_Log(c"Unable to create window: %s", SDL_GetError());
         return;
@@ -211,7 +253,11 @@ pub fn main() void {
         .hunk = &hunk,
         .virtual_window_width = virtual_window_width,
         .virtual_window_height = virtual_window_height,
-    }, window_width, window_height) catch {
+        .blit_x = blit_x,
+        .blit_y = blit_y,
+        .blit_w = blit_w,
+        .blit_h = blit_h,
+    }) catch {
         std.debug.warn("platform_draw.init failed\n");
         // FIXME - gotta call all those errdefers!
         return;
