@@ -26,24 +26,22 @@ const DrawBuffer = struct {
     num_vertices: usize,
 };
 
+pub const BlitRect = struct {
+    x: i32,
+    y: i32,
+    w: u31,
+    h: u31,
+};
+
 pub const DrawInitParams = struct {
     hunk: *Hunk,
     virtual_window_width: u32,
     virtual_window_height: u32,
-    blit_x: i32,
-    blit_y: i32,
-    blit_w: u31,
-    blit_h: u31,
 };
 
 pub const buffer_vertices = 4*512; // render up to 512 quads at once
 
 pub const DrawState = struct {
-    // coordinates in the system window where we will blit the game view
-    blit_x: i32,
-    blit_y: i32,
-    blit_w: u31,
-    blit_h: u31,
     // dimensions of the game viewport, which will be scaled up to fit the system
     // window
     virtual_window_width: u32,
@@ -142,10 +140,6 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    ds.blit_x = params.blit_x;
-    ds.blit_y = params.blit_y;
-    ds.blit_w = params.blit_w;
-    ds.blit_h = params.blit_h;
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
     ds.fb = fb;
@@ -230,11 +224,11 @@ pub fn preDraw(ds: *DrawState) void {
     }
 }
 
-pub fn postDraw(ds: *DrawState, blit_alpha: f32) void {
+pub fn postDraw(ds: *DrawState, blit_rect: BlitRect, blit_alpha: f32) void {
     // blit renderbuffer to screen
     ds.projection = ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(ds.blit_x, ds.blit_y, ds.blit_w, ds.blit_h);
+    glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
     begin(ds, ds.rt, draw.white, blit_alpha, false);
     tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
     end(ds);

@@ -90,10 +90,92 @@ fn translateKey(sym: SDL_Keycode) ?Key {
         SDLK_RIGHT => Key.Right,
         SDLK_SPACE => Key.Space,
         SDLK_BACKQUOTE => Key.Backquote,
+        SDLK_f => Key.F,
         SDLK_m => Key.M,
         SDLK_n => Key.N,
         SDLK_y => Key.Y,
         else => null,
+    };
+}
+
+const WindowDims = struct {
+    // dimensions of the system window
+    window_width: u31,
+    window_height: u31,
+    // coordinates of the viewport to blit to, within the system window
+    blit_rect: platform_draw.BlitRect,
+};
+
+fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
+    // scale the game view up as far as possible, maintaining the
+    // aspect ratio
+    const scaled_w = native_h * virtual_window_width / virtual_window_height;
+    const scaled_h = native_w * virtual_window_height / virtual_window_width;
+
+    return WindowDims {
+        .window_width = native_w,
+        .window_height = native_h,
+        .blit_rect =
+            if (scaled_w < native_w)
+                platform_draw.BlitRect {
+                    .w = scaled_w,
+                    .h = native_h,
+                    .x = native_w / 2 - scaled_w / 2,
+                    .y = 0,
+                }
+            else if (scaled_h < native_h)
+                platform_draw.BlitRect {
+                    .w = native_w,
+                    .h = scaled_h,
+                    .x = 0,
+                    .y = native_h / 2 - scaled_h / 2,
+                }
+            else
+                platform_draw.BlitRect {
+                    .w = native_w,
+                    .h = native_h,
+                    .x = 0,
+                    .y = 0,
+                },
+    };
+}
+
+fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
+    // pick a window size that isn't bigger than the desktop
+    // resolution
+
+    // the actual window size will be an integer multiple of the
+    // virtual window size. this value puts a limit on high big it
+    // will be scaled (it will also be limited by the user's screen
+    // resolution)
+    const max_scale = 4;
+    const max_w = native_w;
+    const max_h = native_h - 40; // bias for system menubars/taskbars
+
+    var window_width = virtual_window_width;
+    var window_height = virtual_window_height;
+
+    var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
+        const w = scale * virtual_window_width;
+        const h = scale * virtual_window_height;
+
+        if (w > max_w or h > max_h) {
+            break;
+        }
+
+        window_width = w;
+        window_height = h;
+    }
+
+    return WindowDims {
+        .window_width = window_width,
+        .window_height = window_height,
+        .blit_rect = platform_draw.BlitRect {
+            .x = 0,
+            .y = 0,
+            .w = window_width,
+            .h = window_height,
+        },
     };
 }
 
@@ -117,77 +199,32 @@ pub fn main() void {
     }
     defer SDL_Quit();
 
-    var window_width = virtual_window_width;
-    var window_height = virtual_window_height;
+    var fullscreen = false;
+    var fullscreen_dims: ?WindowDims = null;
+    var windowed_dims = WindowDims {
+        .window_width = virtual_window_width,
+        .window_height = virtual_window_height,
+        .blit_rect = platform_draw.BlitRect {
+            .x = 0,
+            .y = 0,
+            .w = virtual_window_width,
+            .h = virtual_window_height,
+        },
+    };
 
-    const fullscreen = false;
+    {
+        // get the desktop resolution (for the first display)
+        var dm: SDL_DisplayMode = undefined;
 
-    var blit_x: i32 = 0;
-    var blit_y: i32 = 0;
-    var blit_w: u31 = virtual_window_width;
-    var blit_h: u31 = virtual_window_height;
-
-    // get the desktop resolution (for the first display)
-    var dm: SDL_DisplayMode = undefined;
-
-    if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
-        // if this happens we'll just stick with a small 1:1 scale window
-        std.debug.warn("Failed to query desktop display mode.\n");
-    } else {
-        const native_w = @intCast(u31, dm.w);
-        const native_h = @intCast(u31, dm.h);
-
-        if (fullscreen) {
-            // scale the game view up as far as possible, maintaining the
-            // aspect ratio
-            const scaled_w = native_h * virtual_window_width / virtual_window_height;
-            const scaled_h = native_w * virtual_window_height / virtual_window_width;
-
-            if (scaled_w < native_w) {
-                blit_w = scaled_w;
-                blit_h = native_h;
-                blit_x = native_w / 2 - scaled_w / 2;
-                blit_y = 0;
-            } else if (scaled_h < native_h) {
-                blit_w = native_w;
-                blit_h = scaled_h;
-                blit_x = 0;
-                blit_y = native_h / 2 - scaled_h / 2;
-            } else {
-                blit_w = native_w;
-                blit_h = native_h;
-                blit_x = 0;
-                blit_y = 0;
-            }
-
-            window_width = native_w;
-            window_height = native_h;
+        if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
+            // if this happens we'll just stick with a small 1:1 scale window
+            std.debug.warn("Failed to query desktop display mode.\n");
         } else {
-            // pick a window size that isn't bigger than the desktop
-            // resolution
+            const native_w = @intCast(u31, dm.w);
+            const native_h = @intCast(u31, dm.h);
 
-            // the actual window size will be an integer multiple of the
-            // virtual window size. this value puts a limit on high big it
-            // will be scaled (it will also be limited by the user's screen
-            // resolution)
-            const max_scale = 4;
-            const max_w = native_w;
-            const max_h = native_h - 40; // bias for menubars/taskbars
-
-            var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
-                const w = scale * virtual_window_width;
-                const h = scale * virtual_window_height;
-
-                if (w > max_w or h > max_h) {
-                    break;
-                }
-
-                window_width = w;
-                window_height = h;
-            }
-
-            blit_w = window_width;
-            blit_h = window_height;
+            fullscreen_dims = getFullscreenDims(native_w, native_h);
+            windowed_dims = getWindowedDims(native_w, native_h);
         }
     }
 
@@ -200,13 +237,14 @@ pub fn main() void {
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DEPTH_SIZE), 24);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_STENCIL_SIZE), 8);
 
+    // start in windowed mode
     const window = SDL_CreateWindow(
         c"Oxid",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        @intCast(c_int, window_width),
-        @intCast(c_int, window_height),
-        SDL_WINDOW_OPENGL | (if (fullscreen) SDL_WINDOW_FULLSCREEN else 0),
+        @intCast(c_int, windowed_dims.window_width),
+        @intCast(c_int, windowed_dims.window_height),
+        SDL_WINDOW_OPENGL,
     ) orelse {
         SDL_Log(c"Unable to create window: %s", SDL_GetError());
         return;
@@ -253,10 +291,6 @@ pub fn main() void {
         .hunk = &hunk,
         .virtual_window_width = virtual_window_width,
         .virtual_window_height = virtual_window_height,
-        .blit_x = blit_x,
-        .blit_y = blit_y,
-        .blit_w = blit_w,
-        .blit_h = blit_h,
     }) catch {
         std.debug.warn("platform_draw.init failed\n");
         // FIXME - gotta call all those errdefers!
@@ -339,6 +373,28 @@ pub fn main() void {
                                 .M => {
                                     muted = !muted;
                                 },
+                                .F => {
+                                    if (fullscreen) {
+                                        if (SDL_SetWindowFullscreen(window, 0) < 0) {
+                                            std.debug.warn("Failed to disable fullscreen mode");
+                                        } else {
+                                            SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
+                                            fullscreen = false;
+                                        }
+                                    } else {
+                                        if (fullscreen_dims) |dims| {
+                                            SDL_SetWindowSize(window, dims.window_width, dims.window_height);
+                                            if (SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
+                                                std.debug.warn("Failed to enable fullscreen mode\n");
+                                                SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
+                                            } else {
+                                                fullscreen = true;
+                                            }
+                                        } else {
+                                            // couldn't figure out how to go fullscreen so stay in windowed mode
+                                        }
+                                    }
+                                },
                                 else => {},
                             }
                         }
@@ -367,6 +423,15 @@ pub fn main() void {
             }
         }
 
+        const blit_rect = blk: {
+            if (fullscreen) {
+                if (fullscreen_dims) |dims| {
+                    break :blk dims.blit_rect;
+                }
+            }
+            break :blk windowed_dims.blit_rect;
+        };
+
         const num_frames = if (fast_forward) u32(4) else u32(1);
         var i: u32 = 0; while (i < num_frames) : (i += 1) {
             perf.begin(&perf.timers.Frame);
@@ -384,7 +449,7 @@ pub fn main() void {
             playSounds(g, muted, @intToFloat(f32, num_frames));
             SDL_UnlockAudioDevice(device);
 
-            drawMain(g, 1.0 / @intToFloat(f32, i + 1));
+            drawMain(g, blit_rect, 1.0 / @intToFloat(f32, i + 1));
 
             gameFrameCleanup(&g.session);
         }
@@ -416,7 +481,7 @@ fn playSounds(g: *GameState, muted: bool, speed: f32) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
-fn drawMain(g: *GameState, blit_alpha: f32) void {
+fn drawMain(g: *GameState, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
     platform_draw.preDraw(&g.draw_state);
@@ -427,7 +492,7 @@ fn drawMain(g: *GameState, blit_alpha: f32) void {
 
     perf.end(&perf.timers.Draw, g.perf_spam);
 
-    platform_draw.postDraw(&g.draw_state, blit_alpha);
+    platform_draw.postDraw(&g.draw_state, blit_rect, blit_alpha);
 
     perf.end(&perf.timers.WholeDraw, g.perf_spam);
 }

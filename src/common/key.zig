@@ -12,6 +12,7 @@ pub const Key = enum {
     Right,
     Space,
     Backquote,
+    F,
     M,
     N,
     Y,
