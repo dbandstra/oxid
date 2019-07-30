@@ -181,7 +181,7 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
 
 // this is only global because GameState is pretty big, and i didn't want to
 // use an allocator. don't access it outside of the main function.
-pub var game_state: GameState = undefined;
+var game_state: GameState = undefined;
 
 pub fn main() void {
     var memory: [200*1024]u8 = undefined;
@@ -370,31 +370,6 @@ pub fn main() void {
                                 .F5 => {
                                     platform_draw.cycleGlitchMode(&g.draw_state);
                                 },
-                                .M => {
-                                    muted = !muted;
-                                },
-                                .F => {
-                                    if (fullscreen) {
-                                        if (SDL_SetWindowFullscreen(window, 0) < 0) {
-                                            std.debug.warn("Failed to disable fullscreen mode");
-                                        } else {
-                                            SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
-                                            fullscreen = false;
-                                        }
-                                    } else {
-                                        if (fullscreen_dims) |dims| {
-                                            SDL_SetWindowSize(window, dims.window_width, dims.window_height);
-                                            if (SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
-                                                std.debug.warn("Failed to enable fullscreen mode\n");
-                                                SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
-                                            } else {
-                                                fullscreen = true;
-                                            }
-                                        } else {
-                                            // couldn't figure out how to go fullscreen so stay in windowed mode
-                                        }
-                                    }
-                                },
                                 else => {},
                             }
                         }
@@ -432,18 +407,25 @@ pub fn main() void {
             break :blk windowed_dims.blit_rect;
         };
 
+        var toggle_fullscreen = false;
         const num_frames = if (fast_forward) u32(4) else u32(1);
         var i: u32 = 0; while (i < num_frames) : (i += 1) {
             perf.begin(&perf.timers.Frame);
             gameFrame(&g.session);
             perf.end(&perf.timers.Frame, g.perf_spam);
 
-            if (g.session.findFirst(c.EventQuit) != null) {
-                quit = true;
-                break;
+            var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
+                switch (object.data) {
+                    .ToggleMute => muted = !muted,
+                    .ToggleFullscreen => toggle_fullscreen = true,
+                    .SaveHighScore => |score| {
+                        datafile.saveHighScore(&hunk.low(), score) catch |err| {
+                            std.debug.warn("Failed to save high score to disk: {}\n", err);
+                        };
+                    },
+                    .Quit => quit = true,
+                }
             }
-
-            saveHighScore(g, &hunk.low());
 
             SDL_LockAudioDevice(device);
             playSounds(g, muted, @intToFloat(f32, num_frames));
@@ -458,14 +440,29 @@ pub fn main() void {
 
         // FIXME - try to detect if vsync is enabled...
         // SDL_Delay(17);
-    }
-}
 
-fn saveHighScore(g: *GameState, hunk_side: *HunkSide) void {
-    var it = g.session.iter(c.EventSaveHighScore); while (it.next()) |object| {
-        datafile.saveHighScore(hunk_side, object.data.high_score) catch |err| {
-            std.debug.warn("Failed to save high score to disk: {}\n", err);
-        };
+        if (toggle_fullscreen) {
+            if (fullscreen) {
+                if (SDL_SetWindowFullscreen(window, 0) < 0) {
+                    std.debug.warn("Failed to disable fullscreen mode");
+                } else {
+                    SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
+                    fullscreen = false;
+                }
+            } else {
+                if (fullscreen_dims) |dims| {
+                    SDL_SetWindowSize(window, dims.window_width, dims.window_height);
+                    if (SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
+                        std.debug.warn("Failed to enable fullscreen mode\n");
+                        SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
+                    } else {
+                        fullscreen = true;
+                    }
+                } else {
+                    // couldn't figure out how to go fullscreen so stay in windowed mode
+                }
+            }
+        }
     }
 }
 

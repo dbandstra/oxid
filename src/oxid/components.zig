@@ -10,14 +10,29 @@ const input = @import("input.zig");
 const audio = @import("audio.zig");
 
 pub const MainController = struct {
+    pub const MainMenuState = enum {
+        NewGame,
+        Options,
+        Quit,
+    };
+    pub const OptionsMenuState = enum {
+        Mute,
+        Fullscreen,
+        Back,
+    };
     pub const GameRunningState = struct {
         render_move_boxes: bool,
         exit_dialog_open: bool,
     };
+    pub const State = union(enum) {
+        MainMenu: MainMenuState,
+        OptionsMenu: OptionsMenuState,
+        GameRunning: GameRunningState,
+    };
 
     high_score: u32,
     new_high_score: bool,
-    game_running_state: ?GameRunningState,
+    state: State,
 };
 
 pub const Bullet = struct {
@@ -238,14 +253,15 @@ pub const EventPostScore = struct {
     score: u32,
 };
 
-pub const EventQuit = struct {};
-
-pub const EventSaveHighScore = struct {
-    high_score: u32,
-};
-
 pub const EventShowMessage = struct {
     message: []const u8,
+};
+
+pub const EventSystemCommand = union(enum) {
+    ToggleMute,
+    ToggleFullscreen,
+    SaveHighScore: u32,
+    Quit,
 };
 
 pub const EventTakeDamage = struct {
@@ -280,6 +296,9 @@ pub const Voice = struct {
         Coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
         Explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
         Laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
+        MenuBackoff: Wrapper(audio.MenuBackoffVoice, audio.MenuBackoffVoice.NoteParams),
+        MenuBlip: Wrapper(audio.MenuBlipVoice, audio.MenuBlipVoice.NoteParams),
+        MenuDing: Wrapper(audio.MenuDingVoice, audio.MenuDingVoice.NoteParams),
         Sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
         WaveBegin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
     };

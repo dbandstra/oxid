@@ -24,8 +24,6 @@ Game controls:
 * arrow keys: move
 * space: shoot
 * esc: leave game
-* m: toggle sound muting
-* f: toggle fullscreen mode
 
 Debug/cheat controls:
 * backquote: fast forward

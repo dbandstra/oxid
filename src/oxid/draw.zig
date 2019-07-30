@@ -23,30 +23,41 @@ const skull_font_color_index = 10; // light grey
 pub fn drawGame(g: *GameState) void {
     const mc = g.session.findFirst(c.MainController) orelse return;
 
-    if (mc.game_running_state) |grs| {
-        const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
-        var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
-        const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+    switch (mc.state) {
+        .MainMenu => |cursor_pos| {
+            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
+            drawMap(g);
+            pdraw.end(&g.draw_state);
 
-        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-        drawMap(g);
-        drawEntities(g, sorted_drawables);
-        drawMapForeground(g);
-        pdraw.end(&g.draw_state);
+            drawHud(g, false);
+            drawMainMenu(g, cursor_pos);
+        },
+        .OptionsMenu => |cursor_pos| {
+            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
+            drawMap(g);
+            pdraw.end(&g.draw_state);
 
-        drawBoxes(g);
-        drawHud(g, true);
+            drawHud(g, false);
+            drawOptionsMenu(g, cursor_pos);
+        },
+        .GameRunning => |grs| {
+            const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
+            var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
+            const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-        if (grs.exit_dialog_open) {
-            drawExitDialog(g);
-        }
-    } else {
-        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-        drawMap(g);
-        pdraw.end(&g.draw_state);
+            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
+            drawMap(g);
+            drawEntities(g, sorted_drawables);
+            drawMapForeground(g);
+            pdraw.end(&g.draw_state);
 
-        drawHud(g, false);
-        drawMainMenu(g);
+            drawBoxes(g);
+            drawHud(g, true);
+
+            if (grs.exit_dialog_open) {
+                drawExitDialog(g);
+            }
+        },
     }
 }
 
@@ -163,7 +174,7 @@ fn drawBoxes(g: *GameState) void {
     }
 }
 
-fn getColour(g: *GameState, index: usize) draw.Color {
+fn getColor(g: *GameState, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
     return draw.Color {
@@ -194,8 +205,8 @@ fn drawHud(g: *GameState, game_active: bool) void {
     );
     pdraw.end(&g.draw_state);
 
-    const fontColour = getColour(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
         if (pc_maybe) |pc| {
@@ -211,21 +222,21 @@ fn drawHud(g: *GameState, game_active: bool) void {
             fontDrawString(&g.draw_state, &g.font, 8*8, 0, "Lives:");
 
             pdraw.end(&g.draw_state);
-            const heartFontColour = getColour(g, heart_font_color_index);
-            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, heartFontColour, 1.0, false);
+            const heart_font_color = getColor(g, heart_font_color_index);
+            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, heart_font_color, 1.0, false);
             var i: u31 = 0; while (i < pc.lives) : (i += 1) {
                 fontDrawString(&g.draw_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
             }
             pdraw.end(&g.draw_state);
 
             if (pc.lives == 0) {
-                const skullFontColour = getColour(g, skull_font_color_index);
-                pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, skullFontColour, 1.0, false);
+                const skull_font_color = getColor(g, skull_font_color_index);
+                pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, skull_font_color, 1.0, false);
                 fontDrawString(&g.draw_state, &g.font, 14*8, 0, "\x1F"); // skull
                 pdraw.end(&g.draw_state);
             }
 
-            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
+            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
 
             if (maybe_player_creature) |player_creature| {
                 if (player_creature.god_mode) {
@@ -266,8 +277,68 @@ fn drawExitDialog(g: *GameState) void {
     drawTextBox(g, .Centered, .Centered, "Leave game? [Y/N]");
 }
 
-fn drawMainMenu(g: *GameState) void {
-    drawTextBox(g, .Centered, .Centered, "OXID\n\n[Space] to play\n\n[Esc] to quit");
+fn drawMainMenu(g: *GameState, cursor_pos: c.MainController.MainMenuState) void {
+    const box_w = 120;
+    const box_h = 16+8+16+20;
+    const box_x = vwin_w / 2 - box_w / 2;
+    const box_y = vwin_h / 2 - box_h / 2;
+
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.tile(
+        &g.draw_state,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
+        box_x, box_y, box_w, box_h,
+        .Identity,
+    );
+    pdraw.end(&g.draw_state);
+
+    var sx: i31 = box_x + 8;
+    var sy: i31 = box_y + 8;
+
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "OXID");
+    sy += 16;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .NewGame) "> New game" else "  New game");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Options) "> Options" else "  Options");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Quit) "> Quit" else "  Quit");
+    sy += 10;
+    pdraw.end(&g.draw_state);
+}
+
+fn drawOptionsMenu(g: *GameState, cursor_pos: c.MainController.OptionsMenuState) void {
+    const box_w = 180;
+    const box_h = 16+8+16+20;
+    const box_x = vwin_w / 2 - box_w / 2;
+    const box_y = vwin_h / 2 - box_h / 2;
+
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.tile(
+        &g.draw_state,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
+        box_x, box_y, box_w, box_h,
+        .Identity,
+    );
+    pdraw.end(&g.draw_state);
+
+    var sx: i31 = box_x + 8;
+    var sy: i31 = box_y + 8;
+
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "Options");
+    sy += 16;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Mute) "> Toggle mute" else "  Toggle mute");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Fullscreen) "> Toggle fullscreen" else "  Toggle fullscreen");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Back) "> Back" else "  Back");
+    sy += 10;
+    pdraw.end(&g.draw_state);
 }
 
 const DrawCoord = union(enum) {
@@ -316,8 +387,8 @@ fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) vo
     );
     pdraw.end(&g.draw_state);
 
-    const fontColour = getColour(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, fontColour, 1.0, false);
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
     {
         var start: usize = 0;
         var sy = y + 8;

@@ -15,8 +15,8 @@ fn think(gs: *GameSession, self: SystemData) bool {
         if (score > self.mc.high_score) {
             self.mc.high_score = score;
             self.mc.new_high_score = true;
-            _ = p.EventSaveHighScore.spawn(gs, c.EventSaveHighScore {
-                .high_score = score,
+            _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
+                .SaveHighScore = score,
             }) catch undefined;
         } else {
             self.mc.new_high_score = false;

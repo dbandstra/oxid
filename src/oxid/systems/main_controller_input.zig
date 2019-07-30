@@ -1,5 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
+const audio = @import("../audio.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -10,14 +11,20 @@ const SystemData = struct {
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    if (self.mc.game_running_state) |*grs| {
-        if (grs.exit_dialog_open) {
-            handleExitDialogInput(gs, self.mc, grs);
-        } else {
-            handleGameRunningInput(gs, grs);
-        }
-    } else {
-        handleMainMenuInput(gs, self.mc);
+    switch (self.mc.state) {
+        .MainMenu => |*mms| {
+            handleMainMenuInput(gs, self.mc, mms);
+        },
+        .OptionsMenu => |*oms| {
+            handleOptionsMenuInput(gs, self.mc, oms);
+        },
+        .GameRunning => |*grs| {
+            if (grs.exit_dialog_open) {
+                handleExitDialogInput(gs, self.mc, grs);
+            } else {
+                handleGameRunningInput(gs, grs);
+            }
+        },
     }
     return true;
 }
@@ -59,17 +66,51 @@ fn handleGameRunningInput(gs: *GameSession, grs: *c.MainController.GameRunningSt
     }
 }
 
-fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController) void {
+fn cursorUp(comptime T: type, cursor_pos: *T) void {
+    const index = @enumToInt(cursor_pos.*);
+    const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
+    cursor_pos.* = @intToEnum(T, if (index > 0) index - 1 else last);
+}
+
+fn cursorDown(comptime T: type, cursor_pos: *T) void {
+    const index = @enumToInt(cursor_pos.*);
+    const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
+    cursor_pos.* = @intToEnum(T, if (index < last) index + 1 else 0);
+}
+
+fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.MainMenuState) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
+        if (!event.data.down) {
+            continue;
+        }
         switch (event.data.command) {
-            .Escape => {
-                if (event.data.down) {
-                    _ = p.EventQuit.spawn(gs, c.EventQuit {}) catch undefined;
-                }
+            .Up => {
+                cursorUp(c.MainController.MainMenuState, cursor_pos);
+                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
+            },
+            .Down => {
+                cursorDown(c.MainController.MainMenuState, cursor_pos);
+                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
             },
             .Shoot => {
-                if (event.data.down) {
-                    startGame(gs, mc);
+                switch (cursor_pos.*) {
+                    .NewGame => {
+                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        startGame(gs, mc);
+                    },
+                    .Options => {
+                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        mc.state = c.MainController.State {
+                            .OptionsMenu = .Mute,
+                        };
+                    },
+                    .Quit => {
+                        _ = p.EventSystemCommand.spawn(gs, .Quit) catch undefined;
+                    },
                 }
             },
             else => {},
@@ -77,10 +118,59 @@ fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController) void {
     }
 }
 
+fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.OptionsMenuState) void {
+    var it = gs.iter(c.EventInput); while (it.next()) |event| {
+        if (!event.data.down) {
+            continue;
+        }
+        switch (event.data.command) {
+            .Up => {
+                cursorUp(c.MainController.OptionsMenuState, cursor_pos);
+                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
+            },
+            .Down => {
+                cursorDown(c.MainController.OptionsMenuState, cursor_pos);
+                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
+            },
+            .Shoot => {
+                switch (cursor_pos.*) {
+                    .Mute => {
+                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        _ = p.EventSystemCommand.spawn(gs, .ToggleMute) catch undefined;
+                    },
+                    .Fullscreen => {
+                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
+                    },
+                    .Back => {
+                        p.playSynth(gs, audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                        mc.state = c.MainController.State {
+                            .MainMenu = .Options,
+                        };
+                    },
+                }
+            },
+            .Escape => {
+                p.playSynth(gs, audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                mc.state = c.MainController.State {
+                    .MainMenu = .Options,
+                };
+            },
+            else => {},
+        }
+    }
+}
+
 fn startGame(gs: *GameSession, mc: *c.MainController) void {
-    mc.game_running_state = c.MainController.GameRunningState {
-        .render_move_boxes = false,
-        .exit_dialog_open = false,
+    mc.state = c.MainController.State {
+        .GameRunning = c.MainController.GameRunningState {
+            .render_move_boxes = false,
+            .exit_dialog_open = false,
+        },
     };
 
     _ = p.GameController.spawn(gs) catch undefined;
@@ -97,7 +187,9 @@ fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
         }) catch undefined;
     }
 
-    mc.game_running_state = null;
+    mc.state = c.MainController.State {
+        .MainMenu = .NewGame,
+    };
 
     // remove all entities except the MainController and EventPostScore
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {

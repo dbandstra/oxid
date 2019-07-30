@@ -151,7 +151,7 @@ pub fn Session(comptime ComponentLists: type) type {
         // entities to make room for new ones is not always the right choice)
         pub fn addComponent(self: *Self, entity_id: EntityId, data: var) !void {
             const T: type = @typeOf(data);
-            assert(@typeId(T) == .Struct);
+            // assert(@typeId(T) == .Struct);
             var list = &@field(&self.components, @typeName(T));
             const slot = blk: {
                 var i: usize = 0;

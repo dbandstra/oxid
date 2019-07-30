@@ -52,7 +52,9 @@ pub const MainController = struct {
         try gs.addComponent(entity_id, c.MainController {
             .high_score = params.high_score,
             .new_high_score = false,
-            .game_running_state = null,
+            .state = c.MainController.State {
+                .MainMenu = .NewGame,
+            },
         });
 
         return entity_id;
@@ -485,9 +487,8 @@ pub const EventMonsterDied = Event(c.EventMonsterDied);
 pub const EventPlayerDied = Event(c.EventPlayerDied);
 pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);
 pub const EventPostScore = Event(c.EventPostScore);
-pub const EventQuit = Event(c.EventQuit);
-pub const EventSaveHighScore = Event(c.EventSaveHighScore);
 pub const EventShowMessage = Event(c.EventShowMessage);
+pub const EventSystemCommand = Event(c.EventSystemCommand);
 pub const EventTakeDamage = Event(c.EventTakeDamage);
 
 pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
@@ -555,6 +556,42 @@ pub fn playSynth(gs: *GameSession, params: var) void {
                 },
             },
         },
+        audio.MenuBackoffVoice.NoteParams => Sound.Params {
+            .duration = audio.MenuBackoffVoice.sound_duration,
+            .wrapper = c.Voice.WrapperU {
+                .MenuBackoff = c.Voice.Wrapper(audio.MenuBackoffVoice, audio.MenuBackoffVoice.NoteParams) {
+                    .initial_params = params,
+                    .initial_sample = null,
+                    .iq = zang.Notes(audio.MenuBackoffVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.MenuBackoffVoice.init(),
+                    .trigger = zang.Trigger(audio.MenuBackoffVoice.NoteParams).init(),
+                },
+            },
+        },
+        audio.MenuBlipVoice.NoteParams => Sound.Params {
+            .duration = audio.MenuBlipVoice.sound_duration,
+            .wrapper = c.Voice.WrapperU {
+                .MenuBlip = c.Voice.Wrapper(audio.MenuBlipVoice, audio.MenuBlipVoice.NoteParams) {
+                    .initial_params = params,
+                    .initial_sample = null,
+                    .iq = zang.Notes(audio.MenuBlipVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.MenuBlipVoice.init(),
+                    .trigger = zang.Trigger(audio.MenuBlipVoice.NoteParams).init(),
+                },
+            },
+        },
+        audio.MenuDingVoice.NoteParams => Sound.Params {
+            .duration = audio.MenuDingVoice.sound_duration,
+            .wrapper = c.Voice.WrapperU {
+                .MenuDing = c.Voice.Wrapper(audio.MenuDingVoice, audio.MenuDingVoice.NoteParams) {
+                    .initial_params = params,
+                    .initial_sample = null,
+                    .iq = zang.Notes(audio.MenuDingVoice.NoteParams).ImpulseQueue.init(),
+                    .module = audio.MenuDingVoice.init(),
+                    .trigger = zang.Trigger(audio.MenuDingVoice.NoteParams).init(),
+                },
+            },
+        },
         audio.WaveBeginVoice.NoteParams => Sound.Params {
             .duration = audio.WaveBeginVoice.sound_duration,
             .wrapper = c.Voice.WrapperU {
@@ -567,6 +604,6 @@ pub fn playSynth(gs: *GameSession, params: var) void {
                 },
             },
         },
-        else => unreachable,
+        else => {},
     }) catch undefined;
 }
