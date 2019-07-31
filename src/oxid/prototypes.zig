@@ -455,6 +455,8 @@ pub const Sound = struct {
             .wrapper = params.wrapper,
         });
 
+        // FIXME!!! this timer will be paused when you're in the menu, but we
+        // use sounds in the menu too!
         try gs.addComponent(entity_id, c.RemoveTimer {
             .timer = @floatToInt(u32, params.duration * 60.0),
         });
@@ -506,104 +508,29 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
     }) catch undefined;
 }
 
-pub fn playSynth(gs: *GameSession, params: var) void {
-    _ = Sound.spawn(gs, switch (@typeOf(params)) {
-        audio.AccelerateVoice.NoteParams => Sound.Params {
-            .duration = audio.AccelerateVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .Accelerate = c.Voice.Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.AccelerateVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.AccelerateVoice.init(),
-                    .trigger = zang.Trigger(audio.AccelerateVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.CoinVoice.NoteParams => Sound.Params {
-            .duration = audio.CoinVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .Coin = c.Voice.Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.CoinVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.CoinVoice.init(),
-                    .trigger = zang.Trigger(audio.CoinVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.ExplosionVoice.NoteParams => Sound.Params {
-            .duration = audio.ExplosionVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .Explosion = c.Voice.Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.ExplosionVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.ExplosionVoice.init(),
-                    .trigger = zang.Trigger(audio.ExplosionVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.LaserVoice.NoteParams => Sound.Params {
-            .duration = audio.LaserVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .Laser = c.Voice.Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.LaserVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.LaserVoice.init(),
-                    .trigger = zang.Trigger(audio.LaserVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.MenuBackoffVoice.NoteParams => Sound.Params {
-            .duration = audio.MenuBackoffVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .MenuBackoff = c.Voice.Wrapper(audio.MenuBackoffVoice, audio.MenuBackoffVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.MenuBackoffVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.MenuBackoffVoice.init(),
-                    .trigger = zang.Trigger(audio.MenuBackoffVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.MenuBlipVoice.NoteParams => Sound.Params {
-            .duration = audio.MenuBlipVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .MenuBlip = c.Voice.Wrapper(audio.MenuBlipVoice, audio.MenuBlipVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.MenuBlipVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.MenuBlipVoice.init(),
-                    .trigger = zang.Trigger(audio.MenuBlipVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.MenuDingVoice.NoteParams => Sound.Params {
-            .duration = audio.MenuDingVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .MenuDing = c.Voice.Wrapper(audio.MenuDingVoice, audio.MenuDingVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.MenuDingVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.MenuDingVoice.init(),
-                    .trigger = zang.Trigger(audio.MenuDingVoice.NoteParams).init(),
-                },
-            },
-        },
-        audio.WaveBeginVoice.NoteParams => Sound.Params {
-            .duration = audio.WaveBeginVoice.sound_duration,
-            .wrapper = c.Voice.WrapperU {
-                .WaveBegin = c.Voice.Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams) {
-                    .initial_params = params,
-                    .initial_sample = null,
-                    .iq = zang.Notes(audio.WaveBeginVoice.NoteParams).ImpulseQueue.init(),
-                    .module = audio.WaveBeginVoice.init(),
-                    .trigger = zang.Trigger(audio.WaveBeginVoice.NoteParams).init(),
-                },
-            },
-        },
-        else => {},
+fn playSynth_(gs: *GameSession, comptime union_tag_name: []const u8, comptime VoiceType: type, note_params: VoiceType.NoteParams) void {
+    _ = Sound.spawn(gs, Sound.Params {
+        .duration = VoiceType.sound_duration,
+        .wrapper = @unionInit(c.Voice.WrapperU, union_tag_name, c.Voice.Wrapper(VoiceType, VoiceType.NoteParams) {
+            .initial_params = note_params,
+            .initial_sample = null,
+            .iq = zang.Notes(VoiceType.NoteParams).ImpulseQueue.init(),
+            .module = VoiceType.init(),
+            .trigger = zang.Trigger(VoiceType.NoteParams).init(),
+        }),
     }) catch undefined;
+}
+
+pub fn playSynth(gs: *GameSession, params: var) void {
+    switch (@typeOf(params)) {
+        audio.AccelerateVoice.NoteParams => playSynth_(gs, "Accelerate", audio.AccelerateVoice, params),
+        audio.CoinVoice.NoteParams => playSynth_(gs, "Coin", audio.CoinVoice, params),
+        audio.ExplosionVoice.NoteParams => playSynth_(gs, "Explosion", audio.ExplosionVoice, params),
+        audio.LaserVoice.NoteParams => playSynth_(gs, "Laser", audio.LaserVoice, params),
+        audio.MenuBackoffVoice.NoteParams => playSynth_(gs, "MenuBackoff", audio.MenuBackoffVoice, params),
+        audio.MenuBlipVoice.NoteParams => playSynth_(gs, "MenuBlip", audio.MenuBlipVoice, params),
+        audio.MenuDingVoice.NoteParams => playSynth_(gs, "MenuDing", audio.MenuDingVoice, params),
+        audio.WaveBeginVoice.NoteParams => playSynth_(gs, "WaveBegin", audio.WaveBeginVoice, params),
+        else => {},
+    }
 }
