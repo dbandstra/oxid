@@ -41,7 +41,7 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
                 }) catch undefined;
             },
             .Coin => {
-                p.playSynth(gs, audio.CoinVoice.NoteParams {
+                p.playSynth(gs, "Coin", audio.CoinVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },

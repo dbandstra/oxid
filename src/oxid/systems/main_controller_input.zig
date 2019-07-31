@@ -86,24 +86,24 @@ fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.M
         switch (event.data.command) {
             .Up => {
                 cursorUp(c.MainController.MainMenuState, cursor_pos);
-                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
             .Down => {
                 cursorDown(c.MainController.MainMenuState, cursor_pos);
-                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
             .Shoot => {
                 switch (cursor_pos.*) {
                     .NewGame => {
-                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
                         startGame(gs, mc);
                     },
                     .Options => {
-                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
                         mc.state = c.MainController.State {
                             .OptionsMenu = .Mute,
                         };
@@ -126,28 +126,28 @@ fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *
         switch (event.data.command) {
             .Up => {
                 cursorUp(c.MainController.OptionsMenuState, cursor_pos);
-                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
             .Down => {
                 cursorDown(c.MainController.OptionsMenuState, cursor_pos);
-                p.playSynth(gs, audio.MenuBlipVoice.NoteParams {
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
             .Shoot => {
                 switch (cursor_pos.*) {
                     .Mute => {
-                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
                         _ = p.EventSystemCommand.spawn(gs, .ToggleMute) catch undefined;
                     },
                     .Fullscreen => {
-                        p.playSynth(gs, audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
                         _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
                     },
                     .Back => {
-                        p.playSynth(gs, audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                        p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                         mc.state = c.MainController.State {
                             .MainMenu = .Options,
                         };
@@ -155,7 +155,7 @@ fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *
                 }
             },
             .Escape => {
-                p.playSynth(gs, audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                 mc.state = c.MainController.State {
                     .MainMenu = .Options,
                 };

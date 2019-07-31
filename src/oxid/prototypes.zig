@@ -508,29 +508,17 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
     }) catch undefined;
 }
 
-fn playSynth_(gs: *GameSession, comptime union_tag_name: []const u8, comptime VoiceType: type, note_params: VoiceType.NoteParams) void {
+pub fn playSynth(gs: *GameSession, comptime name: []const u8, params: @field(audio, name ++ "Voice").NoteParams) void {
+    const VoiceType = @field(audio, name ++ "Voice");
+
     _ = Sound.spawn(gs, Sound.Params {
         .duration = VoiceType.sound_duration,
-        .wrapper = @unionInit(c.Voice.WrapperU, union_tag_name, c.Voice.Wrapper(VoiceType, VoiceType.NoteParams) {
-            .initial_params = note_params,
+        .wrapper = @unionInit(c.Voice.WrapperU, name, c.Voice.Wrapper(VoiceType, VoiceType.NoteParams) {
+            .initial_params = params,
             .initial_sample = null,
             .iq = zang.Notes(VoiceType.NoteParams).ImpulseQueue.init(),
             .module = VoiceType.init(),
             .trigger = zang.Trigger(VoiceType.NoteParams).init(),
         }),
     }) catch undefined;
-}
-
-pub fn playSynth(gs: *GameSession, params: var) void {
-    switch (@typeOf(params)) {
-        audio.AccelerateVoice.NoteParams => playSynth_(gs, "Accelerate", audio.AccelerateVoice, params),
-        audio.CoinVoice.NoteParams => playSynth_(gs, "Coin", audio.CoinVoice, params),
-        audio.ExplosionVoice.NoteParams => playSynth_(gs, "Explosion", audio.ExplosionVoice, params),
-        audio.LaserVoice.NoteParams => playSynth_(gs, "Laser", audio.LaserVoice, params),
-        audio.MenuBackoffVoice.NoteParams => playSynth_(gs, "MenuBackoff", audio.MenuBackoffVoice, params),
-        audio.MenuBlipVoice.NoteParams => playSynth_(gs, "MenuBlip", audio.MenuBlipVoice, params),
-        audio.MenuDingVoice.NoteParams => playSynth_(gs, "MenuDing", audio.MenuDingVoice, params),
-        audio.WaveBeginVoice.NoteParams => playSynth_(gs, "WaveBegin", audio.WaveBeginVoice, params),
-        else => {},
-    }
 }
