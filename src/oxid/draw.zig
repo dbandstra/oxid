@@ -23,41 +23,39 @@ const skull_font_color_index = 10; // light grey
 pub fn drawGame(g: *GameState) void {
     const mc = g.session.findFirst(c.MainController) orelse return;
 
-    switch (mc.state) {
-        .MainMenu => |cursor_pos| {
-            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-            drawMap(g);
-            pdraw.end(&g.draw_state);
+    if (mc.game_running_state) |grs| {
+        const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
+        var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
+        const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
 
-            drawHud(g, false);
-            drawMainMenu(g, cursor_pos);
-        },
-        .OptionsMenu => |cursor_pos| {
-            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-            drawMap(g);
-            pdraw.end(&g.draw_state);
+        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
+        drawMap(g);
+        drawEntities(g, sorted_drawables);
+        drawMapForeground(g);
+        pdraw.end(&g.draw_state);
 
-            drawHud(g, false);
-            drawOptionsMenu(g, cursor_pos);
-        },
-        .GameRunning => |grs| {
-            const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
-            var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
-            const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+        drawBoxes(g);
+        drawHud(g, true);
+    } else {
+        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
+        drawMap(g);
+        pdraw.end(&g.draw_state);
 
-            pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-            drawMap(g);
-            drawEntities(g, sorted_drawables);
-            drawMapForeground(g);
-            pdraw.end(&g.draw_state);
+        drawHud(g, false);
+    }
 
-            drawBoxes(g);
-            drawHud(g, true);
-
-            if (grs.exit_dialog_open) {
-                drawExitDialog(g);
-            }
-        },
+    if (mc.menu_stack_len > 0) {
+        switch (mc.menu_stack_array[mc.menu_stack_len - 1]) {
+            .MainMenu => |cursor_pos| {
+                drawMainMenu(g, cursor_pos);
+            },
+            .InGameMenu => |cursor_pos| {
+                drawInGameMenu(g, cursor_pos);
+            },
+            .OptionsMenu => |cursor_pos| {
+                drawOptionsMenu(g, cursor_pos);
+            },
+        }
     }
 }
 
@@ -305,6 +303,38 @@ fn drawMainMenu(g: *GameState, cursor_pos: c.MainController.MainMenuState) void 
     fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Options) "> Options" else "  Options");
     sy += 10;
     fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Quit) "> Quit" else "  Quit");
+    sy += 10;
+    pdraw.end(&g.draw_state);
+}
+
+fn drawInGameMenu(g: *GameState, cursor_pos: c.MainController.InGameMenuState) void {
+    const box_w = 150;
+    const box_h = 16+8+16+20;
+    const box_x = vwin_w / 2 - box_w / 2;
+    const box_y = vwin_h / 2 - box_h / 2;
+
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.tile(
+        &g.draw_state,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
+        box_x, box_y, box_w, box_h,
+        .Identity,
+    );
+    pdraw.end(&g.draw_state);
+
+    var sx: i31 = box_x + 8;
+    var sy: i31 = box_y + 8;
+
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "OXID");
+    sy += 16;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Continue) "> Continue game" else "  Continue game");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Options) "> Options" else "  Options");
+    sy += 10;
+    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Leave) "> End game" else "  End game");
     sy += 10;
     pdraw.end(&g.draw_state);
 }

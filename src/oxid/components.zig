@@ -10,29 +10,35 @@ const input = @import("input.zig");
 const audio = @import("audio.zig");
 
 pub const MainController = struct {
+    pub const GameRunningState = struct {
+        render_move_boxes: bool,
+    };
     pub const MainMenuState = enum {
         NewGame,
         Options,
         Quit,
+    };
+    pub const InGameMenuState = enum {
+        Continue,
+        Options,
+        Leave,
     };
     pub const OptionsMenuState = enum {
         Mute,
         Fullscreen,
         Back,
     };
-    pub const GameRunningState = struct {
-        render_move_boxes: bool,
-        exit_dialog_open: bool,
-    };
-    pub const State = union(enum) {
+    pub const Menu = union(enum) {
         MainMenu: MainMenuState,
+        InGameMenu: InGameMenuState,
         OptionsMenu: OptionsMenuState,
-        GameRunning: GameRunningState,
     };
 
     high_score: u32,
     new_high_score: bool,
-    state: State,
+    game_running_state: ?GameRunningState,
+    menu_stack_array: [2]Menu,
+    menu_stack_len: usize,
 };
 
 pub const Bullet = struct {

@@ -11,49 +11,33 @@ const SystemData = struct {
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    switch (self.mc.state) {
-        .MainMenu => |*mms| {
-            handleMainMenuInput(gs, self.mc, mms);
-        },
-        .OptionsMenu => |*oms| {
-            handleOptionsMenuInput(gs, self.mc, oms);
-        },
-        .GameRunning => |*grs| {
-            if (grs.exit_dialog_open) {
-                handleExitDialogInput(gs, self.mc, grs);
-            } else {
-                handleGameRunningInput(gs, grs);
-            }
-        },
+    if (self.mc.menu_stack_len == 0) {
+        if (self.mc.game_running_state) |*grs| {
+            handleGameRunningInput(gs, self.mc, grs);
+        }
+    } else {
+        switch (self.mc.menu_stack_array[self.mc.menu_stack_len - 1]) {
+            .MainMenu => |*mms| {
+                handleMainMenuInput(gs, self.mc, mms);
+            },
+            .InGameMenu => |*igms| {
+                handleInGameMenuInput(gs, self.mc, igms);
+            },
+            .OptionsMenu => |*oms| {
+                handleOptionsMenuInput(gs, self.mc, oms);
+            },
+        }
     }
     return true;
 }
 
-fn handleExitDialogInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainController.GameRunningState) void {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
-        switch (event.data.command) {
-            .Escape,
-            .No => {
-                if (event.data.down) {
-                    grs.exit_dialog_open = false;
-                }
-            },
-            .Yes => {
-                if (event.data.down) {
-                    leaveGame(gs, mc);
-                }
-            },
-            else => {},
-        }
-    }
-}
-
-fn handleGameRunningInput(gs: *GameSession, grs: *c.MainController.GameRunningState) void {
+fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainController.GameRunningState) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         switch (event.data.command) {
             .Escape => {
                 if (event.data.down) {
-                    grs.exit_dialog_open = true;
+                    p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                    pushMenu(mc, c.MainController.Menu { .InGameMenu = .Continue });
                 }
             },
             .ToggleDrawBoxes => {
@@ -63,6 +47,19 @@ fn handleGameRunningInput(gs: *GameSession, grs: *c.MainController.GameRunningSt
             },
             else => {},
         }
+    }
+}
+
+fn pushMenu(mc: *c.MainController, menu: c.MainController.Menu) void {
+    if (mc.menu_stack_len < mc.menu_stack_array.len) {
+        mc.menu_stack_array[mc.menu_stack_len] = menu;
+        mc.menu_stack_len += 1;
+    }
+}
+
+fn popMenu(mc: *c.MainController) void {
+    if (mc.menu_stack_len > 0) {
+        mc.menu_stack_len -= 1;
     }
 }
 
@@ -100,18 +97,61 @@ fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.M
                 switch (cursor_pos.*) {
                     .NewGame => {
                         p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        popMenu(mc);
                         startGame(gs, mc);
                     },
                     .Options => {
                         p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        mc.state = c.MainController.State {
-                            .OptionsMenu = .Mute,
-                        };
+                        pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
                     },
                     .Quit => {
                         _ = p.EventSystemCommand.spawn(gs, .Quit) catch undefined;
                     },
                 }
+            },
+            else => {},
+        }
+    }
+}
+
+fn handleInGameMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.InGameMenuState) void {
+    var it = gs.iter(c.EventInput); while (it.next()) |event| {
+        if (!event.data.down) {
+            continue;
+        }
+        switch (event.data.command) {
+            .Up => {
+                cursorUp(c.MainController.InGameMenuState, cursor_pos);
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
+            },
+            .Down => {
+                cursorDown(c.MainController.InGameMenuState, cursor_pos);
+                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                });
+            },
+            .Shoot => {
+                switch (cursor_pos.*) {
+                    .Continue => {
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        popMenu(mc);
+                    },
+                    .Options => {
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+                        pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
+                    },
+                    .Leave => {
+                        leaveGame(gs, mc);
+                        // after, cause leaveGame deletes a bunch of stuff...
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+                    },
+                }
+            },
+            .Escape => {
+                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                popMenu(mc);
             },
             else => {},
         }
@@ -148,17 +188,13 @@ fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *
                     },
                     .Back => {
                         p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                        mc.state = c.MainController.State {
-                            .MainMenu = .Options,
-                        };
+                        popMenu(mc);
                     },
                 }
             },
             .Escape => {
                 p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                mc.state = c.MainController.State {
-                    .MainMenu = .Options,
-                };
+                popMenu(mc);
             },
             else => {},
         }
@@ -166,11 +202,8 @@ fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *
 }
 
 fn startGame(gs: *GameSession, mc: *c.MainController) void {
-    mc.state = c.MainController.State {
-        .GameRunning = c.MainController.GameRunningState {
-            .render_move_boxes = false,
-            .exit_dialog_open = false,
-        },
+    mc.game_running_state = c.MainController.GameRunningState {
+        .render_move_boxes = false,
     };
 
     _ = p.GameController.spawn(gs) catch undefined;
@@ -187,9 +220,9 @@ fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
         }) catch undefined;
     }
 
-    mc.state = c.MainController.State {
-        .MainMenu = .NewGame,
-    };
+    mc.game_running_state = null;
+    mc.menu_stack_array[0] = c.MainController.Menu { .MainMenu = .NewGame };
+    mc.menu_stack_len = 1;
 
     // remove all entities except the MainController and EventPostScore
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {

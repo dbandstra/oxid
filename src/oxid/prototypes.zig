@@ -52,9 +52,12 @@ pub const MainController = struct {
         try gs.addComponent(entity_id, c.MainController {
             .high_score = params.high_score,
             .new_high_score = false,
-            .state = c.MainController.State {
-                .MainMenu = .NewGame,
+            .game_running_state = null,
+            .menu_stack_array = [2]c.MainController.Menu {
+                c.MainController.Menu { .MainMenu = .NewGame },
+                undefined,
             },
+            .menu_stack_len = 1,
         });
 
         return entity_id;
