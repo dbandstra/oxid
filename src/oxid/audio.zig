@@ -163,7 +163,7 @@ pub const MainModule = struct {
                         // https://github.com/ziglang/zig/issues/2915
                         const sample = sample_alias;
 
-                        wrapper.initial_sample = null;
+                        wrapper.initial_sample = null; // this invalidates sample_alias
                         wrapper.iq.push(impulse_frame, SamplerNoteParams {
                             .loop = false,
                             .wav = switch (sample) {

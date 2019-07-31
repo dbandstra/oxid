@@ -86,6 +86,8 @@ pub const MenuDingVoice = struct {
             self.note_tracker.reset();
         }
 
+        zang.zero(span, temps[2]);
+
         var ctr = self.trigger.counter(span, self.note_tracker.consume(params.sample_rate, span.end - span.start));
         while (self.trigger.next(&ctr)) |result| {
             self.instrument.paint(result.span, [1][]f32{temps[2]}, [2][]f32{temps[0], temps[1]}, note_id_changed or result.note_id_changed, Instrument.Params {
