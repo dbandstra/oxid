@@ -8,30 +8,16 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
 const audio = @import("audio.zig");
+const menus = @import("menus.zig");
 
 pub const MainController = struct {
     pub const GameRunningState = struct {
         render_move_boxes: bool,
     };
-    pub const MainMenuState = enum {
-        NewGame,
-        Options,
-        Quit,
-    };
-    pub const InGameMenuState = enum {
-        Continue,
-        Options,
-        Leave,
-    };
-    pub const OptionsMenuState = enum {
-        Mute,
-        Fullscreen,
-        Back,
-    };
     pub const Menu = union(enum) {
-        MainMenu: MainMenuState,
-        InGameMenu: InGameMenuState,
-        OptionsMenu: OptionsMenuState,
+        MainMenu: menus.MainMenu,
+        InGameMenu: menus.InGameMenu,
+        OptionsMenu: menus.OptionsMenu,
     };
 
     high_score: u32,

@@ -3,6 +3,7 @@ const GameSession = @import("../game.zig").GameSession;
 const audio = @import("../audio.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
+const menus = @import("../menus.zig");
 
 const SystemData = struct {
     mc: *c.MainController,
@@ -17,15 +18,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
         }
     } else {
         switch (self.mc.menu_stack_array[self.mc.menu_stack_len - 1]) {
-            .MainMenu => |*mms| {
-                handleMainMenuInput(gs, self.mc, mms);
-            },
-            .InGameMenu => |*igms| {
-                handleInGameMenuInput(gs, self.mc, igms);
-            },
-            .OptionsMenu => |*oms| {
-                handleOptionsMenuInput(gs, self.mc, oms);
-            },
+            .MainMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.MainMenu, menu_state); },
+            .InGameMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.InGameMenu, menu_state); },
+            .OptionsMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.OptionsMenu, menu_state); },
         }
     }
     return true;
@@ -63,141 +58,90 @@ fn popMenu(mc: *c.MainController) void {
     }
 }
 
-fn cursorUp(comptime T: type, cursor_pos: *T) void {
-    const index = @enumToInt(cursor_pos.*);
-    const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
-    cursor_pos.* = @intToEnum(T, if (index > 0) index - 1 else last);
-}
-
-fn cursorDown(comptime T: type, cursor_pos: *T) void {
-    const index = @enumToInt(cursor_pos.*);
-    const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
-    cursor_pos.* = @intToEnum(T, if (index < last) index + 1 else 0);
-}
-
-fn handleMainMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.MainMenuState) void {
+fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cursor_pos: *T) void {
     var it = gs.iter(c.EventInput); while (it.next()) |event| {
         if (!event.data.down) {
             continue;
         }
         switch (event.data.command) {
             .Up => {
-                cursorUp(c.MainController.MainMenuState, cursor_pos);
+                const index = @enumToInt(cursor_pos.*);
+                const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
+                cursor_pos.* = @intToEnum(T, if (index > 0) index - 1 else last);
+
                 p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
             .Down => {
-                cursorDown(c.MainController.MainMenuState, cursor_pos);
+                const index = @enumToInt(cursor_pos.*);
+                const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
+                cursor_pos.* = @intToEnum(T, if (index < last) index + 1 else 0);
+
                 p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
-            .Shoot => {
-                switch (cursor_pos.*) {
-                    .NewGame => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        popMenu(mc);
-                        startGame(gs, mc);
-                    },
-                    .Options => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
-                    },
-                    .Quit => {
-                        _ = p.EventSystemCommand.spawn(gs, .Quit) catch undefined;
-                    },
+            .Escape => {
+                if (T != menus.MainMenu) { // you can't back off of the main menu
+                    popMenu(mc);
+                    p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                 }
+            },
+            .Shoot => {
+                switch (T) {
+                    menus.MainMenu => { mainMenuAction(gs, mc, cursor_pos.*); },
+                    menus.InGameMenu => { inGameMenuAction(gs, mc, cursor_pos.*); },
+                    menus.OptionsMenu => { optionsMenuAction(gs, mc, cursor_pos.*); },
+                    else => {},
+                }
+                p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
             },
             else => {},
         }
     }
 }
 
-fn handleInGameMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.InGameMenuState) void {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
-        if (!event.data.down) {
-            continue;
-        }
-        switch (event.data.command) {
-            .Up => {
-                cursorUp(c.MainController.InGameMenuState, cursor_pos);
-                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
-                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                });
-            },
-            .Down => {
-                cursorDown(c.MainController.InGameMenuState, cursor_pos);
-                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
-                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                });
-            },
-            .Shoot => {
-                switch (cursor_pos.*) {
-                    .Continue => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        popMenu(mc);
-                    },
-                    .Options => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
-                    },
-                    .Leave => {
-                        leaveGame(gs, mc);
-                        // after, cause leaveGame deletes a bunch of stuff...
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                    },
-                }
-            },
-            .Escape => {
-                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                popMenu(mc);
-            },
-            else => {},
-        }
+fn mainMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.MainMenu) void {
+    switch (cursor_pos) {
+        .NewGame => {
+            popMenu(mc);
+            startGame(gs, mc);
+        },
+        .Options => {
+            pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
+        },
+        .Quit => {
+            _ = p.EventSystemCommand.spawn(gs, .Quit) catch undefined;
+        },
     }
 }
 
-fn handleOptionsMenuInput(gs: *GameSession, mc: *c.MainController, cursor_pos: *c.MainController.OptionsMenuState) void {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
-        if (!event.data.down) {
-            continue;
-        }
-        switch (event.data.command) {
-            .Up => {
-                cursorUp(c.MainController.OptionsMenuState, cursor_pos);
-                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
-                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                });
-            },
-            .Down => {
-                cursorDown(c.MainController.OptionsMenuState, cursor_pos);
-                p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
-                    .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                });
-            },
-            .Shoot => {
-                switch (cursor_pos.*) {
-                    .Mute => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        _ = p.EventSystemCommand.spawn(gs, .ToggleMute) catch undefined;
-                    },
-                    .Fullscreen => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                        _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
-                    },
-                    .Back => {
-                        p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                        popMenu(mc);
-                    },
-                }
-            },
-            .Escape => {
-                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                popMenu(mc);
-            },
-            else => {},
-        }
+fn inGameMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.InGameMenu) void {
+    switch (cursor_pos) {
+        .Continue => {
+            popMenu(mc);
+        },
+        .Options => {
+            pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
+        },
+        .Leave => {
+            leaveGame(gs, mc);
+        },
+    }
+}
+
+fn optionsMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.OptionsMenu) void {
+    switch (cursor_pos) {
+        .Mute => {
+            _ = p.EventSystemCommand.spawn(gs, .ToggleMute) catch undefined;
+        },
+        .Fullscreen => {
+            _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
+        },
+        .Back => {
+            popMenu(mc);
+        },
     }
 }
 

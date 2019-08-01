@@ -13,6 +13,7 @@ const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
 const levels = @import("levels.zig");
 const c = @import("components.zig");
+const menus = @import("menus.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
 
@@ -46,15 +47,9 @@ pub fn drawGame(g: *GameState) void {
 
     if (mc.menu_stack_len > 0) {
         switch (mc.menu_stack_array[mc.menu_stack_len - 1]) {
-            .MainMenu => |cursor_pos| {
-                drawMainMenu(g, cursor_pos);
-            },
-            .InGameMenu => |cursor_pos| {
-                drawInGameMenu(g, cursor_pos);
-            },
-            .OptionsMenu => |cursor_pos| {
-                drawOptionsMenu(g, cursor_pos);
-            },
+            .MainMenu => |menu_state| { drawMenu(g, menu_state); },
+            .InGameMenu => |menu_state| { drawMenu(g, menu_state); },
+            .OptionsMenu => |menu_state| { drawMenu(g, menu_state); },
         }
     }
 }
@@ -275,11 +270,26 @@ fn drawExitDialog(g: *GameState) void {
     drawTextBox(g, .Centered, .Centered, "Leave game? [Y/N]");
 }
 
-fn drawMainMenu(g: *GameState, cursor_pos: c.MainController.MainMenuState) void {
-    const box_w = 120;
-    const box_h = 16+8+16+20;
-    const box_x = vwin_w / 2 - box_w / 2;
-    const box_y = vwin_h / 2 - box_h / 2;
+fn drawMenu(g: *GameState, menu_state: var) void {
+    const T = @typeOf(menu_state);
+
+    var options: [@typeInfo(T).Enum.fields.len]menus.MenuOption = undefined;
+    for (options) |*option, i| {
+        const i_casted = @intCast(@TagType(T), i);
+        const cursor_pos = @intToEnum(T, i_casted);
+        option.* = T.getOption(cursor_pos);
+    }
+
+    const box_w: u31 = 8 + 8 + 8 * blk: {
+        var longest: usize = T.title.len;
+        for (options) |option| {
+            longest = std.math.max(longest, 4 + option.label.len);
+        }
+        break :blk @intCast(u31, longest);
+    };
+    const box_h: u31 = 8 + 8 + 16 + @intCast(u31, options.len) * 10;
+    const box_x: i32 = vwin_w / 2 - box_w / 2;
+    const box_y: i32 = vwin_h / 2 - box_h / 2;
 
     pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
@@ -291,83 +301,20 @@ fn drawMainMenu(g: *GameState, cursor_pos: c.MainController.MainMenuState) void 
     );
     pdraw.end(&g.draw_state);
 
-    var sx: i31 = box_x + 8;
-    var sy: i31 = box_y + 8;
+    var sx: i32 = box_x + 8;
+    var sy: i32 = box_y + 8;
 
     const font_color = getColor(g, primary_font_color_index);
     pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "OXID");
+    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, T.title);
     sy += 16;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .NewGame) "> New game" else "  New game");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Options) "> Options" else "  Options");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Quit) "> Quit" else "  Quit");
-    sy += 10;
-    pdraw.end(&g.draw_state);
-}
-
-fn drawInGameMenu(g: *GameState, cursor_pos: c.MainController.InGameMenuState) void {
-    const box_w = 150;
-    const box_h = 16+8+16+20;
-    const box_x = vwin_w / 2 - box_w / 2;
-    const box_y = vwin_h / 2 - box_h / 2;
-
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
-    pdraw.tile(
-        &g.draw_state,
-        g.draw_state.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
-        box_x, box_y, box_w, box_h,
-        .Identity,
-    );
-    pdraw.end(&g.draw_state);
-
-    var sx: i31 = box_x + 8;
-    var sy: i31 = box_y + 8;
-
-    const font_color = getColor(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "OXID");
-    sy += 16;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Continue) "> Continue game" else "  Continue game");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Options) "> Options" else "  Options");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Leave) "> End game" else "  End game");
-    sy += 10;
-    pdraw.end(&g.draw_state);
-}
-
-fn drawOptionsMenu(g: *GameState, cursor_pos: c.MainController.OptionsMenuState) void {
-    const box_w = 180;
-    const box_h = 16+8+16+20;
-    const box_x = vwin_w / 2 - box_w / 2;
-    const box_y = vwin_h / 2 - box_h / 2;
-
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
-    pdraw.tile(
-        &g.draw_state,
-        g.draw_state.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
-        box_x, box_y, box_w, box_h,
-        .Identity,
-    );
-    pdraw.end(&g.draw_state);
-
-    var sx: i31 = box_x + 8;
-    var sy: i31 = box_y + 8;
-
-    const font_color = getColor(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "Options");
-    sy += 16;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Mute) "> Toggle mute" else "  Toggle mute");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Fullscreen) "> Toggle fullscreen" else "  Toggle fullscreen");
-    sy += 10;
-    fontDrawString(&g.draw_state, &g.font, sx, sy, if (cursor_pos == .Back) "> Back" else "  Back");
-    sy += 10;
+    for (options) |option, i| {
+        if (@enumToInt(menu_state) == i) {
+            fontDrawString(&g.draw_state, &g.font, sx, sy, ">");
+        }
+        fontDrawString(&g.draw_state, &g.font, sx + 16, sy, option.label);
+        sy += 10;
+    }
     pdraw.end(&g.draw_state);
 }
 
