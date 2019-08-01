@@ -27,7 +27,7 @@ Game controls:
 
 Debug/cheat controls:
 * backquote: fast forward
-* return: skip to next wave
+* backspace: skip to next wave
 * F2: toggle rendering of move boxes
 * F3: toggle invulnerability
 * F4: toggle profiling spam

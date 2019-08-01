@@ -226,8 +226,19 @@ pub const EventDrawBox = struct {
     color: Draw.Color,
 };
 
-pub const EventInput = struct {
-    command: input.Command,
+pub const EventRawInput = struct {
+    game_command: ?input.GameCommand,
+    menu_command: ?input.MenuCommand,
+    down: bool,
+};
+
+pub const EventGameInput = struct {
+    command: input.GameCommand,
+    down: bool,
+};
+
+pub const EventMenuInput = struct {
+    command: input.MenuCommand,
     down: bool,
 };
 

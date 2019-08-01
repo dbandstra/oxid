@@ -12,11 +12,10 @@ const SystemData = struct {
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    if (self.mc.menu_stack_len == 0) {
-        if (self.mc.game_running_state) |*grs| {
-            handleGameRunningInput(gs, self.mc, grs);
-        }
-    } else {
+    if (self.mc.game_running_state) |*grs| {
+        handleGameRunningInput(gs, self.mc, grs);
+    }
+    if (self.mc.menu_stack_len > 0) {
         switch (self.mc.menu_stack_array[self.mc.menu_stack_len - 1]) {
             .MainMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.MainMenu, menu_state); },
             .InGameMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.InGameMenu, menu_state); },
@@ -27,7 +26,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
 }
 
 fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainController.GameRunningState) void {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
+    var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
         switch (event.data.command) {
             .Escape => {
                 if (event.data.down) {
@@ -59,7 +58,7 @@ fn popMenu(mc: *c.MainController) void {
 }
 
 fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cursor_pos: *T) void {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
+    var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
         if (!event.data.down) {
             continue;
         }
@@ -88,7 +87,7 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cu
                     p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                 }
             },
-            .Shoot => {
+            .Enter => {
                 switch (T) {
                     menus.MainMenu => { mainMenuAction(gs, mc, cursor_pos.*); },
                     menus.InGameMenu => { inGameMenuAction(gs, mc, cursor_pos.*); },

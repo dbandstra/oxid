@@ -354,12 +354,8 @@ pub fn main() void {
                 SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            if (input.getCommandForKey(key)) |command| {
-                                _ = p.EventInput.spawn(&g.session, c.EventInput {
-                                    .command = command,
-                                    .down = true,
-                                }) catch undefined;
-                            }
+                            spawnInputEvent(&g.session, key, true);
+
                             switch (key) {
                                 .Backquote => {
                                     fast_forward = true;
@@ -377,12 +373,8 @@ pub fn main() void {
                 },
                 SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        if (input.getCommandForKey(key)) |command| {
-                            _ = p.EventInput.spawn(&g.session, c.EventInput {
-                                .command = command,
-                                .down = false,
-                            }) catch undefined;
-                        }
+                        spawnInputEvent(&g.session, key, false);
+
                         switch (key) {
                             .Backquote => {
                                 fast_forward = false;
@@ -463,6 +455,19 @@ pub fn main() void {
                 }
             }
         }
+    }
+}
+
+fn spawnInputEvent(gs: *GameSession, key: Key, down: bool) void {
+    const game_command = input.getGameCommandForKey(key);
+    const menu_command = input.getMenuCommandForKey(key);
+
+    if (game_command != null or menu_command != null) {
+        _ = p.EventRawInput.spawn(gs, c.EventRawInput {
+            .game_command = game_command,
+            .menu_command = menu_command,
+            .down = down,
+        }) catch undefined;
     }
 }
 

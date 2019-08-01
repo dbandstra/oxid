@@ -13,6 +13,8 @@ pub fn gameInit(gs: *GameSession, high_score: u32) !void {
 
 // run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(gs: *GameSession) void {
+    @import("systems/input_router.zig").run(gs);
+
     @import("systems/main_controller_input.zig").run(gs);
 
     // note: ideally these would be inside the frame loop, but we have to make

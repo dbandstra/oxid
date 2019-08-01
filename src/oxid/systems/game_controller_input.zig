@@ -10,7 +10,7 @@ const SystemData = struct {
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
-    var it = gs.iter(c.EventInput); while (it.next()) |event| {
+    var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
         switch (event.data.command) {
             .KillAllMonsters => {
                 if (event.data.down) {
