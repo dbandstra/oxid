@@ -28,9 +28,6 @@ const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 
 // See https://github.com/zig-lang/zig/issues/565
-// SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
-// SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_DISPLAY(X)  (SDL_WINDOWPOS_UNDEFINED_MASK|(X))
-// SDL_video.h:#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
 // this many pixels is added to the top of the window for font stuff
@@ -251,6 +248,10 @@ pub fn main() void {
     };
     defer SDL_DestroyWindow(window);
 
+    var original_window_x: c_int = undefined;
+    var original_window_y: c_int = undefined;
+    SDL_GetWindowPosition(window, &original_window_x, &original_window_y);
+
     var audio_user_data = AudioUserData {
         .g = g,
         .sample_rate = audio_sample_rate,
@@ -387,6 +388,12 @@ pub fn main() void {
                         }
                     }
                 },
+                SDL_WINDOWEVENT => {
+                    if (!fullscreen and sdl_event.window.event == SDL_WINDOWEVENT_MOVED) {
+                        original_window_x = sdl_event.window.data1;
+                        original_window_y = sdl_event.window.data2;
+                    }
+                },
                 SDL_QUIT => {
                     quit = true;
                 },
@@ -451,6 +458,7 @@ pub fn main() void {
                     std.debug.warn("Failed to disable fullscreen mode");
                 } else {
                     SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
+                    SDL_SetWindowPosition(window, original_window_x, original_window_y);
                     fullscreen = false;
                 }
             } else {
