@@ -19,6 +19,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
         switch (self.mc.menu_stack_array[self.mc.menu_stack_len - 1]) {
             .MainMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.MainMenu, menu_state); },
             .InGameMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.InGameMenu, menu_state); },
+            .ReallyEndGameMenu => { handleReallyEndGamePromptInput(gs, self.mc); },
             .OptionsMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.OptionsMenu, menu_state); },
         }
     }
@@ -54,6 +55,26 @@ fn pushMenu(mc: *c.MainController, menu: c.MainController.Menu) void {
 fn popMenu(mc: *c.MainController) void {
     if (mc.menu_stack_len > 0) {
         mc.menu_stack_len -= 1;
+    }
+}
+
+fn handleReallyEndGamePromptInput(gs: *GameSession, mc: *c.MainController) void {
+    var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
+        if (!event.data.down) {
+            continue;
+        }
+        switch (event.data.command) {
+            .Escape,
+            .No => {
+                popMenu(mc);
+                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+            },
+            .Yes => {
+                leaveGame(gs, mc);
+                p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+            },
+            else => {},
+        }
     }
 }
 
@@ -125,7 +146,7 @@ fn inGameMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.I
             pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
         },
         .Leave => {
-            leaveGame(gs, mc);
+            pushMenu(mc, c.MainController.Menu.ReallyEndGameMenu);
         },
     }
 }

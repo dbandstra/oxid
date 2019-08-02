@@ -17,6 +17,7 @@ pub const MainController = struct {
     pub const Menu = union(enum) {
         MainMenu: menus.MainMenu,
         InGameMenu: menus.InGameMenu,
+        ReallyEndGameMenu,
         OptionsMenu: menus.OptionsMenu,
     };
 

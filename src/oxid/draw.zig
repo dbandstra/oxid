@@ -49,6 +49,7 @@ pub fn drawGame(g: *GameState) void {
         switch (mc.menu_stack_array[mc.menu_stack_len - 1]) {
             .MainMenu => |menu_state| { drawMenu(g, menu_state); },
             .InGameMenu => |menu_state| { drawMenu(g, menu_state); },
+            .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
             .OptionsMenu => |menu_state| { drawMenu(g, menu_state); },
         }
     }
@@ -264,10 +265,6 @@ fn drawHud(g: *GameState, game_active: bool) void {
             drawTextBox(g, .Centered, DrawCoord{ .Exact = y }, "GAME OVER");
         }
     }
-}
-
-fn drawExitDialog(g: *GameState) void {
-    drawTextBox(g, .Centered, .Centered, "Leave game? [Y/N]");
 }
 
 fn drawMenu(g: *GameState, menu_state: var) void {
