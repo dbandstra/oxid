@@ -47,10 +47,10 @@ pub fn drawGame(g: *GameState) void {
 
     if (mc.menu_stack_len > 0) {
         switch (mc.menu_stack_array[mc.menu_stack_len - 1]) {
-            .MainMenu => |menu_state| { drawMenu(g, menu_state); },
-            .InGameMenu => |menu_state| { drawMenu(g, menu_state); },
+            .MainMenu => |menu_state| { drawMenu(g, mc, menu_state); },
+            .InGameMenu => |menu_state| { drawMenu(g, mc, menu_state); },
             .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
-            .OptionsMenu => |menu_state| { drawMenu(g, menu_state); },
+            .OptionsMenu => |menu_state| { drawMenu(g, mc, menu_state); },
         }
     }
 }
@@ -267,7 +267,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
     }
 }
 
-fn drawMenu(g: *GameState, menu_state: var) void {
+fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
     const T = @typeOf(menu_state);
 
     var options: [@typeInfo(T).Enum.fields.len]menus.MenuOption = undefined;
@@ -280,7 +280,9 @@ fn drawMenu(g: *GameState, menu_state: var) void {
     const box_w: u31 = 8 + 8 + 8 * blk: {
         var longest: usize = T.title.len;
         for (options) |option| {
-            longest = std.math.max(longest, 4 + option.label.len);
+            var w = 4 + option.label.len;
+            if (option.value != null) { w += 5; }
+            longest = std.math.max(longest, w);
         }
         break :blk @intCast(u31, longest);
     };
@@ -306,10 +308,17 @@ fn drawMenu(g: *GameState, menu_state: var) void {
     fontDrawString(&g.draw_state, &g.font, sx + 16, sy, T.title);
     sy += 16;
     for (options) |option, i| {
+        var x = sx;
         if (@enumToInt(menu_state) == i) {
-            fontDrawString(&g.draw_state, &g.font, sx, sy, ">");
+            fontDrawString(&g.draw_state, &g.font, x, sy, ">");
         }
-        fontDrawString(&g.draw_state, &g.font, sx + 16, sy, option.label);
+        x += 16;
+        fontDrawString(&g.draw_state, &g.font, x, sy, option.label);
+        x += 8 * @intCast(i32, option.label.len);
+        if (option.value) |getter| {
+            fontDrawString(&g.draw_state, &g.font, x, sy, if (getter(mc)) ": ON" else ": OFF");
+            x += 8 * 5;
+        }
         sy += 10;
     }
     pdraw.end(&g.draw_state);

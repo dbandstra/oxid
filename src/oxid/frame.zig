@@ -5,10 +5,8 @@ const c = @import("components.zig");
 const p = @import("prototypes.zig");
 const datafile = @import("datafile.zig");
 
-pub fn gameInit(gs: *GameSession, high_score: u32) !void {
-    _ = try p.MainController.spawn(gs, p.MainController.Params {
-        .high_score = high_score,
-    });
+pub fn gameInit(gs: *GameSession, params: p.MainController.Params) !void {
+    _ = try p.MainController.spawn(gs, params);
 }
 
 // run before "middleware" (rendering, sound, etc)

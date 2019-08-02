@@ -334,16 +334,20 @@ pub fn main() void {
 
     g.perf_spam = false;
 
+    var fast_forward = false;
+    var muted = false;
+
     g.session.init(rand_seed);
-    gameInit(&g.session, initial_high_score) catch |err| {
+    gameInit(&g.session, p.MainController.Params {
+        .is_fullscreen = fullscreen,
+        .is_muted = muted,
+        .high_score = initial_high_score,
+    }) catch |err| {
         std.debug.warn("Failed to initialize game.\n"); // TODO - print error (see above)
         return;
     };
 
     perf.init();
-
-    var fast_forward = false;
-    var muted = false;
 
     var quit = false;
     while (!quit) {
@@ -398,6 +402,14 @@ pub fn main() void {
             }
             break :blk windowed_dims.blit_rect;
         };
+
+        // copy these system values straight into the MainController.
+        // this is kind of a hack, but on the other hand, i'm spawning entities
+        // in this file too, it's not that different...
+        if (g.session.findFirstObject(c.MainController)) |mc| {
+            mc.data.is_fullscreen = fullscreen;
+            mc.data.is_muted = muted;
+        }
 
         var toggle_fullscreen = false;
         const num_frames = if (fast_forward) u32(4) else u32(1);

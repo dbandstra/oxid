@@ -1,5 +1,8 @@
+const c = @import("components.zig");
+
 pub const MenuOption = struct {
     label: []const u8,
+    value: ?fn(mc: *const c.MainController)bool,
 };
 
 pub const MainMenu = enum {
@@ -11,9 +14,9 @@ pub const MainMenu = enum {
 
     pub fn getOption(cursor_pos: @This()) MenuOption {
         return switch (cursor_pos) {
-            .NewGame => MenuOption { .label = "New game" },
-            .Options => MenuOption { .label = "Options" },
-            .Quit => MenuOption { .label = "Quit" },
+            .NewGame => MenuOption { .label = "New game", .value = null },
+            .Options => MenuOption { .label = "Options", .value = null },
+            .Quit => MenuOption { .label = "Quit", .value = null },
         };
     }
 };
@@ -23,13 +26,13 @@ pub const InGameMenu = enum {
     Options,
     Leave,
 
-    pub const title = "OXID";
+    pub const title = "GAME PAUSED";
 
     pub fn getOption(cursor_pos: @This()) MenuOption {
         return switch (cursor_pos) {
-            .Continue => MenuOption { .label = "Continue game" },
-            .Options => MenuOption { .label = "Options" },
-            .Leave => MenuOption { .label = "End game" },
+            .Continue => MenuOption { .label = "Continue game", .value = null },
+            .Options => MenuOption { .label = "Options", .value = null },
+            .Leave => MenuOption { .label = "End game", .value = null },
         };
     }
 };
@@ -39,13 +42,21 @@ pub const OptionsMenu = enum {
     Fullscreen,
     Back,
 
-    pub const title = "Options";
+    pub const title = "OPTIONS";
 
     pub fn getOption(cursor_pos: @This()) MenuOption {
         return switch (cursor_pos) {
-            .Mute => MenuOption { .label = "Toggle mute" },
-            .Fullscreen => MenuOption { .label = "Toggle fullscreen" },
-            .Back => MenuOption { .label = "Back" },
+            .Mute => MenuOption { .label = "Mute sound", .value = getMuted },
+            .Fullscreen => MenuOption { .label = "Fullscreen", .value = getFullscreen },
+            .Back => MenuOption { .label = "Back", .value = null },
         };
+    }
+
+    fn getMuted(mc: *const c.MainController) bool {
+        return mc.is_muted;
+    }
+
+    fn getFullscreen(mc: *const c.MainController) bool {
+        return mc.is_fullscreen;
     }
 };

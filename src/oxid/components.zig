@@ -21,6 +21,8 @@ pub const MainController = struct {
         OptionsMenu: menus.OptionsMenu,
     };
 
+    is_fullscreen: bool,
+    is_muted: bool,
     high_score: u32,
     new_high_score: bool,
     game_running_state: ?GameRunningState,

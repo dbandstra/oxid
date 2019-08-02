@@ -42,6 +42,8 @@ pub const bullet_bbox = blk: {
 
 pub const MainController = struct {
     pub const Params = struct {
+        is_fullscreen: bool,
+        is_muted: bool,
         high_score: u32,
     };
 
@@ -50,6 +52,8 @@ pub const MainController = struct {
         errdefer gs.undoSpawn(entity_id);
 
         try gs.addComponent(entity_id, c.MainController {
+            .is_fullscreen = params.is_fullscreen,
+            .is_muted = params.is_muted,
             .high_score = params.high_score,
             .new_high_score = false,
             .game_running_state = null,
