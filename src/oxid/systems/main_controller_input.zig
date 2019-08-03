@@ -21,7 +21,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .InGameMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.InGameMenu, menu_state); },
             .ReallyEndGameMenu => { handleReallyEndGamePromptInput(gs, self.mc); },
             .OptionsMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.OptionsMenu, menu_state); },
-            .HighScoresMenu => { handleHighScoresMenuInput(gs, self.mc); },
+            .HighScoresMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.HighScoresMenu, menu_state); },
         }
     }
     return true;
@@ -79,28 +79,13 @@ fn handleReallyEndGamePromptInput(gs: *GameSession, mc: *c.MainController) void 
     }
 }
 
-fn handleHighScoresMenuInput(gs: *GameSession, mc: *c.MainController) void {
-    var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
-        if (!event.data.down) {
-            continue;
-        }
-        switch (event.data.command) {
-            .Escape => {
-                popMenu(mc);
-                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-            },
-            else => {},
-        }
-    }
-}
-
 fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cursor_pos: *T) void {
     var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
         if (!event.data.down) {
             continue;
         }
         switch (event.data.command) {
-            .Up => {
+            .Up => if (@typeInfo(T).Enum.fields.len > 1) {
                 const index = @enumToInt(cursor_pos.*);
                 const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
                 cursor_pos.* = @intToEnum(T, if (index > 0) index - 1 else last);
@@ -109,7 +94,7 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cu
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
-            .Down => {
+            .Down => if (@typeInfo(T).Enum.fields.len > 1) {
                 const index = @enumToInt(cursor_pos.*);
                 const last = @intCast(@typeOf(index), @typeInfo(T).Enum.fields.len - 1);
                 cursor_pos.* = @intToEnum(T, if (index < last) index + 1 else 0);
@@ -129,6 +114,7 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, cu
                     menus.MainMenu => { mainMenuAction(gs, mc, cursor_pos.*); },
                     menus.InGameMenu => { inGameMenuAction(gs, mc, cursor_pos.*); },
                     menus.OptionsMenu => { optionsMenuAction(gs, mc, cursor_pos.*); },
+                    menus.HighScoresMenu => { highScoresMenuAction(gs, mc, cursor_pos.*); },
                     else => {},
                 }
                 p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
@@ -179,6 +165,14 @@ fn optionsMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.
             _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
         },
         .Back => {
+            popMenu(mc);
+        },
+    }
+}
+
+fn highScoresMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.HighScoresMenu) void {
+    switch (cursor_pos) {
+        .Close => {
             popMenu(mc);
         },
     }

@@ -19,7 +19,7 @@ pub const MainController = struct {
         InGameMenu: menus.InGameMenu,
         ReallyEndGameMenu,
         OptionsMenu: menus.OptionsMenu,
-        HighScoresMenu,
+        HighScoresMenu: menus.HighScoresMenu,
     };
 
     is_fullscreen: bool,

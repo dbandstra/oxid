@@ -51,7 +51,7 @@ pub fn drawGame(g: *GameState) void {
             .InGameMenu => |menu_state| { drawMenu(g, mc, menu_state); },
             .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
             .OptionsMenu => |menu_state| { drawMenu(g, mc, menu_state); },
-            .HighScoresMenu => { drawHighScoresMenu(g, mc); }
+            .HighScoresMenu => |menu_state| { drawMenu(g, mc, menu_state); }
         }
     }
 }
@@ -273,13 +273,22 @@ fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
 
     var options: [@typeInfo(T).Enum.fields.len]menus.MenuOption = undefined;
     for (options) |*option, i| {
-        const i_casted = @intCast(@TagType(T), i);
-        const cursor_pos = @intToEnum(T, i_casted);
-        option.* = T.getOption(cursor_pos);
+        if (@TagType(T) == comptime_int) {
+            // https://github.com/ziglang/zig/issues/2997
+            const cursor_pos: T = undefined;
+            option.* = T.getOption(cursor_pos);
+        } else {
+            const i_casted = @intCast(@TagType(T), i);
+            const cursor_pos = @intToEnum(T, i_casted);
+            option.* = T.getOption(cursor_pos);
+        }
     }
 
     const box_w: u31 = 8 + 8 + 8 * blk: {
         var longest: usize = T.title.len;
+        if (@typeOf(menu_state) == menus.HighScoresMenu) {
+            longest = 15;
+        }
         for (options) |option| {
             var w = 4 + option.label.len;
             if (option.value != null) { w += 5; }
@@ -287,7 +296,12 @@ fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
         }
         break :blk @intCast(u31, longest);
     };
-    const box_h: u31 = 8 + 8 + 16 + @intCast(u31, options.len) * 10;
+    const box_h: u31 = 8 + 8 + 16 + @intCast(u31, options.len) * 10 + (
+        if (@typeOf(menu_state) == menus.HighScoresMenu)
+            6 + @intCast(u31, mc.high_scores.len) * 10
+        else
+            u31(0)
+    );
     const box_x: i32 = vwin_w / 2 - box_w / 2;
     const box_y: i32 = vwin_h / 2 - box_h / 2;
 
@@ -308,6 +322,21 @@ fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
     pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
     fontDrawString(&g.draw_state, &g.font, sx + 16, sy, T.title);
     sy += 16;
+    if (@typeOf(menu_state) == menus.HighScoresMenu) { // hax
+        var buffer: [40]u8 = undefined;
+        var dest = std.io.SliceOutStream.init(buffer[0..]);
+        for (mc.high_scores) |score, i| {
+            _ = dest.stream.print(" {}{}. {}",
+                if (i < 9) " " else "", // print doesn't have any way to left-pad with spaces
+                i + 1,
+                score
+            ) catch unreachable; // FIXME
+            fontDrawString(&g.draw_state, &g.font, sx, sy, dest.getWritten());
+            dest.reset();
+            sy += 10;
+        }
+        sy += 6;
+    }
     for (options) |option, i| {
         var x = sx;
         if (@enumToInt(menu_state) == i) {
@@ -320,45 +349,6 @@ fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
             fontDrawString(&g.draw_state, &g.font, x, sy, if (getter(mc)) ": ON" else ": OFF");
             x += 8 * 5;
         }
-        sy += 10;
-    }
-    pdraw.end(&g.draw_state);
-}
-
-fn drawHighScoresMenu(g: *GameState, mc: *const c.MainController) void {
-    var buffer: [40]u8 = undefined;
-    var dest = std.io.SliceOutStream.init(buffer[0..]);
-
-    const box_w: u31 = 140;
-    const box_h: u31 = 8 + 8 + 16 + 10 * 10;
-    const box_x: i32 = vwin_w / 2 - box_w / 2;
-    const box_y: i32 = vwin_h / 2 - box_h / 2;
-
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
-    pdraw.tile(
-        &g.draw_state,
-        g.draw_state.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
-        box_x, box_y, box_w, box_h,
-        .Identity,
-    );
-    pdraw.end(&g.draw_state);
-
-    var sx: i32 = box_x + 8;
-    var sy: i32 = box_y + 8;
-
-    const font_color = getColor(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "HIGH SCORES");
-    sy += 16;
-    for (mc.high_scores) |score, i| {
-        _ = dest.stream.print(" {}{}. {}",
-            if (i < 9) " " else "", // print doesn't have any way to left-pad with spaces
-            i + 1,
-            score
-        ) catch unreachable; // FIXME
-        fontDrawString(&g.draw_state, &g.font, sx, sy, dest.getWritten());
-        dest.reset();
         sy += 10;
     }
     pdraw.end(&g.draw_state);

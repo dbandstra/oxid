@@ -62,3 +62,15 @@ pub const OptionsMenu = enum {
         return mc.is_fullscreen;
     }
 };
+
+pub const HighScoresMenu = enum {
+    Close,
+
+    pub const title = "HIGH SCORES";
+
+    pub fn getOption(cursor_pos: @This()) MenuOption {
+        return switch (cursor_pos) {
+            .Close => MenuOption { .label = "Close", .value = null },
+        };
+    }
+};
