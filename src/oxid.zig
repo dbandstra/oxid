@@ -15,6 +15,7 @@ const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const levels = @import("oxid/levels.zig");
+const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
@@ -313,9 +314,9 @@ pub fn main() void {
     // load? i think we should disable high score functionality for this session
     // instead. otherwise the real high score could get overwritten by a lower
     // score.
-    const initial_high_score = datafile.loadHighScore(&hunk.low()) catch |err| blk: {
-        std.debug.warn("Failed to load high score from disk: {}.\n", err);
-        break :blk 0;
+    const initial_high_scores = datafile.loadHighScores(&hunk.low()) catch |err| blk: {
+        std.debug.warn("Failed to load high scores from disk: {}.\n", err);
+        break :blk [1]u32{0} ** Constants.num_high_scores;
     };
 
     loadFont(&hunk.low(), &g.font) catch |err| {
@@ -342,7 +343,7 @@ pub fn main() void {
     gameInit(&g.session, p.MainController.Params {
         .is_fullscreen = fullscreen,
         .is_muted = muted,
-        .high_score = initial_high_score,
+        .high_scores = initial_high_scores,
     }) catch |err| {
         std.debug.warn("Failed to initialize game.\n"); // TODO - print error (see above)
         return;
@@ -429,9 +430,9 @@ pub fn main() void {
                 switch (object.data) {
                     .ToggleMute => muted = !muted,
                     .ToggleFullscreen => toggle_fullscreen = true,
-                    .SaveHighScore => |score| {
-                        datafile.saveHighScore(&hunk.low(), score) catch |err| {
-                            std.debug.warn("Failed to save high score to disk: {}\n", err);
+                    .SaveHighScores => |high_scores| {
+                        datafile.saveHighScores(&hunk.low(), high_scores) catch |err| {
+                            std.debug.warn("Failed to save high scores to disk: {}\n", err);
                         };
                     },
                     .Quit => quit = true,

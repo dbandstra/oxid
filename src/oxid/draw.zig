@@ -51,6 +51,7 @@ pub fn drawGame(g: *GameState) void {
             .InGameMenu => |menu_state| { drawMenu(g, mc, menu_state); },
             .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
             .OptionsMenu => |menu_state| { drawMenu(g, mc, menu_state); },
+            .HighScoresMenu => { drawHighScoresMenu(g, mc); }
         }
     }
 }
@@ -250,7 +251,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
         }
     }
 
-    _ = dest.stream.print("High:{}", mc.high_score) catch unreachable; // FIXME
+    _ = dest.stream.print("High:{}", mc.high_scores[0]) catch unreachable; // FIXME
     fontDrawString(&g.draw_state, &g.font, 30*8, 0, dest.getWritten());
     dest.reset();
 
@@ -319,6 +320,45 @@ fn drawMenu(g: *GameState, mc: *const c.MainController, menu_state: var) void {
             fontDrawString(&g.draw_state, &g.font, x, sy, if (getter(mc)) ": ON" else ": OFF");
             x += 8 * 5;
         }
+        sy += 10;
+    }
+    pdraw.end(&g.draw_state);
+}
+
+fn drawHighScoresMenu(g: *GameState, mc: *const c.MainController) void {
+    var buffer: [40]u8 = undefined;
+    var dest = std.io.SliceOutStream.init(buffer[0..]);
+
+    const box_w: u31 = 140;
+    const box_h: u31 = 8 + 8 + 16 + 10 * 10;
+    const box_x: i32 = vwin_w / 2 - box_w / 2;
+    const box_y: i32 = vwin_h / 2 - box_h / 2;
+
+    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.tile(
+        &g.draw_state,
+        g.draw_state.blank_tileset,
+        draw.Tile { .tx = 0, .ty = 0 },
+        box_x, box_y, box_w, box_h,
+        .Identity,
+    );
+    pdraw.end(&g.draw_state);
+
+    var sx: i32 = box_x + 8;
+    var sy: i32 = box_y + 8;
+
+    const font_color = getColor(g, primary_font_color_index);
+    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+    fontDrawString(&g.draw_state, &g.font, sx + 16, sy, "HIGH SCORES");
+    sy += 16;
+    for (mc.high_scores) |score, i| {
+        _ = dest.stream.print(" {}{}. {}",
+            if (i < 9) " " else "", // print doesn't have any way to left-pad with spaces
+            i + 1,
+            score
+        ) catch unreachable; // FIXME
+        fontDrawString(&g.draw_state, &g.font, sx, sy, dest.getWritten());
+        dest.reset();
         sy += 10;
     }
     pdraw.end(&g.draw_state);

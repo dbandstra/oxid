@@ -8,6 +8,7 @@ pub const MenuOption = struct {
 pub const MainMenu = enum {
     NewGame,
     Options,
+    HighScores,
     Quit,
 
     pub const title = "OXID";
@@ -16,6 +17,7 @@ pub const MainMenu = enum {
         return switch (cursor_pos) {
             .NewGame => MenuOption { .label = "New game", .value = null },
             .Options => MenuOption { .label = "Options", .value = null },
+            .HighScores => MenuOption { .label = "High scores", .value = null },
             .Quit => MenuOption { .label = "Quit", .value = null },
         };
     }

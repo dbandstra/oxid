@@ -21,6 +21,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .InGameMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.InGameMenu, menu_state); },
             .ReallyEndGameMenu => { handleReallyEndGamePromptInput(gs, self.mc); },
             .OptionsMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.OptionsMenu, menu_state); },
+            .HighScoresMenu => { handleHighScoresMenuInput(gs, self.mc); },
         }
     }
     return true;
@@ -72,6 +73,21 @@ fn handleReallyEndGamePromptInput(gs: *GameSession, mc: *c.MainController) void 
             .Yes => {
                 leaveGame(gs, mc);
                 p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+            },
+            else => {},
+        }
+    }
+}
+
+fn handleHighScoresMenuInput(gs: *GameSession, mc: *c.MainController) void {
+    var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
+        if (!event.data.down) {
+            continue;
+        }
+        switch (event.data.command) {
+            .Escape => {
+                popMenu(mc);
+                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
             },
             else => {},
         }
@@ -131,6 +147,9 @@ fn mainMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: menus.Mai
         .Options => {
             pushMenu(mc, c.MainController.Menu { .OptionsMenu = .Mute });
         },
+        .HighScores => {
+            pushMenu(mc, .HighScoresMenu);
+        },
         .Quit => {
             _ = p.EventSystemCommand.spawn(gs, .Quit) catch undefined;
         },
@@ -175,9 +194,7 @@ fn startGame(gs: *GameSession, mc: *c.MainController) void {
 }
 
 fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
-    // go through all the players and post their scores (if the player ran out of
-    // lives and got a game over, they've already posted their score, but posting
-    // it again won't cause any problem)
+    // go through all the players and post their scores
     var it0 = gs.iter(c.PlayerController); while (it0.next()) |object| {
         _ = p.EventPostScore.spawn(gs, c.EventPostScore {
             .score = object.data.score,

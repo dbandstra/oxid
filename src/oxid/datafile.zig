@@ -1,5 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const Constants = @import("constants.zig");
 
 const Mode = enum {
     Read,
@@ -28,10 +29,10 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: Mode) !std.fs.
     };
 }
 
-pub fn loadHighScore(hunk_side: *HunkSide) !u32 {
+pub fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
     const file = openDataFile(hunk_side, "highscore.dat", .Read) catch |err| {
         if (err == error.FileNotFound) {
-            return u32(0);
+            return [1]u32{0} ** Constants.num_high_scores;
         }
         return err;
     };
@@ -39,14 +40,20 @@ pub fn loadHighScore(hunk_side: *HunkSide) !u32 {
 
     var fis = std.fs.File.inStream(file);
 
-    return fis.stream.readIntLittle(u32);
+    var high_scores = [1]u32{0} ** Constants.num_high_scores;
+    var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
+        high_scores[i] = fis.stream.readIntLittle(u32) catch 0;
+    }
+    return high_scores;
 }
 
-pub fn saveHighScore(hunk_side: *HunkSide, high_score: u32) !void {
+pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
     const file = try openDataFile(hunk_side, "highscore.dat", .Write);
     defer file.close();
 
     var fos = std.fs.File.outStream(file);
 
-    try fos.stream.writeIntLittle(u32, high_score);
+    for (high_scores) |score| {
+        try fos.stream.writeIntLittle(u32, score);
+    }
 }

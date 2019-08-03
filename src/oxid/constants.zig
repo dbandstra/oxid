@@ -5,6 +5,8 @@ const PickupType = ConstantTypes.PickupType;
 const PickupValues = ConstantTypes.PickupValues;
 const Wave = ConstantTypes.Wave;
 
+pub const num_high_scores = 10;
+
 pub const enemy_speed_ticks = 20*60; // every 20 seconds, increase monster speed
 pub const max_enemy_speed_level = 4;
 pub const pickup_spawn_time = 60*60; // spawn a new pickup every 60 seconds

@@ -2,7 +2,6 @@ const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
-const p = @import("../prototypes.zig");
 
 const SystemData = struct{
     gc: *c.GameController,
@@ -16,11 +15,6 @@ fn think(gs: *GameSession, self: SystemData) bool {
     }
     var it = gs.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
         self.gc.game_over = true;
-        if (gs.find(object.data.player_controller_id, c.PlayerController)) |pc| {
-            _ = p.EventPostScore.spawn(gs, c.EventPostScore {
-                .score = pc.score,
-            }) catch undefined;
-        }
     }
     var it2 = gs.iter(c.EventMonsterDied); while (it2.next()) |_| {
         if (self.gc.monster_count > 0) {

@@ -19,11 +19,12 @@ pub const MainController = struct {
         InGameMenu: menus.InGameMenu,
         ReallyEndGameMenu,
         OptionsMenu: menus.OptionsMenu,
+        HighScoresMenu,
     };
 
     is_fullscreen: bool,
     is_muted: bool,
-    high_score: u32,
+    high_scores: [Constants.num_high_scores]u32,
     new_high_score: bool,
     game_running_state: ?GameRunningState,
     menu_stack_array: [2]Menu,
@@ -63,6 +64,8 @@ pub const Monster = struct {
 
 pub const Web = struct {};
 
+// maybe this should just be an object inside MainController?
+// combine with GameRunningState
 pub const GameController = struct {
     game_over: bool,
     monster_count: u32,
@@ -266,7 +269,7 @@ pub const EventShowMessage = struct {
 pub const EventSystemCommand = union(enum) {
     ToggleMute,
     ToggleFullscreen,
-    SaveHighScore: u32,
+    SaveHighScores: [Constants.num_high_scores]u32,
     Quit,
 };
 

@@ -44,7 +44,7 @@ pub const MainController = struct {
     pub const Params = struct {
         is_fullscreen: bool,
         is_muted: bool,
-        high_score: u32,
+        high_scores: [Constants.num_high_scores]u32,
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
@@ -54,7 +54,7 @@ pub const MainController = struct {
         try gs.addComponent(entity_id, c.MainController {
             .is_fullscreen = params.is_fullscreen,
             .is_muted = params.is_muted,
-            .high_score = params.high_score,
+            .high_scores = params.high_scores,
             .new_high_score = false,
             .game_running_state = null,
             .menu_stack_array = [2]c.MainController.Menu {
