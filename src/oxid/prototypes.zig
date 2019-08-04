@@ -69,39 +69,43 @@ pub const MainController = struct {
 };
 
 pub const GameController = struct {
+    pub const defaults = c.GameController {
+        .game_over = false,
+        .monster_count = 0,
+        .enemy_speed_level = 0,
+        .enemy_speed_timer = Constants.enemy_speed_ticks,
+        .wave_number = 0,
+        .next_wave_timer = 90,
+        .next_pickup_timer = 15*60,
+        .freeze_monsters_timer = 0,
+        .extra_lives_spawned = 0,
+        .wave_message = null,
+        .wave_message_timer = 0,
+    };
+
     pub fn spawn(gs: *GameSession) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.GameController {
-            .game_over = false,
-            .monster_count = 0,
-            .enemy_speed_level = 0,
-            .enemy_speed_timer = Constants.enemy_speed_ticks,
-            .wave_number = 0,
-            .next_wave_timer = 90,
-            .next_pickup_timer = 15*60,
-            .freeze_monsters_timer = 0,
-            .extra_lives_spawned = 0,
-            .wave_message = null,
-            .wave_message_timer = 0,
-        });
+        try gs.addComponent(entity_id, defaults);
 
         return entity_id;
     }
 };
 
 pub const PlayerController = struct {
+    pub const defaults = c.PlayerController {
+        .player_id = null,
+        .lives = Constants.player_num_lives,
+        .score = 0,
+        .respawn_timer = 1,
+    };
+
     pub fn spawn(gs: *GameSession) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, c.PlayerController {
-            .player_id = null,
-            .lives = Constants.player_num_lives,
-            .score = 0,
-            .respawn_timer = 1,
-        });
+        try gs.addComponent(entity_id, defaults);
 
         return entity_id;
     }

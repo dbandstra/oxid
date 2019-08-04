@@ -20,6 +20,9 @@ pub fn gameFrame(gs: *GameSession) void {
     @import("systems/game_controller_input.zig").run(gs);
     @import("systems/player_input.zig").run(gs);
 
+    // this is kind of ugly. i think main controller should have a system that
+    // calls into these game systems. top level gameFrame shouldn't be looking
+    // into components like this
     const mc = gs.findFirst(c.MainController).?;
     if (mc.game_running_state) |grs| {
         if (mc.menu_stack_len == 0) {

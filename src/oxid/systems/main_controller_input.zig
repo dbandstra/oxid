@@ -33,7 +33,11 @@ fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainC
             .Escape => {
                 if (event.data.down) {
                     p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                    pushMenu(mc, c.MainController.Menu { .InGameMenu = .Continue });
+                    if (if (gs.findFirst(c.GameController)) |gc| gc.game_over else true) {
+                        pushMenu(mc, c.MainController.Menu { .MainMenu = .NewGame });
+                    } else {
+                        pushMenu(mc, c.MainController.Menu { .InGameMenu = .Continue });
+                    }
                 }
             },
             .ToggleDrawBoxes => {
@@ -179,12 +183,38 @@ fn highScoresMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: men
 }
 
 fn startGame(gs: *GameSession, mc: *c.MainController) void {
+    // remove all entities except the MainController, GameController,
+    // PlayerController, and EventPostScore
+    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
+        switch (field.field_type.ComponentType) {
+            c.MainController,
+            c.GameController,
+            c.PlayerController,
+            c.EventPostScore => {},
+            else => |ComponentType| {
+                var it = gs.iter(ComponentType); while (it.next()) |object| {
+                    gs.markEntityForRemoval(object.entity_id);
+                }
+            },
+        }
+    }
+
     mc.game_running_state = c.MainController.GameRunningState {
         .render_move_boxes = false,
     };
 
-    _ = p.GameController.spawn(gs) catch undefined;
-    _ = p.PlayerController.spawn(gs) catch undefined;
+    // reuse these if present
+    if (gs.findFirst(c.GameController)) |gc| {
+        gc.* = p.GameController.defaults;
+    } else {
+        _ = p.GameController.spawn(gs) catch undefined;
+    }
+
+    if (gs.findFirst(c.PlayerController)) |pc| {
+        pc.* = p.PlayerController.defaults;
+    } else {
+        _ = p.PlayerController.spawn(gs) catch undefined;
+    }
 }
 
 fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
@@ -201,11 +231,14 @@ fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
 
     // remove all entities except the MainController and EventPostScore
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
-        const ComponentType = field.field_type.ComponentType;
-        if (ComponentType != c.MainController and ComponentType != c.EventPostScore) {
-            var it = gs.iter(ComponentType); while (it.next()) |object| {
-                gs.markEntityForRemoval(object.entity_id);
-            }
+        switch (field.field_type.ComponentType) {
+            c.MainController,
+            c.EventPostScore => {},
+            else => |ComponentType| {
+                var it = gs.iter(ComponentType); while (it.next()) |object| {
+                    gs.markEntityForRemoval(object.entity_id);
+                }
+            },
         }
     }
 }
