@@ -34,6 +34,7 @@ fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainC
                 if (event.data.down) {
                     p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                     if (if (gs.findFirst(c.GameController)) |gc| gc.game_over else true) {
+                        postScores(gs, mc);
                         pushMenu(mc, c.MainController.Menu { .MainMenu = .NewGame });
                     } else {
                         pushMenu(mc, c.MainController.Menu { .InGameMenu = .Continue });
@@ -75,7 +76,8 @@ fn handleReallyEndGamePromptInput(gs: *GameSession, mc: *c.MainController) void 
                 p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
             },
             .Yes => {
-                leaveGame(gs, mc);
+                postScores(gs, mc);
+                abortGame(gs, mc);
                 p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
             },
             else => {},
@@ -182,6 +184,17 @@ fn highScoresMenuAction(gs: *GameSession, mc: *c.MainController, cursor_pos: men
     }
 }
 
+fn postScores(gs: *GameSession, mc: *c.MainController) void {
+    // go through all the players and post their scores
+    var it0 = gs.iter(c.PlayerController); while (it0.next()) |object| {
+        _ = p.EventPostScore.spawn(gs, c.EventPostScore {
+            .score = object.data.score,
+        }) catch undefined;
+    }
+}
+
+// i feel like this functions are too heavy to be done inline by this system.
+// they should be created as events and handled by middleware?
 fn startGame(gs: *GameSession, mc: *c.MainController) void {
     // remove all entities except the MainController, GameController,
     // PlayerController, and EventPostScore
@@ -210,6 +223,8 @@ fn startGame(gs: *GameSession, mc: *c.MainController) void {
         _ = p.GameController.spawn(gs) catch undefined;
     }
 
+    // FIXME - this doesn't properly handle the case of multiple
+    // PlayerControllers existing, although that doesn't currently happen
     if (gs.findFirst(c.PlayerController)) |pc| {
         pc.* = p.PlayerController.defaults;
     } else {
@@ -217,14 +232,7 @@ fn startGame(gs: *GameSession, mc: *c.MainController) void {
     }
 }
 
-fn leaveGame(gs: *GameSession, mc: *c.MainController) void {
-    // go through all the players and post their scores
-    var it0 = gs.iter(c.PlayerController); while (it0.next()) |object| {
-        _ = p.EventPostScore.spawn(gs, c.EventPostScore {
-            .score = object.data.score,
-        }) catch undefined;
-    }
-
+fn abortGame(gs: *GameSession, mc: *c.MainController) void {
     mc.game_running_state = null;
     mc.menu_stack_array[0] = c.MainController.Menu { .MainMenu = .NewGame };
     mc.menu_stack_len = 1;
