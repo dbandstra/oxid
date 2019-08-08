@@ -71,9 +71,9 @@ pub fn save(config: Config, hunk_side: *HunkSide) !void {
     var fos = std.fs.File.outStream(file);
 
     try fos.stream.print(
-        \\{}
+        \\{{
         \\    "muted": {}
-        \\{}
+        \\}}
         \\
-    , "{", config.muted, "}");
+    , config.muted);
 }
