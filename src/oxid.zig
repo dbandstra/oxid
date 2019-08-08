@@ -25,6 +25,7 @@ const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
+const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 
@@ -336,13 +337,21 @@ pub fn main() void {
 
     g.perf_spam = false;
 
+    var cfg = config.load(&hunk.low()) catch |err| {
+        std.debug.warn("Failed to load config: {}\n", err);
+        return;
+    };
+
+    defer config.save(cfg, &hunk.low()) catch |err| {
+        std.debug.warn("Failed to save config: {}\n", err);
+    };
+
     var fast_forward = false;
-    var muted = false;
 
     g.session.init(rand_seed);
     gameInit(&g.session, p.MainController.Params {
         .is_fullscreen = fullscreen,
-        .is_muted = muted,
+        .is_muted = cfg.muted,
         .high_scores = initial_high_scores,
     }) catch |err| {
         std.debug.warn("Failed to initialize game.\n"); // TODO - print error (see above)
@@ -416,7 +425,7 @@ pub fn main() void {
         // in this file too, it's not that different...
         if (g.session.findFirstObject(c.MainController)) |mc| {
             mc.data.is_fullscreen = fullscreen;
-            mc.data.is_muted = muted;
+            mc.data.is_muted = cfg.muted;
         }
 
         var toggle_fullscreen = false;
@@ -428,7 +437,7 @@ pub fn main() void {
 
             var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
                 switch (object.data) {
-                    .ToggleMute => muted = !muted,
+                    .ToggleMute => cfg.muted = !cfg.muted,
                     .ToggleFullscreen => toggle_fullscreen = true,
                     .SaveHighScores => |high_scores| {
                         datafile.saveHighScores(&hunk.low(), high_scores) catch |err| {
@@ -440,7 +449,7 @@ pub fn main() void {
             }
 
             SDL_LockAudioDevice(device);
-            playSounds(g, muted, @intToFloat(f32, num_frames));
+            playSounds(g, cfg.muted, @intToFloat(f32, num_frames));
             SDL_UnlockAudioDevice(device);
 
             drawMain(g, blit_rect, 1.0 / @intToFloat(f32, i + 1));
