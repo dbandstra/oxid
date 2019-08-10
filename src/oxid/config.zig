@@ -1,20 +1,57 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const Key = @import("../common/key.zig").Key;
+const input = @import("input.zig");
 
 pub const Config = struct {
     muted: bool,
+    menu_key_bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key,
+    game_key_bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?Key,
 };
 
 const config_datadir = "Oxid";
 const config_filename = "config.json";
 
+const default_config = Config {
+    .muted = false,
+    .menu_key_bindings = blk: {
+        var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key = undefined;
+        for (bindings) |*binding, i| {
+            binding.* = switch (@intToEnum(input.MenuCommand, i)) {
+                .Up => Key.Up,
+                .Down => Key.Down,
+                .Escape => Key.Escape,
+                .Enter => Key.Return,
+                .Yes => Key.Y,
+                .No => Key.N,
+            };
+        }
+        break :blk bindings;
+    },
+    .game_key_bindings = blk: {
+        var bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?Key = undefined;
+        for (bindings) |*binding, i| {
+            binding.* = switch (@intToEnum(input.GameCommand, i)) {
+                .Up => Key.Up,
+                .Down => Key.Down,
+                .Left => Key.Left,
+                .Right => Key.Right,
+                .Shoot => Key.Space,
+                .KillAllMonsters => Key.Backspace,
+                .ToggleDrawBoxes => Key.F2,
+                .ToggleGodMode => Key.F3,
+                .Escape => Key.Escape,
+            };
+        }
+        break :blk bindings;
+    },
+};
+
 pub fn load(hunk_side: *HunkSide) !Config {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
-    var config = Config {
-        .muted = false,
-    };
+    var config = default_config;
 
     const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, config_datadir);
     const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, config_filename});

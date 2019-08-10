@@ -369,7 +369,7 @@ pub fn main() void {
                 SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            spawnInputEvent(&g.session, key, true);
+                            spawnInputEvent(&g.session, &cfg, key, true);
 
                             switch (key) {
                                 .Backquote => {
@@ -388,7 +388,7 @@ pub fn main() void {
                 },
                 SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        spawnInputEvent(&g.session, key, false);
+                        spawnInputEvent(&g.session, &cfg, key, false);
 
                         switch (key) {
                             .Backquote => {
@@ -488,9 +488,20 @@ pub fn main() void {
     }
 }
 
-fn spawnInputEvent(gs: *GameSession, key: Key, down: bool) void {
-    const game_command = input.getGameCommandForKey(key);
-    const menu_command = input.getMenuCommandForKey(key);
+fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) void {
+    const game_command =
+        for (cfg.game_key_bindings) |maybe_key, i| {
+            if (if (maybe_key) |k| k == key else false) {
+                break @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
+            }
+        } else null;
+
+    const menu_command =
+        for (cfg.menu_key_bindings) |maybe_key, i| {
+            if (if (maybe_key) |k| k == key else false) {
+                break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
+            }
+        } else null;
 
     if (game_command != null or menu_command != null) {
         _ = p.EventRawInput.spawn(gs, c.EventRawInput {
