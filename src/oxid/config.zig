@@ -51,13 +51,13 @@ pub fn load(hunk_side: *HunkSide) !Config {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
-    var config = default_config;
+    var cfg = default_config;
 
     const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, config_datadir);
     const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, config_filename});
     const contents = std.io.readFileAlloc(&hunk_side.allocator, file_path) catch |err| {
         if (err == error.FileNotFound) {
-            return config;
+            return cfg;
         }
         return err;
     };
@@ -73,22 +73,115 @@ pub fn load(hunk_side: *HunkSide) !Config {
             var it = map.iterator();
             while (it.next()) |kv| {
                 if (std.mem.eql(u8, kv.key, "muted")) {
-                    config.muted = switch (kv.value) {
-                        .Bool => |v| v,
-                        else => return error.ConfigError,
-                    };
+                    switch (kv.value) {
+                        .Bool => |v| {
+                            cfg.muted = v;
+                        },
+                        else => {
+                            std.debug.warn("Value of \"muted\" must be a boolean\n");
+                        },
+                    }
+                } else if (std.mem.eql(u8, kv.key, "menu_key_bindings")) {
+                    readMenuKeyBindings(&cfg, kv.value);
+                } else if (std.mem.eql(u8, kv.key, "game_key_bindings")) {
+                    readGameKeyBindings(&cfg, kv.value);
                 } else {
                     std.debug.warn("Unrecognized config field: '{}'\n", kv.key);
                 }
             }
         },
-        else => return error.ConfigError,
+        else => {
+            std.debug.warn("Top-level value must be an object\n");
+        },
     }
 
-    return config;
+    return cfg;
 }
 
-pub fn save(config: Config, hunk_side: *HunkSide) !void {
+fn readMenuKeyBindings(cfg: *Config, value: std.json.Value) void {
+    switch (value) {
+        .Object => |map| {
+            var it = map.iterator();
+            while (it.next()) |kv| {
+                const command = parseMenuCommand(kv.key) orelse continue;
+                cfg.menu_key_bindings[@enumToInt(command)] = parseKey(kv.value);
+            }
+        },
+        else => {
+            std.debug.warn("Value of \"menu_key_bindings\" must be an object\n");
+        },
+    }
+}
+
+fn readGameKeyBindings(cfg: *Config, value: std.json.Value) void {
+    switch (value) {
+        .Object => |map| {
+            var it = map.iterator();
+            while (it.next()) |kv| {
+                const command = parseGameCommand(kv.key) orelse continue;
+                cfg.game_key_bindings[@enumToInt(command)] = parseKey(kv.value);
+            }
+        },
+        else => {
+            std.debug.warn("Value of \"game_key_bindings\" must be an object\n");
+        },
+    }
+}
+
+fn parseMenuCommand(s: []const u8) ?input.MenuCommand {
+    inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
+        if (std.mem.eql(u8, s, field.name)) {
+            return @intToEnum(input.MenuCommand, field.value);
+        }
+    } else {
+        std.debug.warn("Unrecognized menu command: '{}'\n", s);
+        return null;
+    }
+}
+
+fn parseGameCommand(s: []const u8) ?input.GameCommand {
+    inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
+        if (std.mem.eql(u8, s, field.name)) {
+            return @intToEnum(input.GameCommand, field.value);
+        }
+    } else {
+        std.debug.warn("Unrecognized game command: '{}'\n", s);
+        return null;
+    }
+}
+
+fn parseKey(value: std.json.Value) ?Key {
+    switch (value) {
+        .String => |s| {
+            inline for (@typeInfo(Key).Enum.fields) |field| {
+                if (std.mem.eql(u8, s, field.name)) {
+                    return @intToEnum(Key, field.value);
+                }
+            } else {
+                std.debug.warn("Unrecognized key: '{}'\n", s);
+                return null;
+            }
+        },
+        .Null => {
+            return null;
+        },
+        else => {
+            std.debug.warn("Key binding value must be a string or null\n");
+            return null;
+        }
+    }
+}
+
+fn getEnumValueName(comptime T: type, value: T) []const u8 {
+    inline for (@typeInfo(T).Enum.fields) |field| {
+        if (@intToEnum(T, field.value) == value) {
+            return field.name;
+        }
+    }
+    unreachable;
+}
+
+pub fn save(cfg: Config, hunk_side: *HunkSide) !void {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -109,8 +202,48 @@ pub fn save(config: Config, hunk_side: *HunkSide) !void {
 
     try fos.stream.print(
         \\{{
-        \\    "muted": {}
+        \\    "muted": {},
+        \\    "menu_key_bindings": {{
+        \\
+    , cfg.muted);
+    // don't bother with backslash escaping strings because we know none of
+    // the possible values need it
+    for (cfg.menu_key_bindings) |maybe_key, i| {
+        const command = @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
+        const command_name = getEnumValueName(input.MenuCommand, command);
+        try fos.stream.print("        \"{}\": ", command_name);
+        if (maybe_key) |key| {
+            try fos.stream.print("\"{}\"", getEnumValueName(Key, key));
+        } else {
+            try fos.stream.print("null");
+        }
+        if (i < cfg.menu_key_bindings.len - 1) {
+            try fos.stream.print(",");
+        }
+        try fos.stream.print("\n");
+    }
+    try fos.stream.print(
+        \\    }},
+        \\    "game_key_bindings": {{
+        \\
+    );
+    for (cfg.game_key_bindings) |maybe_key, i| {
+        const command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
+        const command_name = getEnumValueName(input.GameCommand, command);
+        try fos.stream.print("        \"{}\": ", command_name);
+        if (maybe_key) |key| {
+            try fos.stream.print("\"{}\"", getEnumValueName(Key, key));
+        } else {
+            try fos.stream.print("null");
+        }
+        if (i < cfg.game_key_bindings.len - 1) {
+            try fos.stream.print(",");
+        }
+        try fos.stream.print("\n");
+    }
+    try fos.stream.print(
+        \\    }}
         \\}}
         \\
-    , config.muted);
+    );
 }
