@@ -5,7 +5,7 @@ Oxid is written in the [Zig](https://ziglang.org) programming language. I try to
 
 ## Installation
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
-* Install [Zig](https://ziglang.org/download/). I frequently update the code to work with the latest version of Zig, so make sure to use the master version of Zig.
+* Install [Zig](https://ziglang.org/download/). Use master, or if that doesn't work, the abovementioned commit hash.
 * After cloning the oxid repository, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
 
 ## How to play
