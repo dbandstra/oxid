@@ -43,8 +43,6 @@ The game goes on forever until you die. The waves are randomly generated (this w
 * Deaths often come in rapid succession. You may think you're doing well, only to lose it all in 30 seconds.
 * My high score is about 12500, which took a bit less than 15 minutes.
 
-Since I added the randomized wave generation, I think I'm more or less done working on Oxid, barring some tweaks and code refactors. I think it turned out to be a pretty entertaining game.
-
 ## Code
 Oxid uses a minimalistic Entity Component System, which is certainly overkill for a game like this, but for me it was a experiment in itself.
 
