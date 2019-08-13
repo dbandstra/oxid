@@ -239,3 +239,11 @@ pub const Key = enum {
     AudioRewind,
     AudioFastForward,
 };
+
+pub const key_names = blk: {
+    var array: [@typeInfo(Key).Enum.fields.len][]const u8 = undefined;
+    inline for (@typeInfo(Key).Enum.fields) |field, i| {
+        array[i] = field.name;
+    }
+    break :blk array;
+};

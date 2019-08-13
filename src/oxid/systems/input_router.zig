@@ -21,12 +21,11 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }
         } else {
             // menu mode
-            if (event.data.menu_command) |command| {
-                _ = p.EventMenuInput.spawn(gs, c.EventMenuInput {
-                    .command = command,
-                    .down = event.data.down,
-                }) catch undefined;
-            }
+            _ = p.EventMenuInput.spawn(gs, c.EventMenuInput {
+                .command = event.data.menu_command,
+                .key = event.data.key,
+                .down = event.data.down,
+            }) catch undefined;
         }
     }
     return true;

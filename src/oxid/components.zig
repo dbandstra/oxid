@@ -1,6 +1,7 @@
 const zang = @import("zang");
 const gbe = @import("gbe");
 const Math = @import("../common/math.zig");
+const Key = @import("../common/key.zig").Key;
 const Draw = @import("../common/draw.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
@@ -19,15 +20,17 @@ pub const MainController = struct {
         InGameMenu: menus.InGameMenu,
         ReallyEndGameMenu,
         OptionsMenu: menus.OptionsMenu,
+        KeyBindingsMenu: menus.KeyBindingsMenu,
         HighScoresMenu: menus.HighScoresMenu,
     };
+    pub const menu_stack_size = 3;
 
     is_fullscreen: bool,
     is_muted: bool,
     high_scores: [Constants.num_high_scores]u32,
     new_high_score: bool,
     game_running_state: ?GameRunningState,
-    menu_stack_array: [2]Menu,
+    menu_stack_array: [menu_stack_size]Menu,
     menu_stack_len: usize,
 };
 
@@ -235,6 +238,7 @@ pub const EventDrawBox = struct {
 pub const EventRawInput = struct {
     game_command: ?input.GameCommand,
     menu_command: ?input.MenuCommand,
+    key: Key,
     down: bool,
 };
 
@@ -244,8 +248,15 @@ pub const EventGameInput = struct {
 };
 
 pub const EventMenuInput = struct {
-    command: input.MenuCommand,
+    command: ?input.MenuCommand,
+    key: Key, // used for the key binding menu
     down: bool,
+};
+
+// maybe this should be a SystemCommand?
+pub const EventBindGameCommand = struct {
+    command: input.GameCommand,
+    key: ?Key,
 };
 
 pub const EventMonsterDied = struct {};

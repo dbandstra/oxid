@@ -669,12 +669,26 @@ pub fn main() void {
                     .Quit => quit = true,
                 }
             }
+            var it2 = g.session.iter(c.EventBindGameCommand); while (it2.next()) |object| {
+                const command_index = @enumToInt(object.data.command);
+                const key_in_use =
+                    if (object.data.key) |new_key|
+                        for (cfg.game_key_bindings) |maybe_key| {
+                            if (if (maybe_key) |key| key == new_key else false) {
+                                break true;
+                            }
+                        } else false
+                    else false;
+                if (!key_in_use) {
+                    cfg.game_key_bindings[command_index] = object.data.key;
+                }
+            }
 
             SDL_LockAudioDevice(device);
             playSounds(g, cfg.muted, @intToFloat(f32, num_frames));
             SDL_UnlockAudioDevice(device);
 
-            drawMain(g, blit_rect, 1.0 / @intToFloat(f32, i + 1));
+            drawMain(g, &cfg, blit_rect, 1.0 / @intToFloat(f32, i + 1));
 
             gameFrameCleanup(&g.session);
         }
@@ -725,13 +739,15 @@ fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: 
             }
         } else null;
 
-    if (game_command != null or menu_command != null) {
+    // dang.. an event even for unbound keys. oh well
+    // if (game_command != null or menu_command != null) {
         _ = p.EventRawInput.spawn(gs, c.EventRawInput {
             .game_command = game_command,
             .menu_command = menu_command,
+            .key = key,
             .down = down,
         }) catch undefined;
-    }
+    // }
 }
 
 fn playSounds(g: *GameState, muted: bool, speed: f32) void {
@@ -746,14 +762,14 @@ fn playSounds(g: *GameState, muted: bool, speed: f32) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
-fn drawMain(g: *GameState, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
+fn drawMain(g: *GameState, cfg: *const config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
     platform_draw.preDraw(&g.draw_state);
 
     perf.begin(&perf.timers.Draw);
 
-    drawGame(g);
+    drawGame(g, cfg);
 
     perf.end(&perf.timers.Draw, g.perf_spam);
 
