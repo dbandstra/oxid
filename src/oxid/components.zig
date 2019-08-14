@@ -253,12 +253,6 @@ pub const EventMenuInput = struct {
     down: bool,
 };
 
-// maybe this should be a SystemCommand?
-pub const EventBindGameCommand = struct {
-    command: input.GameCommand,
-    key: ?Key,
-};
-
 pub const EventMonsterDied = struct {};
 
 pub const EventPlayerDied = struct {
@@ -277,9 +271,15 @@ pub const EventShowMessage = struct {
     message: []const u8,
 };
 
+pub const BindGameCommand = struct {
+    command: input.GameCommand,
+    key: ?Key,
+};
+
 pub const EventSystemCommand = union(enum) {
     ToggleMute,
     ToggleFullscreen,
+    BindGameCommand: BindGameCommand,
     SaveHighScores: [Constants.num_high_scores]u32,
     Quit,
 };

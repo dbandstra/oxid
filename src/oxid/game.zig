@@ -19,7 +19,6 @@ pub const GameSession = gbe.Session(struct {
     Web: gbe.ComponentList(c.Web, 100),
     EventAwardLife: gbe.ComponentList(c.EventAwardLife, 20),
     EventAwardPoints: gbe.ComponentList(c.EventAwardPoints, 20),
-    EventBindGameCommand: gbe.ComponentList(c.EventBindGameCommand, 5),
     EventCollide: gbe.ComponentList(c.EventCollide, 50),
     EventConferBonus: gbe.ComponentList(c.EventConferBonus, 5),
     EventDraw: gbe.ComponentList(c.EventDraw, 100),

@@ -496,7 +496,6 @@ fn Event(comptime T: type) type {
 
 pub const EventAwardLife = Event(c.EventAwardLife);
 pub const EventAwardPoints = Event(c.EventAwardPoints);
-pub const EventBindGameCommand = Event(c.EventBindGameCommand);
 pub const EventCollide = Event(c.EventCollide);
 pub const EventConferBonus = Event(c.EventConferBonus);
 pub const EventDraw = Event(c.EventDraw);

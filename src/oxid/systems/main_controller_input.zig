@@ -93,9 +93,11 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, me
             continue;
         }
         if (T == menus.KeyBindingsMenu and menu_state.rebinding) {
-            _ = p.EventBindGameCommand.spawn(gs, c.EventBindGameCommand {
-                .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos) orelse continue,
-                .key = event.data.key,
+            _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
+                .BindGameCommand = c.BindGameCommand {
+                    .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos) orelse continue,
+                    .key = event.data.key,
+                },
             }) catch undefined;
             menu_state.rebinding = false;
             continue;
@@ -205,9 +207,11 @@ fn keyBindingsMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *m
         .Left,
         .Right,
         .Shoot => {
-            _ = p.EventBindGameCommand.spawn(gs, c.EventBindGameCommand {
-                .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos).?,
-                .key = null,
+            _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
+                .BindGameCommand = c.BindGameCommand {
+                    .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos).?,
+                    .key = null,
+                },
             }) catch undefined;
             menu_state.rebinding = true;
         },

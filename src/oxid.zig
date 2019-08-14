@@ -661,26 +661,26 @@ pub fn main() void {
                 switch (object.data) {
                     .ToggleMute => cfg.muted = !cfg.muted,
                     .ToggleFullscreen => toggle_fullscreen = true,
+                    .BindGameCommand => |payload| {
+                        const command_index = @enumToInt(payload.command);
+                        const key_in_use =
+                            if (payload.key) |new_key|
+                                for (cfg.game_key_bindings) |maybe_key| {
+                                    if (if (maybe_key) |key| key == new_key else false) {
+                                        break true;
+                                    }
+                                } else false
+                            else false;
+                        if (!key_in_use) {
+                            cfg.game_key_bindings[command_index] = payload.key;
+                        }
+                    },
                     .SaveHighScores => |high_scores| {
                         datafile.saveHighScores(&hunk.low(), high_scores) catch |err| {
                             std.debug.warn("Failed to save high scores to disk: {}\n", err);
                         };
                     },
                     .Quit => quit = true,
-                }
-            }
-            var it2 = g.session.iter(c.EventBindGameCommand); while (it2.next()) |object| {
-                const command_index = @enumToInt(object.data.command);
-                const key_in_use =
-                    if (object.data.key) |new_key|
-                        for (cfg.game_key_bindings) |maybe_key| {
-                            if (if (maybe_key) |key| key == new_key else false) {
-                                break true;
-                            }
-                        } else false
-                    else false;
-                if (!key_in_use) {
-                    cfg.game_key_bindings[command_index] = object.data.key;
                 }
             }
 
