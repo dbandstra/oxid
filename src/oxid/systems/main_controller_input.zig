@@ -87,6 +87,17 @@ fn handleReallyEndGamePromptInput(gs: *GameSession, mc: *c.MainController) void 
     }
 }
 
+fn getGameCommand(cursor_pos: menus.KeyBindingsMenu.Option) ?input.GameCommand {
+    return switch (cursor_pos) {
+        .Up => input.GameCommand.Up,
+        .Down => input.GameCommand.Down,
+        .Left => input.GameCommand.Left,
+        .Right => input.GameCommand.Right,
+        .Shoot => input.GameCommand.Shoot,
+        .Close => null,
+    };
+}
+
 fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, menu_state: *T) void {
     var it = gs.iter(c.EventMenuInput); while (it.next()) |event| {
         if (!event.data.down) {
@@ -95,7 +106,7 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, me
         if (T == menus.KeyBindingsMenu and menu_state.rebinding) {
             _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
                 .BindGameCommand = c.BindGameCommand {
-                    .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos) orelse continue,
+                    .command = getGameCommand(menu_state.cursor_pos) orelse continue,
                     .key = event.data.key,
                 },
             }) catch undefined;
@@ -209,7 +220,7 @@ fn keyBindingsMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *m
         .Shoot => {
             _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
                 .BindGameCommand = c.BindGameCommand {
-                    .command = menus.KeyBindingsMenu.getGameCommand(menu_state.cursor_pos).?,
+                    .command = getGameCommand(menu_state.cursor_pos).?,
                     .key = null,
                 },
             }) catch undefined;

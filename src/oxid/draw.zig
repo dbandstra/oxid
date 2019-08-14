@@ -18,6 +18,7 @@ const menus = @import("menus.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
 const drawMenu = @import("draw_menu.zig").drawMenu;
+const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
@@ -254,77 +255,6 @@ fn drawHud(g: *GameState, game_active: bool) void {
     pdraw.end(&g.draw_state);
 
     if (if (gc_maybe) |gc| gc.game_over else false) {
-        const y = 8*4;
-
-        if (mc.new_high_score) {
-            drawTextBox(g, .Centered, DrawCoord{ .Exact = y }, "GAME OVER\n\nNew high score!");
-        } else {
-            drawTextBox(g, .Centered, DrawCoord{ .Exact = y }, "GAME OVER");
-        }
+        drawGameOverOverlay(g, mc.new_high_score);
     }
-}
-
-const DrawCoord = union(enum) {
-    Centered,
-    Exact: i32,
-};
-
-pub fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) void {
-    var tw: u31 = 0;
-    var th: u31 = 1;
-
-    {
-        var tx: u31 = 0;
-        for (text) |ch| {
-            if (ch == '\n') {
-                tx = 0;
-                th += 1;
-            } else {
-                tx += 1;
-                if (tx > tw) {
-                    tw = tx;
-                }
-            }
-        }
-    }
-
-    const w = 8 * (tw + 2);
-    const h = 8 * (th + 2);
-
-    const x = switch (dx) {
-        .Centered => i32(vwin_w / 2 - w / 2),
-        .Exact => |x| x,
-    };
-    const y = switch (dy) {
-        .Centered => i32(vwin_h / 2 - h / 2),
-        .Exact => |y| y,
-    };
-
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
-    pdraw.tile(
-        &g.draw_state,
-        g.draw_state.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
-        x, y, w, h,
-        .Identity,
-    );
-    pdraw.end(&g.draw_state);
-
-    const font_color = getColor(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
-    {
-        var start: usize = 0;
-        var sy = y + 8;
-        var i: usize = 0; while (i <= text.len) : (i += 1) {
-            if (i == text.len or text[i] == '\n') {
-                const slice = text[start..i];
-                const sw = 8 * @intCast(u31, slice.len);
-                const sx = x + i32(w / 2 - sw / 2);
-                fontDrawString(&g.draw_state, &g.font, sx, sy, slice);
-                sy += 8;
-                start = i + 1;
-            }
-        }
-    }
-    pdraw.end(&g.draw_state);
 }
