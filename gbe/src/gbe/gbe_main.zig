@@ -1,5 +1,6 @@
 // (g)ame (b)ack (e)nd
 
+const builtin = @import("builtin");
 const std = @import("std");
 const assert = std.debug.assert;
 
@@ -39,7 +40,7 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
 }
 
 pub fn Session(comptime ComponentLists: type) type {
-    assert(@typeId(ComponentLists) == .Struct);
+    assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         // ?! is it possible to assert that a type == ComponentList(X)?
 

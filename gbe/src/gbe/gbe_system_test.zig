@@ -1,5 +1,5 @@
 const std = @import("std");
-const Gbe = @import("gbe_main.zig");
+const gbe = @import("gbe_main.zig");
 const buildSystem = @import("gbe_system.zig").buildSystem;
 
 const Creature = struct { hit_points: u32 };
@@ -7,11 +7,11 @@ const Monster = struct { chasing: bool };
 const Player = struct { attack_level: u32 };
 const Transform = struct { x: i32, y: i32 };
 
-const MockGameSession = Gbe.Session(struct {
-    Creature: Gbe.ComponentList(Creature, 50),
-    Monster: Gbe.ComponentList(Monster, 50),
-    Player: Gbe.ComponentList(Player, 50),
-    Transform: Gbe.ComponentList(Transform, 50),
+const MockGameSession = gbe.Session(struct {
+    Creature: gbe.ComponentList(Creature, 50),
+    Monster: gbe.ComponentList(Monster, 50),
+    Player: gbe.ComponentList(Player, 50),
+    Transform: gbe.ComponentList(Transform, 50),
 });
 
 fn prepareGs(gs: *MockGameSession) !void {
