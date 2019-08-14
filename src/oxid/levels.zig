@@ -106,30 +106,38 @@ pub const height: u31 = 14;
 
 pub const Level = GenLevel(width, height);
 
-pub const level1 = Level.init(blk: {
-    const e = 0x00;
-    const O = 0x80;
-    const U = 0x81;
-    // const x = 0x82; // pit
-    const A = 0x83;
-    const B = 0x84;
-    const C = 0x85;
-    const D = 0x86;
+// levels are loaded from pcx files. the palette is thrown out but the color
+// index of each pixel is meaningful
+pub const level1 = Level.init(loadLevel("level1.pcx"));
 
-    break :blk [_]u8 {
-        O,U,U,U,U,U,U,U,U,U,U,U,O,U,U,U,U,U,U,O,
-        O,e,e,e,e,e,e,e,e,e,e,e,O,e,e,e,e,e,e,O,
-        O,e,A,B,e,O,U,e,U,U,O,e,U,e,U,e,A,B,e,O,
-        O,e,C,D,e,O,e,e,e,e,O,e,e,e,e,e,C,D,e,O,
-        O,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,e,e,e,O,
-        O,O,e,O,e,e,e,e,e,e,e,e,e,e,U,e,U,U,e,O,
-        O,U,e,U,U,U,e,O,e,O,O,e,O,e,e,e,e,e,e,O,
-        O,e,e,e,e,e,e,U,e,U,U,e,U,e,U,U,O,e,O,O,
-        O,e,U,U,e,O,e,e,e,e,e,e,e,e,e,e,U,e,U,O,
-        O,e,e,e,e,U,U,U,e,O,e,U,U,e,O,e,e,e,e,O,
-        O,e,A,B,e,e,e,e,e,O,e,e,e,e,O,e,A,B,e,O,
-        O,e,C,D,e,U,e,O,e,U,U,U,e,U,U,e,C,D,e,O,
-        O,e,e,e,e,e,e,O,e,e,e,e,e,e,e,e,e,e,e,O,
-        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
-    };
-});
+// map of pcx values to the values that are meaningful to the program
+const mapping = [_]u8 {
+    0x00, // floor
+    0x80, // wall
+    0x81, // wall (south face)
+    0x83, // spooky block, top left
+    0x84, // spooky block, top right
+    0x85, // spooky block, bottom left
+    0x86, // spooky block, bottom right
+};
+
+const build_options = @import("build_options");
+const pcx = @import("zig-pcx");
+
+fn loadLevel(comptime filename: []const u8) [width * height]u8 {
+    @setEvalBranchQuota(20000);
+    const input = @embedFile(build_options.assets_path ++ "/" ++ filename);
+    var slice_stream = std.io.SliceInStream.init(input);
+    var stream = &slice_stream.stream;
+    const Loader = pcx.Loader(std.io.SliceInStream.Error);
+    const preloaded = try Loader.preload(stream);
+    if (preloaded.width != width or preloaded.height != height) {
+        @compileError(filename ++ " must be a 20x14 image");
+    }
+    var data: [width * height]u8 = undefined;
+    try Loader.loadIndexed(stream, preloaded, data[0..], null);
+    for (data) |*v| {
+        v.* = mapping[v.*];
+    }
+    return data;
+}

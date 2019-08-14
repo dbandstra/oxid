@@ -15,7 +15,7 @@ test "box_in_wall" {
         };
     });
 
-    const s = levels.SUBPIXELS_PER_TILE;
+    const s = levels.subpixels_per_tile;
 
     // TODO - hardcode these instead of multiplying.
     // provide gridsize within the level object so we can specify
