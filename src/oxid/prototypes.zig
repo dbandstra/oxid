@@ -67,6 +67,7 @@ pub const MainController = struct {
             .game_running_state = null,
             .menu_stack_array = menu_stack_array,
             .menu_stack_len = 1,
+            .menu_anim_time = 0,
         });
 
         return entity_id;

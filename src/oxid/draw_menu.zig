@@ -236,8 +236,13 @@ fn drawKeyBindingsMenu(g: *GameState, cfg: config.Config, mc: *const c.MainContr
         fontDrawString(&g.draw_state, &g.font, x, sy, option);
         x += 8 * @intCast(i32, option.len);
         if (menu_state.rebinding and @enumToInt(menu_state.cursor_pos) == i) {
-            // TODO - make it blink or animate?
-            fontDrawString(&g.draw_state, &g.font, x, sy, "...");
+            const str = switch (mc.menu_anim_time / 16 % 4) {
+                0 => ".",
+                1 => "..",
+                2 => "...",
+                else => "",
+            };
+            fontDrawString(&g.draw_state, &g.font, x, sy, str);
         } else {
             switch (@intToEnum(menus.KeyBindingsMenu.Option, @intCast(@TagType(menus.KeyBindingsMenu.Option), i))) {
                 .Up => {

@@ -25,6 +25,7 @@ pub const MainController = struct {
     game_running_state: ?GameRunningState,
     menu_stack_array: [menu_stack_size]menus.Menu,
     menu_stack_len: usize,
+    menu_anim_time: u32,
 };
 
 pub const Bullet = struct {

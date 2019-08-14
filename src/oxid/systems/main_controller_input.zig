@@ -13,6 +13,8 @@ const SystemData = struct {
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) bool {
+    self.mc.menu_anim_time +%= 1; // not really "input" but whatever
+
     if (self.mc.game_running_state) |*grs| {
         handleGameRunningInput(gs, self.mc, grs);
     }
@@ -225,6 +227,7 @@ fn keyBindingsMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *m
                 },
             }) catch undefined;
             menu_state.rebinding = true;
+            mc.menu_anim_time = 0;
         },
         .Close => {
             popMenu(mc);
