@@ -10,6 +10,7 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
 const input = @import("input.zig");
+const drawTextBox = @import("draw.zig").drawTextBox;
 
 const primary_font_color_index = 15; // near-white
 
@@ -23,7 +24,18 @@ fn getColor(g: *GameState, index: usize) draw.Color {
     };
 }
 
-pub fn drawMenu(g: *GameState, cfg: *const config.Config, mc: *const c.MainController, menu_state: var) void {
+pub fn drawMenu(g: *GameState, cfg: config.Config, mc: *const c.MainController, menu: menus.Menu) void {
+    switch (menu) {
+        .MainMenu => |menu_state| { drawMenu2(g, cfg, mc, menu_state); },
+        .InGameMenu => |menu_state| { drawMenu2(g, cfg, mc, menu_state); },
+        .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
+        .OptionsMenu => |menu_state| { drawMenu2(g, cfg, mc, menu_state); },
+        .KeyBindingsMenu => |menu_state| { drawMenu2(g, cfg, mc, menu_state); },
+        .HighScoresMenu => |menu_state| { drawMenu2(g, cfg, mc, menu_state); },
+    }
+}
+
+fn drawMenu2(g: *GameState, cfg: config.Config, mc: *const c.MainController, menu_state: var) void {
     const T = @typeOf(menu_state);
 
     var options: [@typeInfo(T.Option).Enum.fields.len]menus.MenuOption = undefined;

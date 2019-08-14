@@ -6,6 +6,15 @@ pub const MenuOption = struct {
     value: ?fn(mc: *const c.MainController)bool,
 };
 
+pub const Menu = union(enum) {
+    MainMenu: MainMenu,
+    InGameMenu: InGameMenu,
+    ReallyEndGameMenu,
+    OptionsMenu: OptionsMenu,
+    KeyBindingsMenu: KeyBindingsMenu,
+    HighScoresMenu: HighScoresMenu,
+};
+
 pub const MainMenu = struct {
     pub const title = "OXID";
 

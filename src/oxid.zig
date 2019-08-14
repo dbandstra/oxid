@@ -688,7 +688,7 @@ pub fn main() void {
             playSounds(g, cfg.muted, @intToFloat(f32, num_frames));
             SDL_UnlockAudioDevice(device);
 
-            drawMain(g, &cfg, blit_rect, 1.0 / @intToFloat(f32, i + 1));
+            drawMain(g, cfg, blit_rect, 1.0 / @intToFloat(f32, i + 1));
 
             gameFrameCleanup(&g.session);
         }
@@ -762,7 +762,7 @@ fn playSounds(g: *GameState, muted: bool, speed: f32) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
-fn drawMain(g: *GameState, cfg: *const config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
+fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
     platform_draw.preDraw(&g.draw_state);

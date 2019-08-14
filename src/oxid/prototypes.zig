@@ -52,8 +52,8 @@ pub const MainController = struct {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        var menu_stack_array: [c.MainController.menu_stack_size]c.MainController.Menu = undefined;
-        menu_stack_array[0] = c.MainController.Menu {
+        var menu_stack_array: [c.MainController.menu_stack_size]menus.Menu = undefined;
+        menu_stack_array[0] = menus.Menu {
             .MainMenu = menus.MainMenu {
                 .cursor_pos = .NewGame,
             },

@@ -15,14 +15,7 @@ pub const MainController = struct {
     pub const GameRunningState = struct {
         render_move_boxes: bool,
     };
-    pub const Menu = union(enum) {
-        MainMenu: menus.MainMenu,
-        InGameMenu: menus.InGameMenu,
-        ReallyEndGameMenu,
-        OptionsMenu: menus.OptionsMenu,
-        KeyBindingsMenu: menus.KeyBindingsMenu,
-        HighScoresMenu: menus.HighScoresMenu,
-    };
+
     pub const menu_stack_size = 3;
 
     is_fullscreen: bool,
@@ -30,7 +23,7 @@ pub const MainController = struct {
     high_scores: [Constants.num_high_scores]u32,
     new_high_score: bool,
     game_running_state: ?GameRunningState,
-    menu_stack_array: [menu_stack_size]Menu,
+    menu_stack_array: [menu_stack_size]menus.Menu,
     menu_stack_len: usize,
 };
 

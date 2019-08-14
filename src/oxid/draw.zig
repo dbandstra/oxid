@@ -23,7 +23,7 @@ const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
-pub fn drawGame(g: *GameState, cfg: *const config.Config) void {
+pub fn drawGame(g: *GameState, cfg: config.Config) void {
     const mc = g.session.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
@@ -48,14 +48,7 @@ pub fn drawGame(g: *GameState, cfg: *const config.Config) void {
     }
 
     if (mc.menu_stack_len > 0) {
-        switch (mc.menu_stack_array[mc.menu_stack_len - 1]) {
-            .MainMenu => |menu_state| { drawMenu(g, cfg, mc, menu_state); },
-            .InGameMenu => |menu_state| { drawMenu(g, cfg, mc, menu_state); },
-            .ReallyEndGameMenu => { drawTextBox(g, .Centered, .Centered, "Really end game? [Y/N]"); },
-            .OptionsMenu => |menu_state| { drawMenu(g, cfg, mc, menu_state); },
-            .KeyBindingsMenu => |menu_state| { drawMenu(g, cfg, mc, menu_state); },
-            .HighScoresMenu => |menu_state| { drawMenu(g, cfg, mc, menu_state); },
-        }
+        drawMenu(g, cfg, mc, mc.menu_stack_array[mc.menu_stack_len - 1]);
     }
 }
 
@@ -276,7 +269,7 @@ const DrawCoord = union(enum) {
     Exact: i32,
 };
 
-fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) void {
+pub fn drawTextBox(g: *GameState, dx: DrawCoord, dy: DrawCoord, text: []const u8) void {
     var tw: u31 = 0;
     var th: u31 = 1;
 

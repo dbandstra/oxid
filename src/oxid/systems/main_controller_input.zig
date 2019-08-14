@@ -37,9 +37,9 @@ fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainC
                     p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
                     if (if (gs.findFirst(c.GameController)) |gc| gc.game_over else true) {
                         postScores(gs, mc);
-                        pushMenu(mc, c.MainController.Menu { .MainMenu = menus.MainMenu { .cursor_pos = .NewGame } });
+                        pushMenu(mc, menus.Menu { .MainMenu = menus.MainMenu { .cursor_pos = .NewGame } });
                     } else {
-                        pushMenu(mc, c.MainController.Menu { .InGameMenu = menus.InGameMenu { .cursor_pos = .Continue } });
+                        pushMenu(mc, menus.Menu { .InGameMenu = menus.InGameMenu { .cursor_pos = .Continue } });
                     }
                 }
             },
@@ -53,7 +53,7 @@ fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainC
     }
 }
 
-fn pushMenu(mc: *c.MainController, menu: c.MainController.Menu) void {
+fn pushMenu(mc: *c.MainController, menu: menus.Menu) void {
     if (mc.menu_stack_len < mc.menu_stack_array.len) {
         mc.menu_stack_array[mc.menu_stack_len] = menu;
         mc.menu_stack_len += 1;
@@ -150,7 +150,7 @@ fn mainMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.Ma
             startGame(gs, mc);
         },
         .Options => {
-            pushMenu(mc, c.MainController.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
+            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
         },
         .HighScores => {
             pushMenu(mc, .HighScoresMenu);
@@ -167,10 +167,10 @@ fn inGameMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.
             popMenu(mc);
         },
         .Options => {
-            pushMenu(mc, c.MainController.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
+            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
         },
         .Leave => {
-            pushMenu(mc, c.MainController.Menu.ReallyEndGameMenu);
+            pushMenu(mc, menus.Menu.ReallyEndGameMenu);
         },
     }
 }
@@ -184,7 +184,7 @@ fn optionsMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus
             _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
         },
         .KeyBindings => {
-            pushMenu(mc, c.MainController.Menu { .KeyBindingsMenu = menus.KeyBindingsMenu { .cursor_pos = .Up, .rebinding = false } });
+            pushMenu(mc, menus.Menu { .KeyBindingsMenu = menus.KeyBindingsMenu { .cursor_pos = .Up, .rebinding = false } });
         },
         .Back => {
             popMenu(mc);
@@ -271,7 +271,7 @@ fn startGame(gs: *GameSession, mc: *c.MainController) void {
 
 fn abortGame(gs: *GameSession, mc: *c.MainController) void {
     mc.game_running_state = null;
-    mc.menu_stack_array[0] = c.MainController.Menu { .MainMenu = menus.MainMenu { .cursor_pos = .NewGame } };
+    mc.menu_stack_array[0] = menus.Menu { .MainMenu = menus.MainMenu { .cursor_pos = .NewGame } };
     mc.menu_stack_len = 1;
 
     // remove all entities except the MainController and EventPostScore
