@@ -414,7 +414,7 @@ pub fn main() void {
     const g = &game_state;
     g.audio_module.initialized = false;
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) != 0) {
         SDL_Log(c"Unable to initialize SDL: %s", SDL_GetError());
         return;
     }
@@ -523,6 +523,15 @@ pub fn main() void {
     };
     defer platform_draw.deinit(&g.draw_state);
 
+    {const num_joysticks = SDL_NumJoysticks();
+    std.debug.warn("{} joystick(s)\n", num_joysticks);
+    var i: c_int = 0; while (i < 2 and i < num_joysticks) : (i += 1) {
+        const joystick = SDL_JoystickOpen(i);
+        if (joystick == null) {
+            std.debug.warn("Failed to open joystick {}\n", i + 1);
+        }
+    }}
+
     // FIXME can i move this lower down and get rid of the `initialized` field in the audio module
     SDL_PauseAudioDevice(device, 0); // unpause
 
@@ -618,6 +627,48 @@ pub fn main() void {
                             },
                             else => {},
                         }
+                    }
+                },
+                SDL_JOYAXISMOTION => {
+                    // TODO - look at sdl_event.jbutton.which (to support multiple joysticks)
+                    const threshold = 16384;
+                    var i: usize = 0; while (i < 4) : (i += 1) {
+                        const neg = switch (i) { 0 => Key.JoyAxis0Neg, 1 => Key.JoyAxis1Neg, 2 => Key.JoyAxis2Neg, 3 => Key.JoyAxis3Neg, else => unreachable };
+                        const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
+                        if (sdl_event.jaxis.axis == i) {
+                            if (sdl_event.jaxis.value < -threshold) {
+                                spawnInputEvent(&g.session, &cfg, neg, true);
+                                spawnInputEvent(&g.session, &cfg, pos, false);
+                            } else if (sdl_event.jaxis.value > threshold) {
+                                spawnInputEvent(&g.session, &cfg, pos, true);
+                                spawnInputEvent(&g.session, &cfg, neg, false);
+                            } else {
+                                spawnInputEvent(&g.session, &cfg, pos, false);
+                                spawnInputEvent(&g.session, &cfg, neg, false);
+                            }
+                        }
+                    }
+                },
+                SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
+                    // TODO - look at sdl_event.jbutton.which (to support multiple joysticks)
+                    const down = sdl_event.type == SDL_JOYBUTTONDOWN;
+                    const maybe_key = switch (sdl_event.jbutton.button) {
+                        0 => Key.JoyButton0,
+                        1 => Key.JoyButton1,
+                        2 => Key.JoyButton2,
+                        3 => Key.JoyButton3,
+                        4 => Key.JoyButton4,
+                        5 => Key.JoyButton5,
+                        6 => Key.JoyButton6,
+                        7 => Key.JoyButton7,
+                        8 => Key.JoyButton8,
+                        9 => Key.JoyButton9,
+                        10 => Key.JoyButton10,
+                        11 => Key.JoyButton11,
+                        else => null,
+                    };
+                    if (maybe_key) |key| {
+                        spawnInputEvent(&g.session, &cfg, key, down);
                     }
                 },
                 SDL_WINDOWEVENT => {

@@ -238,6 +238,28 @@ pub const Key = enum {
     App2,
     AudioRewind,
     AudioFastForward,
+
+    JoyAxis0Pos,
+    JoyAxis0Neg,
+    JoyAxis1Pos,
+    JoyAxis1Neg,
+    JoyAxis2Pos,
+    JoyAxis2Neg,
+    JoyAxis3Pos,
+    JoyAxis3Neg,
+
+    JoyButton0,
+    JoyButton1,
+    JoyButton2,
+    JoyButton3,
+    JoyButton4,
+    JoyButton5,
+    JoyButton6,
+    JoyButton7,
+    JoyButton8,
+    JoyButton9,
+    JoyButton10,
+    JoyButton11,
 };
 
 pub const key_names = blk: {
