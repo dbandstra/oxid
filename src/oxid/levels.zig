@@ -113,12 +113,12 @@ pub const level1 = Level.init(loadLevel("level1.pcx"));
 // map of pcx values to the values that are meaningful to the program
 const mapping = [_]u8 {
     0x00, // floor
-    0x80, // wall
-    0x81, // wall (south face)
+    0x85, // spooky block, bottom left
     0x83, // spooky block, top left
     0x84, // spooky block, top right
-    0x85, // spooky block, bottom left
+    0x81, // wall (south face)
     0x86, // spooky block, bottom right
+    0x80, // wall
 };
 
 const build_options = @import("build_options");
