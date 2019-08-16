@@ -21,51 +21,60 @@ pub const Timers = struct {
 pub var timers: Timers = undefined;
 
 pub fn init() void {
+    // https://github.com/ziglang/zig/issues/3046
+    var blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.Frame = Timer {
         .label = "Frame",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.Draw = Timer {
         .label = "Draw",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.DrawSort = Timer {
         .label = "DrawSort",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.DrawMap = Timer {
         .label = "DrawMap",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.DrawMapForeground = Timer {
         .label = "DrawMapForeground",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.DrawEntities = Timer {
         .label = "DrawEntities",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.DrawHud = Timer {
         .label = "DrawHud",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };
+    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
     timers.WholeDraw = Timer {
         .label = "WholeDraw",
-        .timer = std.time.Timer.start() catch |_| @panic("failed to create timer"), // FIXME
+        .timer = blah,
         .samples = [1]u64{0} ** 60,
         .cursor = 0,
     };

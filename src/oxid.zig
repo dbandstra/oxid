@@ -561,10 +561,12 @@ pub fn main() void {
         return;
     };
 
-    g.audio_module = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
+    // https://github.com/ziglang/zig/issues/3046
+    const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
         std.debug.warn("Failed to load audio module.\n"); // TODO - print error (see above)
         return;
     };
+    g.audio_module = blah;
 
     g.perf_spam = false;
 
