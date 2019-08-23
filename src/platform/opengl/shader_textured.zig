@@ -35,7 +35,7 @@ pub const Shader = struct {
     attrib_position: GLint,
     uniform_mvp: GLint,
     uniform_tex: GLint,
-    uniform_colour: GLint,
+    uniform_color: GLint,
 
     pub fn bind(self: Shader, params: BindParams) void {
         glUseProgram(self.program.program_id);
@@ -43,8 +43,8 @@ pub const Shader = struct {
         if (self.uniform_tex != -1) {
             glUniform1i(self.uniform_tex, params.tex);
         }
-        if (self.uniform_colour != -1) {
-            glUniform4f(self.uniform_colour, params.color.r, params.color.g, params.color.b, params.color.a);
+        if (self.uniform_color != -1) {
+            glUniform4f(self.uniform_color, params.color.r, params.color.g, params.color.b, params.color.a);
         }
         if (self.uniform_mvp != -1) {
             std.debug.assert(params.mvp.len == 16);
@@ -133,6 +133,6 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
         .attrib_texcoord = try shaders.getAttribLocation(program, c"TexCoord"),
         .uniform_mvp = shaders.getUniformLocation(program, c"MVP"),
         .uniform_tex = shaders.getUniformLocation(program, c"Tex"),
-        .uniform_colour = shaders.getUniformLocation(program, c"Color"),
+        .uniform_color = shaders.getUniformLocation(program, c"Color"),
     };
 }

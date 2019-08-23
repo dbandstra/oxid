@@ -164,7 +164,7 @@ pub const MainModule = struct {
                         const sample = sample_alias;
 
                         wrapper.initial_sample = null; // this invalidates sample_alias
-                        wrapper.iq.push(impulse_frame, SamplerNoteParams {
+                        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), SamplerNoteParams {
                             .loop = false,
                             .wav = switch (sample) {
                                 .DropWeb => self.drop_web,
@@ -185,7 +185,7 @@ pub const MainModule = struct {
 
 fn updateVoice(wrapper: var, impulse_frame: usize) void {
     if (wrapper.initial_params) |params| {
-        wrapper.iq.push(impulse_frame, params);
+        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), params);
         wrapper.initial_params = null;
     }
 }

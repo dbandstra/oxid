@@ -21,15 +21,15 @@ pub const Instrument = struct {
         self.osc.paint(span, [1][]f32{temps[0]}, [0][]f32{}, zang.PulseOsc.Params {
             .sample_rate = params.sample_rate,
             .freq = params.freq,
-            .colour = 0.5,
+            .color = 0.5,
         });
         zang.zero(span, temps[1]);
         self.env.paint(span, [1][]f32{temps[1]}, [0][]f32{}, note_id_changed, zang.Envelope.Params {
             .sample_rate = params.sample_rate,
-            .attack_duration = 0.0,
-            .decay_duration = 0.0,
+            .attack = .Instantaneous,
+            .decay = .Instantaneous,
+            .release = zang.Envelope.Curve { .Linear = 0.04 },
             .sustain_volume = 1.0,
-            .release_duration = 0.04,
             .note_on = params.note_on,
         });
         zang.multiplyWithScalar(span, temps[1], 0.25);
@@ -56,16 +56,17 @@ pub const MenuBlipVoice = struct {
     flt: zang.Filter,
 
     pub fn init() MenuBlipVoice {
-        const SongNote = zang.Notes(Instrument.NoteParams).SongNote;
+        const SongEvent = zang.Notes(Instrument.NoteParams).SongEvent;
+        const IParams = Instrument.NoteParams;
 
         return MenuBlipVoice {
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongNote {
-                SongNote { .params = Instrument.NoteParams { .freq = 60.0, .note_on = true }, .t = 0.0 },
-                SongNote { .params = Instrument.NoteParams { .freq = 60.0, .note_on = false }, .t = 0.02 },
-                SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = true }, .t = 0.08 },
-                SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = false }, .t = 0.1 },
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
+                SongEvent { .params = IParams { .freq = 60.0, .note_on = true }, .note_id = 1, .t = 0.0 },
+                SongEvent { .params = IParams { .freq = 60.0, .note_on = false }, .note_id = 2, .t = 0.02 },
+                SongEvent { .params = IParams { .freq = 40.0, .note_on = true }, .note_id = 3, .t = 0.08 },
+                SongEvent { .params = IParams { .freq = 40.0, .note_on = false }, .note_id = 4, .t = 0.1 },
             }),
             .flt = zang.Filter.init(),
         };

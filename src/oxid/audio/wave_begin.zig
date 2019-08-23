@@ -21,15 +21,15 @@ pub const Instrument = struct {
         self.osc.paint(span, [1][]f32{temps[0]}, [0][]f32{}, zang.PulseOsc.Params {
             .sample_rate = params.sample_rate,
             .freq = params.freq,
-            .colour = 0.5,
+            .color = 0.5,
         });
         zang.zero(span, temps[1]);
         self.env.paint(span, [1][]f32{temps[1]}, [0][]f32{}, note_id_changed, zang.Envelope.Params {
             .sample_rate = params.sample_rate,
-            .attack_duration = 0.01,
-            .decay_duration = 0.1,
+            .attack = zang.Envelope.Curve { .Linear = 0.01 },
+            .decay = zang.Envelope.Curve { .Linear = 0.1 },
+            .release = zang.Envelope.Curve { .Linear = 0.15 },
             .sustain_volume = 0.5,
-            .release_duration = 0.15,
             .note_on = params.note_on,
         });
         zang.multiplyWithScalar(span, temps[1], 0.25);
@@ -50,25 +50,26 @@ pub const WaveBeginVoice = struct {
     note_tracker: zang.Notes(Instrument.NoteParams).NoteTracker,
 
     pub fn init() WaveBeginVoice {
-        const SongNote = zang.Notes(Instrument.NoteParams).SongNote;
+        const SongEvent = zang.Notes(Instrument.NoteParams).SongEvent;
+        const IParams = Instrument.NoteParams;
         const speed = 0.125;
 
         return WaveBeginVoice {
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongNote {
-                SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = true }, .t = 0.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 1.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 36.0, .note_on = true }, .t = 2.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 45.0, .note_on = true }, .t = 3.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 4.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 36.0, .note_on = true }, .t = 5.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = true }, .t = 6.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 45.0, .note_on = true }, .t = 7.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 8.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 35.0, .note_on = true }, .t = 9.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 38.0, .note_on = true }, .t = 10.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 38.0, .note_on = false }, .t = 11.0 * speed },
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
+                SongEvent { .params = IParams { .freq = 40.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
+                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 2, .t = 1.0 * speed },
+                SongEvent { .params = IParams { .freq = 36.0, .note_on = true }, .note_id = 3, .t = 2.0 * speed },
+                SongEvent { .params = IParams { .freq = 45.0, .note_on = true }, .note_id = 4, .t = 3.0 * speed },
+                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 5, .t = 4.0 * speed },
+                SongEvent { .params = IParams { .freq = 36.0, .note_on = true }, .note_id = 6, .t = 5.0 * speed },
+                SongEvent { .params = IParams { .freq = 40.0, .note_on = true }, .note_id = 7, .t = 6.0 * speed },
+                SongEvent { .params = IParams { .freq = 45.0, .note_on = true }, .note_id = 8, .t = 7.0 * speed },
+                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 9, .t = 8.0 * speed },
+                SongEvent { .params = IParams { .freq = 35.0, .note_on = true }, .note_id = 10, .t = 9.0 * speed },
+                SongEvent { .params = IParams { .freq = 38.0, .note_on = true }, .note_id = 11, .t = 10.0 * speed },
+                SongEvent { .params = IParams { .freq = 38.0, .note_on = false }, .note_id = 12, .t = 11.0 * speed },
             }),
         };
     }

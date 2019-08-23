@@ -12,7 +12,7 @@ pub const PcxImage = struct {
     pixels: []u8, // r8g8b8a8 format
     width: u32,
     height: u32,
-    palette: [48]u8, // 16 colours
+    palette: [48]u8, // 16 colors
 };
 
 pub fn loadPcx(

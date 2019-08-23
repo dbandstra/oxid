@@ -55,7 +55,7 @@ pub const LaserVoice = struct {
             .waveform = .Sine,
             .freq = zang.buffer(temps[0]),
             .phase = zang.constant(0.0),
-            .colour = 0.5,
+            .color = 0.5,
         });
         zang.multiplyWithScalar(span, temps[1], params.modulator_rad);
         zang.zero(span, temps[0]);
@@ -75,7 +75,7 @@ pub const LaserVoice = struct {
             .waveform = .Sine,
             .freq = zang.buffer(temps[0]),
             .phase = zang.buffer(temps[1]),
-            .colour = 0.5,
+            .color = 0.5,
         });
         zang.zero(span, temps[0]);
         self.volume_curve.paint(span, [1][]f32{temps[0]}, [0][]f32{}, note_id_changed, zang.Curve.Params {

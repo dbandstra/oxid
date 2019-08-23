@@ -20,22 +20,23 @@ pub const AccelerateVoice = struct {
     note_tracker: zang.Notes(Instrument.NoteParams).NoteTracker,
 
     pub fn init() AccelerateVoice {
-        const SongNote = zang.Notes(Instrument.NoteParams).SongNote;
+        const SongEvent = zang.Notes(Instrument.NoteParams).SongEvent;
+        const IParams = Instrument.NoteParams;
         const speed = 0.125;
 
         return AccelerateVoice {
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongNote {
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
                 // same as wave_begin but with some notes chopped off
-                SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 0.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 36.0, .note_on = true }, .t = 1.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 40.0, .note_on = true }, .t = 2.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 45.0, .note_on = true }, .t = 3.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 43.0, .note_on = true }, .t = 4.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 35.0, .note_on = true }, .t = 5.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 38.0, .note_on = true }, .t = 6.0 * speed },
-                SongNote { .params = Instrument.NoteParams { .freq = 38.0, .note_on = false }, .t = 7.0 * speed },
+                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
+                SongEvent { .params = IParams { .freq = 36.0, .note_on = true }, .note_id = 2, .t = 1.0 * speed },
+                SongEvent { .params = IParams { .freq = 40.0, .note_on = true }, .note_id = 3, .t = 2.0 * speed },
+                SongEvent { .params = IParams { .freq = 45.0, .note_on = true }, .note_id = 4, .t = 3.0 * speed },
+                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 5, .t = 4.0 * speed },
+                SongEvent { .params = IParams { .freq = 35.0, .note_on = true }, .note_id = 6, .t = 5.0 * speed },
+                SongEvent { .params = IParams { .freq = 38.0, .note_on = true }, .note_id = 7, .t = 6.0 * speed },
+                SongEvent { .params = IParams { .freq = 38.0, .note_on = false }, .note_id = 8, .t = 7.0 * speed },
             }),
         };
     }

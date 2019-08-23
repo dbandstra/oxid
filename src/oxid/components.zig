@@ -300,6 +300,7 @@ pub const Voice = struct {
             // the wav file data that is needed to create the params for the sampler.
             initial_sample: ?audio.Sample,
             iq: zang.Notes(NoteParams).ImpulseQueue,
+            idgen: zang.IdGenerator,
             module: T,
             trigger: zang.Trigger(NoteParams),
         };
