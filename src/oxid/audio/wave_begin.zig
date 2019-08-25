@@ -20,15 +20,15 @@ pub const Instrument = struct {
         zang.zero(span, temps[0]);
         self.osc.paint(span, [1][]f32{temps[0]}, [0][]f32{}, zang.PulseOsc.Params {
             .sample_rate = params.sample_rate,
-            .freq = params.freq,
+            .freq = zang.constant(params.freq),
             .color = 0.5,
         });
         zang.zero(span, temps[1]);
         self.env.paint(span, [1][]f32{temps[1]}, [0][]f32{}, note_id_changed, zang.Envelope.Params {
             .sample_rate = params.sample_rate,
-            .attack = zang.Envelope.Curve { .Linear = 0.01 },
-            .decay = zang.Envelope.Curve { .Linear = 0.1 },
-            .release = zang.Envelope.Curve { .Linear = 0.15 },
+            .attack = zang.Painter.Curve { .Linear = 0.01 },
+            .decay = zang.Painter.Curve { .Linear = 0.1 },
+            .release = zang.Painter.Curve { .Linear = 0.15 },
             .sustain_volume = 0.5,
             .note_on = params.note_on,
         });
