@@ -7,3 +7,6 @@
 [submodule "zang"]
 	path = zang
 	url = https://github.com/dbandstra/zang.git
+[submodule "zig-wav"]
+	path = zig-wav
+	url = git@github.com:dbandstra/zig-wav.git

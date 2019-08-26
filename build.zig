@@ -26,6 +26,7 @@ pub fn build(b: *Builder) void {
         exe.addPackagePath("zang", "zang/src/zang.zig");
         exe.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
         exe.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
+        exe.addPackagePath("zig-wav", "zig-wav/wav.zig");
 
         exe.linkSystemLibrary("SDL2");
         exe.linkSystemLibrary("epoxy");

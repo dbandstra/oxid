@@ -1,6 +1,7 @@
 const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const wav = @import("zig-wav");
 const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
@@ -24,21 +25,45 @@ pub const Sample = enum {
     MonsterImpact,
 };
 
+fn readWav(comptime filename: []const u8) !zang.Sample {
+    const buf = @embedFile(build_options.assets_path ++ "/" ++ filename);
+    var sis = std.io.SliceInStream.init(buf);
+    const stream = &sis.stream;
+
+    const Loader = wav.Loader(std.io.SliceInStream.Error);
+    const preloaded = try Loader.preload(stream, true);
+
+    // don't call Loader.load because we're working on a slice, so we can just
+    // take a subslice of it
+    return zang.Sample {
+        .num_channels = preloaded.num_channels,
+        .sample_rate = preloaded.sample_rate,
+        .format = switch (preloaded.format) {
+            .U8 => zang.SampleFormat.U8,
+            .S16LSB => zang.SampleFormat.S16LSB,
+            .S24LSB => zang.SampleFormat.S24LSB,
+            .S32LSB => zang.SampleFormat.S32LSB,
+        },
+        .data = buf[sis.pos .. sis.pos + preloaded.getNumBytes()],
+    };
+}
+
 pub const SamplerNoteParams = struct {
-    wav: zang.WavContents,
+    sample: zang.Sample,
+    channel: usize,
     loop: bool,
 };
 
 pub const MainModule = struct {
     initialized: bool,
 
-    drop_web: zang.WavContents,
-    extra_life: zang.WavContents,
-    player_scream: zang.WavContents,
-    player_death: zang.WavContents,
-    player_crumble: zang.WavContents,
-    power_up: zang.WavContents,
-    monster_impact: zang.WavContents,
+    drop_web: zang.Sample,
+    extra_life: zang.Sample,
+    player_scream: zang.Sample,
+    player_death: zang.Sample,
+    player_crumble: zang.Sample,
+    power_up: zang.Sample,
+    monster_impact: zang.Sample,
 
     out_buf: []f32,
     // this will fail to compile if there aren't enough temp bufs to supply each
@@ -58,13 +83,13 @@ pub const MainModule = struct {
     pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
         return MainModule {
             .initialized = true,
-            .drop_web = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_interaction5.wav")),
-            .extra_life = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_powerup4.wav")),
-            .player_scream = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_deathscream_human2.wav")),
-            .player_death = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_exp_cluster7.wav")),
-            .player_crumble = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_exp_short_soft10.wav")),
-            .power_up = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_powerup10.wav")),
-            .monster_impact = try zang.readWav(@embedFile(build_options.assets_path ++ "/sfx_sounds_impact1.wav")),
+            .drop_web = try readWav("sfx_sounds_interaction5.wav"),
+            .extra_life = try readWav("sfx_sounds_powerup4.wav"),
+            .player_scream = try readWav("sfx_deathscream_human2.wav"),
+            .player_death = try readWav("sfx_exp_cluster7.wav"),
+            .player_crumble = try readWav("sfx_exp_short_soft10.wav"),
+            .power_up = try readWav("sfx_sounds_powerup10.wav"),
+            .monster_impact = try readWav("sfx_sounds_impact1.wav"),
             // these allocations are never freed (but it's ok because this object is
             // create once in the main function)
             .out_buf = try hunk_side.allocator.alloc(f32, audio_buffer_size),
@@ -133,8 +158,27 @@ pub const MainModule = struct {
             else
                 ModuleType.NoteParams;
 
+        comptime {
+            // make sure NoteParamsType isn't missing any fields
+            for (@typeInfo(ModuleType.Params).Struct.fields) |field| {
+                var found = false;
+                if (std.mem.eql(u8, field.name, "sample_rate")) {
+                    found = true;
+                }
+                for (@typeInfo(NoteParamsType).Struct.fields) |note_field| {
+                    if (std.mem.eql(u8, field.name, note_field.name)) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    @compileError(@typeName(NoteParamsType) ++ ": missing field `" ++ field.name ++ "`");
+                }
+            }
+        }
+
         var ctr = wrapper.trigger.counter(span, wrapper.iq.consume());
         while (wrapper.trigger.next(&ctr)) |result| {
+            // convert `NoteParams` into `Params`
             var params: ModuleType.Params = undefined;
 
             inline for (@typeInfo(NoteParamsType).Struct.fields) |field| {
@@ -166,7 +210,8 @@ pub const MainModule = struct {
                         wrapper.initial_sample = null; // this invalidates sample_alias
                         wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), SamplerNoteParams {
                             .loop = false,
-                            .wav = switch (sample) {
+                            .channel = 0,
+                            .sample = switch (sample) {
                                 .DropWeb => self.drop_web,
                                 .ExtraLife => self.extra_life,
                                 .PlayerScream => self.player_scream,
