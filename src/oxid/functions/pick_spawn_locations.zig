@@ -9,34 +9,44 @@ const LocalState = struct {
     gridmask: [levels.width * levels.height]bool,
 };
 
-fn avoidObject(state: *LocalState, gs: *GameSession, entity_id: gbe.EntityId) void {
-    if (gs.find(entity_id, c.Transform)) |transform| {
-        if (gs.find(entity_id, c.PhysObject)) |phys| {
-            const pad = 16 * levels.subpixels_per_pixel;
-            const mins_x = transform.pos.x + phys.entity_bbox.mins.x - pad;
-            const mins_y = transform.pos.y + phys.entity_bbox.mins.y - pad;
-            const maxs_x = transform.pos.x + phys.entity_bbox.maxs.x + pad;
-            const maxs_y = transform.pos.y + phys.entity_bbox.maxs.y + pad;
-            const gmins_x = std.math.max(@divFloor(mins_x, levels.subpixels_per_tile), 0);
-            const gmins_y = std.math.min(@divFloor(mins_y, levels.subpixels_per_tile), i32(levels.width) - 1);
-            const gmaxs_x = std.math.max(@divFloor(maxs_x, levels.subpixels_per_tile), 0);
-            const gmaxs_y = std.math.min(@divFloor(maxs_y, levels.subpixels_per_tile), i32(levels.height) - 1);
-            const gx0 = @intCast(u31, gmins_x);
-            const gy0 = @intCast(u31, gmins_y);
-            const gx1 = @intCast(u31, gmaxs_x);
-            const gy1 = @intCast(u31, gmaxs_y);
-            var gy = gy0; while (gy <= gy1) : (gy += 1) {
-                var gx = gx0; while (gx <= gx1) : (gx += 1) {
-                    state.gridmask[gy * levels.width + gx] = false;
-                }
-            }
+const SystemData = struct {
+    transform: *const c.Transform,
+    phys: *const c.PhysObject,
+    creature: ?*const c.Creature,
+    web: ?*const c.Web,
+    pickup: ?*const c.Pickup,
+};
+
+pub const avoidObjectsOfInterest = gbe.buildSystemWithContext(GameSession, SystemData, LocalState, avoidObjectsOfInterestFunc);
+
+fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemData) bool {
+    // avoid all creatures (except webs) and pickups
+    if (self.web != null) {
+        return true;
+    }
+    const pad = 16 * levels.subpixels_per_pixel;
+    const mins_x = self.transform.pos.x + self.phys.entity_bbox.mins.x - pad;
+    const mins_y = self.transform.pos.y + self.phys.entity_bbox.mins.y - pad;
+    const maxs_x = self.transform.pos.x + self.phys.entity_bbox.maxs.x + pad;
+    const maxs_y = self.transform.pos.y + self.phys.entity_bbox.maxs.y + pad;
+    const gmins_x = std.math.max(@divFloor(mins_x, levels.subpixels_per_tile), 0);
+    const gmins_y = std.math.min(@divFloor(mins_y, levels.subpixels_per_tile), i32(levels.width) - 1);
+    const gmaxs_x = std.math.max(@divFloor(maxs_x, levels.subpixels_per_tile), 0);
+    const gmaxs_y = std.math.min(@divFloor(maxs_y, levels.subpixels_per_tile), i32(levels.height) - 1);
+    const gx0 = @intCast(u31, gmins_x);
+    const gy0 = @intCast(u31, gmins_y);
+    const gx1 = @intCast(u31, gmaxs_x);
+    const gy1 = @intCast(u31, gmaxs_y);
+    var gy = gy0; while (gy <= gy1) : (gy += 1) {
+        var gx = gx0; while (gx <= gx1) : (gx += 1) {
+            ctx.gridmask[gy * levels.width + gx] = false;
         }
     }
+    return true;
 }
 
 // fill given slice with random grid positions, none of which is in a wall,
 // near a player, or colocating with another
-// TODO - also avoid spawning near pickups
 pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
     var state: LocalState = undefined;
 
@@ -53,14 +63,9 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
         }
     }
 
-    // also, don't spawn anything within 16 screen pixels of a player or
-    // monster
-    var it = gs.iter(c.Player); while (it.next()) |object| {
-        avoidObject(&state, gs, object.entity_id);
-    }
-    var it2 = gs.iter(c.Monster); while (it2.next()) |object| {
-        avoidObject(&state, gs, object.entity_id);
-    }
+    // also, don't spawn anything within 16 screen pixels of any "object of
+    // interest"
+    avoidObjectsOfInterest(gs, &state);
 
     // from the gridmask, generate an contiguous array of valid locations
     var candidates: [levels.width * levels.height]math.Vec2 = undefined;

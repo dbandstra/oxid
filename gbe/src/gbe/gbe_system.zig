@@ -6,16 +6,18 @@ const Gbe = @import("gbe_main.zig");
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
 
-pub fn buildSystem(
+pub fn buildSystemWithContext(
     comptime SessionType: type,
     comptime SelfType: type,
-    comptime think: fn(*SessionType, SelfType)bool,
-) fn(*SessionType)void {
+    comptime ContextType: type,
+    comptime think: fn(*SessionType, *ContextType, SelfType)bool,
+) fn(*SessionType, *ContextType)void {
     std.debug.assert(@typeId(SelfType) == .Struct);
 
     const Impl = struct {
         fn runOne(
             gs: *SessionType,
+            ctx: *ContextType,
             self_id: Gbe.EntityId,
             comptime MainComponentType: type,
             main_component: *MainComponentType,
@@ -40,15 +42,16 @@ pub fn buildSystem(
                         gs.find(self_id, ComponentType) orelse return true;
             }
             // call the think function
-            return think(gs, self);
+            return think(gs, ctx, self);
         }
 
         fn runAll(
             gs: *SessionType,
+            ctx: *ContextType,
             comptime MainComponentType: type,
         ) void {
             var it = gs.iter(MainComponentType); while (it.next()) |object| {
-                if (!runOne(gs, object.entity_id, MainComponentType, &object.data)) {
+                if (!runOne(gs, ctx, object.entity_id, MainComponentType, &object.data)) {
                     gs.markEntityForRemoval(object.entity_id);
                 }
             }
@@ -56,17 +59,17 @@ pub fn buildSystem(
 
         // variant of `run` that is simpler (definitely) but slower (probably). but
         // the effect should be exactly the same
-        fn runSimple(gs: *SessionType) void {
+        fn runSimple(gs: *SessionType, ctx: *ContextType) void {
             inline for (@typeInfo(SelfType).Struct.fields) |field| {
                 if (field.field_type == Gbe.EntityId) {
                     continue;
                 }
-                runAll(gs, unpackComponentType(field.field_type));
+                runAll(gs, ctx, unpackComponentType(field.field_type));
                 return;
             }
         }
 
-        fn run(gs: *SessionType) void {
+        fn run(gs: *SessionType, ctx: *ContextType) void {
             // only if all fields are optional will we consider optional fields when
             // determining the best component type
             comptime var all_fields_optional = true;
@@ -110,7 +113,7 @@ pub fn buildSystem(
                             // this actually avoids the compile error in unpackComponentType
                             unreachable;
                         }
-                        runAll(gs, unpackComponentType(field.field_type));
+                        runAll(gs, ctx, unpackComponentType(field.field_type));
                         return;
                     }
                 }
@@ -133,5 +136,25 @@ pub fn buildSystem(
     };
 
     // return Impl.runSimple;
+    return Impl.run;
+}
+
+pub fn buildSystem(
+    comptime SessionType: type,
+    comptime SelfType: type,
+    comptime think: fn(*SessionType, SelfType)bool,
+) fn(*SessionType)void {
+    const WrappedThink = struct {
+        fn wrappedThink(gs: *SessionType, _: *void, self: SelfType) bool {
+            return think(gs, self);
+        }
+    };
+    const wrappedRun = buildSystemWithContext(SessionType, SelfType, void,
+                                              WrappedThink.wrappedThink);
+    const Impl = struct {
+        fn run(gs: *SessionType) void {
+            wrappedRun(gs, {});
+        }
+    };
     return Impl.run;
 }
