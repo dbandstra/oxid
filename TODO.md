@@ -14,43 +14,23 @@ menu todo:
 tangential:
 - for the sounds is there a way to use a single instrument/voice and feed it canned note sequences
   for the three different menu effects?
-- change the mute option to a volume slider, and save the value ...
+- change the mute option to a volume slider
 
 the global stuff and game session sharing same component system is causing some trouble.
+(for one - RemoveTimer is incorrectly used by the menu. timers are paused when the menu is open!)
 perhaps they should be totally separated (two component systems) and be forced to communicate using middleware.
 if i do this i might not need input_router anymore.
+also - can i get rid of the draw_box systems? or at least combine them into one file...
 
 gbe:
 - do spawns take effect immediately?? that doesn't seem good...
 
 ------------
 
-new stuff:
-
-refactor so that platform is not imported from any non-platform file. e.g. game's graphics.zig shouldn't call uploadTexture.
-
-i want to get the platform code taken out to the top level. so basically there's just a main.zig which contains all c/gl stuff
-(maybe with some other files). so current oxid.zig and platform.zig would probably be combined. that split was probably a mistake.
-but move as much code as possible into oxid folder (not platform).
-
-actually i don't think this works .. without adding needless runtime abstraction like function pointers.
-
-maybe the way it is now (oxid.zig imports game code which imports pdraw) is the ideal.
-comptime abstraction
-
-------------
-
 ## Gameplay
-- change squids to be spiders?
-- more clever ai. for example, monsters that take side passages if you are looking down the corridor they are in
-- monsters should sometimes randomly stop/change direction
-- multiple explosions when squid is killed
 - when you respawn after dying, you shouldn't have to release and repress movement keys
 
-i have implemented monsters getting out of the player's line of fire. but it tends to make the game easier. all you have to do is look at them and they'll basically run away. need to think about it some more.
-
 ## Code
-- document the major pieces of code (e.g. GBE stuff), at least with comments, maybe also with some dedicated markdown files
 - shouldn't removals take effect after every system? right now, if you remove an entity, it just adds a 'removal' entry. doesn't even set is_active to false. so iterators will still hit those entities until the end of the entire frame.
 - not being able to init the sound device should not be a fatal error
 - getting "who is this joker" if a bullet spawns inside another creature (because the bullet spawns in front of you)
@@ -89,21 +69,3 @@ events always have a recipient. they go straight to the recipient's inbox for th
 ## Glitches
 - WholeTilesets looked better when the tileset image had less stuff in it (more blank transparent areas)...
 - for QuadStrips glitch, would be crazier if GL_CULL_FACE were disabled, but then i should probably disable the glitch when rendering the level
-
-## Gameplay ideas
-Beyond cloning Verminian Trap.
-
-- (maybe) random maze generation
-- enemy with a shield that deflects your bullets back at you
-- exploding enemy
-- enemy that multiplies (like mantra)
-- flying enemy that can move over pits
-- enemy that usually wanders, but occasionally chases, and increases speed when chasing (rushes at player)
-- pits (implemented but not used in the map. one problem is that because the player is the same size as the corridors, he doesn't have space to face a pit that is to his side)
-
-
-// what should std.mem.readInt's behaviour be for an int type that's
-// not a multiple of 8 bits?
-// if you try to use it on something less than 8 bits, it causes a big
-// compile error...
-// i was getting this by calling rand.range() with a < 8 bit int type.
