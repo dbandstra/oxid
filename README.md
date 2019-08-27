@@ -23,7 +23,7 @@ zig-cache/oxid
 Game controls (these can be rebound in the menu):
 * arrow keys: move
 * space: shoot
-* esc: leave game
+* esc: open menu
 
 Debug/cheat controls:
 * backquote: fast forward

@@ -30,7 +30,7 @@ pub const InGameMenu = struct {
 
 pub const OptionsMenu = struct {
     pub const Option = enum {
-        Mute,
+        Volume,
         Fullscreen,
         KeyBindings,
         Back,

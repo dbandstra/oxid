@@ -55,6 +55,7 @@ pub const GameState = struct {
 pub const AudioUserData = struct {
     g: *GameState,
     sample_rate: u32,
+    volume: u32,
 };
 
 extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
@@ -65,7 +66,9 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
 
     const buf = g.audio_module.paint(userdata.sample_rate, &g.session);
 
-    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, 0.5);
+    const vol = std.math.min(1.0, @intToFloat(f32, userdata.volume) / 100.0);
+
+    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
 }
 
 fn translateKey(sym: SDL_Keycode) ?Key {
@@ -469,6 +472,7 @@ pub fn main() u8 {
     var audio_user_data = AudioUserData {
         .g = g,
         .sample_rate = audio_sample_rate,
+        .volume = 0,
     };
 
     var want: SDL_AudioSpec = undefined;
@@ -567,7 +571,7 @@ pub fn main() u8 {
     g.session.init(rand_seed);
     gameInit(&g.session, p.MainController.Params {
         .is_fullscreen = fullscreen,
-        .is_muted = cfg.muted,
+        .volume = cfg.volume,
         .high_scores = initial_high_scores,
     }) catch |err| {
         std.debug.warn("Failed to initialize game: {}\n", err);
@@ -683,7 +687,7 @@ pub fn main() u8 {
         // in this file too, it's not that different...
         if (g.session.findFirstObject(c.MainController)) |mc| {
             mc.data.is_fullscreen = fullscreen;
-            mc.data.is_muted = cfg.muted;
+            mc.data.volume = cfg.volume;
         }
 
         var toggle_fullscreen = false;
@@ -695,7 +699,7 @@ pub fn main() u8 {
 
             var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
                 switch (object.data) {
-                    .ToggleMute => cfg.muted = !cfg.muted,
+                    .SetVolume => |value| cfg.volume = value,
                     .ToggleFullscreen => toggle_fullscreen = true,
                     .BindGameCommand => |payload| {
                         const command_index = @enumToInt(payload.command);
@@ -721,7 +725,9 @@ pub fn main() u8 {
             }
 
             SDL_LockAudioDevice(device);
-            playSounds(g, cfg.muted, @intToFloat(f32, num_frames));
+            audio_user_data.volume = cfg.volume;
+            g.audio_module.speed = @intToFloat(f32, num_frames);
+            playSounds(g);
             SDL_UnlockAudioDevice(device);
 
             drawMain(g, cfg, blit_rect, 1.0 / @intToFloat(f32, i + 1));
@@ -788,10 +794,7 @@ fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: 
     // }
 }
 
-fn playSounds(g: *GameState, muted: bool, speed: f32) void {
-    g.audio_module.muted = muted;
-    g.audio_module.speed = speed;
-
+fn playSounds(g: *GameState) void {
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
     // "syncing" to guess where we are in the middle of a mix frame

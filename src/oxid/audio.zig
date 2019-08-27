@@ -70,9 +70,6 @@ pub const MainModule = struct {
     // of the sound module types being used
     tmp_bufs: [3][]f32,
 
-    // muted: main thread can access this (under lock)
-    muted: bool,
-
     // speed: ditto. if this is 1, play sound at normal rate. if it's 2, play
     // back at double speed, and so on. this is used to speed up the sound when
     // the game is being fast forwarded
@@ -98,7 +95,6 @@ pub const MainModule = struct {
                 try hunk_side.allocator.alloc(f32, audio_buffer_size),
                 try hunk_side.allocator.alloc(f32, audio_buffer_size),
             },
-            .muted = false,
             .speed = 1,
         };
     }
@@ -135,10 +131,6 @@ pub const MainModule = struct {
                 .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
                 else => {},
             }
-        }
-
-        if (self.muted) {
-            zang.zero(span, self.out_buf);
         }
 
         return self.out_buf;

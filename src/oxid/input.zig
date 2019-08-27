@@ -1,4 +1,6 @@
 pub const MenuCommand = enum {
+    Left,
+    Right,
     Up,
     Down,
     Escape,

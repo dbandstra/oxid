@@ -14,7 +14,6 @@ menu todo:
 tangential:
 - for the sounds is there a way to use a single instrument/voice and feed it canned note sequences
   for the three different menu effects?
-- change the mute option to a volume slider
 
 the global stuff and game session sharing same component system is causing some trouble.
 (for one - RemoveTimer is incorrectly used by the menu. timers are paused when the menu is open!)

@@ -44,7 +44,7 @@ pub const bullet_bbox = blk: {
 pub const MainController = struct {
     pub const Params = struct {
         is_fullscreen: bool,
-        is_muted: bool,
+        volume: u32,
         high_scores: [Constants.num_high_scores]u32,
     };
 
@@ -61,7 +61,7 @@ pub const MainController = struct {
 
         try gs.addComponent(entity_id, c.MainController {
             .is_fullscreen = params.is_fullscreen,
-            .is_muted = params.is_muted,
+            .volume = params.volume,
             .high_scores = params.high_scores,
             .new_high_score = false,
             .game_running_state = null,

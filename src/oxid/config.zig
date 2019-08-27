@@ -4,7 +4,7 @@ const Key = @import("../common/key.zig").Key;
 const input = @import("input.zig");
 
 pub const Config = struct {
-    muted: bool,
+    volume: u32,
     menu_key_bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key,
     game_key_bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?Key,
 };
@@ -13,11 +13,13 @@ const config_datadir = "Oxid";
 const config_filename = "config.json";
 
 const default_config = Config {
-    .muted = false,
+    .volume = 100,
     .menu_key_bindings = blk: {
         var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key = undefined;
         for (bindings) |*binding, i| {
             binding.* = switch (@intToEnum(input.MenuCommand, i)) {
+                .Left => Key.Left,
+                .Right => Key.Right,
                 .Up => Key.Up,
                 .Down => Key.Down,
                 .Escape => Key.Escape,
@@ -72,13 +74,13 @@ pub fn load(hunk_side: *HunkSide) !Config {
         .Object => |map| {
             var it = map.iterator();
             while (it.next()) |kv| {
-                if (std.mem.eql(u8, kv.key, "muted")) {
+                if (std.mem.eql(u8, kv.key, "volume")) {
                     switch (kv.value) {
-                        .Bool => |v| {
-                            cfg.muted = v;
+                        .Integer => |v| {
+                            cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
                         else => {
-                            std.debug.warn("Value of \"muted\" must be a boolean\n");
+                            std.debug.warn("Value of \"volume\" must be an integer\n");
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_key_bindings")) {
@@ -202,10 +204,10 @@ pub fn save(cfg: Config, hunk_side: *HunkSide) !void {
 
     try fos.stream.print(
         \\{{
-        \\    "muted": {},
+        \\    "volume": {},
         \\    "menu_key_bindings": {{
         \\
-    , cfg.muted);
+    , cfg.volume);
     // don't bother with backslash escaping strings because we know none of
     // the possible values need it
     for (cfg.menu_key_bindings) |maybe_key, i| {

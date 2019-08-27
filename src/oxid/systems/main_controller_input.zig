@@ -134,6 +134,26 @@ fn handleMenuInput(gs: *GameSession, mc: *c.MainController, comptime T: type, me
                     .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                 });
             },
+            .Left => {
+                if (T == menus.OptionsMenu) {
+                    if (menu_state.cursor_pos == .Volume and mc.volume > 0) {
+                        _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
+                            .SetVolume = if (mc.volume > 10) mc.volume - 10 else 0,
+                        }) catch undefined;
+                    }
+                }
+                p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+            },
+            .Right => {
+                if (T == menus.OptionsMenu) {
+                    if (menu_state.cursor_pos == .Volume and mc.volume < 100) {
+                        _ = p.EventSystemCommand.spawn(gs, c.EventSystemCommand {
+                            .SetVolume = if (mc.volume < 90) mc.volume + 10 else 100,
+                        }) catch undefined;
+                    }
+                }
+                p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+            },
             .Escape => {
                 if (T != menus.MainMenu) { // you can't back off of the main menu
                     popMenu(mc);
@@ -163,7 +183,7 @@ fn mainMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.Ma
             startGame(gs, mc);
         },
         .Options => {
-            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
+            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Volume } });
         },
         .HighScores => {
             pushMenu(mc, .HighScoresMenu);
@@ -180,7 +200,7 @@ fn inGameMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.
             popMenu(mc);
         },
         .Options => {
-            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Mute } });
+            pushMenu(mc, menus.Menu { .OptionsMenu = menus.OptionsMenu { .cursor_pos = .Volume } });
         },
         .Leave => {
             pushMenu(mc, menus.Menu.ReallyEndGameMenu);
@@ -190,9 +210,7 @@ fn inGameMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.
 
 fn optionsMenuAction(gs: *GameSession, mc: *c.MainController, menu_state: *menus.OptionsMenu) void {
     switch (menu_state.cursor_pos) {
-        .Mute => {
-            _ = p.EventSystemCommand.spawn(gs, .ToggleMute) catch undefined;
-        },
+        .Volume => {},
         .Fullscreen => {
             _ = p.EventSystemCommand.spawn(gs, .ToggleFullscreen) catch undefined;
         },

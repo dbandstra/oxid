@@ -19,7 +19,7 @@ pub const MainController = struct {
     pub const menu_stack_size = 3;
 
     is_fullscreen: bool,
-    is_muted: bool,
+    volume: u32,
     high_scores: [Constants.num_high_scores]u32,
     new_high_score: bool,
     game_running_state: ?GameRunningState,
@@ -267,7 +267,7 @@ pub const BindGameCommand = struct {
 };
 
 pub const EventSystemCommand = union(enum) {
-    ToggleMute,
+    SetVolume: u32,
     ToggleFullscreen,
     BindGameCommand: BindGameCommand,
     SaveHighScores: [Constants.num_high_scores]u32,

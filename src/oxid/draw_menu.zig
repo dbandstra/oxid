@@ -162,7 +162,7 @@ fn drawReallyEndGameMenu(g: *GameState) void {
 fn drawOptionsMenu(g: *GameState, mc: *const c.MainController, menu_state: menus.OptionsMenu) void {
     const title = "OPTIONS";
     const options = [_][]const u8 {
-        "Mute sound",
+        "Volume",
         "Fullscreen",
         "Key bindings",
         "Back",
@@ -194,8 +194,11 @@ fn drawOptionsMenu(g: *GameState, mc: *const c.MainController, menu_state: menus
         fontDrawString(&g.draw_state, &g.font, x, sy, option);
         x += 8 * @intCast(i32, option.len);
         switch (@intToEnum(menus.OptionsMenu.Option, @intCast(@TagType(menus.OptionsMenu.Option), i))) {
-            .Mute => {
-                fontDrawString(&g.draw_state, &g.font, x, sy, if (mc.is_muted) ": ON" else ": OFF");
+            .Volume => {
+                var buffer: [40]u8 = undefined;
+                var dest = std.io.SliceOutStream.init(buffer[0..]);
+                _ = dest.stream.print(": {}%", mc.volume) catch unreachable;
+                fontDrawString(&g.draw_state, &g.font, x, sy, dest.getWritten());
             },
             .Fullscreen => {
                 fontDrawString(&g.draw_state, &g.font, x, sy, if (mc.is_fullscreen) ": ON" else ": OFF");
