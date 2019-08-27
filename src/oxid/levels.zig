@@ -18,90 +18,84 @@ pub fn getTerrainType(value: u8) TerrainType {
     }
 }
 
-// this is generic only for testing purposes. all levels actually used in the
-// game will be the same size
-pub fn GenLevel(comptime w: u31, comptime h: u31) type {
-    return struct {
-        data: [w*h]u8,
-
-        pub fn init(data: [w*h]u8) @This() {
-            return @This() {
-                .data = data,
-            };
-        }
-
-        // currently unused
-        pub fn posInWall(self: *const @This(), pos: math.Vec2) bool {
-            const x = pos.x;
-            const y = pos.y;
-
-            const gx0 = @divFloor(x, subpixels_per_tile);
-            const gy0 = @divFloor(y, subpixels_per_tile);
-            const offx = @mod(x, subpixels_per_tile) != 0;
-            const offy = @mod(y, subpixels_per_tile) != 0;
-
-            return
-                self.gridIsWall(gx0, gy0) or
-                (offx and self.grid_is_wall(gx0 + 1, gy0)) or
-                (offy and self.grid_is_wall(gx0, gy0 + 1)) or
-                (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
-        }
-
-        pub fn absBoxInWall(self: *const @This(), bbox: math.BoundingBox) bool {
-            std.debug.assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
-
-            const gx0 = @divFloor(bbox.mins.x, subpixels_per_tile);
-            const gy0 = @divFloor(bbox.mins.y, subpixels_per_tile);
-            const gx1 = @divFloor(bbox.maxs.x, subpixels_per_tile);
-            const gy1 = @divFloor(bbox.maxs.y, subpixels_per_tile);
-
-            var gy: i32 = gy0;
-            while (gy <= gy1) : (gy += 1) {
-                var gx: i32 = gx0;
-                while (gx <= gx1) : (gx += 1) {
-                    if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
-                        const tt = getTerrainType(value);
-                        if (tt == .Wall) {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        pub fn boxInWall(self: *const @This(), pos: math.Vec2, bbox: math.BoundingBox) bool {
-            return absBoxInWall(self, math.BoundingBox.move(bbox, pos));
-        }
-
-        pub fn getGridValue(self: *const @This(), pos: math.Vec2) ?u8 {
-            if (pos.x >= 0 and pos.y >= 0) {
-                const x = @intCast(usize, pos.x);
-                const y = @intCast(usize, pos.y);
-
-                if (x < w and y < h) {
-                    return self.data[y * w + x];
-                }
-            }
-
-            return null;
-        }
-
-        pub fn getGridTerrainType(self: *const @This(), pos: math.Vec2) TerrainType {
-            if (self.getGridValue(pos)) |value| {
-                return getTerrainType(value);
-            } else {
-                return .Wall;
-            }
-        }
-    };
-}
-
 pub const width: u31 = 20;
 pub const height: u31 = 14;
 
-pub const Level = GenLevel(width, height);
+pub const Level = struct {
+    data: [width * height]u8,
+
+    pub fn init(data: [width * height]u8) Level {
+        return Level {
+            .data = data,
+        };
+    }
+
+    // currently unused
+    pub fn posInWall(self: *const Level, pos: math.Vec2) bool {
+        const x = pos.x;
+        const y = pos.y;
+
+        const gx0 = @divFloor(x, subpixels_per_tile);
+        const gy0 = @divFloor(y, subpixels_per_tile);
+        const offx = @mod(x, subpixels_per_tile) != 0;
+        const offy = @mod(y, subpixels_per_tile) != 0;
+
+        return
+            self.gridIsWall(gx0, gy0) or
+            (offx and self.grid_is_wall(gx0 + 1, gy0)) or
+            (offy and self.grid_is_wall(gx0, gy0 + 1)) or
+            (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
+    }
+
+    pub fn absBoxInWall(self: *const Level, bbox: math.BoundingBox) bool {
+        std.debug.assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
+
+        const gx0 = @divFloor(bbox.mins.x, subpixels_per_tile);
+        const gy0 = @divFloor(bbox.mins.y, subpixels_per_tile);
+        const gx1 = @divFloor(bbox.maxs.x, subpixels_per_tile);
+        const gy1 = @divFloor(bbox.maxs.y, subpixels_per_tile);
+
+        var gy: i32 = gy0;
+        while (gy <= gy1) : (gy += 1) {
+            var gx: i32 = gx0;
+            while (gx <= gx1) : (gx += 1) {
+                if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
+                    const tt = getTerrainType(value);
+                    if (tt == .Wall) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    pub fn boxInWall(self: *const Level, pos: math.Vec2, bbox: math.BoundingBox) bool {
+        return absBoxInWall(self, math.BoundingBox.move(bbox, pos));
+    }
+
+    pub fn getGridValue(self: *const Level, pos: math.Vec2) ?u8 {
+        if (pos.x >= 0 and pos.y >= 0) {
+            const x = @intCast(usize, pos.x);
+            const y = @intCast(usize, pos.y);
+
+            if (x < width and y < height) {
+                return self.data[y * width + x];
+            }
+        }
+
+        return null;
+    }
+
+    pub fn getGridTerrainType(self: *const Level, pos: math.Vec2) TerrainType {
+        if (self.getGridValue(pos)) |value| {
+            return getTerrainType(value);
+        } else {
+            return .Wall;
+        }
+    }
+};
 
 // levels are loaded from pcx files. the palette is thrown out but the color
 // index of each pixel is meaningful
