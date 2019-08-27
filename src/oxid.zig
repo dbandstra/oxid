@@ -62,16 +62,10 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
     const g = userdata.g;
-    const sample_rate = userdata.sample_rate;
 
-    if (g.audio_module.initialized) {
-        const buf = g.audio_module.paint(sample_rate, &g.session);
+    const buf = g.audio_module.paint(userdata.sample_rate, &g.session);
 
-        zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, 0.5);
-    } else {
-        // note to self: change this if we ever use an unsigned audio format
-        std.mem.set(u8, out_bytes, 0);
-    }
+    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, 0.5);
 }
 
 fn translateKey(sym: SDL_Keycode) ?Key {
@@ -400,23 +394,19 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     };
 }
 
-// this is only global because GameState is pretty big, and i didn't want to
-// use an allocator. don't access it outside of the main function.
-var game_state: GameState = undefined;
+var main_memory: [@sizeOf(GameState) + 200*1024]u8 = undefined;
 
-pub fn main() void {
-    var memory: [200*1024]u8 = undefined;
-    var hunk = Hunk.init(memory[0..]);
+pub fn main() u8 {
+    var hunk = Hunk.init(main_memory[0..]);
 
     const audio_sample_rate = 44100;
     const audio_buffer_size = 1024;
 
-    const g = &game_state;
-    g.audio_module.initialized = false;
+    const g = hunk.low().allocator.create(GameState) catch unreachable;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) != 0) {
         SDL_Log(c"Unable to initialize SDL: %s", SDL_GetError());
-        return;
+        return 1;
     }
     defer SDL_Quit();
 
@@ -468,7 +458,7 @@ pub fn main() void {
         SDL_WINDOW_OPENGL,
     ) orelse {
         SDL_Log(c"Unable to create window: %s", SDL_GetError());
-        return;
+        return 1;
     };
     defer SDL_DestroyWindow(window);
 
@@ -500,13 +490,14 @@ pub fn main() void {
     );
     if (device == 0) {
         SDL_Log(c"Failed to open audio: %s", SDL_GetError());
-        return; // error.SDLInitializationFailed;
+        return 1;
     }
+    defer SDL_CloseAudioDevice(device);
     defer SDL_CloseAudio();
 
     const glcontext = SDL_GL_CreateContext(window) orelse {
         SDL_Log(c"SDL_GL_CreateContext failed: %s", SDL_GetError());
-        return; // error.SDLInitializationFailed;
+        return 1;
     };
     defer SDL_GL_DeleteContext(glcontext);
 
@@ -516,55 +507,44 @@ pub fn main() void {
         .hunk = &hunk,
         .virtual_window_width = virtual_window_width,
         .virtual_window_height = virtual_window_height,
-    }) catch {
-        std.debug.warn("platform_draw.init failed\n");
-        // FIXME - gotta call all those errdefers!
-        return;
+    }) catch |err| {
+        std.debug.warn("platform_draw.init failed: {}\n", err);
+        return 1;
     };
     defer platform_draw.deinit(&g.draw_state);
 
-    {const num_joysticks = SDL_NumJoysticks();
-    std.debug.warn("{} joystick(s)\n", num_joysticks);
-    var i: c_int = 0; while (i < 2 and i < num_joysticks) : (i += 1) {
-        const joystick = SDL_JoystickOpen(i);
-        if (joystick == null) {
-            std.debug.warn("Failed to open joystick {}\n", i + 1);
+    {
+        const num_joysticks = SDL_NumJoysticks();
+        std.debug.warn("{} joystick(s)\n", num_joysticks);
+        var i: c_int = 0; while (i < 2 and i < num_joysticks) : (i += 1) {
+            const joystick = SDL_JoystickOpen(i);
+            if (joystick == null) {
+                std.debug.warn("Failed to open joystick {}\n", i + 1);
+            }
         }
-    }}
-
-    // FIXME can i move this lower down and get rid of the `initialized` field in the audio module
-    SDL_PauseAudioDevice(device, 0); // unpause
-
-    defer {
-        SDL_PauseAudioDevice(device, 1);
-        SDL_CloseAudioDevice(device);
     }
 
     const rand_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF);
 
-    // TODO - is it really a good idea to set high score to 0 if it failed to
-    // load? i think we should disable high score functionality for this session
-    // instead. otherwise the real high score could get overwritten by a lower
-    // score.
-    const initial_high_scores = datafile.loadHighScores(&hunk.low()) catch |err| blk: {
-        std.debug.warn("Failed to load high scores from disk: {}.\n", err);
-        break :blk [1]u32{0} ** Constants.num_high_scores;
+    const initial_high_scores = datafile.loadHighScores(&hunk.low()) catch |err| {
+        std.debug.warn("Failed to load high scores from disk: {}\n", err);
+        return 1;
     };
 
     loadFont(&hunk.low(), &g.font) catch |err| {
-        std.debug.warn("Failed to load font.\n"); // TODO - print error (see above)
-        return;
+        std.debug.warn("Failed to load font: {}\n", err);
+        return 1;
     };
 
     loadTileset(&hunk.low(), &g.tileset, g.palette[0..]) catch |err| {
-        std.debug.warn("Failed to load tileset.\n"); // TODO - print error (see above)
-        return;
+        std.debug.warn("Failed to load tileset: {}\n", err);
+        return 1;
     };
 
     // https://github.com/ziglang/zig/issues/3046
     const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
-        std.debug.warn("Failed to load audio module.\n"); // TODO - print error (see above)
-        return;
+        std.debug.warn("Failed to load audio module: {}\n", err);
+        return 1;
     };
     g.audio_module = blah;
 
@@ -572,12 +552,15 @@ pub fn main() void {
 
     var cfg = config.load(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load config: {}\n", err);
-        return;
+        return 1;
     };
 
     defer config.save(cfg, &hunk.low()) catch |err| {
         std.debug.warn("Failed to save config: {}\n", err);
     };
+
+    SDL_PauseAudioDevice(device, 0); // unpause
+    defer SDL_PauseAudioDevice(device, 1);
 
     var fast_forward = false;
 
@@ -587,8 +570,8 @@ pub fn main() void {
         .is_muted = cfg.muted,
         .high_scores = initial_high_scores,
     }) catch |err| {
-        std.debug.warn("Failed to initialize game.\n"); // TODO - print error (see above)
-        return;
+        std.debug.warn("Failed to initialize game: {}\n", err);
+        return 1;
     };
 
     perf.init();
@@ -775,6 +758,8 @@ pub fn main() void {
             }
         }
     }
+
+    return 0;
 }
 
 fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) void {

@@ -92,7 +92,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
                 }
             }
 
-            std.debug.warn("Unsupported OpenGL version: {s}\n", v);
+            std.debug.warn("Unsupported OpenGL version: {}\n", std.mem.toSliceConst(u8, v));
         } else {
             std.debug.warn("Failed to get OpenGL version.\n");
         }
