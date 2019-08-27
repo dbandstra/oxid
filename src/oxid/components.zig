@@ -134,9 +134,6 @@ pub const PhysObject = struct {
     // e.g. a bullet is owned by the person who shot it
     owner_id: gbe.EntityId,
 
-    // `ignore_pits`: if true, this object can travel over pits
-    ignore_pits: bool,
-
     // `flags` used with reference to `ignore_flags` (see below)
     flags: u32,
 

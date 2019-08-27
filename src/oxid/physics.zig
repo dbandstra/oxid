@@ -9,7 +9,7 @@ const p = @import("prototypes.zig");
 
 // convenience function
 pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
-    return levels.level1.boxInWall(pos, phys.world_bbox, phys.ignore_pits);
+    return levels.level1.boxInWall(pos, phys.world_bbox);
 }
 
 const MoveGroupMember = struct {

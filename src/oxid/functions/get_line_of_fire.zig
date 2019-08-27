@@ -22,7 +22,7 @@ pub fn getLineOfFire(
             .W => box.mins.x -= 1,
         }
 
-        if (levels.level1.absBoxInWall(box, true)) {
+        if (levels.level1.absBoxInWall(box)) {
             switch (facing) {
                 .N => box.mins.y += 1,
                 .E => box.maxs.x -= 1,

@@ -8,13 +8,10 @@ pub const subpixels_per_tile = pixels_per_tile * subpixels_per_pixel;
 pub const TerrainType = enum {
     Floor,
     Wall,
-    Pit, // blocks creatures but not bullets
 };
 
 pub fn getTerrainType(value: u8) TerrainType {
-    if (value == 0x82) {
-        return .Pit;
-    } else if ((value & 0x80) != 0) {
+    if ((value & 0x80) != 0) {
         return .Wall;
     } else {
         return .Floor;
@@ -50,7 +47,7 @@ pub fn GenLevel(comptime w: u31, comptime h: u31) type {
                 (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
         }
 
-        pub fn absBoxInWall(self: *const @This(), bbox: math.BoundingBox, ignore_pits: bool) bool {
+        pub fn absBoxInWall(self: *const @This(), bbox: math.BoundingBox) bool {
             std.debug.assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
 
             const gx0 = @divFloor(bbox.mins.x, subpixels_per_tile);
@@ -64,7 +61,7 @@ pub fn GenLevel(comptime w: u31, comptime h: u31) type {
                 while (gx <= gx1) : (gx += 1) {
                     if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
                         const tt = getTerrainType(value);
-                        if (tt == .Wall or (!ignore_pits and tt == .Pit)) {
+                        if (tt == .Wall) {
                             return true;
                         }
                     }
@@ -74,8 +71,8 @@ pub fn GenLevel(comptime w: u31, comptime h: u31) type {
             return false;
         }
 
-        pub fn boxInWall(self: *const @This(), pos: math.Vec2, bbox: math.BoundingBox, ignore_pits: bool) bool {
-            return absBoxInWall(self, math.BoundingBox.move(bbox, pos), ignore_pits);
+        pub fn boxInWall(self: *const @This(), pos: math.Vec2, bbox: math.BoundingBox) bool {
+            return absBoxInWall(self, math.BoundingBox.move(bbox, pos));
         }
 
         pub fn getGridValue(self: *const @This(), pos: math.Vec2) ?u8 {
