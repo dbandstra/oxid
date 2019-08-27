@@ -10,7 +10,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, collide);
 
-fn collide(gs: *GameSession, self: SystemData) bool {
+fn collide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
         const other_player = gs.find(event.other_id, c.Player) orelse continue;
         _ = p.EventConferBonus.spawn(gs, c.EventConferBonus {
@@ -26,7 +26,7 @@ fn collide(gs: *GameSession, self: SystemData) bool {
                 .message = message,
             }) catch undefined;
         }
-        return false;
+        return .RemoveSelf;
     }
-    return true;
+    return .Remain;
 }

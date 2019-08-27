@@ -11,7 +11,7 @@ const SystemData = struct{
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     const int = self.phys.internal;
     _ = p.EventDrawBox.spawn(gs, c.EventDrawBox {
         .box = int.move_bbox,
@@ -21,5 +21,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .b = @intCast(u8, 64 + ((int.group_index * 10031) % 192)),
         },
     }) catch undefined;
-    return true;
+    return .Remain;
 }

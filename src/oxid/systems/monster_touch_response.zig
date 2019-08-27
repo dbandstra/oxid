@@ -12,7 +12,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, monsterCollide);
 
-fn monsterCollide(gs: *GameSession, self: SystemData) bool {
+fn monsterCollide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var hit_wall = false;
     var hit_creature = false;
 
@@ -42,5 +42,5 @@ fn monsterCollide(gs: *GameSession, self: SystemData) bool {
         // reverse direction
         self.phys.facing = math.Direction.invert(self.phys.facing);
     }
-    return true;
+    return .Remain;
 }

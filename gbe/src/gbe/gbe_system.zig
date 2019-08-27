@@ -6,11 +6,16 @@ const Gbe = @import("gbe_main.zig");
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
 
+pub const ThinkResult = enum {
+    RemoveSelf,
+    Remain,
+};
+
 pub fn buildSystemWithContext(
     comptime SessionType: type,
     comptime SelfType: type,
     comptime ContextType: type,
-    comptime think: fn(*SessionType, *ContextType, SelfType)bool,
+    comptime think: fn(*SessionType, *ContextType, SelfType)ThinkResult,
 ) fn(*SessionType, *ContextType)void {
     std.debug.assert(@typeId(SelfType) == .Struct);
 
@@ -21,7 +26,7 @@ pub fn buildSystemWithContext(
             self_id: Gbe.EntityId,
             comptime MainComponentType: type,
             main_component: *MainComponentType,
-        ) bool {
+        ) ThinkResult {
             // fill in the fields of the `self` structure
             var self: SelfType = undefined;
             inline for (@typeInfo(SelfType).Struct.fields) |field| {
@@ -39,7 +44,7 @@ pub fn buildSystemWithContext(
                     else if (@typeId(field.field_type) == .Optional)
                         gs.find(self_id, ComponentType)
                     else
-                        gs.find(self_id, ComponentType) orelse return true;
+                        gs.find(self_id, ComponentType) orelse return .Remain;
             }
             // call the think function
             return think(gs, ctx, self);
@@ -51,7 +56,8 @@ pub fn buildSystemWithContext(
             comptime MainComponentType: type,
         ) void {
             var it = gs.iter(MainComponentType); while (it.next()) |object| {
-                if (!runOne(gs, ctx, object.entity_id, MainComponentType, &object.data)) {
+                const result = runOne(gs, ctx, object.entity_id, MainComponentType, &object.data);
+                if (result == .RemoveSelf) {
                     gs.markEntityForRemoval(object.entity_id);
                 }
             }
@@ -142,10 +148,10 @@ pub fn buildSystemWithContext(
 pub fn buildSystem(
     comptime SessionType: type,
     comptime SelfType: type,
-    comptime think: fn(*SessionType, SelfType)bool,
+    comptime think: fn(*SessionType, SelfType)ThinkResult,
 ) fn(*SessionType)void {
     const WrappedThink = struct {
-        fn wrappedThink(gs: *SessionType, _: *void, self: SelfType) bool {
+        fn wrappedThink(gs: *SessionType, _: *void, self: SelfType) ThinkResult {
             return think(gs, self);
         }
     };

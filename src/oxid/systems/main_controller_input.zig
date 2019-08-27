@@ -12,7 +12,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     self.mc.menu_anim_time +%= 1; // not really "input" but whatever
 
     if (self.mc.game_running_state) |*grs| {
@@ -28,7 +28,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .HighScoresMenu => |*menu_state| { handleMenuInput(gs, self.mc, menus.HighScoresMenu, menu_state); },
         }
     }
-    return true;
+    return .Remain;
 }
 
 fn handleGameRunningInput(gs: *GameSession, mc: *c.MainController, grs: *c.MainController.GameRunningState) void {

@@ -19,10 +19,10 @@ const SystemData = struct {
 
 pub const avoidObjectsOfInterest = gbe.buildSystemWithContext(GameSession, SystemData, LocalState, avoidObjectsOfInterestFunc);
 
-fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemData) bool {
+fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemData) gbe.ThinkResult {
     // avoid all creatures (except webs) and pickups
     if (self.web != null) {
-        return true;
+        return .Remain;
     }
     const pad = 16 * levels.subpixels_per_pixel;
     const mins_x = self.transform.pos.x + self.phys.entity_bbox.mins.x - pad;
@@ -42,7 +42,7 @@ fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemDa
             ctx.gridmask[gy * levels.width + gx] = false;
         }
     }
-    return true;
+    return .Remain;
 }
 
 // fill given slice with random grid positions, none of which is in a wall,

@@ -19,7 +19,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     // if all non-persistent monsters are dead, prepare next wave
     if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
         self.gc.next_wave_timer = Constants.next_wave_time;
@@ -73,7 +73,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }
         }
     }
-    return true;
+    return .Remain;
 }
 
 fn getPlayerScore(gs: *GameSession) ?u32 {

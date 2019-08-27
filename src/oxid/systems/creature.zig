@@ -9,8 +9,8 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     _ = util.decrementTimer(&self.creature.invulnerability_timer);
     _ = util.decrementTimer(&self.creature.flinch_timer);
-    return true;
+    return .Remain;
 }

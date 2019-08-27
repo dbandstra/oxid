@@ -9,7 +9,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventRawInput); while (it.next()) |event| {
         if (self.mc.menu_stack_len == 0) {
             // game mode
@@ -28,5 +28,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }) catch undefined;
         }
     }
-    return true;
+    return .Remain;
 }

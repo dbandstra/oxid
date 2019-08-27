@@ -12,7 +12,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
         _ = p.Animation.spawn(gs, p.Animation.Params {
             .pos = self.transform.pos,
@@ -26,7 +26,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 .amount = self.bullet.damage,
             }) catch undefined;
         }
-        return false;
+        return .RemoveSelf;
     }
-    return true;
+    return .Remain;
 }

@@ -9,7 +9,7 @@ const SystemData = struct{
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (gs.findFirst(c.EventPlayerDied) != null) {
         self.gc.freeze_monsters_timer = Constants.monster_freeze_time;
     }
@@ -37,5 +37,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
         self.gc.wave_message = object.data.message;
         self.gc.wave_message_timer = 180;
     }
-    return true;
+    return .Remain;
 }

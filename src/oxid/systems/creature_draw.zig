@@ -20,7 +20,7 @@ const SystemData = struct{
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
             _ = p.EventDraw.spawn(gs, c.EventDraw {
@@ -48,7 +48,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 .z_index = Constants.z_index_player,
             });
         }
-        return true;
+        return .Remain;
     }
 
     if (self.monster) |monster| {
@@ -97,7 +97,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 },
             });
         }
-        return true;
+        return .Remain;
     }
 
     if (self.web) |web| {
@@ -108,10 +108,10 @@ fn think(gs: *GameSession, self: SystemData) bool {
             .rotates = false,
             .z_index = Constants.z_index_web,
         });
-        return true;
+        return .Remain;
     }
 
-    return true;
+    return .Remain;
 }
 
 ///////////////////////////////////////

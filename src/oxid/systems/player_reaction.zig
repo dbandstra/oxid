@@ -15,7 +15,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, playerReact);
 
-fn playerReact(gs: *GameSession, self: SystemData) bool {
+fn playerReact(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
         switch (event.pickup_type) {
             .PowerUp => {
@@ -47,5 +47,5 @@ fn playerReact(gs: *GameSession, self: SystemData) bool {
             },
         }
     }
-    return true;
+    return .Remain;
 }

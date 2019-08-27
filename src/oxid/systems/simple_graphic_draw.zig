@@ -12,7 +12,7 @@ const SystemData = struct{
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     _ = p.EventDraw.spawn(gs, c.EventDraw {
         .pos = self.transform.pos,
         .graphic = self.simple_graphic.graphic,
@@ -26,5 +26,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
                 .Identity,
         .z_index = self.simple_graphic.z_index,
     }) catch undefined;
-    return true;
+    return .Remain;
 }

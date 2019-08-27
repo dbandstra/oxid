@@ -21,7 +21,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (GameUtil.decrementTimer(&self.monster.spawning_timer)) {
         self.creature.hit_points = self.monster.full_hit_points;
     } else if (self.monster.spawning_timer > 0) {
@@ -33,7 +33,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
             monsterAttack(gs, self);
         }
     }
-    return true;
+    return .Remain;
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {

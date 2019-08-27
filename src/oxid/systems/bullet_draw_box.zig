@@ -11,12 +11,12 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.bullet.line_of_fire) |box| {
         _ = p.EventDrawBox.spawn(gs, c.EventDrawBox {
             .box = box,
             .color = draw.black,
         }) catch undefined;
     }
-    return true;
+    return .Remain;
 }

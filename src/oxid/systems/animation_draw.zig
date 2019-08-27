@@ -12,7 +12,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     const animcfg = getSimpleAnim(self.animation.simple_anim);
     std.debug.assert(self.animation.frame_index < animcfg.frames.len);
     _ = p.EventDraw.spawn(gs, c.EventDraw {
@@ -21,5 +21,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
         .transform = .Identity,
         .z_index = self.animation.z_index,
     }) catch undefined;
-    return true;
+    return .Remain;
 }

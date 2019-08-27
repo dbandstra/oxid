@@ -10,7 +10,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
         switch (event.data.command) {
             .Up => {
@@ -36,5 +36,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
             else => {},
         }
     }
-    return true;
+    return .Remain;
 }

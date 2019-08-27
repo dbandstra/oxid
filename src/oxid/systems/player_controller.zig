@@ -13,11 +13,11 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (util.decrementTimer(&self.pc.respawn_timer)) {
         spawnPlayer(gs, self);
     }
-    return true;
+    return .Remain;
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {

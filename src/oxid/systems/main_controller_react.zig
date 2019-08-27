@@ -11,7 +11,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventPostScore); while (it.next()) |object| {
         self.mc.new_high_score = false;
 
@@ -40,5 +40,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
             }
         }
     }
-    return true;
+    return .Remain;
 }

@@ -11,7 +11,7 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventPlayerDied, "player_controller_id", self.id); while (it.next()) |_| {
         if (self.pc.lives > 0) {
             self.pc.lives -= 1;
@@ -30,5 +30,5 @@ fn think(gs: *GameSession, self: SystemData) bool {
     var it3 = gs.eventIter(c.EventAwardLife, "player_controller_id", self.id); while (it3.next()) |event| {
         self.pc.lives += 1;
     }
-    return true;
+    return .Remain;
 }

@@ -17,12 +17,12 @@ const SystemData = struct {
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
-fn think(gs: *GameSession, self: SystemData) bool {
+fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.creature.invulnerability_timer > 0) {
-        return true;
+        return .Remain;
     }
     if (self.creature.god_mode) {
-        return true;
+        return .Remain;
     }
     var it = gs.eventIter(c.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
         const amount = event.amount;
@@ -46,7 +46,7 @@ fn think(gs: *GameSession, self: SystemData) bool {
                         .pickup_type = pickup_type,
                     }) catch undefined;
                 }
-                return true;
+                return .Remain;
             } else {
                 // something other than a player died
                 if (self.monster) |self_monster| {
@@ -73,9 +73,9 @@ fn think(gs: *GameSession, self: SystemData) bool {
                     .simple_anim = SimpleAnim.Explosion,
                     .z_index = Constants.z_index_explosion,
                 }) catch undefined;
-                return false;
+                return .RemoveSelf;
             }
         }
     }
-    return true;
+    return .Remain;
 }
