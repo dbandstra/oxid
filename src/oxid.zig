@@ -54,7 +54,7 @@ pub const GameState = struct {
 
 pub const AudioUserData = struct {
     g: *GameState,
-    sample_rate: u32,
+    sample_rate: f32,
     volume: u32,
 };
 
@@ -725,8 +725,9 @@ pub fn main() u8 {
             }
 
             SDL_LockAudioDevice(device);
+            // speed up audio mixing frequency if game is being fast forwarded
+            audio_user_data.sample_rate = @intToFloat(f32, audio_sample_rate) / @intToFloat(f32, num_frames);
             audio_user_data.volume = cfg.volume;
-            g.audio_module.speed = @intToFloat(f32, num_frames);
             playSounds(g);
             SDL_UnlockAudioDevice(device);
 

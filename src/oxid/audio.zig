@@ -70,12 +70,6 @@ pub const MainModule = struct {
     // of the sound module types being used
     tmp_bufs: [3][]f32,
 
-    // speed: ditto. if this is 1, play sound at normal rate. if it's 2, play
-    // back at double speed, and so on. this is used to speed up the sound when
-    // the game is being fast forwarded
-    // TODO figure out what happens if it's <= 0. if it breaks, add checks
-    speed: f32,
-
     // call this in the main thread before the audio device is set up
     pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
         return MainModule {
@@ -95,7 +89,6 @@ pub const MainModule = struct {
                 try hunk_side.allocator.alloc(f32, audio_buffer_size),
                 try hunk_side.allocator.alloc(f32, audio_buffer_size),
             },
-            .speed = 1,
         };
     }
 
@@ -106,7 +99,7 @@ pub const MainModule = struct {
     // refactored so that all the IQs (impulse queues) are pulled out before
     // painting, so that the thread doesn't need to be locked during the actual
     // painting
-    pub fn paint(self: *MainModule, sample_rate: u32, gs: *GameSession) []const f32 {
+    pub fn paint(self: *MainModule, sample_rate: f32, gs: *GameSession) []const f32 {
         const span = zang.Span {
             .start = 0,
             .end = self.out_buf.len,
@@ -114,21 +107,19 @@ pub const MainModule = struct {
 
         zang.zero(span, self.out_buf);
 
-        const mix_freq = @intToFloat(f32, sample_rate) / self.speed;
-
         var it = gs.iter(c.Voice); while (it.next()) |object| {
             const voice = &object.data;
 
             switch (voice.wrapper) {
-                .Accelerate => |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .Explosion =>  |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .Laser =>      |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .MenuBackoff =>|*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .MenuBlip =>   |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .MenuDing =>   |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .Sample =>     |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
-                .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, mix_freq),
+                .Accelerate => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .Explosion =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .Laser =>      |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .MenuBackoff =>|*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .MenuBlip =>   |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .MenuDing =>   |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .Sample =>     |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 else => {},
             }
         }
