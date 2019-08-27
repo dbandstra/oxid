@@ -119,7 +119,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
         self.phys.push_dir = dir;
     }
 
-    self.phys.speed = @intCast(i32, move_speed);
+    self.phys.speed = move_speed;
 }
 
 fn monsterAttack(gs: *GameSession, self: SystemData) void {

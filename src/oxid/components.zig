@@ -124,8 +124,7 @@ pub const PhysObject = struct {
 
     // `speed`: velocity along the `facing` direction (diagonal motion is not
     // supported). this is measured in subpixels per tick
-    // FIXME - shouldn't this be unsigned?
-    speed: i32,
+    speed: u31,
 
     // `push_dir`: if set, the object will try to redirect to go this way if
     // there is no obstruction.

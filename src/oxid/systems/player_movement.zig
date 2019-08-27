@@ -169,7 +169,7 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
     }
 }
 
-fn tryPush(pos: math.Vec2, dir: math.Direction, speed: i32, self_phys: *c.PhysObject) void {
+fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysObject) void {
     const pos1 = math.Vec2.add(pos, math.Direction.normal(dir));
 
     if (!physInWall(self_phys, pos1)) {
