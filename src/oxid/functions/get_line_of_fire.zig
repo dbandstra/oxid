@@ -1,4 +1,5 @@
 const std = @import("std");
+const warn = @import("../../warn.zig").warn;
 const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 
@@ -34,6 +35,6 @@ pub fn getLineOfFire(
         }
     }
 
-    std.debug.warn("getLineOfFire: infinite loop?\n");
+    warn("getLineOfFire: infinite loop?\n");
     return null;
 }

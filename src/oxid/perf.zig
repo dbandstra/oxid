@@ -1,4 +1,5 @@
 const std = @import("std");
+const warn = @import("../warn.zig").warn;
 
 pub const Timer = struct {
     label: []const u8,
@@ -91,7 +92,7 @@ pub fn end(self: *Timer, spam: bool) void {
     if (spam) {
         const avg = getAvg(self);
         const fps = u64(1000000000) / avg;
-        std.debug.warn("{} - avg: {}, fps: {}\n", self.label, avg, fps);
+        warn("{} - avg: {}, fps: {}\n", self.label, avg, fps);
     }
 }
 

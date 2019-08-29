@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Oxid</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="page">
+      <div class="wrapper">
+        <canvas id="canvasgl" width="320" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+  <script>
+    var $webgl = document.getElementById("canvasgl");
+  </script>
+  <script src="js/webgl.js"></script>
+  <script src="js/wasm.js"></script>
+  <script>
+    const print = (msg) => {
+      console.log(msg);
+    };
+
+    const env = {
+      ...wasm,
+      ...webgl,
+      print,
+    };
+
+    fetchAndInstantiate('zig-cache/oxid.wasm', {env}).then(instance => {
+      memory = instance.exports.memory;
+      instance.exports.onInit();
+
+      const onAnimationFrame = instance.exports.onAnimationFrame;
+
+      document.addEventListener('keydown', e => instance.exports.onKeyDown(e.keyCode, 1));
+      document.addEventListener('keyup', e => instance.exports.onKeyUp(e.keyCode, 0));
+      // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
+      // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
+      // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));
+      // document.addEventListener('resize', e => instance.exports.onResize(e.width, e.height));
+
+      function step(timestamp) {
+        onAnimationFrame(timestamp);
+        window.requestAnimationFrame(step);
+      }
+
+      window.requestAnimationFrame(step);
+    });
+
+    function fetchAndInstantiate(url, importObject) {
+      return fetch(url)
+        .then(response => response.arrayBuffer())
+        .then(bytes => WebAssembly.instantiate(bytes, importObject))
+        .then(results => results.instance);
+    }
+  </script>
+</body>
+
+</html>

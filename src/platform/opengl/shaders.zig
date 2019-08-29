@@ -1,11 +1,16 @@
-usingnamespace @cImport({
-    @cInclude("epoxy/gl.h");
-});
-
+const builtin = @import("builtin");
+usingnamespace
+    if (builtin.arch == .wasm32)
+        @import("../../web.zig")
+    else
+        @cImport({
+            @cInclude("epoxy/gl.h");
+        });
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const warn = @import("../../warn.zig").warn;
 
-pub const GLSLVersion = enum { V120, V130 };
+pub const GLSLVersion = enum { V120, V130, WebGL };
 
 pub const ShaderSource = struct {
     vertex: []const u8,
@@ -25,7 +30,7 @@ pub const InitError = error {
 };
 
 pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
-    errdefer std.debug.warn("Failed to compile and link shader program \"{}\".\n", description);
+    errdefer warn("Failed to compile and link shader program \"{}\".\n", description);
 
     const vertex_id = try compile(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
     const fragment_id = try compile(hunk_side, source.fragment, "fragment", GL_FRAGMENT_SHADER);
@@ -35,6 +40,14 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
     glAttachShader(program_id, fragment_id);
     glLinkProgram(program_id);
 
+if (builtin.arch == .wasm32) {
+    warn("TODO - check program status in webgl\n");
+    return Program {
+        .program_id = program_id,
+        .vertex_id = vertex_id,
+        .fragment_id = fragment_id,
+    };
+} else {
     var ok: GLint = undefined;
     glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
     if (ok != 0) {
@@ -50,23 +63,32 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
         defer hunk_side.freeToMark(mark);
         if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
             glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
-            std.debug.warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
+            warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
         } else |_| {
-            std.debug.warn("Failed to retrieve program info log (out of memory).\n");
+            warn("Failed to retrieve program info log (out of memory).\n");
         }
         return error.ShaderLinkFailed;
     }
 }
+}
 
 fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
-    errdefer std.debug.warn("Failed to compile {} shader.\n", shader_type);
+    errdefer warn("Failed to compile {} shader.\n", shader_type);
 
     const shader_id = glCreateShader(kind);
     const source_ptr: ?[*]const u8 = source.ptr;
     const source_len = @intCast(GLint, source.len);
-    glShaderSource(shader_id, 1, &source_ptr, &source_len);
+    if (builtin.arch == .wasm32) {
+        glShaderSource(shader_id, source.ptr, source.len);
+    } else {
+        glShaderSource(shader_id, 1, &source_ptr, &source_len);
+    }
     glCompileShader(shader_id);
 
+if (builtin.arch == .wasm32) {
+    warn("TODO - check shader status in webgl\n");
+    return shader_id;
+} else {
     var ok: GLint = undefined;
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &ok);
     if (ok != 0) {
@@ -78,12 +100,13 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
         defer hunk_side.freeToMark(mark);
         if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
             glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
-            std.debug.warn("SHADER INFO LOG:\n{s}\n", message.ptr);
+            warn("SHADER INFO LOG:\n{s}\n", message.ptr);
         } else |_| {
-            std.debug.warn("Failed to retrieve shader info log (out of memory).\n");
+            warn("Failed to retrieve shader info log (out of memory).\n");
         }
         return error.ShaderCompileFailed;
     }
+}
 }
 
 pub fn destroy(sp: Program) void {
@@ -96,19 +119,29 @@ pub fn destroy(sp: Program) void {
     glDeleteProgram(sp.program_id);
 }
 
-pub fn getAttribLocation(sp: Program, name: [*]const u8) !GLint {
-    const id = glGetAttribLocation(sp.program_id, name);
+pub fn getAttribLocation(sp: Program, name: []const u8) !GLint {
+    std.debug.assert(name[name.len - 1] == 0);
+    const id =
+        if (builtin.arch == .wasm32)
+            glGetAttribLocation(sp.program_id, name.ptr, name.len - 1)
+        else
+            glGetAttribLocation(sp.program_id, name.ptr);
     if (id == -1) {
-        std.debug.warn("invalid attrib: {s}\n", name);
+        warn("invalid attrib: {s}\n", name);
         return error.ShaderInvalidAttrib;
     }
     return id;
 }
 
-pub fn getUniformLocation(sp: Program, name: [*]const u8) GLint {
-    const id = glGetUniformLocation(sp.program_id, name);
+pub fn getUniformLocation(sp: Program, name: []const u8) GLint {
+    std.debug.assert(name[name.len - 1] == 0);
+    const id =
+        if (builtin.arch == .wasm32)
+            glGetUniformLocation(sp.program_id, name.ptr, name.len - 1)
+        else
+            glGetUniformLocation(sp.program_id, name.ptr);
     if (id == -1) {
-        std.debug.warn("(warning) invalid uniform: {s}\n", name);
+        warn("(warning) invalid uniform: {s}\n", name);
     }
     return id;
 }

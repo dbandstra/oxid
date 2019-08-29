@@ -1,11 +1,24 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const pdraw = @import("pdraw");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
 const key_names = @import("../common/key.zig").key_names;
-const GameState = @import("../oxid.zig").GameState;
-const vwin_w = @import("../oxid.zig").virtual_window_width;
-const vwin_h = @import("../oxid.zig").virtual_window_height;
+const GameState =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").GameState
+    else
+        @import("../oxid.zig").GameState;
+const vwin_w =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").virtual_window_width
+    else
+        @import("../oxid.zig").virtual_window_width;
+const vwin_h =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").virtual_window_height
+    else
+        @import("../oxid.zig").virtual_window_height;
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");

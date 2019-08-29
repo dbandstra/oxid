@@ -1,9 +1,14 @@
-usingnamespace @cImport({
-    @cInclude("epoxy/gl.h");
-});
-
+const builtin = @import("builtin");
+usingnamespace
+    if (builtin.arch == .wasm32)
+        @import("../../web.zig")
+    else
+        @cImport({
+            @cInclude("epoxy/gl.h");
+        });
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
+const warn = @import("../../warn.zig").warn;
 const shaders = @import("shaders.zig");
 const shader_textured = @import("shader_textured.zig");
 const draw = @import("../../common/draw.zig");
@@ -47,9 +52,9 @@ pub const DrawState = struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
     // frame buffer object
-    fb: GLuint,
+    //fb: GLuint,
     // render texture
-    rt: GLuint,
+    //rt: GLuint,
     shader_textured: shader_textured.Shader,
     dyn_vertex_buffer: GLuint,
     dyn_texcoord_buffer: GLuint,
@@ -64,7 +69,11 @@ pub const DrawState = struct {
 
 pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
     const size = buffer_vertices * 2 * @sizeOf(GLfloat);
-    const null_data = @intToPtr(?*const c_void, 0);
+    const null_data =
+        if (builtin.arch == .wasm32)
+            @intToPtr(?[*]const f32, 0)
+        else
+            @intToPtr(?*const c_void, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
@@ -79,26 +88,31 @@ pub const InitError = error {
     FailedToCreateFramebuffer,
 } || shaders.InitError;
 
-pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
-    const glsl_version = blk: {
+fn detectGLSLVersion() InitError!shaders.GLSLVersion {
+    if (builtin.arch == .wasm32) {
+        return shaders.GLSLVersion.WebGL;
+    } else {
         const v = glGetString(GL_VERSION);
 
         if (v != 0) { // null check
             if (v[1] == '.') {
                 if (v[0] == '2' and v[2] != '0') {
-                    break :blk shaders.GLSLVersion.V120;
+                    return shaders.GLSLVersion.V120;
                 } else if (v[0] >= '3' and v[0] <= '9') {
-                    break :blk shaders.GLSLVersion.V130;
+                    return shaders.GLSLVersion.V130;
                 }
             }
 
-            std.debug.warn("Unsupported OpenGL version: {}\n", std.mem.toSliceConst(u8, v));
+            warn("Unsupported OpenGL version: {}\n", std.mem.toSliceConst(u8, v));
         } else {
-            std.debug.warn("Failed to get OpenGL version.\n");
+            warn("Failed to get OpenGL version.\n");
         }
 
         return error.UnsupportedOpenGLVersion;
-    };
+    }
+}
+pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
+    const glsl_version = try detectGLSLVersion();
 
     ds.shader_textured = try shader_textured.create(&params.hunk.low(), glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);
@@ -111,28 +125,37 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     updateVbo(ds.dyn_texcoord_buffer, null);
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
 
-    var fb: GLuint = 0;
-    glGenFramebuffers(1, &fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-
-    var rt: GLuint = 0;
-    glGenTextures(1, &rt);
-    glBindTexture(GL_TEXTURE_2D, rt);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
-
-    var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, &draw_buffers[0]);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std.debug.warn("Failed to create framebuffer.\n");
-        return error.FailedToCreateFramebuffer;
-    }
+//    var fb: GLuint = 0;
+//    if (builtin.arch == .wasm32) {
+//        fb = glCreateFramebuffer();
+//    } else {
+//        glGenFramebuffers(1, &fb);
+//    }
+//    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+//
+//    var rt: GLuint = 0;
+//    glGenTextures(1, &rt);
+//    glBindTexture(GL_TEXTURE_2D, rt);
+//    if (builtin.arch == .wasm32) {
+//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
+//    } else {
+//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
+//    }
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//    // FIXME why am i calling glTexParameterf .. CLAMP_TO_EDGE is an integer isn't it?
+//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//
+//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
+//
+//    var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
+//    glDrawBuffers(1, &draw_buffers[0]);
+//
+//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+//        warn("Failed to create framebuffer.\n");
+//        return error.FailedToCreateFramebuffer;
+//    }
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -142,8 +165,8 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
-    ds.fb = fb;
-    ds.rt = rt;
+    //ds.fb = fb;
+    //ds.rt = rt;
     ds.draw_buffer.num_vertices = 0;
 
     const blank_tex_pixels = [_]u8{255, 255, 255, 255};
@@ -156,9 +179,11 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     ds.glitch_mode = GlitchMode.Normal;
     ds.clear_screen = true;
+    warn("i got to the end...\n");
 }
 
 pub fn deinit(ds: *DrawState) void {
+    warn("deinit!\n");
     glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     shaders.destroy(ds.shader_textured.program);
@@ -173,17 +198,32 @@ pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    glTexImage2D(
-        GL_TEXTURE_2D, // target
-        0, // level
-        GL_RGBA, // internalFormat
-        @intCast(GLsizei, width),
-        @intCast(GLsizei, height),
-        0, // border
-        GL_RGBA, // format
-        GL_UNSIGNED_BYTE, // type
-        &pixels[0],
-    );
+    if (builtin.arch == .wasm32) {
+        glTexImage2D(
+            GL_TEXTURE_2D, // target
+            0, // level
+            GL_RGBA, // internalFormat
+            @intCast(c_int, width),
+            @intCast(c_int, height),
+            0, // border
+            GL_RGBA, // format
+            GL_UNSIGNED_BYTE, // type
+            pixels.ptr,
+            width * height * 4,
+        );
+    } else {
+        glTexImage2D(
+            GL_TEXTURE_2D, // target
+            0, // level
+            GL_RGBA, // internalFormat
+            @intCast(c_int, width),
+            @intCast(c_int, height),
+            0, // border
+            GL_RGBA, // format
+            GL_UNSIGNED_BYTE, // type
+            &pixels[0],
+        );
+    }
     return Texture {
         .handle = texid,
     };
@@ -215,7 +255,7 @@ pub fn preDraw(ds: *DrawState) void {
     const fw = @intToFloat(f32, w);
     const fh = @intToFloat(f32, h);
     ds.projection = ortho(0, fw, fh, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
+    //glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
     if (ds.clear_screen) {
         glClearColor(0, 0, 0, 0);
@@ -226,12 +266,12 @@ pub fn preDraw(ds: *DrawState) void {
 
 pub fn postDraw(ds: *DrawState, blit_rect: BlitRect, blit_alpha: f32) void {
     // blit renderbuffer to screen
-    ds.projection = ortho(0, 1, 1, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-    begin(ds, ds.rt, draw.white, blit_alpha, false);
-    tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
-    end(ds);
+    //ds.projection = ortho(0, 1, 1, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
+    //begin(ds, ds.rt, draw.white, blit_alpha, false);
+    //tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
+    //end(ds);
 }
 
 pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
@@ -306,15 +346,45 @@ pub fn tile(
         t1 = 1;
     }
 
-    if (ds.draw_buffer.num_vertices + 4 > buffer_vertices) {
+    // wasm doesn't support quads, so we have to emit two triangles
+    const verts_per_tile = if (builtin.arch == .wasm32) usize(6) else usize(4);
+
+    if (ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices) {
         flush(ds);
     }
     const num_vertices = ds.draw_buffer.num_vertices;
-    std.debug.assert(num_vertices + 4 <= buffer_vertices);
+    std.debug.assert(num_vertices + verts_per_tile <= buffer_vertices);
 
-    const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + 4) * 2];
-    const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + 4) * 2];
+    const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + verts_per_tile) * 2];
+    const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + verts_per_tile) * 2];
 
+    if (builtin.arch == .wasm32) {
+        // top left, bottom left, bottom right
+        // bottom right, top right, top left
+        // so, compared to quad:
+        // same, same, same, <-dupe, same, (first)
+        std.mem.copy(
+            GLfloat,
+            vertex2f,
+            [12]GLfloat{fx0,fy0, fx0,fy1, fx1,fy1, fx1,fy1, fx1,fy0, fx0,fy0},
+        );
+        std.mem.copy(
+            GLfloat,
+            texcoord2f,
+            switch (transform) {
+                .Identity =>
+                    [12]f32{s0,t0, s0,t1, s1,t1, s1,t1, s1,t0, s0,t0},
+                .FlipVertical =>
+                    [12]f32{s0,t1, s0,t0, s1,t0, s1,t0, s1,t1, s0,t1},
+                .FlipHorizontal =>
+                    [12]f32{s1,t0, s1,t1, s0,t1, s0,t1, s0,t0, s1,t0},
+                .RotateClockwise =>
+                    [12]f32{s0,t1, s1,t1, s1,t0, s1,t0, s0,t0, s0,t1},
+                .RotateCounterClockwise =>
+                    [12]f32{s1,t0, s0,t0, s0,t1, s0,t1, s1,t1, s1,t0},
+            },
+        );
+    } else {
     // top left, bottom left, bottom right, top right
     std.mem.copy(
         GLfloat,
@@ -337,8 +407,9 @@ pub fn tile(
                 [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
         },
     );
+    }
 
-    if (ds.glitch_mode == .QuadStrips) {
+    if (ds.glitch_mode == .QuadStrips and builtin.arch != .wasm32) {
         // swap last two vertices so that the order becomes top left, bottom left,
         // top right, bottom right (suitable for quad strips rather than individual
         // quads)
@@ -348,7 +419,7 @@ pub fn tile(
         std.mem.swap(GLfloat, &texcoord2f[5], &texcoord2f[7]);
     }
 
-    ds.draw_buffer.num_vertices = num_vertices + 4;
+    ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
 }
 
 fn flush(ds: *DrawState) void {
@@ -366,14 +437,17 @@ fn flush(ds: *DrawState) void {
     if (ds.draw_buffer.outline) {
         glPolygonMode(GL_FRONT, GL_LINE);
     }
-
+//Texture level 0 would be read by TEXTURE_2D unit 0, but written by framebuffer attachment COLOR_ATTACHMENT0, which would be illegal feedback.
     glDrawArrays(
-        if (ds.glitch_mode == .QuadStrips)
+        if (builtin.arch == .wasm32)
+            GLenum(GL_TRIANGLES)
+        else if (ds.glitch_mode == .QuadStrips)
             GLenum(GL_QUAD_STRIP)
         else
             GLenum(GL_QUADS),
         0,
-        @intCast(c_int, ds.draw_buffer.num_vertices),
+        //@intCast(c_int, ds.draw_buffer.num_vertices),
+        @intCast(c_uint, ds.draw_buffer.num_vertices),
     );
 
     if (ds.draw_buffer.outline) {

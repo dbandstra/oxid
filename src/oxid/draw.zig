@@ -1,12 +1,29 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const vwin_w = @import("../oxid.zig").virtual_window_width;
-const vwin_h = @import("../oxid.zig").virtual_window_height;
-const hud_height = @import("../oxid.zig").hud_height;
-const GameState = @import("../oxid.zig").GameState;
+const vwin_w =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").virtual_window_width
+    else
+        @import("../oxid.zig").virtual_window_width;
+const vwin_h =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").virtual_window_height
+    else
+        @import("../oxid.zig").virtual_window_height;
+const hud_height =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").hud_height
+    else
+        @import("../oxid.zig").hud_height;
+const GameState =
+    if (builtin.arch == .wasm32)
+        @import("../oxid_web.zig").GameState
+    else
+        @import("../oxid.zig").GameState;
 const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
@@ -15,7 +32,7 @@ const levels = @import("levels.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
-const perf = @import("perf.zig");
+//const perf = @import("perf.zig");
 const util = @import("util.zig");
 const drawMenu = @import("draw_menu.zig").drawMenu;
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
@@ -56,8 +73,8 @@ pub fn drawGame(g: *GameState, cfg: config.Config) void {
 ///////////////////////////////////////
 
 fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
-    perf.begin(&perf.timers.DrawSort);
-    defer perf.end(&perf.timers.DrawSort, g.perf_spam);
+    //perf.begin(&perf.timers.DrawSort);
+    //defer perf.end(&perf.timers.DrawSort, g.perf_spam);
 
     var num_drawables: usize = 0;
     var it = g.session.iter(c.EventDraw); while (it.next()) |object| {
@@ -100,8 +117,8 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
 }
 
 fn drawMap(g: *GameState) void {
-    perf.begin(&perf.timers.DrawMap);
-    defer perf.end(&perf.timers.DrawMap, g.perf_spam);
+    //perf.begin(&perf.timers.DrawMap);
+    //defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
     var y: u31 = 0; while (y < levels.height) : (y += 1) {
         var x: u31 = 0; while (x < levels.width) : (x += 1) {
@@ -114,8 +131,8 @@ fn drawMap(g: *GameState) void {
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
 fn drawMapForeground(g: *GameState) void {
-    perf.begin(&perf.timers.DrawMapForeground);
-    defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
+    //perf.begin(&perf.timers.DrawMapForeground);
+    //defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
 
     var y: u31 = 6; while (y < 8) : (y += 1) {
         var x: u31 = 9; while (x < 11) : (x += 1) {
@@ -125,8 +142,8 @@ fn drawMapForeground(g: *GameState) void {
 }
 
 fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
-    perf.begin(&perf.timers.DrawEntities);
-    defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
+    //perf.begin(&perf.timers.DrawEntities);
+    //defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
@@ -177,8 +194,8 @@ fn getColor(g: *GameState, index: usize) draw.Color {
 }
 
 fn drawHud(g: *GameState, game_active: bool) void {
-    perf.begin(&perf.timers.DrawHud);
-    defer perf.end(&perf.timers.DrawHud, g.perf_spam);
+    //perf.begin(&perf.timers.DrawHud);
+    //defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);

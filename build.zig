@@ -2,9 +2,12 @@ const std = @import("std");
 const Builder = std.build.Builder;
 const builtin = @import("builtin");
 
+// run `zig build -wasm` to build wasm
+
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
     const windows = b.option(bool, "windows", "create windows build") orelse false;
+    const wasm = b.option(bool, "wasm", "create wasm build") orelse false;
 
     {
         var t = b.addTest("test.zig");
@@ -13,12 +16,30 @@ pub fn build(b: *Builder) void {
         test_step.dependOn(&t.step);
     }
 
-    {
+    if (wasm) {
+        const lib = b.addStaticLibrary("oxid", "src/oxid_web.zig");
+        lib.setOutputDir("zig-cache");
+        lib.setBuildMode(mode);
+        //lib.setTarget(.wasm32, .freestanding, .musl);
+        lib.setTarget(.wasm32, .freestanding, .none);
+
+        lib.addPackagePath("gbe", "gbe/src/gbe.zig");
+        lib.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
+        lib.addPackagePath("zang", "zang/src/zang.zig");
+        lib.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
+        lib.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
+
+        const assets_path = std.fs.path.join(b.allocator, [_][]const u8{b.build_root, "assets"});
+        lib.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", assets_path));
+
+        b.default_step.dependOn(&lib.step);
+        b.installArtifact(lib);
+    } else {
         var exe = b.addExecutable("oxid", "src/oxid.zig");
         exe.setBuildMode(mode);
 
         if (windows) {
-            exe.setTarget(builtin.Arch.x86_64, builtin.Os.windows, builtin.Abi.gnu);
+            exe.setTarget(.x86_64, .windows, .gnu);
         }
 
         exe.addPackagePath("gbe", "gbe/src/gbe.zig");
