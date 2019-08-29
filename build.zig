@@ -18,7 +18,7 @@ pub fn build(b: *Builder) void {
 
     if (wasm) {
         const lib = b.addStaticLibrary("oxid", "src/oxid_web.zig");
-        lib.setOutputDir("zig-cache");
+        lib.setOutputDir(".");
         lib.setBuildMode(mode);
         //lib.setTarget(.wasm32, .freestanding, .musl);
         lib.setTarget(.wasm32, .freestanding, .none);

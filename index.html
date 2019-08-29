@@ -28,7 +28,7 @@
       print,
     };
 
-    fetchAndInstantiate('zig-cache/oxid.wasm', {env}).then(instance => {
+    fetchAndInstantiate('oxid.wasm', {env}).then(instance => {
       memory = instance.exports.memory;
       instance.exports.onInit();
 
