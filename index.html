@@ -10,6 +10,13 @@
       <div class="wrapper">
         <canvas id="canvasgl" width="320" height="240"></canvas>
       </div>
+      Scaling:
+      <select id="scale-select">
+        <option value="1x">1x</option>
+        <option value="2x">2x</option>
+        <option value="3x">3x</option>
+        <option value="4x">4x</option>
+      </select>
     </div>
   </div>
   <script>
@@ -55,6 +62,17 @@
         .then(bytes => WebAssembly.instantiate(bytes, importObject))
         .then(results => results.instance);
     }
+
+    function setScale(value) {
+        $webgl.className = 'scale' + value;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setScale(document.getElementById('scale-select').value);
+    });
+    document.getElementById('scale-select').addEventListener('change', (event) => {
+        setScale(event.target.value);
+    });
   </script>
 </body>
 
