@@ -9,16 +9,8 @@ const GameState =
         @import("../oxid_web.zig").GameState
     else
         @import("../oxid.zig").GameState;
-const vwin_w =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").virtual_window_width
-    else
-        @import("../oxid.zig").virtual_window_width;
-const vwin_h =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").virtual_window_height
-    else
-        @import("../oxid.zig").virtual_window_height;
+const vwin_w = @import("../oxid_constants.zig").virtual_window_width;
+const vwin_h = @import("../oxid_constants.zig").virtual_window_height;
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");

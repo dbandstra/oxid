@@ -14,7 +14,6 @@ const draw = @import("common/draw.zig");
 const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
-const levels = @import("oxid/levels.zig");
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
@@ -28,18 +27,11 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
+const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
+const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
 
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
-
-// this many pixels is added to the top of the window for font stuff
-// TODO - move to another file
-pub const hud_height = 16;
-
-// size of the virtual screen. the actual window size will be an integer
-// multiple of this
-pub const virtual_window_width: u31 = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 // this is a global singleton
 pub const GameState = struct {

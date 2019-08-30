@@ -52,9 +52,9 @@ pub const DrawState = struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
     // frame buffer object
-    //fb: GLuint,
+    fb: GLuint,
     // render texture
-    //rt: GLuint,
+    rt: GLuint,
     shader_textured: shader_textured.Shader,
     dyn_vertex_buffer: GLuint,
     dyn_texcoord_buffer: GLuint,
@@ -133,36 +133,40 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     updateVbo(ds.dyn_texcoord_buffer, null);
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
 
-//    var fb: GLuint = 0;
-//    if (builtin.arch == .wasm32) {
-//        fb = glCreateFramebuffer();
-//    } else {
-//        glGenFramebuffers(1, &fb);
-//    }
-//    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-//
-//    var rt: GLuint = 0;
-//    glGenTextures(1, &rt);
-//    glBindTexture(GL_TEXTURE_2D, rt);
-//    if (builtin.arch == .wasm32) {
-//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
-//    } else {
-//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
-//    }
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//
-//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
-//
-//    var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
-//    glDrawBuffers(1, &draw_buffers[0]);
-//
-//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-//        warn("Failed to create framebuffer.\n");
-//        return error.FailedToCreateFramebuffer;
-//    }
+    // TODO - can the framebuffer stuff be separated to a new file to make it more "optional"?
+    // (i disabled this code in wasm because i couldn't get it working)
+    var fb: GLuint = 0;
+    var rt: GLuint = 0;
+    if (builtin.arch != .wasm32) {
+        if (builtin.arch == .wasm32) {
+            fb = glCreateFramebuffer();
+        } else {
+            glGenFramebuffers(1, &fb);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+
+        glGenTextures(1, &rt);
+        glBindTexture(GL_TEXTURE_2D, rt);
+        if (builtin.arch == .wasm32) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
+        } else {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
+        }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
+
+        var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, &draw_buffers[0]);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            warn("Failed to create framebuffer.\n");
+            return error.FailedToCreateFramebuffer;
+        }
+    }
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -172,8 +176,8 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
-    //ds.fb = fb;
-    //ds.rt = rt;
+    ds.fb = fb;
+    ds.rt = rt;
     ds.draw_buffer.num_vertices = 0;
 
     const blank_tex_pixels = [_]u8{255, 255, 255, 255};
@@ -186,11 +190,9 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     ds.glitch_mode = GlitchMode.Normal;
     ds.clear_screen = true;
-    warn("i got to the end...\n");
 }
 
 pub fn deinit(ds: *DrawState) void {
-    warn("deinit!\n");
     if (builtin.arch == .wasm32) {
         glDeleteBuffer(ds.dyn_vertex_buffer);
         glDeleteBuffer(ds.dyn_texcoord_buffer);
@@ -271,7 +273,9 @@ pub fn preDraw(ds: *DrawState) void {
     const fw = @intToFloat(f32, w);
     const fh = @intToFloat(f32, h);
     ds.projection = ortho(0, fw, fh, 0);
-    //glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
+    if (builtin.arch != .wasm32) {
+        glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
+    }
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
     if (ds.clear_screen) {
         glClearColor(0, 0, 0, 0);
@@ -281,13 +285,15 @@ pub fn preDraw(ds: *DrawState) void {
 }
 
 pub fn postDraw(ds: *DrawState, blit_rect: BlitRect, blit_alpha: f32) void {
-    // blit renderbuffer to screen
-    //ds.projection = ortho(0, 1, 1, 0);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-    //begin(ds, ds.rt, draw.white, blit_alpha, false);
-    //tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
-    //end(ds);
+    if (builtin.arch != .wasm32) {
+        // blit renderbuffer to screen
+        ds.projection = ortho(0, 1, 1, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
+        begin(ds, ds.rt, draw.white, blit_alpha, false);
+        tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
+        end(ds);
+    }
 }
 
 pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {

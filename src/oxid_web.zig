@@ -22,15 +22,6 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
 
-// this many pixels is added to the top of the window for font stuff
-// TODO - move to another file
-pub const hud_height = 16;
-
-// size of the virtual screen. the actual window size will be an integer
-// multiple of this
-pub const virtual_window_width: u31 = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
-
 var cfg = config.default_config;
 
 pub const GameState = struct {

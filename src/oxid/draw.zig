@@ -4,21 +4,9 @@ const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const vwin_w =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").virtual_window_width
-    else
-        @import("../oxid.zig").virtual_window_width;
-const vwin_h =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").virtual_window_height
-    else
-        @import("../oxid.zig").virtual_window_height;
-const hud_height =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").hud_height
-    else
-        @import("../oxid.zig").hud_height;
+const vwin_w = @import("../oxid_constants.zig").virtual_window_width;
+const vwin_h = @import("../oxid_constants.zig").virtual_window_height;
+const hud_height = @import("../oxid_constants.zig").hud_height;
 const GameState =
     if (builtin.arch == .wasm32)
         @import("../oxid_web.zig").GameState
