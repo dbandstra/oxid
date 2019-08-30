@@ -1,3 +1,5 @@
+// TODO - fill out using https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants#Standard_WebGL_1_constants
+
 pub const GL_VERTEX_SHADER = 35633;
 pub const GL_FRAGMENT_SHADER = 35632;
 pub const GL_ARRAY_BUFFER = 34962;

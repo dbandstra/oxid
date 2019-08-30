@@ -73,6 +73,7 @@ const funcs = [_]Func {
         .js =
             \\gl.attachShader(glPrograms[program], glShaders[shader]);
     },
+    // TODO - glBindAttribLocation
     Func {
         .name = "glBindBuffer",
         .args = [_]Arg {
@@ -93,6 +94,7 @@ const funcs = [_]Func {
         .js =
             \\gl.bindFramebuffer(target, glFramebuffers[framebuffer]);
     },
+    // TODO - glBindRenderbuffer
     Func {
         .name = "glBindTexture",
         .args = [_]Arg {
@@ -103,6 +105,7 @@ const funcs = [_]Func {
         .js =
             \\gl.bindTexture(target, glTextures[texture_id]);
     },
+    // TODO - mention that this is not part of core WebGL 1
     Func {
         .name = "glBindVertexArray",
         .args = [_]Arg {
@@ -112,6 +115,9 @@ const funcs = [_]Func {
         .js =
             \\gl.bindVertexArray(glVertexArrays[id]);
     },
+    // TODO - glBlendColor
+    // TODO - glBlendEquation
+    // TODO - glBlendEquationSeparate
     Func {
         .name = "glBlendFunc",
         .args = [_]Arg {
@@ -122,6 +128,7 @@ const funcs = [_]Func {
         .js =
             \\gl.blendFunc(x, y);
     },
+    // TODO - glBlendFuncSeparate
     Func {
         .name = "glBufferData",
         .args = [_]Arg {
@@ -132,10 +139,11 @@ const funcs = [_]Func {
         },
         .ret = "void",
         .js =
-            \\// TODO - check for NULL?
+            // TODO - check for NULL?
             \\const floats = new Float32Array(memory.buffer, data_ptr, count);
             \\gl.bufferData(type, floats, draw_type);
     },
+    // TODO - glBufferSubData
     Func {
         .name = "glCheckFramebufferStatus",
         .args = [_]Arg {
@@ -166,6 +174,10 @@ const funcs = [_]Func {
         .js =
             \\gl.clearColor(r, g, b, a);
     },
+    // TODO - glClearDepth
+    // TODO - glClearStencil
+    // TODO - glColorMask
+    // TODO - glCommit
     Func {
         .name = "glCompileShader",
         .args = [_]Arg {
@@ -179,6 +191,11 @@ const funcs = [_]Func {
             \\    throw "Error compiling shader:" + gl.getShaderInfoLog(glShaders[shader]);
             \\}
     },
+    // TODO - glCompressedTexImage2D
+    // TODO - glCompressedTexImage3D
+    // TODO - glCompressedTexSubImage2D
+    // TODO - glCopyTexImage2D
+    // TODO - glCopyTexSubImage2D
     Func {
         .name = "glCreateBuffer",
         .args = [_]Arg {},
@@ -203,6 +220,7 @@ const funcs = [_]Func {
             \\glPrograms.push(gl.createProgram());
             \\return glPrograms.length - 1;
     },
+    // TODO - glCreateRenderbuffer
     Func {
         .name = "glCreateShader",
         .args = [_]Arg {
@@ -221,6 +239,7 @@ const funcs = [_]Func {
             \\glTextures.push(gl.createTexture());
             \\return glTextures.length - 1;
     },
+    // TODO - not part of core WebGL 1
     Func {
         .name = "glCreateVertexArray",
         .args = [_]Arg {},
@@ -229,6 +248,7 @@ const funcs = [_]Func {
             \\glVertexArrays.push(gl.createVertexArray());
             \\return glVertexArrays.length - 1;
     },
+    // TODO - glCullFace
     Func {
         .name = "glDeleteBuffer",
         .args = [_]Arg {
@@ -239,6 +259,18 @@ const funcs = [_]Func {
             \\gl.deleteBuffer(glBuffers[id]);
             \\glBuffers[id] = undefined;
     },
+    // TODO - glDeleteFramebuffer
+    Func {
+        .name = "glDeleteProgram",
+        .args = [_]Arg {
+            Arg { .name = "id", .type = "c_uint" },
+        },
+        .ret = "void",
+        .js =
+            \\gl.deleteProgram(glPrograms[id]);
+            \\glPrograms[id] = undefined;
+    },
+    // TODO - glDeleteRenderbuffer
     Func {
         .name = "glDeleteShader",
         .args = [_]Arg {
@@ -250,16 +282,6 @@ const funcs = [_]Func {
             \\glShaders[id] = undefined;
     },
     Func {
-        .name = "glDeleteProgram",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
-        },
-        .ret = "void",
-        .js =
-            \\gl.deleteProgram(glPrograms[id]);
-            \\glPrograms[id] = undefined;
-    },
-    Func {
         .name = "glDeleteTexture",
         .args = [_]Arg {
             Arg { .name = "id", .type = "c_uint" },
@@ -269,6 +291,7 @@ const funcs = [_]Func {
             \\gl.deleteTexture(glTextures[id]);
             \\glTextures[id] = undefined;
     },
+    // TODO - not part of core WebGL 1
     Func {
         .name = "glDeleteVertexArray",
         .args = [_]Arg {
@@ -288,6 +311,8 @@ const funcs = [_]Func {
         .js =
             \\gl.depthFunc(x);
     },
+    // TODO - glDepthMask
+    // TODO - glDepthRange
     Func {
         .name = "glDetachShader",
         .args = [_]Arg {
@@ -307,6 +332,7 @@ const funcs = [_]Func {
         .js =
             \\gl.disable(cap);
     },
+    // TODO - glDisableVertexAttribArray
     Func {
         .name = "glDrawArrays",
         .args = [_]Arg {
@@ -318,6 +344,7 @@ const funcs = [_]Func {
         .js =
             \\gl.drawArrays(type, offset, count);
     },
+    // TODO - not part of core WebGL 1
     Func {
         .name = "glDrawBuffers",
         .args = [_]Arg {
@@ -329,6 +356,7 @@ const funcs = [_]Func {
         .js =
             \\gl.drawBuffers(new Uint32Array(memory.buffer, bufs, num));
     },
+    // TODO - glDrawElements
     Func {
         .name = "glEnable",
         .args = [_]Arg {
@@ -347,6 +375,9 @@ const funcs = [_]Func {
         .js =
             \\gl.enableVertexAttribArray(x);
     },
+    // TODO - glFinish
+    // TODO - glFlush
+    // TODO - glFramebufferRenderbuffer
     Func {
         .name = "glFramebufferTexture2D",
         .args = [_]Arg {
@@ -369,6 +400,10 @@ const funcs = [_]Func {
         .js =
             \\gl.frontFace(mode);
     },
+    // TODO - glGenerateMipmap
+    // TODO - glGetActiveAttrib
+    // TODO - glGetActiveUniform
+    // TODO - glGetAttachedShaders
     Func {
         .name = "glGetAttribLocation",
         .args = [_]Arg {
@@ -379,6 +414,8 @@ const funcs = [_]Func {
         .js =
             \\return gl.getAttribLocation(glPrograms[program_id], name);
     },
+    // TODO - glGetBufferParameter
+    // TODO - glGetContextAttributes
     Func {
         .name = "glGetError",
         .args = [_]Arg {},
@@ -386,6 +423,19 @@ const funcs = [_]Func {
         .js =
             \\return gl.getError();
     },
+    // TODO - glGetExtension
+    // TODO - glGetFramebufferAttachmentParameter
+    // TODO - glGetParameter
+    // TODO - glGetProgramInfoLog
+    // TODO - glGetProgramParameter
+    // TODO - glGetRenderbufferParameter
+    // TODO - glGetShaderInfoLog
+    // TODO - glGetShaderParameter
+    // TODO - glGetShaderPrecisionFormat
+    // TODO - glGetShaderSource
+    // TODO - glGetSupportedExtensions
+    // TODO - glGetTexParameter
+    // TODO - glGetUniform
     Func {
         .name = "glGetUniformLocation",
         .args = [_]Arg {
@@ -397,6 +447,18 @@ const funcs = [_]Func {
             \\glUniformLocations.push(gl.getUniformLocation(glPrograms[program_id], name));
             \\return glUniformLocations.length - 1;
     },
+    // TODO - glGetVertexAttrib
+    // TODO - glGetVertexAttribOffset
+    // TODO - glHint
+    // TODO - glIsBuffer
+    // TODO - glIsContextLost
+    // TODO - glIsEnabled
+    // TODO - glIsFramebuffer
+    // TODO - glIsProgram
+    // TODO - glIsRenderbuffer
+    // TODO - glIsShader
+    // TODO - glIsTexture
+    // TODO - glLineWidth
     Func {
         .name = "glLinkProgram",
         .args = [_]Arg {
@@ -420,6 +482,11 @@ const funcs = [_]Func {
         .js =
             \\gl.pixelStorei(pname, param);
     },
+    // TODO - glPolygonOffset
+    // TODO - glReadPixels
+    // TODO - glRenderbufferStorage
+    // TODO - glSampleCoverage
+    // TODO - glScissor
     Func {
         .name = "glShaderSource",
         .args = [_]Arg {
@@ -431,6 +498,12 @@ const funcs = [_]Func {
             \\console.log('shader source', string);
             \\gl.shaderSource(glShaders[shader], string);
     },
+    // TODO - glStencilFunc
+    // TODO - glStencilFuncSeparate
+    // TODO - glStencilMask
+    // TODO - glStencilMaskSeparate
+    // TODO - glStencilOp
+    // TODO - glStencilOpSeparate
     Func {
         .name = "glTexImage2D",
         // FIXME - take slice for data. note it needs to be optional
@@ -474,6 +547,7 @@ const funcs = [_]Func {
         .js =
             \\gl.texParameteri(target, pname, param);
     },
+    // TODO - glTexSubImage2D
     Func {
         .name = "glUniform1f",
         .args = [_]Arg {
@@ -484,6 +558,7 @@ const funcs = [_]Func {
         .js =
             \\gl.uniform1f(glUniformLocations[location_id], x);
     },
+    // TODO - glUniform1fv
     Func {
         .name = "glUniform1i",
         .args = [_]Arg {
@@ -494,6 +569,15 @@ const funcs = [_]Func {
         .js =
             \\gl.uniform1i(glUniformLocations[location_id], x);
     },
+    // TODO - glUniform1iv
+    // TODO - glUniform2f
+    // TODO - glUniform2fv
+    // TODO - glUniform2i
+    // TODO - glUniform2iv
+    // TODO - glUniform3f
+    // TODO - glUniform3fv
+    // TODO - glUniform3i
+    // TODO - glUniform3iv
     Func {
         .name = "glUniform4f",
         .args = [_]Arg {
@@ -507,6 +591,11 @@ const funcs = [_]Func {
         .js =
             \\gl.uniform4f(glUniformLocations[location_id], x, y, z, w);
     },
+    // TODO - glUniform4fv
+    // TODO - glUniform4i
+    // TODO - glUniform4iv
+    // TODO - glUniformMatrix2fv
+    // TODO - glUniformMatrix3fv
     Func {
         .name = "glUniformMatrix4fv",
         // FIXME - take three args, not four.. transpose should be second arg
@@ -530,6 +619,15 @@ const funcs = [_]Func {
         .js =
             \\gl.useProgram(glPrograms[program_id]);
     },
+    // TODO - glValidateProgram
+    // TODO - glVertexAttrib1f
+    // TODO - glVertexAttrib1fv
+    // TODO - glVertexAttrib2f
+    // TODO - glVertexAttrib2fv
+    // TODO - glVertexAttrib3f
+    // TODO - glVertexAttrib3fv
+    // TODO - glVertexAttrib4f
+    // TODO - glVertexAttrib4fv
     Func {
         .name = "glVertexAttribPointer",
         .args = [_]Arg {
