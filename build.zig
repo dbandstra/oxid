@@ -20,7 +20,6 @@ pub fn build(b: *Builder) void {
         const lib = b.addStaticLibrary("oxid", "src/oxid_web.zig");
         lib.setOutputDir(".");
         lib.setBuildMode(mode);
-        //lib.setTarget(.wasm32, .freestanding, .musl);
         lib.setTarget(.wasm32, .freestanding, .none);
 
         lib.addPackagePath("gbe", "gbe/src/gbe.zig");
@@ -31,6 +30,11 @@ pub fn build(b: *Builder) void {
 
         const assets_path = std.fs.path.join(b.allocator, [_][]const u8{b.build_root, "assets"});
         lib.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", assets_path));
+
+        // run this tool first. it will generate some code in the src/generated folder
+        const webgl_generate_tool = b.addExecutable("webgl_generate", "tools/webgl_generate.zig");
+        const run_webgl_generate_tool = webgl_generate_tool.run();
+        lib.step.dependOn(&run_webgl_generate_tool.step);
 
         b.default_step.dependOn(&lib.step);
         b.installArtifact(lib);

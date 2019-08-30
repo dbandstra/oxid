@@ -76,11 +76,11 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
     errdefer warn("Failed to compile {} shader.\n", shader_type);
 
     const shader_id = glCreateShader(kind);
-    const source_ptr: ?[*]const u8 = source.ptr;
-    const source_len = @intCast(GLint, source.len);
     if (builtin.arch == .wasm32) {
-        glShaderSource(shader_id, source.ptr, source.len);
+        glShaderSource(shader_id, source);
     } else {
+        const source_ptr: ?[*]const u8 = source.ptr;
+        const source_len = @intCast(GLint, source.len);
         glShaderSource(shader_id, 1, &source_ptr, &source_len);
     }
     glCompileShader(shader_id);
@@ -123,7 +123,7 @@ pub fn getAttribLocation(sp: Program, name: []const u8) !GLint {
     std.debug.assert(name[name.len - 1] == 0);
     const id =
         if (builtin.arch == .wasm32)
-            glGetAttribLocation(sp.program_id, name.ptr, name.len - 1)
+            glGetAttribLocation(sp.program_id, name[0..name.len - 1])
         else
             glGetAttribLocation(sp.program_id, name.ptr);
     if (id == -1) {
@@ -137,7 +137,7 @@ pub fn getUniformLocation(sp: Program, name: []const u8) GLint {
     std.debug.assert(name[name.len - 1] == 0);
     const id =
         if (builtin.arch == .wasm32)
-            glGetUniformLocation(sp.program_id, name.ptr, name.len - 1)
+            glGetUniformLocation(sp.program_id, name[0..name.len - 1])
         else
             glGetUniformLocation(sp.program_id, name.ptr);
     if (id == -1) {

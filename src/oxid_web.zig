@@ -174,13 +174,13 @@ fn spawnInputEvent(gs: *GameSession, cfg2: *const config.Config, key: Key, down:
     // }
 }
 
-export fn onKeyDown(keyCode: c_int, state: u8) void {
+export fn onKeyDown(keyCode: c_int) void {
     if (translateKey(keyCode)) |key| {
         spawnInputEvent(&g.session, &cfg, key, true);
     }
 }
 
-export fn onKeyUp(keyCode: c_int, state: u8) void {
+export fn onKeyUp(keyCode: c_int) void {
     if (translateKey(keyCode)) |key| {
         spawnInputEvent(&g.session, &cfg, key, false);
     }

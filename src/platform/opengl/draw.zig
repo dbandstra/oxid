@@ -117,11 +117,19 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     ds.shader_textured = try shader_textured.create(&params.hunk.low(), glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);
 
-    glGenBuffers(1, &ds.dyn_vertex_buffer);
+    if (builtin.arch == .wasm32) {
+        ds.dyn_vertex_buffer = glCreateBuffer();
+    } else {
+        glGenBuffers(1, &ds.dyn_vertex_buffer);
+    }
     updateVbo(ds.dyn_vertex_buffer, null);
     errdefer glDeleteBuffers(1, &ds.dyn_vertex_buffer);
 
-    glGenBuffers(1, &ds.dyn_texcoord_buffer);
+    if (builtin.arch == .wasm32) {
+        ds.dyn_texcoord_buffer = glCreateBuffer();
+    } else {
+        glGenBuffers(1, &ds.dyn_texcoord_buffer);
+    }
     updateVbo(ds.dyn_texcoord_buffer, null);
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
 
@@ -184,14 +192,23 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
 pub fn deinit(ds: *DrawState) void {
     warn("deinit!\n");
-    glDeleteBuffers(1, &ds.dyn_vertex_buffer);
-    glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
+    if (builtin.arch == .wasm32) {
+        glDeleteBuffer(ds.dyn_vertex_buffer);
+        glDeleteBuffer(ds.dyn_texcoord_buffer);
+    } else {
+        glDeleteBuffers(1, &ds.dyn_vertex_buffer);
+        glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
+    }
     shaders.destroy(ds.shader_textured.program);
 }
 
 pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     var texid: GLuint = undefined;
-    glGenTextures(1, &texid);
+    if (builtin.arch == .wasm32) {
+        texid = glCreateTexture();
+    } else {
+        glGenTextures(1, &texid);
+    }
     glBindTexture(GL_TEXTURE_2D, texid);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -434,10 +451,12 @@ fn flush(ds: *DrawState) void {
         .texcoord2f = ds.draw_buffer.texcoord2f[0..],
     });
 
-    if (ds.draw_buffer.outline) {
-        glPolygonMode(GL_FRONT, GL_LINE);
+    if (builtin.arch != .wasm32) {
+        if (ds.draw_buffer.outline) {
+            glPolygonMode(GL_FRONT, GL_LINE);
+        }
     }
-//Texture level 0 would be read by TEXTURE_2D unit 0, but written by framebuffer attachment COLOR_ATTACHMENT0, which would be illegal feedback.
+
     glDrawArrays(
         if (builtin.arch == .wasm32)
             GLenum(GL_TRIANGLES)
@@ -446,12 +465,13 @@ fn flush(ds: *DrawState) void {
         else
             GLenum(GL_QUADS),
         0,
-        //@intCast(c_int, ds.draw_buffer.num_vertices),
-        @intCast(c_uint, ds.draw_buffer.num_vertices),
+        @intCast(if (builtin.arch == .wasm32) c_uint else c_int, ds.draw_buffer.num_vertices),
     );
 
-    if (ds.draw_buffer.outline) {
-        glPolygonMode(GL_FRONT, GL_FILL);
+    if (builtin.arch != .wasm32) {
+        if (ds.draw_buffer.outline) {
+            glPolygonMode(GL_FRONT, GL_FILL);
+        }
     }
 
     ds.draw_buffer.num_vertices = 0;

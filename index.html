@@ -14,66 +14,26 @@
       <select id="scale-select">
         <option value="1x">1x</option>
         <option value="2x">2x</option>
-        <option value="3x">3x</option>
+        <option value="3x" selected>3x</option>
         <option value="4x">4x</option>
       </select>
     </div>
-  </div>
-  <script>
-    var $webgl = document.getElementById("canvasgl");
-  </script>
-  <script src="js/webgl.js"></script>
-  <script src="js/wasm.js"></script>
-  <script>
-    const print = (msg) => {
-      console.log(msg);
-    };
-
-    const env = {
-      ...wasm,
-      ...webgl,
-      print,
-    };
-
-    fetchAndInstantiate('oxid.wasm', {env}).then(instance => {
-      memory = instance.exports.memory;
-      instance.exports.onInit();
-
-      const onAnimationFrame = instance.exports.onAnimationFrame;
-
-      document.addEventListener('keydown', e => instance.exports.onKeyDown(e.keyCode, 1));
-      document.addEventListener('keyup', e => instance.exports.onKeyUp(e.keyCode, 0));
-      // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
-      // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
-      // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));
-      // document.addEventListener('resize', e => instance.exports.onResize(e.width, e.height));
-
-      function step(timestamp) {
-        onAnimationFrame(timestamp);
-        window.requestAnimationFrame(step);
+    <script>
+      var $webgl = document.getElementById("canvasgl");
+    </script>
+    <script src="js/webgl.js"></script>
+    <script src="js/webgl_generated.js"></script>
+    <script src="js/wasm.js"></script>
+    <script>
+      function setScale(value) {
+          $webgl.className = 'scale' + value;
       }
-
-      window.requestAnimationFrame(step);
-    });
-
-    function fetchAndInstantiate(url, importObject) {
-      return fetch(url)
-        .then(response => response.arrayBuffer())
-        .then(bytes => WebAssembly.instantiate(bytes, importObject))
-        .then(results => results.instance);
-    }
-
-    function setScale(value) {
-        $webgl.className = 'scale' + value;
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        setScale(document.getElementById('scale-select').value);
-    });
-    document.getElementById('scale-select').addEventListener('change', (event) => {
-        setScale(event.target.value);
-    });
-  </script>
-</body>
-
+      window.addEventListener('DOMContentLoaded', () => {
+          setScale(document.getElementById('scale-select').value);
+      });
+      document.getElementById('scale-select').addEventListener('change', (event) => {
+          setScale(event.target.value);
+      });
+    </script>
+  </body>
 </html>
