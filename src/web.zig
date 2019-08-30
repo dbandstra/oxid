@@ -1,17 +1,18 @@
 const builtin = @import("builtin");
 
-const wasm = @import("web/wasm.zig");
 pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
 pub usingnamespace @import("web/keycodes.zig");
 
-pub const getRandomSeed = wasm.getRandomSeed;
+pub extern fn getRandomSeed() c_uint;
+
+extern fn consoleLog_(message_ptr: [*]const u8, message_len: c_uint) void;
 pub fn consoleLog(message: []const u8) void {
-    wasm.consoleLog(message.ptr, message.len);
+    consoleLog_(message.ptr, message.len);
 }
 
 pub fn panic(message: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
     @setCold(true);
-    wasm.consoleLog(message.ptr, message.len);
+    consoleLog(message);
     while (true) {}
 }

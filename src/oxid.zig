@@ -10,16 +10,11 @@ const zang = @import("zang");
 
 const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
-const draw = @import("common/draw.zig");
-const Font = @import("common/font.zig").Font;
-const loadFont = @import("common/font.zig").loadFont;
-const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
-const input = @import("oxid/input.zig");
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
@@ -29,22 +24,22 @@ const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
 const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
+const spawnInputEvent = @import("oxid_common.zig").spawnInputEvent;
+const GameStatic = @import("oxid_common.zig").GameStatic;
+const loadStatic = @import("oxid_common.zig").loadStatic;
 
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
-// this is a global singleton
-pub const GameState = struct {
+const GameState = struct {
     draw_state: platform_draw.DrawState,
     audio_module: audio.MainModule,
-    tileset: draw.Tileset,
-    palette: [48]u8,
-    font: Font,
     session: GameSession,
     perf_spam: bool,
+    static: GameStatic,
 };
 
-pub const AudioUserData = struct {
+const AudioUserData = struct {
     g: *GameState,
     sample_rate: f32,
     volume: u32,
@@ -527,15 +522,10 @@ pub fn main() u8 {
         return 1;
     };
 
-    loadFont(&hunk.low(), &g.font) catch |err| {
-        std.debug.warn("Failed to load font: {}\n", err);
+    if (!loadStatic(&g.static, &hunk.low())) {
+        // loadStatic prints its own error
         return 1;
-    };
-
-    loadTileset(&hunk.low(), &g.tileset, g.palette[0..]) catch |err| {
-        std.debug.warn("Failed to load tileset: {}\n", err);
-        return 1;
-    };
+    }
 
     // https://github.com/ziglang/zig/issues/3046
     const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
@@ -761,32 +751,6 @@ pub fn main() u8 {
     return 0;
 }
 
-fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) void {
-    const game_command =
-        for (cfg.game_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
-            }
-        } else null;
-
-    const menu_command =
-        for (cfg.menu_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
-            }
-        } else null;
-
-    // dang.. an event even for unbound keys. oh well
-    // if (game_command != null or menu_command != null) {
-        _ = p.EventRawInput.spawn(gs, c.EventRawInput {
-            .game_command = game_command,
-            .menu_command = menu_command,
-            .key = key,
-            .down = down,
-        }) catch undefined;
-    // }
-}
-
 fn playSounds(g: *GameState) void {
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
@@ -796,6 +760,8 @@ fn playSounds(g: *GameState) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
+// FIXME why isn't this just baked into drawGame
+// or, going the other way.. can i move the framebuffer scaling stuff here
 fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
@@ -803,7 +769,7 @@ fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect
 
     perf.begin(&perf.timers.Draw);
 
-    drawGame(g, cfg);
+    drawGame(&g.draw_state, &g.static, &g.session, cfg);
 
     perf.end(&perf.timers.Draw, g.perf_spam);
 

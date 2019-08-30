@@ -5,13 +5,10 @@ const env = {
     getRandomSeed() {
         return Math.floor(Math.random() * 2147483647);
     },
-    consoleLog(ptr, len) {
+    consoleLog_(ptr, len) {
         const bytes = new Uint8Array(memory.buffer, ptr, len);
-        let s = "";
-        for (let i = 0; i < len; ++i) {
-            s += String.fromCharCode(bytes[i]);
-        }
-        console.log('consoleLog', s);
+        const str = new TextDecoder().decode(bytes);
+        console.log('consoleLog', str);
     },
 }
 
@@ -20,7 +17,10 @@ fetch('oxid.wasm')
 .then(bytes => WebAssembly.instantiate(bytes, {env}))
 .then(({instance}) => {
     memory = instance.exports.memory;
-    instance.exports.onInit();
+
+    if (!instance.exports.onInit()) {
+        return;
+    }
 
     document.addEventListener('keydown', (e) => {
         if (instance.exports.onKeyDown(e.keyCode)) {
@@ -32,14 +32,9 @@ fetch('oxid.wasm')
             e.preventDefault();
         }
     });
-    // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
-    // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
-    // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));
-    // document.addEventListener('resize', e => instance.exports.onResize(e.width, e.height));
 
-    const onAnimationFrame = instance.exports.onAnimationFrame;
     const step = (timestamp) => {
-        onAnimationFrame(timestamp);
+        instance.exports.onAnimationFrame(timestamp);
         window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);

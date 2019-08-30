@@ -7,11 +7,7 @@ const fontDrawString = @import("../common/font.zig").fontDrawString;
 const vwin_w = @import("../oxid_constants.zig").virtual_window_width;
 const vwin_h = @import("../oxid_constants.zig").virtual_window_height;
 const hud_height = @import("../oxid_constants.zig").hud_height;
-const GameState =
-    if (builtin.arch == .wasm32)
-        @import("../oxid_web.zig").GameState
-    else
-        @import("../oxid.zig").GameState;
+const GameStatic = @import("../oxid_common.zig").GameStatic;
 const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
@@ -29,43 +25,43 @@ const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
-pub fn drawGame(g: *GameState, cfg: config.Config) void {
-    const mc = g.session.findFirst(c.MainController) orelse return;
+pub fn drawGame(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, cfg: config.Config) void {
+    const mc = gs.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
         const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
-        const sorted_drawables = getSortedDrawables(g, sort_buffer[0..]);
+        const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
 
-        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-        drawMap(g);
-        drawEntities(g, sorted_drawables);
-        drawMapForeground(g);
-        pdraw.end(&g.draw_state);
+        pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+        drawMap(ds, static);
+        drawEntities(ds, static, sorted_drawables);
+        drawMapForeground(ds, static);
+        pdraw.end(ds);
 
-        drawBoxes(g);
-        drawHud(g, true);
+        drawBoxes(ds, gs);
+        drawHud(ds, static, gs, true);
     } else {
-        pdraw.begin(&g.draw_state, g.tileset.texture.handle, null, 1.0, false);
-        drawMap(g);
-        pdraw.end(&g.draw_state);
+        pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+        drawMap(ds, static);
+        pdraw.end(ds);
 
-        drawHud(g, false);
+        drawHud(ds, static, gs, false);
     }
 
     if (mc.menu_stack_len > 0) {
-        drawMenu(g, cfg, mc, mc.menu_stack_array[mc.menu_stack_len - 1]);
+        drawMenu(ds, static, cfg, mc, mc.menu_stack_array[mc.menu_stack_len - 1]);
     }
 }
 
 ///////////////////////////////////////
 
-fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
+fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
     //perf.begin(&perf.timers.DrawSort);
     //defer perf.end(&perf.timers.DrawSort, g.perf_spam);
 
     var num_drawables: usize = 0;
-    var it = g.session.iter(c.EventDraw); while (it.next()) |object| {
+    var it = gs.iter(c.EventDraw); while (it.next()) |object| {
         if (object.is_active) {
             sort_buffer[num_drawables] = &object.data;
             num_drawables += 1;
@@ -76,7 +72,7 @@ fn getSortedDrawables(g: *GameState, sort_buffer: []*const c.EventDraw) []*const
     return sorted_drawables;
 }
 
-fn drawMapTile(g: *GameState, x: u31, y: u31) void {
+fn drawMapTile(ds: *pdraw.DrawState, static: *const GameStatic, x: u31, y: u31) void {
     const gridpos = math.Vec2.init(x, y);
     if (switch (levels.level1.getGridValue(gridpos).?) {
         0x00 => Graphic.Floor,
@@ -95,8 +91,8 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
         const dw = levels.pixels_per_tile;
         const dh = levels.pixels_per_tile;
         pdraw.tile(
-            &g.draw_state,
-            g.tileset,
+            ds,
+            static.tileset,
             getGraphicTile(graphic),
             dx, dy, dw, dh,
             .Identity,
@@ -104,13 +100,13 @@ fn drawMapTile(g: *GameState, x: u31, y: u31) void {
     }
 }
 
-fn drawMap(g: *GameState) void {
+fn drawMap(ds: *pdraw.DrawState, static: *const GameStatic) void {
     //perf.begin(&perf.timers.DrawMap);
     //defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
     var y: u31 = 0; while (y < levels.height) : (y += 1) {
         var x: u31 = 0; while (x < levels.width) : (x += 1) {
-            drawMapTile(g, x, y);
+            drawMapTile(ds, static, x, y);
         }
     }
 }
@@ -118,18 +114,18 @@ fn drawMap(g: *GameState) void {
 // make the central 2x2 map tiles a foreground layer, so that the player spawn
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
-fn drawMapForeground(g: *GameState) void {
+fn drawMapForeground(ds: *pdraw.DrawState, static: *const GameStatic) void {
     //perf.begin(&perf.timers.DrawMapForeground);
     //defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
 
     var y: u31 = 6; while (y < 8) : (y += 1) {
         var x: u31 = 9; while (x < 11) : (x += 1) {
-            drawMapTile(g, x, y);
+            drawMapTile(ds, static, x, y);
         }
     }
 }
 
-fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
+fn drawEntities(ds: *pdraw.DrawState, static: *const GameStatic, sorted_drawables: []*const c.EventDraw) void {
     //perf.begin(&perf.timers.DrawEntities);
     //defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
@@ -139,8 +135,8 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
         const w = levels.pixels_per_tile;
         const h = levels.pixels_per_tile;
         pdraw.tile(
-            &g.draw_state,
-            g.tileset,
+            ds,
+            static.tileset,
             getGraphicTile(drawable.graphic),
             x, y, w, h,
             drawable.transform,
@@ -148,8 +144,8 @@ fn drawEntities(g: *GameState, sorted_drawables: []*const c.EventDraw) void {
     }
 }
 
-fn drawBoxes(g: *GameState) void {
-    var it = g.session.iter(c.EventDrawBox); while (it.next()) |object| {
+fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
+    var it = gs.iter(c.EventDrawBox); while (it.next()) |object| {
         if (object.is_active) {
             const abs_bbox = object.data.box;
             const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
@@ -158,108 +154,108 @@ fn drawBoxes(g: *GameState) void {
             const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + hud_height;
             const w = x1 - x0;
             const h = y1 - y0;
-            pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, object.data.color, 1.0, true);
+            pdraw.begin(ds, ds.blank_tex.handle, object.data.color, 1.0, true);
             pdraw.tile(
-                &g.draw_state,
-                g.draw_state.blank_tileset,
+                ds,
+                ds.blank_tileset,
                 draw.Tile { .tx = 0, .ty = 0 },
                 x0, y0, w, h,
                 .Identity,
             );
-            pdraw.end(&g.draw_state);
+            pdraw.end(ds);
         }
     }
 }
 
-fn getColor(g: *GameState, index: usize) draw.Color {
+fn getColor(static: *const GameStatic, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
     return draw.Color {
-        .r = g.palette[index * 3 + 0],
-        .g = g.palette[index * 3 + 1],
-        .b = g.palette[index * 3 + 2],
+        .r = static.palette[index * 3 + 0],
+        .g = static.palette[index * 3 + 1],
+        .b = static.palette[index * 3 + 2],
     };
 }
 
-fn drawHud(g: *GameState, game_active: bool) void {
+fn drawHud(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, game_active: bool) void {
     //perf.begin(&perf.timers.DrawHud);
     //defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
 
-    const mc = g.session.findFirst(c.MainController).?;
-    const gc_maybe = g.session.findFirst(c.GameController);
-    const pc_maybe = g.session.findFirst(c.PlayerController);
+    const mc = gs.findFirst(c.MainController).?;
+    const gc_maybe = gs.findFirst(c.GameController);
+    const pc_maybe = gs.findFirst(c.PlayerController);
 
-    pdraw.begin(&g.draw_state, g.draw_state.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
-        &g.draw_state,
-        g.draw_state.blank_tileset,
+        ds,
+        ds.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
         0, 0, @intToFloat(f32, vwin_w), @intToFloat(f32, hud_height),
         .Identity,
     );
-    pdraw.end(&g.draw_state);
+    pdraw.end(ds);
 
-    const font_color = getColor(g, primary_font_color_index);
-    pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+    const font_color = getColor(static, primary_font_color_index);
+    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
         if (pc_maybe) |pc| {
             const maybe_player_creature =
                 if (pc.player_id) |player_id|
-                    g.session.find(player_id, c.Creature)
+                    gs.find(player_id, c.Creature)
                 else
                     null;
 
             _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
-            fontDrawString(&g.draw_state, &g.font, 0, 0, dest.getWritten());
+            fontDrawString(ds, &static.font, 0, 0, dest.getWritten());
             dest.reset();
-            fontDrawString(&g.draw_state, &g.font, 8*8, 0, "Lives:");
+            fontDrawString(ds, &static.font, 8*8, 0, "Lives:");
 
-            pdraw.end(&g.draw_state);
-            const heart_font_color = getColor(g, heart_font_color_index);
-            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, heart_font_color, 1.0, false);
+            pdraw.end(ds);
+            const heart_font_color = getColor(static, heart_font_color_index);
+            pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
             var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-                fontDrawString(&g.draw_state, &g.font, (14+i)*8, 0, "\x1E"); // heart
+                fontDrawString(ds, &static.font, (14+i)*8, 0, "\x1E"); // heart
             }
-            pdraw.end(&g.draw_state);
+            pdraw.end(ds);
 
             if (pc.lives == 0) {
-                const skull_font_color = getColor(g, skull_font_color_index);
-                pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                fontDrawString(&g.draw_state, &g.font, 14*8, 0, "\x1F"); // skull
-                pdraw.end(&g.draw_state);
+                const skull_font_color = getColor(static, skull_font_color_index);
+                pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
+                fontDrawString(ds, &static.font, 14*8, 0, "\x1F"); // skull
+                pdraw.end(ds);
             }
 
-            pdraw.begin(&g.draw_state, g.font.tileset.texture.handle, font_color, 1.0, false);
+            pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
             if (maybe_player_creature) |player_creature| {
                 if (player_creature.god_mode) {
-                    fontDrawString(&g.draw_state, &g.font, 8*8, 8, "god mode");
+                    fontDrawString(ds, &static.font, 8*8, 8, "god mode");
                 }
             }
             _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
-            fontDrawString(&g.draw_state, &g.font, 19*8, 0, dest.getWritten());
+            fontDrawString(ds, &static.font, 19*8, 0, dest.getWritten());
             dest.reset();
         }
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = vwin_w / 2 - message.len * 8 / 2;
-                fontDrawString(&g.draw_state, &g.font, @intCast(i32, x), 28*8, message);
+                fontDrawString(ds, &static.font, @intCast(i32, x), 28*8, message);
             }
         }
     }
 
     _ = dest.stream.print("High:{}", mc.high_scores[0]) catch unreachable; // FIXME
-    fontDrawString(&g.draw_state, &g.font, 30*8, 0, dest.getWritten());
+    fontDrawString(ds, &static.font, 30*8, 0, dest.getWritten());
     dest.reset();
 
-    pdraw.end(&g.draw_state);
+    pdraw.end(ds);
 
     if (if (gc_maybe) |gc| gc.game_over else false) {
-        drawGameOverOverlay(g, mc.new_high_score);
+        drawGameOverOverlay(ds, static, mc.new_high_score);
     }
 }

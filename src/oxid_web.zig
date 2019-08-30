@@ -5,17 +5,12 @@ const warn = @import("warn.zig").warn;
 const web = @import("web.zig");
 const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
-const draw = @import("common/draw.zig");
-const Font = @import("common/font.zig").Font;
-const loadFont = @import("common/font.zig").loadFont;
-const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const levels = @import("oxid/levels.zig");
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession; 
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
-const input = @import("oxid/input.zig");
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 //const perf = @import("oxid/perf.zig");
@@ -23,15 +18,16 @@ const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
 const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
 const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
+const GameStatic = @import("oxid_common.zig").GameStatic;
+const loadStatic = @import("oxid_common.zig").loadStatic;
+const spawnInputEvent = @import("oxid_common.zig").spawnInputEvent;
 
 var cfg = config.default_config;
 
-pub const GameState = struct {
+const GameState = struct {
     draw_state: platform_draw.DrawState,
     //audio_module: audio.MainModule,
-    tileset: draw.Tileset,
-    palette: [48]u8,
-    font: Font,
+    static: GameStatic,
     session: GameSession,
     //perf_spam: bool,
 };
@@ -141,33 +137,6 @@ fn translateKey(keyCode: c_int) ?Key {
     };
 }
 
-// TODO - this seems not to belong in this file. it's the same in oxid.zig
-fn spawnInputEvent(gs: *GameSession, cfg2: *const config.Config, key: Key, down: bool) void {
-    const game_command =
-        for (cfg2.game_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
-            }
-        } else null;
-
-    const menu_command =
-        for (cfg2.menu_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
-            }
-        } else null;
-
-    // dang.. an event even for unbound keys. oh well
-    // if (game_command != null or menu_command != null) {
-        _ = p.EventRawInput.spawn(gs, c.EventRawInput {
-            .game_command = game_command,
-            .menu_command = menu_command,
-            .key = key,
-            .down = down,
-        }) catch undefined;
-    // }
-}
-
 export fn onKeyDown(keyCode: c_int) u8 {
     if (translateKey(keyCode)) |key| {
         spawnInputEvent(&g.session, &cfg, key, true);
@@ -184,14 +153,17 @@ export fn onKeyUp(keyCode: c_int) u8 {
     return 0;
 }
 
-// FIXME - figure out how to dynamically allocate this using some wasm interface
-var main_memory: [@sizeOf(GameState) + 200*1024]u8 = undefined;
+var main_memory: []u8 = undefined;
 var g: *GameState = undefined;
 
-export fn onInit() void {
-    web.consoleLog("onInit");
+fn init() !void {
+    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
+        warn("failed to allocate main_memory: {}\n", err);
+        return error.Failed;
+    };
+    errdefer std.heap.wasm_allocator.free(main_memory);
 
-    var hunk = Hunk.init(main_memory[0..]);
+    var hunk = Hunk.init(main_memory);
 
     g = hunk.low().allocator.create(GameState) catch unreachable;
 
@@ -201,19 +173,14 @@ export fn onInit() void {
         .virtual_window_height = virtual_window_height,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", err);
-        return;
+        return error.Failed;
     };
+    errdefer platform_draw.deinit(&g.draw_state);
 
-    //defer platform_draw.deinit(&g.draw_state);
-    loadFont(&hunk.low(), &g.font) catch |err| {
-        warn("Failed to load font: {}\n", err);
-        return;
-    };
-
-    loadTileset(&hunk.low(), &g.tileset, g.palette[0..]) catch |err| {
-        warn("Failed to load tileset: {}\n", err);
-        return;
-    };
+    if (!loadStatic(&g.static, &hunk.low())) {
+        // loadStatic prints its own error
+        return error.Failed;
+    }
 
     const initial_high_scores = [1]u32{0} ** Constants.num_high_scores;
     const rand_seed = web.getRandomSeed();
@@ -224,10 +191,20 @@ export fn onInit() void {
         .high_scores = initial_high_scores,
     }) catch |err| {
         warn("Failed to initialize game: {}\n", err);
-        return;
+        return error.Failed;
     };
 
     //perf.init();
+}
+
+export fn onInit() bool {
+    init() catch return false;
+    return true;
+}
+
+export fn onDestroy() void {
+    platform_draw.deinit(&g.draw_state);
+    std.heap.wasm_allocator.free(main_memory);
 }
 
 export fn onAnimationFrame(now_time: c_int) void {
@@ -277,12 +254,7 @@ export fn onAnimationFrame(now_time: c_int) void {
     }
 
     platform_draw.preDraw(&g.draw_state);
-    drawGame(g, cfg);
+    drawGame(&g.draw_state, &g.static, &g.session, cfg);
     platform_draw.postDraw(&g.draw_state, blit_rect, blit_alpha);
     gameFrameCleanup(&g.session);
-}
-
-export fn onDestroy() void {
-    web.consoleLog("onDestroy");
-    platform_draw.deinit(&g.draw_state);
 }
