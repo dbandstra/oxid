@@ -22,8 +22,16 @@ fetch('oxid.wasm')
     memory = instance.exports.memory;
     instance.exports.onInit();
 
-    document.addEventListener('keydown', e => instance.exports.onKeyDown(e.keyCode));
-    document.addEventListener('keyup', e => instance.exports.onKeyUp(e.keyCode));
+    document.addEventListener('keydown', (e) => {
+        if (instance.exports.onKeyDown(e.keyCode)) {
+            e.preventDefault();
+        }
+    });
+    document.addEventListener('keyup', (e) => {
+        if (instance.exports.onKeyUp(e.keyCode)) {
+            e.preventDefault();
+        }
+    });
     // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
     // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
     // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));

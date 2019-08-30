@@ -168,16 +168,20 @@ fn spawnInputEvent(gs: *GameSession, cfg2: *const config.Config, key: Key, down:
     // }
 }
 
-export fn onKeyDown(keyCode: c_int) void {
+export fn onKeyDown(keyCode: c_int) u8 {
     if (translateKey(keyCode)) |key| {
         spawnInputEvent(&g.session, &cfg, key, true);
+        return 1;
     }
+    return 0;
 }
 
-export fn onKeyUp(keyCode: c_int) void {
+export fn onKeyUp(keyCode: c_int) u8 {
     if (translateKey(keyCode)) |key| {
         spawnInputEvent(&g.session, &cfg, key, false);
+        return 1;
     }
+    return 0;
 }
 
 // FIXME - figure out how to dynamically allocate this using some wasm interface
