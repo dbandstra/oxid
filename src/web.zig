@@ -5,6 +5,7 @@ pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
 pub usingnamespace @import("web/keycodes.zig");
 
+pub const getRandomSeed = wasm.getRandomSeed;
 pub fn consoleLog(message: []const u8) void {
     wasm.consoleLog(message.ptr, message.len);
 }

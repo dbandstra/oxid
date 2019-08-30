@@ -495,7 +495,6 @@ const funcs = [_]Func {
         },
         .ret = "void",
         .js =
-            \\console.log('shader source', string);
             \\gl.shaderSource(glShaders[shader], string);
     },
     // TODO - glStencilFunc

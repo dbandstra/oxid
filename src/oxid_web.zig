@@ -21,6 +21,8 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 //const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
+const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
+const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
 
 var cfg = config.default_config;
 
@@ -139,6 +141,7 @@ fn translateKey(keyCode: c_int) ?Key {
     };
 }
 
+// TODO - this seems not to belong in this file. it's the same in oxid.zig
 fn spawnInputEvent(gs: *GameSession, cfg2: *const config.Config, key: Key, down: bool) void {
     const game_command =
         for (cfg2.game_key_bindings) |maybe_key, i| {
@@ -190,8 +193,8 @@ export fn onInit() void {
 
     platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
-        .virtual_window_width = 320,//virtual_window_width,
-        .virtual_window_height = 240,//virtual_window_height,
+        .virtual_window_width = virtual_window_width,
+        .virtual_window_height = virtual_window_height,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", err);
         return;
@@ -209,8 +212,7 @@ export fn onInit() void {
     };
 
     const initial_high_scores = [1]u32{0} ** Constants.num_high_scores;
-    //const rand_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF);
-    const rand_seed = 0;
+    const rand_seed = web.getRandomSeed();
     g.session.init(rand_seed);
     gameInit(&g.session, p.MainController.Params {
         .is_fullscreen = false, // fullscreen,
@@ -228,8 +230,8 @@ export fn onAnimationFrame(now_time: c_int) void {
     const blit_rect = platform_draw.BlitRect {
         .x = 0,
         .y = 0,
-        .w = 320,
-        .h = 240,
+        .w = virtual_window_width,
+        .h = virtual_window_height,
     };
     const blit_alpha: f32 = 1.0;
 

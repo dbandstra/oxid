@@ -247,7 +247,7 @@ fn drawHud(g: *GameState, game_active: bool) void {
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = 320 / 2 - message.len * 8 / 2;
+                const x = vwin_w / 2 - message.len * 8 / 2;
                 fontDrawString(&g.draw_state, &g.font, @intCast(i32, x), 28*8, message);
             }
         }
