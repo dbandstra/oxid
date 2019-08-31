@@ -147,18 +147,15 @@ var main_memory: []u8 = undefined;
 var g: *GameState = undefined;
 
 const audio_buffer_size = 1024;
-var audio_buffer: []f32 = undefined;
 
 fn init() !void {
-    main_memory = std.heap.wasm_allocator.alloc(u8, audio_buffer_size*@sizeOf(f32) + @sizeOf(GameState) + 200*1024) catch |err| {
+    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", err);
         return error.Failed;
     };
     errdefer std.heap.wasm_allocator.free(main_memory);
 
     var hunk = Hunk.init(main_memory);
-
-    audio_buffer = hunk.low().allocator.alloc(f32, audio_buffer_size) catch unreachable;
 
     g = hunk.low().allocator.create(GameState) catch unreachable;
 
@@ -227,10 +224,10 @@ export fn audioCallback(sample_rate: f32) [*]f32 {
     const vol = std.math.min(1.0, @intToFloat(f32, cfg.volume) / 100.0);
 
     var i: usize = 0; while (i < audio_buffer_size) : (i += 1) {
-        audio_buffer[i] = buf[i] * vol;
+        buf[i] *= vol;
     }
 
-    return audio_buffer.ptr;
+    return buf.ptr;
 }
 
 export fn onAnimationFrame(now_time: c_int) void {

@@ -98,7 +98,7 @@ pub const MainModule = struct {
     // refactored so that all the IQs (impulse queues) are pulled out before
     // painting, so that the thread doesn't need to be locked during the actual
     // painting
-    pub fn paint(self: *MainModule, sample_rate: f32, gs: *GameSession) []const f32 {
+    pub fn paint(self: *MainModule, sample_rate: f32, gs: *GameSession) []f32 {
         const span = zang.Span {
             .start = 0,
             .end = self.out_buf.len,
