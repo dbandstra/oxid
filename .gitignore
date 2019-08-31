@@ -1,5 +1,5 @@
 zig-cache/
 *.swp
-oxid.wasm
-js/webgl_generated.js
-src/web/webgl_generated.zig
+/oxid.wasm
+/js/webgl_generated.js
+/src/web/webgl_generated.zig
