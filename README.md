@@ -3,6 +3,8 @@ Oxid is an arcade-style game where you fight waves of monsters in a fixed-screen
 
 Oxid is written in the [Zig](https://ziglang.org) programming language. I try to keep up with the master branch of Zig. Known to build with Zig commit `ec2f9ef4e8be5995ab652dde59b12ee340a9e28d`.
 
+![Screenshot](screenshot.png)
+
 ## Installation
 Oxid can be built into a native executable or a Web Assembly binary. (Note: the Web Assembly version is still missing a few features, such as sound.)
 
@@ -41,16 +43,6 @@ Debug/cheat controls (these currently aren't implemented in the Web Assembly ver
 * F3: toggle invulnerability
 * F4: toggle profiling spam
 * F5: cycle through preserved graphics glitches
-
-## Screenshot
-![Screenshot](screenshot.png)
-
-## Gameplay
-The game goes on forever until you die. The waves are randomly generated (this was implemented in April 2019). There are three items which appear from time to time: power up, speed up, and 1-up.
-
-* Things start to become unmanagably chaotic around level 30-35.
-* Deaths often come in rapid succession. You may think you're doing well, only to lose it all in 30 seconds.
-* My high score is about 12500, which took a bit less than 15 minutes.
 
 ## Code
 Oxid uses a minimalistic Entity Component System, which is certainly overkill for a game like this, but for me it was a experiment in itself.
