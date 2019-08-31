@@ -46,25 +46,6 @@ Debug/cheat controls (these currently aren't implemented in the Web Assembly ver
 * F4: toggle profiling spam
 * F5: cycle through preserved graphics glitches
 
-## Code
-Oxid uses a minimalistic Entity Component System, which is certainly overkill for a game like this, but for me it was a experiment in itself.
-
-Here are the main gameplay-related files:
-* [src/oxid/components.zig](src/components.zig) - struct definitions of each component type
-* [src/oxid/frame.zig](src/frame.zig) - calls into systems
-* [src/oxid/game.zig](src/game.zig) - component type registration
-* [src/oxid/prototypes.zig](src/prototypes.zig) - entity spawning functions
-* [src/oxid/systems/*.zig](src/systems/) - all of the systems (i.e. think functions)
-
-The ECS framework itself is located in `gbe/`. It is small but quite rough and somewhat opaque as it involves a fair bit of metaprogramming.
-
-Actually using the ECS requires very little boilerplate.
-* To add a component type, add a struct to `components.zig` and register it in `game.zig`.
-* To add an entity prototype, add a function to `prototypes.zig`.
-* To add a system, add a file to `systems/` and import/call it in `frame.zig`.
-
-Adding new graphics, sound effects, or input bindings is not as polished but still relatively easy. Documentation to come later.
-
 ## Notes
 Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig. Web Assembly code was based on raulgrell's [fork](https://github.com/raulgrell/tetris) of the same project.
 
