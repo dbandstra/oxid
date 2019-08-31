@@ -3,6 +3,8 @@ Oxid is an arcade-style game where you fight waves of monsters in a fixed-screen
 
 Oxid is written in the [Zig](https://ziglang.org) programming language. I try to keep up with the master branch of Zig. Known to build with Zig commit `ec2f9ef4e8be5995ab652dde59b12ee340a9e28d`.
 
+[Play online here!](https://dbandstra.github.io/oxid/)
+
 ![Screenshot](screenshot.png)
 
 ## Installation
