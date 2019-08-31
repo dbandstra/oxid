@@ -33,7 +33,6 @@ const GameState = struct {
     framebuffer_state: platform_framebuffer.FramebufferState,
     audio_module: audio.MainModule,
     session: GameSession,
-    perf_spam: bool,
     static: common.GameStatic,
 };
 
@@ -538,8 +537,6 @@ pub fn main() u8 {
     };
     g.audio_module = blah;
 
-    g.perf_spam = false;
-
     var cfg = config.load(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load config: {}\n", err);
         return 1;
@@ -564,7 +561,11 @@ pub fn main() u8 {
         return 1;
     };
 
-    perf.init();
+    // TODO - this shouldn't be fatal
+    perf.init() catch |err| {
+        std.debug.warn("Failed to create performance timers: {}\n", err);
+        return 1;
+    };
 
     var quit = false;
     while (!quit) {
@@ -582,7 +583,7 @@ pub fn main() u8 {
                                     fast_forward = true;
                                 },
                                 .F4 => {
-                                    g.perf_spam = !g.perf_spam;
+                                    perf.toggleSpam();
                                 },
                                 .F5 => {
                                     platform_draw.cycleGlitchMode(&g.draw_state);
@@ -681,7 +682,7 @@ pub fn main() u8 {
         var i: u32 = 0; while (i < num_frames) : (i += 1) {
             perf.begin(&perf.timers.Frame);
             gameFrame(&g.session);
-            perf.end(&perf.timers.Frame, g.perf_spam);
+            perf.end(&perf.timers.Frame);
 
             var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
                 switch (object.data) {
@@ -774,9 +775,9 @@ fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_framebuffer.B
 
     drawGame(&g.draw_state, &g.static, &g.session, cfg);
 
-    perf.end(&perf.timers.Draw, g.perf_spam);
+    perf.end(&perf.timers.Draw);
 
     platform_framebuffer.postDraw(&g.framebuffer_state, &g.draw_state, blit_rect, blit_alpha);
 
-    perf.end(&perf.timers.WholeDraw, g.perf_spam);
+    perf.end(&perf.timers.WholeDraw);
 }

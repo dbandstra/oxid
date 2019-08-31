@@ -13,7 +13,7 @@ const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
-//const perf = @import("oxid/perf.zig");
+const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
@@ -190,7 +190,11 @@ fn init() !void {
         return error.Failed;
     };
 
-    //perf.init();
+    // TODO - this shouldn't be fatal
+    perf.init() catch |err| {
+        warn("Failed to create performance timers: {}\n", err);
+        return error.Failed;
+    };
 }
 
 export fn onInit() bool {

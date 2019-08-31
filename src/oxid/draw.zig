@@ -13,7 +13,7 @@ const levels = @import("levels.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
-//const perf = @import("perf.zig");
+const perf = @import("perf.zig");
 const util = @import("util.zig");
 const drawMenu = @import("draw_menu.zig").drawMenu;
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
@@ -54,8 +54,8 @@ pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *Gam
 ///////////////////////////////////////
 
 fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
-    //perf.begin(&perf.timers.DrawSort);
-    //defer perf.end(&perf.timers.DrawSort, g.perf_spam);
+    perf.begin(&perf.timers.DrawSort);
+    defer perf.end(&perf.timers.DrawSort);
 
     var num_drawables: usize = 0;
     var it = gs.iter(c.EventDraw); while (it.next()) |object| {

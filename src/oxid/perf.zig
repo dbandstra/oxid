@@ -1,12 +1,40 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const warn = @import("../warn.zig").warn;
 
-pub const Timer = struct {
-    label: []const u8,
-    timer: std.time.Timer,
-    samples: [60]u64,
-    cursor: usize,
-};
+const disabled = builtin.arch == .wasm32;
+
+const num_samples: usize = 60;
+
+pub const Timer =
+    if (disabled)
+        void
+    else
+        struct {
+            label: []const u8,
+            timer: std.time.Timer,
+            samples: [num_samples]u64,
+            cursor: usize,
+            filled: bool,
+        };
+
+var spam = false;
+
+fn initTimer(label: []const u8) !Timer {
+    if (disabled) {
+        // avoid "function with inferred error set must return at least one possible error"
+        var i: u1 = 0; if (i == 1) return error.FakeError;
+        return Timer {};
+    } else {
+        return Timer {
+            .label = label,
+            .timer = try std.time.Timer.start(),
+            .samples = [1]u64{0} ** num_samples,
+            .cursor = 0,
+            .filled = false,
+        };
+    }
+}
 
 pub const Timers = struct {
     Frame: Timer,
@@ -21,86 +49,58 @@ pub const Timers = struct {
 
 pub var timers: Timers = undefined;
 
-pub fn init() void {
-    // https://github.com/ziglang/zig/issues/3046
-    var blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.Frame = Timer {
-        .label = "Frame",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.Draw = Timer {
-        .label = "Draw",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.DrawSort = Timer {
-        .label = "DrawSort",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.DrawMap = Timer {
-        .label = "DrawMap",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.DrawMapForeground = Timer {
-        .label = "DrawMapForeground",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.DrawEntities = Timer {
-        .label = "DrawEntities",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.DrawHud = Timer {
-        .label = "DrawHud",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
-    blah = std.time.Timer.start() catch |_| @panic("failed to create timer"); // FIXME
-    timers.WholeDraw = Timer {
-        .label = "WholeDraw",
-        .timer = blah,
-        .samples = [1]u64{0} ** 60,
-        .cursor = 0,
-    };
+pub fn init() !void {
+    inline for (@typeInfo(Timers).Struct.fields) |field| {
+        @field(timers, field.name) = try initTimer(field.name);
+    }
+}
+
+pub fn toggleSpam() void {
+    spam = !spam;
+
+    if (spam) {
+        inline for (@typeInfo(Timers).Struct.fields) |field| {
+            std.mem.set(u64, @field(timers, field.name).samples[0..], 0);
+            @field(timers, field.name).cursor = 0;
+            @field(timers, field.name).filled = false;
+        }
+        warn("Perf spam enabled. Collecting initial {} samples...\n", num_samples);
+    } else {
+        warn("Perf spam disabled.\n");
+    }
 }
 
 pub fn begin(self: *Timer) void {
-    self.timer.reset();
+    if (!disabled) {
+        if (spam) {
+            self.timer.reset();
+        }
+    }
 }
 
-pub fn end(self: *Timer, spam: bool) void {
-    const time = self.timer.read();
-    self.samples[self.cursor] = time;
-    self.cursor = (self.cursor + 1) % 60;
-    if (spam) {
-        const avg = getAvg(self);
-        const fps = u64(1000000000) / avg;
-        warn("{} - avg: {}, fps: {}\n", self.label, avg, fps);
+pub fn end(self: *Timer) void {
+    if (!disabled) {
+        if (spam) {
+            const time = self.timer.read();
+            self.samples[self.cursor] = time;
+            self.cursor = (self.cursor + 1) % num_samples;
+            if (self.cursor == 0 and !self.filled) {
+                self.filled = true;
+            }
+            if (self.filled) {
+                const avg = getAvg(self);
+                const fps = u64(1000000000) / avg;
+                warn("{} - avg: {}, fps: {}\n", self.label, avg, fps);
+            }
+        }
     }
 }
 
 fn getAvg(timing_history: *const Timer) u64 {
     var cum: u64 = 0;
     var i: usize = 0;
-    while (i < 60) : (i += 1) {
+    while (i < num_samples) : (i += 1) {
         cum += timing_history.samples[i];
     }
-    return (cum + 30) / 60;
+    return (cum + num_samples / 2) / num_samples;
 }
