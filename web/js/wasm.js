@@ -40,6 +40,18 @@ fetch('oxid.wasm').then(response => {
         window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
+
+    const audio_buffer_size = instance.exports.getAudioBufferSize();
+    const ctx = new AudioContext();
+    const scriptProcessorNode = ctx.createScriptProcessor(audio_buffer_size, 0, 1); // mono output
+    scriptProcessorNode.onaudioprocess = function(event) {
+        const samples = event.outputBuffer.getChannelData(0);
+        const audio_buffer_ptr = instance.exports.audioCallback(ctx.sampleRate);
+        // TODO - any way i can get rid of this `new`? is there a way to pass memory to the zig side?
+        samples.set(new Float32Array(memory.buffer, audio_buffer_ptr, audio_buffer_size));
+    };
+    // Route it to the main output.
+    scriptProcessorNode.connect(ctx.destination);
 }).catch(err => {
     alert(err);
 });

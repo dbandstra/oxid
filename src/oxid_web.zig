@@ -13,6 +13,7 @@ const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
+const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
@@ -22,10 +23,9 @@ var cfg = config.default_config;
 
 const GameState = struct {
     draw_state: platform_draw.DrawState,
-    //audio_module: audio.MainModule,
+    audio_module: audio.MainModule,
     static: common.GameStatic,
     session: GameSession,
-    //perf_spam: bool,
 };
 
 fn translateKey(keyCode: c_int) ?Key {
@@ -152,14 +152,19 @@ export fn onKeyUp(keyCode: c_int) u8 {
 var main_memory: []u8 = undefined;
 var g: *GameState = undefined;
 
+const audio_buffer_size = 1024;
+var audio_buffer: []f32 = undefined;
+
 fn init() !void {
-    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
+    main_memory = std.heap.wasm_allocator.alloc(u8, audio_buffer_size*@sizeOf(f32) + @sizeOf(GameState) + 200*1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", err);
         return error.Failed;
     };
     errdefer std.heap.wasm_allocator.free(main_memory);
 
     var hunk = Hunk.init(main_memory);
+
+    audio_buffer = hunk.low().allocator.alloc(f32, audio_buffer_size) catch unreachable;
 
     g = hunk.low().allocator.create(GameState) catch unreachable;
 
@@ -177,6 +182,13 @@ fn init() !void {
         // loadStatic prints its own error
         return error.Failed;
     }
+
+    // https://github.com/ziglang/zig/issues/3046
+    const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
+        warn("Failed to load audio module: {}\n", err);
+        return error.Failed;
+    };
+    g.audio_module = blah;
 
     const initial_high_scores = [1]u32{0} ** Constants.num_high_scores;
     const rand_seed = web.getRandomSeed();
@@ -205,6 +217,22 @@ export fn onInit() bool {
 export fn onDestroy() void {
     platform_draw.deinit(&g.draw_state);
     std.heap.wasm_allocator.free(main_memory);
+}
+
+export fn getAudioBufferSize() c_int {
+    return audio_buffer_size;
+}
+
+export fn audioCallback(sample_rate: f32) [*]f32 {
+    const buf = g.audio_module.paint(sample_rate, &g.session);
+
+    const vol = std.math.min(1.0, @intToFloat(f32, cfg.volume) / 100.0);
+
+    var i: usize = 0; while (i < audio_buffer_size) : (i += 1) {
+        audio_buffer[i] = buf[i] * vol;
+    }
+
+    return audio_buffer.ptr;
 }
 
 export fn onAnimationFrame(now_time: c_int) void {
@@ -245,7 +273,18 @@ export fn onAnimationFrame(now_time: c_int) void {
         }
     }
 
+    playSounds();
+
     platform_draw.prepare(&g.draw_state);
     drawGame(&g.draw_state, &g.static, &g.session, cfg);
     gameFrameCleanup(&g.session);
+}
+
+fn playSounds() void {
+    // FIXME - impulse_frame being 0 means that sounds will always start
+    // playing at the beginning of the mix buffer. need to implement some
+    // "syncing" to guess where we are in the middle of a mix frame
+    const impulse_frame: usize = 0;
+
+    g.audio_module.playSounds(&g.session, impulse_frame);
 }

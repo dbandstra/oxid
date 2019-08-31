@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
@@ -30,8 +31,9 @@ fn readWav(comptime filename: []const u8) !zang.Sample {
     var sis = std.io.SliceInStream.init(buf);
     const stream = &sis.stream;
 
-    const Loader = wav.Loader(std.io.SliceInStream.Error);
-    const preloaded = try Loader.preload(stream, true);
+    const verbose = builtin.arch != .wasm32; // wasm doesn't have stderr
+    const Loader = wav.Loader(std.io.SliceInStream.Error, verbose);
+    const preloaded = try Loader.preload(stream);
 
     // don't call Loader.load because we're working on a slice, so we can just
     // take a subslice of it
