@@ -21,8 +21,11 @@ fetch('oxid.wasm').then(response => {
     memory = instance.exports.memory;
 
     if (!instance.exports.onInit()) {
+        document.getElementById('loading-text').textContent = 'Failed to initialize game.';
         return;
     }
+
+    document.getElementById('loading-text').remove();
 
     document.addEventListener('keydown', (e) => {
         if (instance.exports.onKeyEvent(e.keyCode, 1)) {

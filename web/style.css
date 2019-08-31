@@ -3,6 +3,11 @@ body {
     color: #ddd;
 }
 
+#loading-text {
+    position: absolute;
+    z-index: 1;
+}
+
 .options {
     margin-top: 1em;
 }
