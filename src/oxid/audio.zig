@@ -57,8 +57,6 @@ pub const SamplerNoteParams = struct {
 };
 
 pub const MainModule = struct {
-    initialized: bool,
-
     drop_web: zang.Sample,
     extra_life: zang.Sample,
     player_scream: zang.Sample,
@@ -75,7 +73,6 @@ pub const MainModule = struct {
     // call this in the main thread before the audio device is set up
     pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
         return MainModule {
-            .initialized = true,
             .drop_web = try readWav("sfx_sounds_interaction5.wav"),
             .extra_life = try readWav("sfx_sounds_powerup4.wav"),
             .player_scream = try readWav("sfx_deathscream_human2.wav"),

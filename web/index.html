@@ -17,6 +17,7 @@
         <option value="3x" selected>3x</option>
         <option value="4x">4x</option>
       </select>
+      <button type="button" id="enable-sound-button">Enable sound</button>
     </div>
     <script>
       var $webgl = document.getElementById("canvasgl");
@@ -28,9 +29,7 @@
       function setScale(value) {
           $webgl.className = 'scale' + value;
       }
-      window.addEventListener('DOMContentLoaded', () => {
-          setScale(document.getElementById('scale-select').value);
-      });
+      setScale(document.getElementById('scale-select').value);
       document.getElementById('scale-select').addEventListener('change', (event) => {
           setScale(event.target.value);
       });

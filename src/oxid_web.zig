@@ -20,6 +20,7 @@ const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
 
 var cfg = config.default_config;
+var audio_enabled = false;
 
 const GameState = struct {
     draw_state: platform_draw.DrawState,
@@ -216,6 +217,10 @@ export fn getAudioBufferSize() c_int {
     return audio_buffer_size;
 }
 
+export fn enableAudio() void {
+    audio_enabled = true;
+}
+
 export fn audioCallback(sample_rate: f32) [*]f32 {
     const buf = g.audio_module.paint(sample_rate, &g.session);
 
@@ -266,7 +271,13 @@ export fn onAnimationFrame(now_time: c_int) void {
         }
     }
 
-    playSounds();
+    if (audio_enabled) {
+        playSounds();
+    } else {
+        // prevent a bunch sounds from queueing up when audio is disabled (as
+        // the mixing function won't be called to advance them)
+        clearSounds();
+    }
 
     platform_draw.prepare(&g.draw_state);
     drawGame(&g.draw_state, &g.static, &g.session, cfg);
@@ -280,4 +291,10 @@ fn playSounds() void {
     const impulse_frame: usize = 0;
 
     g.audio_module.playSounds(&g.session, impulse_frame);
+}
+
+fn clearSounds() void {
+    var it = g.session.iter(c.Voice); while (it.next()) |object| {
+        g.session.markEntityForRemoval(object.entity_id);
+    }
 }
