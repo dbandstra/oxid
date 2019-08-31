@@ -22,11 +22,7 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
-const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
-const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
-const spawnInputEvent = @import("oxid_common.zig").spawnInputEvent;
-const GameStatic = @import("oxid_common.zig").GameStatic;
-const loadStatic = @import("oxid_common.zig").loadStatic;
+const common = @import("oxid_common.zig");
 
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
@@ -36,7 +32,7 @@ const GameState = struct {
     audio_module: audio.MainModule,
     session: GameSession,
     perf_spam: bool,
-    static: GameStatic,
+    static: common.GameStatic,
 };
 
 const AudioUserData = struct {
@@ -314,8 +310,8 @@ const WindowDims = struct {
 fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
     // scale the game view up as far as possible, maintaining the
     // aspect ratio
-    const scaled_w = native_h * virtual_window_width / virtual_window_height;
-    const scaled_h = native_w * virtual_window_height / virtual_window_width;
+    const scaled_w = native_h * common.virtual_window_width / common.virtual_window_height;
+    const scaled_h = native_w * common.virtual_window_height / common.virtual_window_width;
 
     return WindowDims {
         .window_width = native_w,
@@ -357,12 +353,12 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     const max_w = native_w;
     const max_h = native_h - 40; // bias for system menubars/taskbars
 
-    var window_width = virtual_window_width;
-    var window_height = virtual_window_height;
+    var window_width: u31 = common.virtual_window_width;
+    var window_height: u31 = common.virtual_window_height;
 
     var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
-        const w = scale * virtual_window_width;
-        const h = scale * virtual_window_height;
+        const w = scale * common.virtual_window_width;
+        const h = scale * common.virtual_window_height;
 
         if (w > max_w or h > max_h) {
             break;
@@ -403,13 +399,13 @@ pub fn main() u8 {
     var fullscreen = false;
     var fullscreen_dims: ?WindowDims = null;
     var windowed_dims = WindowDims {
-        .window_width = virtual_window_width,
-        .window_height = virtual_window_height,
+        .window_width = common.virtual_window_width,
+        .window_height = common.virtual_window_height,
         .blit_rect = platform_draw.BlitRect {
             .x = 0,
             .y = 0,
-            .w = virtual_window_width,
-            .h = virtual_window_height,
+            .w = common.virtual_window_width,
+            .h = common.virtual_window_height,
         },
     };
 
@@ -496,8 +492,8 @@ pub fn main() u8 {
 
     platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
-        .virtual_window_width = virtual_window_width,
-        .virtual_window_height = virtual_window_height,
+        .virtual_window_width = common.virtual_window_width,
+        .virtual_window_height = common.virtual_window_height,
     }) catch |err| {
         std.debug.warn("platform_draw.init failed: {}\n", err);
         return 1;
@@ -522,7 +518,7 @@ pub fn main() u8 {
         return 1;
     };
 
-    if (!loadStatic(&g.static, &hunk.low())) {
+    if (!common.loadStatic(&g.static, &hunk.low())) {
         // loadStatic prints its own error
         return 1;
     }
@@ -571,7 +567,7 @@ pub fn main() u8 {
                 SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            spawnInputEvent(&g.session, &cfg, key, true);
+                            common.spawnInputEvent(&g.session, &cfg, key, true);
 
                             switch (key) {
                                 .Backquote => {
@@ -590,7 +586,7 @@ pub fn main() u8 {
                 },
                 SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        spawnInputEvent(&g.session, &cfg, key, false);
+                        common.spawnInputEvent(&g.session, &cfg, key, false);
 
                         switch (key) {
                             .Backquote => {
@@ -608,14 +604,14 @@ pub fn main() u8 {
                         const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
                         if (sdl_event.jaxis.axis == i) {
                             if (sdl_event.jaxis.value < -threshold) {
-                                spawnInputEvent(&g.session, &cfg, neg, true);
-                                spawnInputEvent(&g.session, &cfg, pos, false);
+                                common.spawnInputEvent(&g.session, &cfg, neg, true);
+                                common.spawnInputEvent(&g.session, &cfg, pos, false);
                             } else if (sdl_event.jaxis.value > threshold) {
-                                spawnInputEvent(&g.session, &cfg, pos, true);
-                                spawnInputEvent(&g.session, &cfg, neg, false);
+                                common.spawnInputEvent(&g.session, &cfg, pos, true);
+                                common.spawnInputEvent(&g.session, &cfg, neg, false);
                             } else {
-                                spawnInputEvent(&g.session, &cfg, pos, false);
-                                spawnInputEvent(&g.session, &cfg, neg, false);
+                                common.spawnInputEvent(&g.session, &cfg, pos, false);
+                                common.spawnInputEvent(&g.session, &cfg, neg, false);
                             }
                         }
                     }
@@ -639,7 +635,7 @@ pub fn main() u8 {
                         else => null,
                     };
                     if (maybe_key) |key| {
-                        spawnInputEvent(&g.session, &cfg, key, down);
+                        common.spawnInputEvent(&g.session, &cfg, key, down);
                     }
                 },
                 SDL_WINDOWEVENT => {

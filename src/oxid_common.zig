@@ -8,8 +8,17 @@ const Key = @import("common/key.zig").Key;
 const config = @import("oxid/config.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const input = @import("oxid/input.zig");
+const levels = @import("oxid/levels.zig");
 const p = @import("oxid/prototypes.zig");
 const c = @import("oxid/components.zig");
+
+// this many pixels is added to the top of the window for font stuff
+pub const hud_height = 16;
+
+// size of the virtual screen. the actual window size will be an integer
+// multiple of this
+pub const virtual_window_width = levels.width * levels.pixels_per_tile; // 320
+pub const virtual_window_height = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 pub const GameStatic = struct {
     tileset: draw.Tileset,

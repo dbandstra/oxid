@@ -4,10 +4,7 @@ const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const vwin_w = @import("../oxid_constants.zig").virtual_window_width;
-const vwin_h = @import("../oxid_constants.zig").virtual_window_height;
-const hud_height = @import("../oxid_constants.zig").hud_height;
-const GameStatic = @import("../oxid_common.zig").GameStatic;
+const common = @import("../oxid_common.zig");
 const Constants = @import("constants.zig");
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
@@ -25,7 +22,7 @@ const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
-pub fn drawGame(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, cfg: config.Config) void {
+pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, cfg: config.Config) void {
     const mc = gs.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
@@ -72,7 +69,7 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
     return sorted_drawables;
 }
 
-fn drawMapTile(ds: *pdraw.DrawState, static: *const GameStatic, x: u31, y: u31) void {
+fn drawMapTile(ds: *pdraw.DrawState, static: *const common.GameStatic, x: u31, y: u31) void {
     const gridpos = math.Vec2.init(x, y);
     if (switch (levels.level1.getGridValue(gridpos).?) {
         0x00 => Graphic.Floor,
@@ -87,7 +84,7 @@ fn drawMapTile(ds: *pdraw.DrawState, static: *const GameStatic, x: u31, y: u31) 
     }) |graphic| {
         const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
         const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
-        const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + hud_height;
+        const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height;
         const dw = levels.pixels_per_tile;
         const dh = levels.pixels_per_tile;
         pdraw.tile(
@@ -100,7 +97,7 @@ fn drawMapTile(ds: *pdraw.DrawState, static: *const GameStatic, x: u31, y: u31) 
     }
 }
 
-fn drawMap(ds: *pdraw.DrawState, static: *const GameStatic) void {
+fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
     //perf.begin(&perf.timers.DrawMap);
     //defer perf.end(&perf.timers.DrawMap, g.perf_spam);
 
@@ -114,7 +111,7 @@ fn drawMap(ds: *pdraw.DrawState, static: *const GameStatic) void {
 // make the central 2x2 map tiles a foreground layer, so that the player spawn
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
-fn drawMapForeground(ds: *pdraw.DrawState, static: *const GameStatic) void {
+fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
     //perf.begin(&perf.timers.DrawMapForeground);
     //defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
 
@@ -125,13 +122,13 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const GameStatic) void {
     }
 }
 
-fn drawEntities(ds: *pdraw.DrawState, static: *const GameStatic, sorted_drawables: []*const c.EventDraw) void {
+fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_drawables: []*const c.EventDraw) void {
     //perf.begin(&perf.timers.DrawEntities);
     //defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
-        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + hud_height;
+        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + common.hud_height;
         const w = levels.pixels_per_tile;
         const h = levels.pixels_per_tile;
         pdraw.tile(
@@ -149,9 +146,9 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
         if (object.is_active) {
             const abs_bbox = object.data.box;
             const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
-            const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + hud_height;
+            const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
             const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
-            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + hud_height;
+            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
             const w = x1 - x0;
             const h = y1 - y0;
             pdraw.begin(ds, ds.blank_tex.handle, object.data.color, 1.0, true);
@@ -167,7 +164,7 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
     }
 }
 
-fn getColor(static: *const GameStatic, index: usize) draw.Color {
+fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
     return draw.Color {
@@ -177,7 +174,7 @@ fn getColor(static: *const GameStatic, index: usize) draw.Color {
     };
 }
 
-fn drawHud(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, game_active: bool) void {
+fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, game_active: bool) void {
     //perf.begin(&perf.timers.DrawHud);
     //defer perf.end(&perf.timers.DrawHud, g.perf_spam);
 
@@ -193,7 +190,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, ga
         ds,
         ds.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
-        0, 0, @intToFloat(f32, vwin_w), @intToFloat(f32, hud_height),
+        0, 0, @intToFloat(f32, common.virtual_window_width), @intToFloat(f32, common.hud_height),
         .Identity,
     );
     pdraw.end(ds);
@@ -243,7 +240,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const GameStatic, gs: *GameSession, ga
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = vwin_w / 2 - message.len * 8 / 2;
+                const x = common.virtual_window_width / 2 - message.len * 8 / 2;
                 fontDrawString(ds, &static.font, @intCast(i32, x), 28*8, message);
             }
         }

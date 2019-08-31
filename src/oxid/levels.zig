@@ -18,8 +18,8 @@ pub fn getTerrainType(value: u8) TerrainType {
     }
 }
 
-pub const width: u31 = 20;
-pub const height: u31 = 14;
+pub const width = 20;
+pub const height = 14;
 
 pub const Level = struct {
     data: [width * height]u8,

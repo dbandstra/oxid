@@ -16,18 +16,14 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 //const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const c = @import("oxid/components.zig");
-const virtual_window_width = @import("oxid_constants.zig").virtual_window_width;
-const virtual_window_height = @import("oxid_constants.zig").virtual_window_height;
-const GameStatic = @import("oxid_common.zig").GameStatic;
-const loadStatic = @import("oxid_common.zig").loadStatic;
-const spawnInputEvent = @import("oxid_common.zig").spawnInputEvent;
+const common = @import("oxid_common.zig");
 
 var cfg = config.default_config;
 
 const GameState = struct {
     draw_state: platform_draw.DrawState,
     //audio_module: audio.MainModule,
-    static: GameStatic,
+    static: common.GameStatic,
     session: GameSession,
     //perf_spam: bool,
 };
@@ -139,7 +135,7 @@ fn translateKey(keyCode: c_int) ?Key {
 
 export fn onKeyDown(keyCode: c_int) u8 {
     if (translateKey(keyCode)) |key| {
-        spawnInputEvent(&g.session, &cfg, key, true);
+        common.spawnInputEvent(&g.session, &cfg, key, true);
         return 1;
     }
     return 0;
@@ -147,7 +143,7 @@ export fn onKeyDown(keyCode: c_int) u8 {
 
 export fn onKeyUp(keyCode: c_int) u8 {
     if (translateKey(keyCode)) |key| {
-        spawnInputEvent(&g.session, &cfg, key, false);
+        common.spawnInputEvent(&g.session, &cfg, key, false);
         return 1;
     }
     return 0;
@@ -169,15 +165,15 @@ fn init() !void {
 
     platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
-        .virtual_window_width = virtual_window_width,
-        .virtual_window_height = virtual_window_height,
+        .virtual_window_width = common.virtual_window_width,
+        .virtual_window_height = common.virtual_window_height,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", err);
         return error.Failed;
     };
     errdefer platform_draw.deinit(&g.draw_state);
 
-    if (!loadStatic(&g.static, &hunk.low())) {
+    if (!common.loadStatic(&g.static, &hunk.low())) {
         // loadStatic prints its own error
         return error.Failed;
     }
@@ -211,8 +207,8 @@ export fn onAnimationFrame(now_time: c_int) void {
     const blit_rect = platform_draw.BlitRect {
         .x = 0,
         .y = 0,
-        .w = virtual_window_width,
-        .h = virtual_window_height,
+        .w = common.virtual_window_width,
+        .h = common.virtual_window_height,
     };
     const blit_alpha: f32 = 1.0;
 

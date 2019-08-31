@@ -4,9 +4,7 @@ const pdraw = @import("pdraw");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
 const key_names = @import("../common/key.zig").key_names;
-const GameStatic = @import("../oxid_common.zig").GameStatic;
-const vwin_w = @import("../oxid_constants.zig").virtual_window_width;
-const vwin_h = @import("../oxid_constants.zig").virtual_window_height;
+const common = @import("../oxid_common.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
@@ -14,7 +12,7 @@ const input = @import("input.zig");
 
 const primary_font_color_index = 15; // near-white
 
-fn getColor(static: *const GameStatic, index: usize) draw.Color {
+fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
     return draw.Color {
@@ -36,8 +34,8 @@ fn calcBox(contents_w: usize, contents_h: usize, padding: bool) Box {
     const h = (if (padding) u31(32) else u31(16)) + @intCast(u31, contents_h);
 
     return Box {
-        .x = vwin_w / 2 - w / 2,
-        .y = vwin_h / 2 - h / 2,
+        .x = common.virtual_window_width / 2 - w / 2,
+        .y = common.virtual_window_height / 2 - h / 2,
         .w = w,
         .h = h,
     };
@@ -55,7 +53,7 @@ fn drawBlackBox(ds: *pdraw.DrawState, box: Box) void {
     pdraw.end(ds);
 }
 
-pub fn drawGameOverOverlay(ds: *pdraw.DrawState, static: *const GameStatic, new_high_score: bool) void {
+pub fn drawGameOverOverlay(ds: *pdraw.DrawState, static: *const common.GameStatic, new_high_score: bool) void {
     var box = calcBox(15 * 8, if (new_high_score) u31(8+6+8) else u31(8), false);
     box.y = 8 * 4;
     drawBlackBox(ds, box);
@@ -68,7 +66,7 @@ pub fn drawGameOverOverlay(ds: *pdraw.DrawState, static: *const GameStatic, new_
     pdraw.end(ds);
 }
 
-pub fn drawMenu(ds: *pdraw.DrawState, static: *const GameStatic, cfg: config.Config, mc: *const c.MainController, menu: menus.Menu) void {
+pub fn drawMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, cfg: config.Config, mc: *const c.MainController, menu: menus.Menu) void {
     switch (menu) {
         .MainMenu => |menu_state| drawMainMenu(ds, static, mc, menu_state),
         .InGameMenu => |menu_state| drawInGameMenu(ds, static, mc, menu_state),
@@ -79,7 +77,7 @@ pub fn drawMenu(ds: *pdraw.DrawState, static: *const GameStatic, cfg: config.Con
     }
 }
 
-fn drawMainMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.MainController, menu_state: menus.MainMenu) void {
+fn drawMainMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.MainMenu) void {
     const title = "OXID";
     const options = [_][]const u8 {
         "New game",
@@ -115,7 +113,7 @@ fn drawMainMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.Ma
     pdraw.end(ds);
 }
 
-fn drawInGameMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.MainController, menu_state: menus.InGameMenu) void {
+fn drawInGameMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.InGameMenu) void {
     const title = "GAME PAUSED";
     const options = [_][]const u8 {
         "Continue game",
@@ -150,7 +148,7 @@ fn drawInGameMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.
     pdraw.end(ds);
 }
 
-fn drawReallyEndGameMenu(ds: *pdraw.DrawState, static: *const GameStatic) void {
+fn drawReallyEndGameMenu(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
     const string = "Really end game? [Y/N]";
     const box = calcBox(string.len * 8, 8, false);
     drawBlackBox(ds, box);
@@ -160,7 +158,7 @@ fn drawReallyEndGameMenu(ds: *pdraw.DrawState, static: *const GameStatic) void {
     pdraw.end(ds);
 }
 
-fn drawOptionsMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.MainController, menu_state: menus.OptionsMenu) void {
+fn drawOptionsMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.OptionsMenu) void {
     const title = "OPTIONS";
     const options = [_][]const u8 {
         "Volume",
@@ -211,7 +209,7 @@ fn drawOptionsMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c
     pdraw.end(ds);
 }
 
-fn drawKeyBindingsMenu(ds: *pdraw.DrawState, static: *const GameStatic, cfg: config.Config, mc: *const c.MainController, menu_state: menus.KeyBindingsMenu) void {
+fn drawKeyBindingsMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, cfg: config.Config, mc: *const c.MainController, menu_state: menus.KeyBindingsMenu) void {
     const title = "KEY BINDINGS";
     const options = [_][]const u8 {
         "Up:    ",
@@ -285,7 +283,7 @@ fn drawKeyBindingsMenu(ds: *pdraw.DrawState, static: *const GameStatic, cfg: con
     pdraw.end(ds);
 }
 
-fn drawHighScoresMenu(ds: *pdraw.DrawState, static: *const GameStatic, mc: *const c.MainController, menu_state: menus.HighScoresMenu) void {
+fn drawHighScoresMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.HighScoresMenu) void {
     const title = "HIGH SCORES";
     const options = [_][]const u8{"Close"};
     const box = calcBox(11 * 8, (options.len + mc.high_scores.len) * 10 + 6, true);
