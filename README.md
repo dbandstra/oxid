@@ -8,7 +8,7 @@ Oxid is written in the [Zig](https://ziglang.org) programming language. I try to
 ![Screenshot](screenshot.png)
 
 ## Installation
-Oxid can be built into a native executable or a Web Assembly binary. (Note: the Web Assembly version is still missing a few features, such as sound.)
+Oxid can be built into a native executable or a Web Assembly binary.
 
 The native version has the following requirements:
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
