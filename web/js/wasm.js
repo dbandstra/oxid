@@ -12,10 +12,12 @@ const env = {
     },
 }
 
-fetch('oxid.wasm')
-.then(response => response.arrayBuffer())
-.then(bytes => WebAssembly.instantiate(bytes, {env}))
-.then(({instance}) => {
+fetch('oxid.wasm').then(response => {
+    if (!response.ok) {
+        throw new Error('Failed to fetch oxid.wasm');
+    }
+    return response.arrayBuffer();
+}).then(bytes => WebAssembly.instantiate(bytes, {env})).then(({instance}) => {
     memory = instance.exports.memory;
 
     if (!instance.exports.onInit()) {
@@ -38,4 +40,6 @@ fetch('oxid.wasm')
         window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
+}).catch(err => {
+    alert(err);
 });

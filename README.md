@@ -4,6 +4,9 @@ Oxid is an arcade-style game where you fight waves of monsters in a fixed-screen
 Oxid is written in the [Zig](https://ziglang.org) programming language. I try to keep up with the master branch of Zig. Known to build with Zig commit `ec2f9ef4e8be5995ab652dde59b12ee340a9e28d`.
 
 ## Installation
+Oxid can be built into a native executable or a Web Assembly binary. (Note: the Web Assembly version is still missing a few features, such as sound.)
+
+The native version has the following requirements:
 * Install [SDL2](https://www.libsdl.org/) and [libepoxy](https://github.com/anholt/libepoxy)
 * Install [Zig](https://ziglang.org/download/). Use master, or if that doesn't work, the abovementioned commit hash.
 * After cloning the oxid repository, you may have to explicitly update the submodules: `git submodule init` followed by `git submodule update`
@@ -20,12 +23,18 @@ zig build -Drelease-fast=true
 zig-cache/oxid
 ```
 
+To build the Web Assembly version:
+```
+zig build -Dwasm
+```
+Then run a web server (such as Python's SimpleHTTPServer) from the `web/` folder. (This is needed to work with the Same Origin Policy, as the HTML page loads the wasm binary using `fetch`.)
+
 Game controls (these can be rebound in the menu):
 * arrow keys: move
 * space: shoot
 * esc: open menu
 
-Debug/cheat controls:
+Debug/cheat controls (these currently aren't implemented in the Web Assembly version):
 * backquote: fast forward
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
@@ -63,10 +72,10 @@ Actually using the ECS requires very little boilerplate.
 Adding new graphics, sound effects, or input bindings is not as polished but still relatively easy. Documentation to come later.
 
 ## Notes
-Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig.
+Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig. Web Assembly code was based on raulgrell's [fork](https://github.com/raulgrell/tetris) of the same project.
 
 Some sound effects from https://opengameart.org/content/512-sound-effects-8-bit-style
 
 Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
-Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk), [zig-pcx](https://github.com/dbandstra/zig-pcx) and [zig-wav](https://github.com/dbandstra/zig-wav) one-file libraries, as well as [zang](https://github.com/dbandstra/zang).
+Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk), [zig-pcx](https://github.com/dbandstra/zig-pcx) and [zig-wav](https://github.com/dbandstra/zig-wav) one-file libraries, as well as [zang](https://github.com/dbandstra/zang) for audio.
