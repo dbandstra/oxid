@@ -38,13 +38,13 @@ Game controls (these can be rebound in the menu):
 * space: shoot
 * esc: open menu
 
-Debug/cheat controls (these currently aren't implemented in the Web Assembly version):
-* backquote: fast forward
+Debug/cheat controls:
+* backquote: fast forward (not in web version)
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
 * F3: toggle invulnerability
-* F4: toggle profiling spam
-* F5: cycle through preserved graphics glitches
+* F4: toggle profiling spam (not in web version)
+* F5: cycle through preserved graphics glitches (not in web version)
 
 ## Notes
 Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig. Web Assembly code was based on raulgrell's [fork](https://github.com/raulgrell/tetris) of the same project.
