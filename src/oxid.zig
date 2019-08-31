@@ -576,7 +576,7 @@ pub fn main() u8 {
                 SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            common.spawnInputEvent(&g.session, &cfg, key, true);
+                            _ = common.spawnInputEvent(&g.session, &cfg, key, true);
 
                             switch (key) {
                                 .Backquote => {
@@ -595,7 +595,7 @@ pub fn main() u8 {
                 },
                 SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        common.spawnInputEvent(&g.session, &cfg, key, false);
+                        _ = common.spawnInputEvent(&g.session, &cfg, key, false);
 
                         switch (key) {
                             .Backquote => {
@@ -613,14 +613,14 @@ pub fn main() u8 {
                         const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
                         if (sdl_event.jaxis.axis == i) {
                             if (sdl_event.jaxis.value < -threshold) {
-                                common.spawnInputEvent(&g.session, &cfg, neg, true);
-                                common.spawnInputEvent(&g.session, &cfg, pos, false);
+                                _ = common.spawnInputEvent(&g.session, &cfg, neg, true);
+                                _ = common.spawnInputEvent(&g.session, &cfg, pos, false);
                             } else if (sdl_event.jaxis.value > threshold) {
-                                common.spawnInputEvent(&g.session, &cfg, pos, true);
-                                common.spawnInputEvent(&g.session, &cfg, neg, false);
+                                _ = common.spawnInputEvent(&g.session, &cfg, pos, true);
+                                _ = common.spawnInputEvent(&g.session, &cfg, neg, false);
                             } else {
-                                common.spawnInputEvent(&g.session, &cfg, pos, false);
-                                common.spawnInputEvent(&g.session, &cfg, neg, false);
+                                _ = common.spawnInputEvent(&g.session, &cfg, pos, false);
+                                _ = common.spawnInputEvent(&g.session, &cfg, neg, false);
                             }
                         }
                     }
@@ -644,7 +644,7 @@ pub fn main() u8 {
                         else => null,
                     };
                     if (maybe_key) |key| {
-                        common.spawnInputEvent(&g.session, &cfg, key, down);
+                        _ = common.spawnInputEvent(&g.session, &cfg, key, down);
                     }
                 },
                 SDL_WINDOWEVENT => {

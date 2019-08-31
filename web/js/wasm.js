@@ -25,14 +25,12 @@ fetch('oxid.wasm').then(response => {
     }
 
     document.addEventListener('keydown', (e) => {
-        if (instance.exports.onKeyDown(e.keyCode)) {
+        if (instance.exports.onKeyEvent(e.keyCode, 1)) {
             e.preventDefault();
         }
     });
     document.addEventListener('keyup', (e) => {
-        if (instance.exports.onKeyUp(e.keyCode)) {
-            e.preventDefault();
-        }
+        instance.exports.onKeyEvent(e.keyCode, 0);
     });
 
     const step = (timestamp) => {

@@ -40,7 +40,8 @@ pub fn loadStatic(static: *GameStatic, hunk_side: *HunkSide) bool {
     return true;
 }
 
-pub fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) void {
+// returns true if the key was bound to something
+pub fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) bool {
     const game_command =
         for (cfg.game_key_bindings) |maybe_key, i| {
             if (if (maybe_key) |k| k == key else false) {
@@ -64,4 +65,6 @@ pub fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, do
             .down = down,
         }) catch undefined;
     // }
+
+    return game_command != null or menu_command != null;
 }

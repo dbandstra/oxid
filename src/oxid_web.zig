@@ -133,18 +133,11 @@ fn translateKey(keyCode: c_int) ?Key {
     };
 }
 
-export fn onKeyDown(keyCode: c_int) u8 {
+export fn onKeyEvent(keyCode: c_int, down: c_int) c_int {
     if (translateKey(keyCode)) |key| {
-        common.spawnInputEvent(&g.session, &cfg, key, true);
-        return 1;
-    }
-    return 0;
-}
-
-export fn onKeyUp(keyCode: c_int) u8 {
-    if (translateKey(keyCode)) |key| {
-        common.spawnInputEvent(&g.session, &cfg, key, false);
-        return 1;
+        if (common.spawnInputEvent(&g.session, &cfg, key, down != 0)) {
+            return 1;
+        }
     }
     return 0;
 }
