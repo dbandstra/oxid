@@ -10,6 +10,7 @@ const zang = @import("zang");
 
 const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
+const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
@@ -29,6 +30,7 @@ const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
 const GameState = struct {
     draw_state: platform_draw.DrawState,
+    framebuffer_state: platform_framebuffer.FramebufferState,
     audio_module: audio.MainModule,
     session: GameSession,
     perf_spam: bool,
@@ -304,7 +306,7 @@ const WindowDims = struct {
     window_width: u31,
     window_height: u31,
     // coordinates of the viewport to blit to, within the system window
-    blit_rect: platform_draw.BlitRect,
+    blit_rect: platform_framebuffer.BlitRect,
 };
 
 fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
@@ -318,21 +320,21 @@ fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
         .window_height = native_h,
         .blit_rect =
             if (scaled_w < native_w)
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = scaled_w,
                     .h = native_h,
                     .x = native_w / 2 - scaled_w / 2,
                     .y = 0,
                 }
             else if (scaled_h < native_h)
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = native_w,
                     .h = scaled_h,
                     .x = 0,
                     .y = native_h / 2 - scaled_h / 2,
                 }
             else
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = native_w,
                     .h = native_h,
                     .x = 0,
@@ -371,7 +373,7 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     return WindowDims {
         .window_width = window_width,
         .window_height = window_height,
-        .blit_rect = platform_draw.BlitRect {
+        .blit_rect = platform_framebuffer.BlitRect {
             .x = 0,
             .y = 0,
             .w = window_width,
@@ -401,7 +403,7 @@ pub fn main() u8 {
     var windowed_dims = WindowDims {
         .window_width = common.virtual_window_width,
         .window_height = common.virtual_window_height,
-        .blit_rect = platform_draw.BlitRect {
+        .blit_rect = platform_framebuffer.BlitRect {
             .x = 0,
             .y = 0,
             .w = common.virtual_window_width,
@@ -499,6 +501,12 @@ pub fn main() u8 {
         return 1;
     };
     defer platform_draw.deinit(&g.draw_state);
+
+    if (!platform_framebuffer.init(&g.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
+        std.debug.warn("platform_framebuffer.init failed\n");
+        return 1;
+    }
+    defer platform_framebuffer.deinit(&g.framebuffer_state);
 
     {
         const num_joysticks = SDL_NumJoysticks();
@@ -756,12 +764,11 @@ fn playSounds(g: *GameState) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
-// FIXME why isn't this just baked into drawGame
-// or, going the other way.. can i move the framebuffer scaling stuff here
-fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
+fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_framebuffer.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
-    platform_draw.preDraw(&g.draw_state);
+    platform_framebuffer.preDraw(&g.framebuffer_state);
+    platform_draw.prepare(&g.draw_state);
 
     perf.begin(&perf.timers.Draw);
 
@@ -769,7 +776,7 @@ fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect
 
     perf.end(&perf.timers.Draw, g.perf_spam);
 
-    platform_draw.postDraw(&g.draw_state, blit_rect, blit_alpha);
+    platform_framebuffer.postDraw(&g.framebuffer_state, &g.draw_state, blit_rect, blit_alpha);
 
     perf.end(&perf.timers.WholeDraw, g.perf_spam);
 }

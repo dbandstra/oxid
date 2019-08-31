@@ -204,14 +204,6 @@ export fn onDestroy() void {
 }
 
 export fn onAnimationFrame(now_time: c_int) void {
-    const blit_rect = platform_draw.BlitRect {
-        .x = 0,
-        .y = 0,
-        .w = common.virtual_window_width,
-        .h = common.virtual_window_height,
-    };
-    const blit_alpha: f32 = 1.0;
-
     // copy these system values straight into the MainController.
     // this is kind of a hack, but on the other hand, i'm spawning entities
     // in this file too, it's not that different...
@@ -249,8 +241,7 @@ export fn onAnimationFrame(now_time: c_int) void {
         }
     }
 
-    platform_draw.preDraw(&g.draw_state);
+    platform_draw.prepare(&g.draw_state);
     drawGame(&g.draw_state, &g.static, &g.session, cfg);
-    platform_draw.postDraw(&g.draw_state, blit_rect, blit_alpha);
     gameFrameCleanup(&g.session);
 }

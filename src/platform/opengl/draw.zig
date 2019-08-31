@@ -31,13 +31,6 @@ const DrawBuffer = struct {
     num_vertices: usize,
 };
 
-pub const BlitRect = struct {
-    x: i32,
-    y: i32,
-    w: u31,
-    h: u31,
-};
-
 pub const DrawInitParams = struct {
     hunk: *Hunk,
     virtual_window_width: u32,
@@ -51,10 +44,6 @@ pub const DrawState = struct {
     // window
     virtual_window_width: u32,
     virtual_window_height: u32,
-    // frame buffer object
-    fb: GLuint,
-    // render texture
-    rt: GLuint,
     shader_textured: shader_textured.Shader,
     dyn_vertex_buffer: GLuint,
     dyn_texcoord_buffer: GLuint,
@@ -85,7 +74,6 @@ pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
 
 pub const InitError = error {
     UnsupportedOpenGLVersion,
-    FailedToCreateFramebuffer,
 } || shaders.InitError;
 
 fn detectGLSLVersion() InitError!shaders.GLSLVersion {
@@ -111,6 +99,7 @@ fn detectGLSLVersion() InitError!shaders.GLSLVersion {
         return error.UnsupportedOpenGLVersion;
     }
 }
+
 pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     const glsl_version = try detectGLSLVersion();
 
@@ -133,41 +122,6 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     updateVbo(ds.dyn_texcoord_buffer, null);
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
 
-    // TODO - can the framebuffer stuff be separated to a new file to make it more "optional"?
-    // (i disabled this code in wasm because i couldn't get it working)
-    var fb: GLuint = 0;
-    var rt: GLuint = 0;
-    if (builtin.arch != .wasm32) {
-        if (builtin.arch == .wasm32) {
-            fb = glCreateFramebuffer();
-        } else {
-            glGenFramebuffers(1, &fb);
-        }
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
-
-        glGenTextures(1, &rt);
-        glBindTexture(GL_TEXTURE_2D, rt);
-        if (builtin.arch == .wasm32) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
-        } else {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, @intCast(c_int, params.virtual_window_width), @intCast(c_int, params.virtual_window_height), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
-        }
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
-
-        var draw_buffers = [_]GLenum { GL_COLOR_ATTACHMENT0 };
-        glDrawBuffers(1, &draw_buffers[0]);
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            warn("Failed to create framebuffer.\n");
-            return error.FailedToCreateFramebuffer;
-        }
-    }
-
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
@@ -176,8 +130,6 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
-    ds.fb = fb;
-    ds.rt = rt;
     ds.draw_buffer.num_vertices = 0;
 
     const blank_tex_pixels = [_]u8{255, 255, 255, 255};
@@ -258,7 +210,7 @@ pub fn cycleGlitchMode(ds: *DrawState) void {
     ds.clear_screen = true;
 }
 
-fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
+pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     return [16]f32 {
         2.0 / (right - left), 0.0, 0.0, -(right + left) / (right - left),
         0.0, 2.0 / (top - bottom), 0.0, -(top + bottom) / (top - bottom),
@@ -267,32 +219,17 @@ fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     };
 }
 
-pub fn preDraw(ds: *DrawState) void {
+pub fn prepare(ds: *DrawState) void {
     const w = ds.virtual_window_width;
     const h = ds.virtual_window_height;
     const fw = @intToFloat(f32, w);
     const fh = @intToFloat(f32, h);
     ds.projection = ortho(0, fw, fh, 0);
-    if (builtin.arch != .wasm32) {
-        glBindFramebuffer(GL_FRAMEBUFFER, ds.fb);
-    }
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
     if (ds.clear_screen) {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         ds.clear_screen = false;
-    }
-}
-
-pub fn postDraw(ds: *DrawState, blit_rect: BlitRect, blit_alpha: f32) void {
-    if (builtin.arch != .wasm32) {
-        // blit renderbuffer to screen
-        ds.projection = ortho(0, 1, 1, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-        begin(ds, ds.rt, draw.white, blit_alpha, false);
-        tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
-        end(ds);
     }
 }
 
