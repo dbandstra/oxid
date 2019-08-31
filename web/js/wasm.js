@@ -41,6 +41,13 @@ fetch('oxid.wasm').then(response => {
 
     // some browsers block sound unless initialized in response to a user action
     document.getElementById('enable-sound-button').addEventListener('click', (event) => {
+        // safari still calls it "webkitAudioContext"
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) {
+            event.target.parentNode.replaceChild(document.createTextNode('AudioContext API not supported.'), event.target);
+            return;
+        }
+
         event.target.parentNode.replaceChild(document.createTextNode('Sound enabled.'), event.target);
 
         instance.exports.enableAudio();
