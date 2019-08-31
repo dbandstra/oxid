@@ -1,38 +1,67 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Oxid</title>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div class="page">
-      <div class="wrapper">
-        <canvas id="canvasgl" width="320" height="240"></canvas>
-      </div>
-      Scaling:
-      <select id="scale-select">
-        <option value="1x">1x</option>
-        <option value="2x">2x</option>
-        <option value="3x" selected>3x</option>
-        <option value="4x">4x</option>
-      </select>
-      <button type="button" id="enable-sound-button">Enable sound</button>
-    </div>
-    <script>
-      var $webgl = document.getElementById("canvasgl");
-    </script>
-    <script src="js/webgl.js"></script>
-    <script src="js/webgl_generated.js"></script>
-    <script src="js/wasm.js"></script>
-    <script>
-      function setScale(value) {
-          $webgl.className = 'scale' + value;
-      }
-      setScale(document.getElementById('scale-select').value);
-      document.getElementById('scale-select').addEventListener('change', (event) => {
-          setScale(event.target.value);
-      });
-    </script>
-  </body>
+    <head>
+        <meta charset="utf-8">
+        <title>Oxid</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="page">
+            <div class="wrapper">
+                <canvas id="canvasgl" width="320" height="240"></canvas>
+            </div>
+            <div class="options">
+                <div class="option">
+                    Canvas scale:
+                    <select id="scale-select">
+                        <option value="1x">1x</option>
+                        <option value="2x">2x</option>
+                        <option value="3x">3x</option>
+                        <option value="4x">4x</option>
+                    </select>
+                </div>
+                <div class="option">
+                    Scaling algorithm:
+                    <select id="scaletype-select">
+                        <option value="auto">auto</option>
+                        <option value="crisp-edges">crisp-edges</option>
+                        <option value="pixelated">pixelated</option>
+                    </select>
+                </div>
+                <div class="option">
+                    <button type="button" id="enable-sound-button">Enable sound</button>
+                </div>
+            </div>
+        </div>
+        <script>
+            var $webgl = document.getElementById("canvasgl");
+        </script>
+        <script src="js/webgl.js"></script>
+        <script src="js/webgl_generated.js"></script>
+        <script src="js/wasm.js"></script>
+        <script>
+            function setClass(prefix, newValue) {
+                const classList = [...$webgl.classList];
+                for (const className of classList) {
+                    if (className.startsWith(prefix)) {
+                        $webgl.classList.remove(className);
+                    }
+                }
+                $webgl.classList.add(prefix + newValue);
+            }
+            function initializeSelect(elem, prefix, initial) {
+                elem.value = initial;
+                setClass(prefix, initial);
+                elem.addEventListener('change', (event) => {
+                    setClass(prefix, event.target.value);
+                });
+            }
+            initializeSelect(document.getElementById('scale-select'), 'scale-', '3x');
+            // firefox doesn't support 'pixelated', but it looks pixellated using 'crisp-edges'.
+            // other browsers look blurry in 'crisp-edge', but supported 'pixelated'.
+            // try to initialize to the value we think will actually look pixellated
+            initializeSelect(document.getElementById('scaletype-select'), 'scaletype-',
+                CSS.supports('image-rendering', 'pixelated') ? 'pixelated' : 'crisp-edges');
+        </script>
+    </body>
 </html>
