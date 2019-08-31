@@ -10,17 +10,12 @@ const zang = @import("zang");
 
 const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
-const draw = @import("common/draw.zig");
-const Font = @import("common/font.zig").Font;
-const loadFont = @import("common/font.zig").loadFont;
-const loadTileset = @import("oxid/graphics.zig").loadTileset;
-const levels = @import("oxid/levels.zig");
+const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
-const input = @import("oxid/input.zig");
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
@@ -28,31 +23,20 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
+const common = @import("oxid_common.zig");
 
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
-// this many pixels is added to the top of the window for font stuff
-// TODO - move to another file
-pub const hud_height = 16;
-
-// size of the virtual screen. the actual window size will be an integer
-// multiple of this
-pub const virtual_window_width: u31 = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height: u31 = levels.height * levels.pixels_per_tile + hud_height; // 240
-
-// this is a global singleton
-pub const GameState = struct {
+const GameState = struct {
     draw_state: platform_draw.DrawState,
+    framebuffer_state: platform_framebuffer.FramebufferState,
     audio_module: audio.MainModule,
-    tileset: draw.Tileset,
-    palette: [48]u8,
-    font: Font,
     session: GameSession,
-    perf_spam: bool,
+    static: common.GameStatic,
 };
 
-pub const AudioUserData = struct {
+const AudioUserData = struct {
     g: *GameState,
     sample_rate: f32,
     volume: u32,
@@ -321,35 +305,35 @@ const WindowDims = struct {
     window_width: u31,
     window_height: u31,
     // coordinates of the viewport to blit to, within the system window
-    blit_rect: platform_draw.BlitRect,
+    blit_rect: platform_framebuffer.BlitRect,
 };
 
 fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
     // scale the game view up as far as possible, maintaining the
     // aspect ratio
-    const scaled_w = native_h * virtual_window_width / virtual_window_height;
-    const scaled_h = native_w * virtual_window_height / virtual_window_width;
+    const scaled_w = native_h * common.virtual_window_width / common.virtual_window_height;
+    const scaled_h = native_w * common.virtual_window_height / common.virtual_window_width;
 
     return WindowDims {
         .window_width = native_w,
         .window_height = native_h,
         .blit_rect =
             if (scaled_w < native_w)
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = scaled_w,
                     .h = native_h,
                     .x = native_w / 2 - scaled_w / 2,
                     .y = 0,
                 }
             else if (scaled_h < native_h)
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = native_w,
                     .h = scaled_h,
                     .x = 0,
                     .y = native_h / 2 - scaled_h / 2,
                 }
             else
-                platform_draw.BlitRect {
+                platform_framebuffer.BlitRect {
                     .w = native_w,
                     .h = native_h,
                     .x = 0,
@@ -370,12 +354,12 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     const max_w = native_w;
     const max_h = native_h - 40; // bias for system menubars/taskbars
 
-    var window_width = virtual_window_width;
-    var window_height = virtual_window_height;
+    var window_width: u31 = common.virtual_window_width;
+    var window_height: u31 = common.virtual_window_height;
 
     var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
-        const w = scale * virtual_window_width;
-        const h = scale * virtual_window_height;
+        const w = scale * common.virtual_window_width;
+        const h = scale * common.virtual_window_height;
 
         if (w > max_w or h > max_h) {
             break;
@@ -388,7 +372,7 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     return WindowDims {
         .window_width = window_width,
         .window_height = window_height,
-        .blit_rect = platform_draw.BlitRect {
+        .blit_rect = platform_framebuffer.BlitRect {
             .x = 0,
             .y = 0,
             .w = window_width,
@@ -416,13 +400,13 @@ pub fn main() u8 {
     var fullscreen = false;
     var fullscreen_dims: ?WindowDims = null;
     var windowed_dims = WindowDims {
-        .window_width = virtual_window_width,
-        .window_height = virtual_window_height,
-        .blit_rect = platform_draw.BlitRect {
+        .window_width = common.virtual_window_width,
+        .window_height = common.virtual_window_height,
+        .blit_rect = platform_framebuffer.BlitRect {
             .x = 0,
             .y = 0,
-            .w = virtual_window_width,
-            .h = virtual_window_height,
+            .w = common.virtual_window_width,
+            .h = common.virtual_window_height,
         },
     };
 
@@ -509,13 +493,19 @@ pub fn main() u8 {
 
     platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
-        .virtual_window_width = virtual_window_width,
-        .virtual_window_height = virtual_window_height,
+        .virtual_window_width = common.virtual_window_width,
+        .virtual_window_height = common.virtual_window_height,
     }) catch |err| {
         std.debug.warn("platform_draw.init failed: {}\n", err);
         return 1;
     };
     defer platform_draw.deinit(&g.draw_state);
+
+    if (!platform_framebuffer.init(&g.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
+        std.debug.warn("platform_framebuffer.init failed\n");
+        return 1;
+    }
+    defer platform_framebuffer.deinit(&g.framebuffer_state);
 
     {
         const num_joysticks = SDL_NumJoysticks();
@@ -535,15 +525,10 @@ pub fn main() u8 {
         return 1;
     };
 
-    loadFont(&hunk.low(), &g.font) catch |err| {
-        std.debug.warn("Failed to load font: {}\n", err);
+    if (!common.loadStatic(&g.static, &hunk.low())) {
+        // loadStatic prints its own error
         return 1;
-    };
-
-    loadTileset(&hunk.low(), &g.tileset, g.palette[0..]) catch |err| {
-        std.debug.warn("Failed to load tileset: {}\n", err);
-        return 1;
-    };
+    }
 
     // https://github.com/ziglang/zig/issues/3046
     const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
@@ -551,8 +536,6 @@ pub fn main() u8 {
         return 1;
     };
     g.audio_module = blah;
-
-    g.perf_spam = false;
 
     var cfg = config.load(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load config: {}\n", err);
@@ -578,7 +561,11 @@ pub fn main() u8 {
         return 1;
     };
 
-    perf.init();
+    // TODO - this shouldn't be fatal
+    perf.init() catch |err| {
+        std.debug.warn("Failed to create performance timers: {}\n", err);
+        return 1;
+    };
 
     var quit = false;
     while (!quit) {
@@ -589,14 +576,14 @@ pub fn main() u8 {
                 SDL_KEYDOWN => {
                     if (sdl_event.key.repeat == 0) {
                         if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            spawnInputEvent(&g.session, &cfg, key, true);
+                            common.spawnInputEvent(&g.session, &cfg, key, true);
 
                             switch (key) {
                                 .Backquote => {
                                     fast_forward = true;
                                 },
                                 .F4 => {
-                                    g.perf_spam = !g.perf_spam;
+                                    perf.toggleSpam();
                                 },
                                 .F5 => {
                                     platform_draw.cycleGlitchMode(&g.draw_state);
@@ -608,7 +595,7 @@ pub fn main() u8 {
                 },
                 SDL_KEYUP => {
                     if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        spawnInputEvent(&g.session, &cfg, key, false);
+                        common.spawnInputEvent(&g.session, &cfg, key, false);
 
                         switch (key) {
                             .Backquote => {
@@ -626,14 +613,14 @@ pub fn main() u8 {
                         const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
                         if (sdl_event.jaxis.axis == i) {
                             if (sdl_event.jaxis.value < -threshold) {
-                                spawnInputEvent(&g.session, &cfg, neg, true);
-                                spawnInputEvent(&g.session, &cfg, pos, false);
+                                common.spawnInputEvent(&g.session, &cfg, neg, true);
+                                common.spawnInputEvent(&g.session, &cfg, pos, false);
                             } else if (sdl_event.jaxis.value > threshold) {
-                                spawnInputEvent(&g.session, &cfg, pos, true);
-                                spawnInputEvent(&g.session, &cfg, neg, false);
+                                common.spawnInputEvent(&g.session, &cfg, pos, true);
+                                common.spawnInputEvent(&g.session, &cfg, neg, false);
                             } else {
-                                spawnInputEvent(&g.session, &cfg, pos, false);
-                                spawnInputEvent(&g.session, &cfg, neg, false);
+                                common.spawnInputEvent(&g.session, &cfg, pos, false);
+                                common.spawnInputEvent(&g.session, &cfg, neg, false);
                             }
                         }
                     }
@@ -657,7 +644,7 @@ pub fn main() u8 {
                         else => null,
                     };
                     if (maybe_key) |key| {
-                        spawnInputEvent(&g.session, &cfg, key, down);
+                        common.spawnInputEvent(&g.session, &cfg, key, down);
                     }
                 },
                 SDL_WINDOWEVENT => {
@@ -695,7 +682,7 @@ pub fn main() u8 {
         var i: u32 = 0; while (i < num_frames) : (i += 1) {
             perf.begin(&perf.timers.Frame);
             gameFrame(&g.session);
-            perf.end(&perf.timers.Frame, g.perf_spam);
+            perf.end(&perf.timers.Frame);
 
             var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
                 switch (object.data) {
@@ -769,32 +756,6 @@ pub fn main() u8 {
     return 0;
 }
 
-fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) void {
-    const game_command =
-        for (cfg.game_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
-            }
-        } else null;
-
-    const menu_command =
-        for (cfg.menu_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
-            }
-        } else null;
-
-    // dang.. an event even for unbound keys. oh well
-    // if (game_command != null or menu_command != null) {
-        _ = p.EventRawInput.spawn(gs, c.EventRawInput {
-            .game_command = game_command,
-            .menu_command = menu_command,
-            .key = key,
-            .down = down,
-        }) catch undefined;
-    // }
-}
-
 fn playSounds(g: *GameState) void {
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
@@ -804,18 +765,19 @@ fn playSounds(g: *GameState) void {
     g.audio_module.playSounds(&g.session, impulse_frame);
 }
 
-fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_draw.BlitRect, blit_alpha: f32) void {
+fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_framebuffer.BlitRect, blit_alpha: f32) void {
     perf.begin(&perf.timers.WholeDraw);
 
-    platform_draw.preDraw(&g.draw_state);
+    platform_framebuffer.preDraw(&g.framebuffer_state);
+    platform_draw.prepare(&g.draw_state);
 
     perf.begin(&perf.timers.Draw);
 
-    drawGame(g, cfg);
+    drawGame(&g.draw_state, &g.static, &g.session, cfg);
 
-    perf.end(&perf.timers.Draw, g.perf_spam);
+    perf.end(&perf.timers.Draw);
 
-    platform_draw.postDraw(&g.draw_state, blit_rect, blit_alpha);
+    platform_framebuffer.postDraw(&g.framebuffer_state, &g.draw_state, blit_rect, blit_alpha);
 
-    perf.end(&perf.timers.WholeDraw, g.perf_spam);
+    perf.end(&perf.timers.WholeDraw);
 }

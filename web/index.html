@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Oxid</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="page">
+      <div class="wrapper">
+        <canvas id="canvasgl" width="320" height="240"></canvas>
+      </div>
+      Scaling:
+      <select id="scale-select">
+        <option value="1x">1x</option>
+        <option value="2x">2x</option>
+        <option value="3x" selected>3x</option>
+        <option value="4x">4x</option>
+      </select>
+    </div>
+    <script>
+      var $webgl = document.getElementById("canvasgl");
+    </script>
+    <script src="js/webgl.js"></script>
+    <script src="js/webgl_generated.js"></script>
+    <script src="js/wasm.js"></script>
+    <script>
+      function setScale(value) {
+          $webgl.className = 'scale' + value;
+      }
+      window.addEventListener('DOMContentLoaded', () => {
+          setScale(document.getElementById('scale-select').value);
+      });
+      document.getElementById('scale-select').addEventListener('change', (event) => {
+          setScale(event.target.value);
+      });
+    </script>
+  </body>
+</html>

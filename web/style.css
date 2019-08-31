@@ -1,0 +1,32 @@
+body {
+    background: black;
+    color: #ddd;
+}
+
+#canvasgl {
+    display: block;
+    margin: 0 auto;
+}
+
+.scale1x {
+    width: 320px;
+    height: 240px;
+}
+
+.scale2x {
+    width: 640px;
+    height: 480px;
+    image-rendering: crisp-edges;
+}
+
+.scale3x {
+    width: 960px;
+    height: 720px;
+    image-rendering: crisp-edges;
+}
+
+.scale4x {
+    width: 1280px;
+    height: 960px;
+    image-rendering: crisp-edges;
+}

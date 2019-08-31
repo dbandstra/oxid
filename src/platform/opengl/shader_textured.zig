@@ -1,9 +1,14 @@
-usingnamespace @cImport({
-    @cInclude("epoxy/gl.h");
-});
-
+const builtin = @import("builtin");
+usingnamespace
+    if (builtin.arch == .wasm32)
+        @import("../../web.zig")
+    else
+        @cImport({
+            @cInclude("epoxy/gl.h");
+        });
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const warn = @import("../../warn.zig").warn;
 const shaders = @import("shaders.zig");
 const updateVbo = @import("draw.zig").updateVbo;
 
@@ -74,11 +79,17 @@ pub const Shader = struct {
 };
 
 fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
-    const old = version == shaders.GLSLVersion.V120;
+    const first_line = switch (version) {
+        .V120 => "#version 120\n",
+        .V130 => "#version 130\n",
+        .WebGL => "precision mediump float;\n",
+    };
+
+    const old = version == .V120 or version == .WebGL;
 
     return shaders.ShaderSource {
         .vertex =
-            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            first_line
             ++
             (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n"
             ++
@@ -95,7 +106,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\}
         ,
         .fragment =
-            "#version " ++ (if (old) "120" else "130") ++ "\n"
+            first_line
             ++
             (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n"
             ++
@@ -119,20 +130,21 @@ fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
     return switch (version) {
         .V120 => getSourceComptime(.V120),
         .V130 => getSourceComptime(.V130),
+        .WebGL => getSourceComptime(.WebGL),
     };
 }
 
 pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
-    errdefer std.debug.warn("Failed to create textured shader program.\n");
+    errdefer warn("Failed to create textured shader program.\n");
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 
     return Shader{
         .program = program,
-        .attrib_position = try shaders.getAttribLocation(program, c"VertexPosition"),
-        .attrib_texcoord = try shaders.getAttribLocation(program, c"TexCoord"),
-        .uniform_mvp = shaders.getUniformLocation(program, c"MVP"),
-        .uniform_tex = shaders.getUniformLocation(program, c"Tex"),
-        .uniform_color = shaders.getUniformLocation(program, c"Color"),
+        .attrib_position = try shaders.getAttribLocation(program, "VertexPosition\x00"),
+        .attrib_texcoord = try shaders.getAttribLocation(program, "TexCoord\x00"),
+        .uniform_mvp = shaders.getUniformLocation(program, "MVP\x00"),
+        .uniform_tex = shaders.getUniformLocation(program, "Tex\x00"),
+        .uniform_color = shaders.getUniformLocation(program, "Color\x00"),
     };
 }

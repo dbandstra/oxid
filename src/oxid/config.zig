@@ -1,5 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const warn = @import("../warn.zig").warn;
 const Key = @import("../common/key.zig").Key;
 const input = @import("input.zig");
 
@@ -12,7 +13,7 @@ pub const Config = struct {
 const config_datadir = "Oxid";
 const config_filename = "config.json";
 
-const default_config = Config {
+pub const default_config = Config {
     .volume = 100,
     .menu_key_bindings = blk: {
         var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key = undefined;
@@ -80,7 +81,7 @@ pub fn load(hunk_side: *HunkSide) !Config {
                             cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
                         else => {
-                            std.debug.warn("Value of \"volume\" must be an integer\n");
+                            warn("Value of \"volume\" must be an integer\n");
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_key_bindings")) {
@@ -88,12 +89,12 @@ pub fn load(hunk_side: *HunkSide) !Config {
                 } else if (std.mem.eql(u8, kv.key, "game_key_bindings")) {
                     readGameKeyBindings(&cfg, kv.value);
                 } else {
-                    std.debug.warn("Unrecognized config field: '{}'\n", kv.key);
+                    warn("Unrecognized config field: '{}'\n", kv.key);
                 }
             }
         },
         else => {
-            std.debug.warn("Top-level value must be an object\n");
+            warn("Top-level value must be an object\n");
         },
     }
 
@@ -110,7 +111,7 @@ fn readMenuKeyBindings(cfg: *Config, value: std.json.Value) void {
             }
         },
         else => {
-            std.debug.warn("Value of \"menu_key_bindings\" must be an object\n");
+            warn("Value of \"menu_key_bindings\" must be an object\n");
         },
     }
 }
@@ -125,7 +126,7 @@ fn readGameKeyBindings(cfg: *Config, value: std.json.Value) void {
             }
         },
         else => {
-            std.debug.warn("Value of \"game_key_bindings\" must be an object\n");
+            warn("Value of \"game_key_bindings\" must be an object\n");
         },
     }
 }
@@ -136,7 +137,7 @@ fn parseMenuCommand(s: []const u8) ?input.MenuCommand {
             return @intToEnum(input.MenuCommand, field.value);
         }
     } else {
-        std.debug.warn("Unrecognized menu command: '{}'\n", s);
+        warn("Unrecognized menu command: '{}'\n", s);
         return null;
     }
 }
@@ -147,7 +148,7 @@ fn parseGameCommand(s: []const u8) ?input.GameCommand {
             return @intToEnum(input.GameCommand, field.value);
         }
     } else {
-        std.debug.warn("Unrecognized game command: '{}'\n", s);
+        warn("Unrecognized game command: '{}'\n", s);
         return null;
     }
 }
@@ -160,7 +161,7 @@ fn parseKey(value: std.json.Value) ?Key {
                     return @intToEnum(Key, field.value);
                 }
             } else {
-                std.debug.warn("Unrecognized key: '{}'\n", s);
+                warn("Unrecognized key: '{}'\n", s);
                 return null;
             }
         },
@@ -168,7 +169,7 @@ fn parseKey(value: std.json.Value) ?Key {
             return null;
         },
         else => {
-            std.debug.warn("Key binding value must be a string or null\n");
+            warn("Key binding value must be a string or null\n");
             return null;
         }
     }
