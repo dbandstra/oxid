@@ -98,8 +98,8 @@ fn drawMapTile(ds: *pdraw.DrawState, static: *const common.GameStatic, x: u31, y
 }
 
 fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    //perf.begin(&perf.timers.DrawMap);
-    //defer perf.end(&perf.timers.DrawMap, g.perf_spam);
+    perf.begin(&perf.timers.DrawMap);
+    defer perf.end(&perf.timers.DrawMap);
 
     var y: u31 = 0; while (y < levels.height) : (y += 1) {
         var x: u31 = 0; while (x < levels.width) : (x += 1) {
@@ -112,8 +112,8 @@ fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
 fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    //perf.begin(&perf.timers.DrawMapForeground);
-    //defer perf.end(&perf.timers.DrawMapForeground, g.perf_spam);
+    perf.begin(&perf.timers.DrawMapForeground);
+    defer perf.end(&perf.timers.DrawMapForeground);
 
     var y: u31 = 6; while (y < 8) : (y += 1) {
         var x: u31 = 9; while (x < 11) : (x += 1) {
@@ -123,8 +123,8 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) voi
 }
 
 fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_drawables: []*const c.EventDraw) void {
-    //perf.begin(&perf.timers.DrawEntities);
-    //defer perf.end(&perf.timers.DrawEntities, g.perf_spam);
+    perf.begin(&perf.timers.DrawEntities);
+    defer perf.end(&perf.timers.DrawEntities);
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
@@ -175,8 +175,8 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
 }
 
 fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, game_active: bool) void {
-    //perf.begin(&perf.timers.DrawHud);
-    //defer perf.end(&perf.timers.DrawHud, g.perf_spam);
+    perf.begin(&perf.timers.DrawHud);
+    defer perf.end(&perf.timers.DrawHud);
 
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);

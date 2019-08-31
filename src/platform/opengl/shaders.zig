@@ -40,36 +40,36 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
     glAttachShader(program_id, fragment_id);
     glLinkProgram(program_id);
 
-if (builtin.arch == .wasm32) {
-    warn("TODO - check program status in webgl\n");
-    return Program {
-        .program_id = program_id,
-        .vertex_id = vertex_id,
-        .fragment_id = fragment_id,
-    };
-} else {
-    var ok: GLint = undefined;
-    glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
-    if (ok != 0) {
-        return Program{
+    if (builtin.arch == .wasm32) {
+        // TODO - check program status (currently that's hacked into my webgl bindings)
+        return Program {
             .program_id = program_id,
             .vertex_id = vertex_id,
             .fragment_id = fragment_id,
         };
     } else {
-        var error_size: GLint = undefined;
-        glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &error_size);
-        const mark = hunk_side.getMark();
-        defer hunk_side.freeToMark(mark);
-        if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-            glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
-            warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
-        } else |_| {
-            warn("Failed to retrieve program info log (out of memory).\n");
+        var ok: GLint = undefined;
+        glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
+        if (ok != 0) {
+            return Program {
+                .program_id = program_id,
+                .vertex_id = vertex_id,
+                .fragment_id = fragment_id,
+            };
+        } else {
+            var error_size: GLint = undefined;
+            glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &error_size);
+            const mark = hunk_side.getMark();
+            defer hunk_side.freeToMark(mark);
+            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+                glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
+                warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
+            } else |_| {
+                warn("Failed to retrieve program info log (out of memory).\n");
+            }
+            return error.ShaderLinkFailed;
         }
-        return error.ShaderLinkFailed;
     }
-}
 }
 
 fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
@@ -85,28 +85,28 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
     }
     glCompileShader(shader_id);
 
-if (builtin.arch == .wasm32) {
-    warn("TODO - check shader status in webgl\n");
-    return shader_id;
-} else {
-    var ok: GLint = undefined;
-    glGetShaderiv(shader_id, GL_COMPILE_STATUS, &ok);
-    if (ok != 0) {
+    if (builtin.arch == .wasm32) {
+        // TODO - check shader status (currently that's hacked into my webgl bindings)
         return shader_id;
     } else {
-        var error_size: GLint = undefined;
-        glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &error_size);
-        const mark = hunk_side.getMark();
-        defer hunk_side.freeToMark(mark);
-        if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
-            glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
-            warn("SHADER INFO LOG:\n{s}\n", message.ptr);
-        } else |_| {
-            warn("Failed to retrieve shader info log (out of memory).\n");
+        var ok: GLint = undefined;
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &ok);
+        if (ok != 0) {
+            return shader_id;
+        } else {
+            var error_size: GLint = undefined;
+            glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &error_size);
+            const mark = hunk_side.getMark();
+            defer hunk_side.freeToMark(mark);
+            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+                glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
+                warn("SHADER INFO LOG:\n{s}\n", message.ptr);
+            } else |_| {
+                warn("Failed to retrieve shader info log (out of memory).\n");
+            }
+            return error.ShaderCompileFailed;
         }
-        return error.ShaderCompileFailed;
     }
-}
 }
 
 pub fn destroy(sp: Program) void {

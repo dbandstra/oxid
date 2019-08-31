@@ -79,7 +79,7 @@ pub const Shader = struct {
 };
 
 fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
-    const version_string = switch (version) {
+    const first_line = switch (version) {
         .V120 => "#version 120\n",
         .V130 => "#version 130\n",
         .WebGL => "precision mediump float;\n",
@@ -89,7 +89,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
 
     return shaders.ShaderSource {
         .vertex =
-            version_string
+            first_line
             ++
             (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n"
             ++
@@ -106,7 +106,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\}
         ,
         .fragment =
-            version_string
+            first_line
             ++
             (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n"
             ++
