@@ -2,7 +2,6 @@ const builtin = @import("builtin");
 
 pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
-pub usingnamespace @import("web/keycodes.zig");
 
 pub extern fn getRandomSeed() c_uint;
 
