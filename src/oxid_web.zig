@@ -20,9 +20,10 @@ const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
 
+const config_storagekey = "config";
 const highscores_storagekey = "highscores";
 
-var cfg = config.default_config;
+var cfg = config.default;
 var audio_enabled = false;
 
 const GameState = struct {
@@ -31,6 +32,23 @@ const GameState = struct {
     static: common.GameStatic,
     session: GameSession,
 };
+
+fn loadConfig(hunk_side: *HunkSide) !config.Config {
+    var buffer: [5000]u8 = undefined;
+    const bytes_read = try web.getLocalStorage(config_storagekey, buffer[0..]);
+    if (bytes_read == 0) {
+        return config.default;
+    }
+    var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
+    return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
+}
+
+fn saveConfig(hunk_side: *HunkSide, cfg_: config.Config) !void {
+    var buffer: [5000]u8 = undefined;
+    var dest = std.io.SliceOutStream.init(buffer[0..]);
+    try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg_, hunk_side);
+    web.setLocalStorage(config_storagekey, dest.getWritten());
+}
 
 fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
     var buffer: [1000]u8 = undefined;
@@ -187,6 +205,11 @@ fn init() !void {
     };
     errdefer platform_draw.deinit(&g.draw_state);
 
+    cfg = loadConfig(&hunk.low()) catch |err| {
+        warn("Failed to load config: {}\n", err);
+        return error.Failed;
+    };
+
     const initial_high_scores = blk: {
         const high_scores = loadHighScores(&hunk.low()) catch |err| {
             warn("Failed to load high scores: {}\n", err);
@@ -211,7 +234,7 @@ fn init() !void {
     g.session.init(rand_seed);
     gameInit(&g.session, p.MainController.Params {
         .is_fullscreen = false, // fullscreen,
-        .volume = 100, // cfg.volume,
+        .volume = cfg.volume,
         .high_scores = initial_high_scores,
     }) catch |err| {
         warn("Failed to initialize game: {}\n", err);
@@ -268,7 +291,12 @@ export fn onAnimationFrame(now_time: c_int) void {
 
     var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
         switch (object.data) {
-            .SetVolume => |value| cfg.volume = value,
+            .SetVolume => |value| {
+                cfg.volume = value;
+                saveConfig(&hunk.low(), cfg) catch |err| {
+                    warn("Failed to save config: {}\n", err);
+                };
+            },
             .ToggleFullscreen => {},//toggle_fullscreen = true,
             .BindGameCommand => |payload| {
                 const command_index = @enumToInt(payload.command);
@@ -283,6 +311,9 @@ export fn onAnimationFrame(now_time: c_int) void {
                 if (!key_in_use) {
                     cfg.game_key_bindings[command_index] = payload.key;
                 }
+                saveConfig(&hunk.low(), cfg) catch |err| {
+                    warn("Failed to save config: {}\n", err);
+                };
             },
             .SaveHighScores => |high_scores| {
                 saveHighScores(&hunk.low(), high_scores) catch |err| {

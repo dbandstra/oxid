@@ -29,6 +29,7 @@ const common = @import("oxid_common.zig");
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
 const datadir = "Oxid";
+const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
 
 const GameState = struct {
@@ -65,6 +66,26 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
         .Read => std.fs.File.openRead(file_path),
         .Write => std.fs.File.openWrite(file_path),
     };
+}
+
+fn loadConfig(hunk_side: *HunkSide) !config.Config {
+    const file = openDataFile(hunk_side, config_filename, .Read) catch |err| {
+        if (err == error.FileNotFound) {
+            return config.default;
+        }
+        return err;
+    };
+    defer file.close();
+
+    const size = try std.math.cast(usize, try file.getEndPos());
+    return try config.read(std.fs.File.InStream.Error, &std.fs.File.inStream(file).stream, size, hunk_side);
+}
+
+fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
+    const file = try openDataFile(hunk_side, config_filename, .Write);
+    defer file.close();
+
+    return try config.write(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, cfg, hunk_side);
 }
 
 fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
@@ -581,12 +602,12 @@ pub fn main() u8 {
     };
     g.audio_module = blah;
 
-    var cfg = config.load(&hunk.low()) catch |err| {
+    var cfg = loadConfig(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load config: {}\n", err);
         return 1;
     };
 
-    defer config.save(cfg, &hunk.low()) catch |err| {
+    defer saveConfig(cfg, &hunk.low()) catch |err| {
         std.debug.warn("Failed to save config: {}\n", err);
     };
 

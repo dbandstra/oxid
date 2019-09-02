@@ -10,10 +10,7 @@ pub const Config = struct {
     game_key_bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?Key,
 };
 
-const config_datadir = "Oxid";
-const config_filename = "config.json";
-
-pub const default_config = Config {
+pub const default = Config {
     .volume = 100,
     .menu_key_bindings = blk: {
         var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?Key = undefined;
@@ -50,26 +47,20 @@ pub const default_config = Config {
     },
 };
 
-pub fn load(hunk_side: *HunkSide) !Config {
+pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size: usize, hunk_side: *HunkSide) !Config {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
-    var cfg = default_config;
-
-    const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, config_datadir);
-    const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, config_filename});
-    const contents = std.io.readFileAlloc(&hunk_side.allocator, file_path) catch |err| {
-        if (err == error.FileNotFound) {
-            return cfg;
-        }
-        return err;
-    };
+    var contents = try hunk_side.allocator.alloc(u8, size);
+    try stream.readNoEof(contents);
 
     var p = std.json.Parser.init(&hunk_side.allocator, false);
     defer p.deinit();
 
     var tree = try p.parse(contents);
     defer tree.deinit();
+
+    var cfg = default;
 
     switch (tree.root) {
         .Object => |map| {
@@ -184,26 +175,8 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
     unreachable;
 }
 
-pub fn save(cfg: Config, hunk_side: *HunkSide) !void {
-    const mark = hunk_side.getMark();
-    defer hunk_side.freeToMark(mark);
-
-    const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, config_datadir);
-
-    std.fs.makeDir(dir_path) catch |err| {
-        if (err != error.PathAlreadyExists) {
-            return err;
-        }
-    };
-
-    const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, config_filename});
-
-    const file = try std.fs.File.openWrite(file_path);
-    defer file.close();
-
-    var fos = std.fs.File.outStream(file);
-
-    try fos.stream.print(
+pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), cfg: Config, hunk_side: *HunkSide) !void {
+    try stream.print(
         \\{{
         \\    "volume": {},
         \\    "menu_key_bindings": {{
@@ -214,18 +187,18 @@ pub fn save(cfg: Config, hunk_side: *HunkSide) !void {
     for (cfg.menu_key_bindings) |maybe_key, i| {
         const command = @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
         const command_name = getEnumValueName(input.MenuCommand, command);
-        try fos.stream.print("        \"{}\": ", command_name);
+        try stream.print("        \"{}\": ", command_name);
         if (maybe_key) |key| {
-            try fos.stream.print("\"{}\"", getEnumValueName(Key, key));
+            try stream.print("\"{}\"", getEnumValueName(Key, key));
         } else {
-            try fos.stream.print("null");
+            try stream.print("null");
         }
         if (i < cfg.menu_key_bindings.len - 1) {
-            try fos.stream.print(",");
+            try stream.print(",");
         }
-        try fos.stream.print("\n");
+        try stream.print("\n");
     }
-    try fos.stream.print(
+    try stream.print(
         \\    }},
         \\    "game_key_bindings": {{
         \\
@@ -233,18 +206,18 @@ pub fn save(cfg: Config, hunk_side: *HunkSide) !void {
     for (cfg.game_key_bindings) |maybe_key, i| {
         const command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
         const command_name = getEnumValueName(input.GameCommand, command);
-        try fos.stream.print("        \"{}\": ", command_name);
+        try stream.print("        \"{}\": ", command_name);
         if (maybe_key) |key| {
-            try fos.stream.print("\"{}\"", getEnumValueName(Key, key));
+            try stream.print("\"{}\"", getEnumValueName(Key, key));
         } else {
-            try fos.stream.print("null");
+            try stream.print("null");
         }
         if (i < cfg.game_key_bindings.len - 1) {
-            try fos.stream.print(",");
+            try stream.print(",");
         }
-        try fos.stream.print("\n");
+        try stream.print("\n");
     }
-    try fos.stream.print(
+    try stream.print(
         \\    }}
         \\}}
         \\
