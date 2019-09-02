@@ -46,7 +46,6 @@ const js_top =
     \\
     \\const glShaders = [];
     \\const glPrograms = [];
-    \\const glVertexArrays = [];
     \\const glBuffers = [];
     \\const glTextures = [];
     \\const glFramebuffers = [];
@@ -104,16 +103,6 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.bindTexture(target, glTextures[texture_id]);
-    },
-    // TODO - mention that this is not part of core WebGL 1
-    Func {
-        .name = "glBindVertexArray",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
-        },
-        .ret = "void",
-        .js =
-            \\gl.bindVertexArray(glVertexArrays[id]);
     },
     // TODO - glBlendColor
     // TODO - glBlendEquation
@@ -239,15 +228,6 @@ const funcs = [_]Func {
             \\glTextures.push(gl.createTexture());
             \\return glTextures.length - 1;
     },
-    // TODO - not part of core WebGL 1
-    Func {
-        .name = "glCreateVertexArray",
-        .args = [_]Arg {},
-        .ret = "c_uint",
-        .js =
-            \\glVertexArrays.push(gl.createVertexArray());
-            \\return glVertexArrays.length - 1;
-    },
     // TODO - glCullFace
     Func {
         .name = "glDeleteBuffer",
@@ -291,17 +271,6 @@ const funcs = [_]Func {
             \\gl.deleteTexture(glTextures[id]);
             \\glTextures[id] = undefined;
     },
-    // TODO - not part of core WebGL 1
-    Func {
-        .name = "glDeleteVertexArray",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
-        },
-        .ret = "void",
-        .js =
-            \\gl.deleteVertexArray(glVertexArrays[id]);
-            \\glVertexArrays[id] = undefined;
-    },
     Func {
         .name = "glDepthFunc",
         .args = [_]Arg {
@@ -343,18 +312,6 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.drawArrays(type, offset, count);
-    },
-    // TODO - not part of core WebGL 1
-    Func {
-        .name = "glDrawBuffers",
-        .args = [_]Arg {
-            // FIXME
-            Arg { .name = "num", .type = "GLsizei" },
-            Arg { .name = "bufs", .type = "[*c]const GLenum" },
-        },
-        .ret = "void",
-        .js =
-            \\gl.drawBuffers(new Uint32Array(memory.buffer, bufs, num));
     },
     // TODO - glDrawElements
     Func {
