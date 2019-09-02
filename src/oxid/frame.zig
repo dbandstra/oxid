@@ -3,7 +3,6 @@ const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
-const datafile = @import("datafile.zig");
 
 pub fn gameInit(gs: *GameSession, params: p.MainController.Params) !void {
     _ = try p.MainController.spawn(gs, params);

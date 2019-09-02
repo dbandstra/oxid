@@ -28,6 +28,9 @@ const common = @import("oxid_common.zig");
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
 
+const datadir = "Oxid";
+const highscores_filename = "highscore.dat";
+
 const GameState = struct {
     draw_state: platform_draw.DrawState,
     framebuffer_state: platform_framebuffer.FramebufferState,
@@ -42,17 +45,45 @@ const AudioUserData = struct {
     volume: u32,
 };
 
-extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
-    const userdata = @ptrCast(*AudioUserData, @alignCast(@alignOf(*AudioUserData), userdata_.?));
-    const out_bytes = stream_.?[0..@intCast(usize, len_)];
+fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, Write }) !std.fs.File {
+    const mark = hunk_side.getMark();
+    defer hunk_side.freeToMark(mark);
 
-    const g = userdata.g;
+    const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
 
-    const buf = g.audio_module.paint(userdata.sample_rate, &g.session);
+    if (mode == .Write) {
+        std.fs.makeDir(dir_path) catch |err| {
+            if (err != error.PathAlreadyExists) {
+                return err;
+            }
+        };
+    }
 
-    const vol = std.math.min(1.0, @intToFloat(f32, userdata.volume) / 100.0);
+    const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, filename});
 
-    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
+    return switch (mode) {
+        .Read => std.fs.File.openRead(file_path),
+        .Write => std.fs.File.openWrite(file_path),
+    };
+}
+
+fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
+    const file = openDataFile(hunk_side, highscores_filename, .Read) catch |err| {
+        if (err == error.FileNotFound) {
+            return [1]u32{0} ** Constants.num_high_scores;
+        }
+        return err;
+    };
+    defer file.close();
+
+    return datafile.readHighScores(std.fs.File.InStream.Error, &std.fs.File.inStream(file).stream);
+}
+
+fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
+    const file = try openDataFile(hunk_side, highscores_filename, .Write);
+    defer file.close();
+
+    try datafile.writeHighScores(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, high_scores);
 }
 
 fn translateKey(sym: SDL_Keycode) ?Key {
@@ -381,6 +412,19 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     };
 }
 
+extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
+    const userdata = @ptrCast(*AudioUserData, @alignCast(@alignOf(*AudioUserData), userdata_.?));
+    const out_bytes = stream_.?[0..@intCast(usize, len_)];
+
+    const g = userdata.g;
+
+    const buf = g.audio_module.paint(userdata.sample_rate, &g.session);
+
+    const vol = std.math.min(1.0, @intToFloat(f32, userdata.volume) / 100.0);
+
+    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
+}
+
 var main_memory: [@sizeOf(GameState) + 200*1024]u8 = undefined;
 
 pub fn main() u8 {
@@ -520,7 +564,7 @@ pub fn main() u8 {
 
     const rand_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF);
 
-    const initial_high_scores = datafile.loadHighScores(&hunk.low()) catch |err| {
+    const initial_high_scores = loadHighScores(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load high scores from disk: {}\n", err);
         return 1;
     };
@@ -703,7 +747,7 @@ pub fn main() u8 {
                         }
                     },
                     .SaveHighScores => |high_scores| {
-                        datafile.saveHighScores(&hunk.low(), high_scores) catch |err| {
+                        saveHighScores(&hunk.low(), high_scores) catch |err| {
                             std.debug.warn("Failed to save high scores to disk: {}\n", err);
                         };
                     },

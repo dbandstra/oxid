@@ -6,9 +6,23 @@ const env = {
         return Math.floor(Math.random() * 2147483647);
     },
     consoleLog_(ptr, len) {
-        const bytes = new Uint8Array(memory.buffer, ptr, len);
-        const str = new TextDecoder().decode(bytes);
-        console.log('consoleLog', str);
+        console.log(new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, len)));
+    },
+    getLocalStorage_(name_ptr, name_len, value_ptr, value_maxlen) {
+        const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
+        const value = base64js.toByteArray(window.localStorage.getItem(name) || '');
+        try {
+            new Uint8Array(memory.buffer, value_ptr, value_maxlen).set(value);
+        } catch (err) {
+            console.warn('getLocalStorage_:', err);
+            return -1;
+        }
+        return value.length;
+    },
+    setLocalStorage_(name_ptr, name_len, value_ptr, value_len) {
+        const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
+        const value = base64js.fromByteArray(new Uint8Array(memory.buffer, value_ptr, value_len));
+        window.localStorage.setItem(name, value);
     },
 }
 

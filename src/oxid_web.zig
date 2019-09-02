@@ -16,8 +16,11 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
+const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
+
+const highscores_storagekey = "highscores";
 
 var cfg = config.default_config;
 var audio_enabled = false;
@@ -28,6 +31,20 @@ const GameState = struct {
     static: common.GameStatic,
     session: GameSession,
 };
+
+fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
+    var buffer: [1000]u8 = undefined;
+    const bytes_read = try web.getLocalStorage(highscores_storagekey, buffer[0..]);
+    var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
+    return datafile.readHighScores(std.io.SliceInStream.Error, &sis.stream);
+}
+
+fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
+    var buffer: [1000]u8 = undefined;
+    var dest = std.io.SliceOutStream.init(buffer[0..]);
+    try datafile.writeHighScores(std.io.SliceOutStream.Error, &dest.stream, high_scores);
+    web.setLocalStorage(highscores_storagekey, dest.getWritten());
+}
 
 fn translateKey(keyCode: c_int) ?Key {
     return switch (keyCode) {
@@ -144,6 +161,7 @@ export fn onKeyEvent(keyCode: c_int, down: c_int) c_int {
 }
 
 var main_memory: []u8 = undefined;
+var hunk: Hunk = undefined;
 var g: *GameState = undefined;
 
 const audio_buffer_size = 1024;
@@ -155,7 +173,7 @@ fn init() !void {
     };
     errdefer std.heap.wasm_allocator.free(main_memory);
 
-    var hunk = Hunk.init(main_memory);
+    hunk = Hunk.init(main_memory);
 
     g = hunk.low().allocator.create(GameState) catch unreachable;
 
@@ -169,6 +187,14 @@ fn init() !void {
     };
     errdefer platform_draw.deinit(&g.draw_state);
 
+    const initial_high_scores = blk: {
+        const high_scores = loadHighScores(&hunk.low()) catch |err| {
+            warn("Failed to load high scores: {}\n", err);
+            break :blk [1]u32{0} ** Constants.num_high_scores;
+        };
+        break :blk high_scores;
+    };
+
     if (!common.loadStatic(&g.static, &hunk.low())) {
         // loadStatic prints its own error
         return error.Failed;
@@ -181,7 +207,6 @@ fn init() !void {
     };
     g.audio_module = blah;
 
-    const initial_high_scores = [1]u32{0} ** Constants.num_high_scores;
     const rand_seed = web.getRandomSeed();
     g.session.init(rand_seed);
     gameInit(&g.session, p.MainController.Params {
@@ -260,9 +285,9 @@ export fn onAnimationFrame(now_time: c_int) void {
                 }
             },
             .SaveHighScores => |high_scores| {
-                //datafile.saveHighScores(&hunk.low(), high_scores) catch |err| {
-                //    std.debug.warn("Failed to save high scores to disk: {}\n", err);
-                //};
+                saveHighScores(&hunk.low(), high_scores) catch |err| {
+                    warn("Failed to save high scores: {}\n", err);
+                };
             },
             .Quit => {},//quit = true,
         }
