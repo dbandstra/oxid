@@ -602,9 +602,13 @@ pub fn main() u8 {
     };
     g.audio_module = blah;
 
-    var cfg = loadConfig(&hunk.low()) catch |err| {
-        std.debug.warn("Failed to load config: {}\n", err);
-        return 1;
+    var cfg = blk: {
+        // if config couldn't load, warn and fall back to default config
+        const cfg_ = loadConfig(&hunk.low()) catch |err| {
+            std.debug.warn("Failed to load config: {}\n", err);
+            break :blk config.default;
+        };
+        break :blk cfg_;
     };
 
     defer saveConfig(cfg, &hunk.low()) catch |err| {

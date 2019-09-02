@@ -205,12 +205,17 @@ fn init() !void {
     };
     errdefer platform_draw.deinit(&g.draw_state);
 
-    cfg = loadConfig(&hunk.low()) catch |err| {
-        warn("Failed to load config: {}\n", err);
-        return error.Failed;
+    cfg = blk: {
+        // if config couldn't load, warn and fall back to default config
+        const cfg_ = loadConfig(&hunk.low()) catch |err| {
+            warn("Failed to load config: {}\n", err);
+            break :blk config.default;
+        };
+        break :blk cfg_;
     };
 
     const initial_high_scores = blk: {
+        // if high scores couldn't load, warn and fall back to blank list
         const high_scores = loadHighScores(&hunk.low()) catch |err| {
             warn("Failed to load high scores: {}\n", err);
             break :blk [1]u32{0} ** Constants.num_high_scores;
