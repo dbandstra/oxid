@@ -18,6 +18,8 @@ body {
 #canvasgl {
     display: block;
     margin: 0 auto;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 
 .scale-1x {
@@ -38,16 +40,4 @@ body {
 .scale-4x {
     width: 1280px;
     height: 960px;
-}
-
-.scaletype-auto {
-    image-rendering: auto;
-}
-
-.scaletype-crisp-edges {
-    image-rendering: crisp-edges;
-}
-
-.scaletype-pixelated {
-    image-rendering: pixelated;
 }

@@ -24,14 +24,6 @@
                     </select>
                 </div>
                 <div class="option">
-                    Scaling algorithm:
-                    <select id="scaletype-select">
-                        <option value="auto">auto</option>
-                        <option value="crisp-edges">crisp-edges</option>
-                        <option value="pixelated">pixelated</option>
-                    </select>
-                </div>
-                <div class="option">
                     <button type="button" id="enable-sound-button">Enable sound</button>
                 </div>
             </div>
@@ -61,11 +53,6 @@
                 });
             }
             initializeSelect(document.getElementById('scale-select'), 'scale-', '3x');
-            // firefox doesn't support 'pixelated', but it looks pixellated using 'crisp-edges'.
-            // other browsers look blurry in 'crisp-edge', but supported 'pixelated'.
-            // try to initialize to the value we think will actually look pixellated
-            initializeSelect(document.getElementById('scaletype-select'), 'scaletype-',
-                CSS.supports('image-rendering', 'pixelated') ? 'pixelated' : 'crisp-edges');
         </script>
     </body>
 </html>
