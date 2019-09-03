@@ -156,7 +156,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .pos = self.transform.pos,
             }) catch undefined;
         }
-        self.monster.next_attack_timer = gs.getRand().range(u32, 75, 400);
+        self.monster.next_attack_timer = Constants.duration60(gs.getRand().range(u31, 75, 400));
     }
 }
 

@@ -81,8 +81,8 @@ pub const GameController = struct {
         .enemy_speed_level = 0,
         .enemy_speed_timer = Constants.enemy_speed_ticks,
         .wave_number = 0,
-        .next_wave_timer = 90,
-        .next_pickup_timer = 15*60,
+        .next_wave_timer = Constants.duration60(90),
+        .next_pickup_timer = Constants.duration60(15*60),
         .freeze_monsters_timer = 0,
         .extra_lives_spawned = 0,
         .wave_message = null,
@@ -256,7 +256,7 @@ pub const Monster = struct {
             .can_drop_webs = monster_values.can_drop_webs,
             .next_attack_timer =
                 if (can_shoot or monster_values.can_drop_webs)
-                    gs.getRand().range(u32, 75, 400)
+                    Constants.duration60(gs.getRand().range(u31, 75, 400))
                 else
                     0,
             .has_coin = params.has_coin,
@@ -470,7 +470,7 @@ pub const Sound = struct {
         // FIXME!!! this timer will be paused when you're in the menu, but we
         // use sounds in the menu too!
         try gs.addComponent(entity_id, c.RemoveTimer {
-            .timer = @floatToInt(u32, params.duration * 60.0),
+            .timer = @floatToInt(u32, params.duration * f32(Constants.ticks_per_second)),
         });
 
         return entity_id;

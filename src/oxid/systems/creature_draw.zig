@@ -26,14 +26,14 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
-                    if (player.dying_timer > 30)
-                        if (alternation(u32, player.dying_timer, 2))
+                    if (player.dying_timer > Constants.duration60(30))
+                        if (alternation(u32, player.dying_timer, Constants.duration60(2)))
                             Graphic.ManDying1
                         else
                             Graphic.ManDying2
-                    else if (player.dying_timer > 20)
+                    else if (player.dying_timer > Constants.duration60(20))
                         Graphic.ManDying3
-                    else if (player.dying_timer > 10)
+                    else if (player.dying_timer > Constants.duration60(10))
                         Graphic.ManDying4
                     else
                         Graphic.ManDying5,
@@ -56,7 +56,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
-                    if (alternation(u32, monster.spawning_timer, 8))
+                    if (alternation(u32, monster.spawning_timer, Constants.duration60(8)))
                         Graphic.Spawn1
                     else
                         Graphic.Spawn2,
@@ -130,7 +130,7 @@ const DrawCreatureParams = struct{
 fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) void {
     // blink during invulnerability
     if (self.creature.invulnerability_timer > 0) {
-        if (alternation(u32, self.creature.invulnerability_timer, 2)) {
+        if (alternation(u32, self.creature.invulnerability_timer, Constants.duration60(2))) {
             return;
         }
     }

@@ -23,7 +23,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.player.spawn_anim_y_remaining > 0) {
-        const dy = std.math.min(8, self.player.spawn_anim_y_remaining);
+        const dy = std.math.min(Constants.player_spawn_arise_speed, self.player.spawn_anim_y_remaining);
         self.transform.pos.y -= i32(dy);
         self.player.spawn_anim_y_remaining -= dy;
         return .Remain;
@@ -33,7 +33,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         }) catch undefined;
         return .RemoveSelf;
     } else if (self.player.dying_timer > 0) {
-        if (self.player.dying_timer == 30) { // yeesh
+        if (self.player.dying_timer == Constants.duration60(30)) { // yeesh
             p.playSample(gs, .PlayerCrumble);
         }
         self.phys.speed = 0;

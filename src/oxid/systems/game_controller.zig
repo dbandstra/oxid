@@ -30,7 +30,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             .unused = false,
         });
         self.gc.wave_number += 1;
-        self.gc.wave_message_timer = 180;
+        self.gc.wave_message_timer = Constants.duration60(180);
         self.gc.enemy_speed_level = 0;
         self.gc.enemy_speed_timer = Constants.enemy_speed_ticks;
         const wave = createWave(gs, self.gc);

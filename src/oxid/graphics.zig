@@ -5,6 +5,7 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("pdraw");
 const pcx_helper = @import("../common/pcx_helper.zig");
 const draw = @import("../common/draw.zig");
+const Constants = @import("constants.zig");
 
 const graphics_filename = build_options.assets_path ++ "/mytiles.pcx";
 const transparent_color_index = 27;
@@ -122,15 +123,15 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
     return switch (simpleAnim) {
         .PlaSparks => SimpleAnimConfig {
             .frames = ([_]Graphic { .PlaSpark1, .PlaSpark2 })[0..],
-            .ticks_per_frame = 6,
+            .ticks_per_frame = Constants.duration60(6),
         },
         .MonSparks => SimpleAnimConfig {
             .frames = ([_]Graphic { .MonSpark1, .MonSpark2 })[0..],
-            .ticks_per_frame = 6,
+            .ticks_per_frame = Constants.duration60(6),
         },
         .Explosion => SimpleAnimConfig {
             .frames = ([_]Graphic { .Explode1, .Explode2, .Explode3, .Explode4 })[0..],
-            .ticks_per_frame = 6,
+            .ticks_per_frame = Constants.duration60(6),
         }
     };
 }

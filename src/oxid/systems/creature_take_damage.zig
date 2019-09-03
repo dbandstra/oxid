@@ -29,7 +29,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         if (self.creature.hit_points > amount) {
             p.playSample(gs, .MonsterImpact);
             self.creature.hit_points -= amount;
-            self.creature.flinch_timer = 4;
+            self.creature.flinch_timer = Constants.duration60(4);
         } else if (self.creature.hit_points > 0) {
             self.creature.hit_points = 0;
             if (self.player) |self_player| {

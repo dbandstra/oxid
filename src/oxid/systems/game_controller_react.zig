@@ -35,7 +35,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     }
     var it3 = gs.iter(c.EventShowMessage); while (it3.next()) |object| {
         self.gc.wave_message = object.data.message;
-        self.gc.wave_message_timer = 180;
+        self.gc.wave_message_timer = Constants.duration60(180);
     }
     return .Remain;
 }
