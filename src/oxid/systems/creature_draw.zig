@@ -117,6 +117,9 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 ///////////////////////////////////////
 
 fn alternation(comptime T: type, variable: T, half_period: T) bool {
+    if (half_period == 0) {
+        return false;
+    }
     return @mod(@divFloor(variable, half_period), 2) == 0;
 }
 

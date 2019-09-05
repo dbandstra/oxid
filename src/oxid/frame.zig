@@ -9,7 +9,7 @@ pub fn gameInit(gs: *GameSession, params: p.MainController.Params) !void {
 }
 
 // run before "middleware" (rendering, sound, etc)
-pub fn gameFrame(gs: *GameSession) void {
+pub fn gameFrame(gs: *GameSession, draw: bool) void {
     @import("systems/input_router.zig").run(gs);
 
     @import("systems/main_controller_input.zig").run(gs);
@@ -60,16 +60,18 @@ pub fn gameFrame(gs: *GameSession) void {
 
     gs.applyRemovals();
 
-    // send draw commands (as events)
-    @import("systems/animation_draw.zig").run(gs);
-    @import("systems/creature_draw.zig").run(gs);
-    @import("systems/simple_graphic_draw.zig").run(gs);
+    if (draw) {
+        // send draw commands (as events)
+        @import("systems/animation_draw.zig").run(gs);
+        @import("systems/creature_draw.zig").run(gs);
+        @import("systems/simple_graphic_draw.zig").run(gs);
 
-    if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
-        if (grs.render_move_boxes) {
-            @import("systems/bullet_draw_box.zig").run(gs);
-            @import("systems/physobject_draw_box.zig").run(gs);
-            @import("systems/player_draw_box.zig").run(gs);
+        if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
+            if (grs.render_move_boxes) {
+                @import("systems/bullet_draw_box.zig").run(gs);
+                @import("systems/physobject_draw_box.zig").run(gs);
+                @import("systems/player_draw_box.zig").run(gs);
+            }
         }
     }
 }

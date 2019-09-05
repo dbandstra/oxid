@@ -176,6 +176,13 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     };
 }
 
+const FramerateScheme = union(enum) {
+    // fixed: assume that tick function is called at this rate. don't even look at delta time
+    Fixed: usize,
+    // free: adapt to delta time
+    Free,
+};
+
 const Main = struct {
     draw_state: platform_draw.DrawState,
     framebuffer_state: platform_framebuffer.FramebufferState,
@@ -194,24 +201,87 @@ const Main = struct {
     audio_sample_rate_current: f32,
     audio_device: SDL_AudioDeviceID,
     fast_forward: bool,
+    framerate_scheme: FramerateScheme,
+    t: usize,
 };
 
 const Options = struct {
     audio_sample_rate: usize,
     audio_buffer_size: usize,
+    framerate_scheme: ?FramerateScheme,
+    vsync: bool, // if disabled, framerate scheme will be ignored
 };
 
 var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
 var hunk = Hunk.init(main_memory[0..]);
 
 pub fn main() u8 {
-    const maybe_options = parseOptions() catch |err| {
-        std.debug.warn("Failed to parse command-line options: {}\n", err);
-        return 1;
+    const self = blk: {
+        const options = parseOptions() catch |err| {
+            std.debug.warn("Failed to parse command-line options: {}\n", err);
+            return 1;
+        } orelse {
+            // --help flag was set, don't start the program
+            return 0;
+        };
+
+        break :blk init(options) catch |_| {
+            // init prints its own error
+            return 1;
+        };
     };
-    const options = maybe_options orelse return 0;
-    var self = init(options) catch |_| return 1;
-    while (tick(self)) {}
+
+    switch (self.framerate_scheme) {
+        .Fixed => |refresh_rate| {
+            while (tick(self, refresh_rate)) {}
+        },
+        .Free => {
+            const freq: u64 = SDL_GetPerformanceFrequency();
+            var maybe_prev: ?u64 = null;
+            while (true) {
+                const now: u64 = SDL_GetPerformanceCounter();
+                const delta_microseconds: u64 =
+                    if (maybe_prev) |prev| (
+                        if (now > prev) (
+                            (now - prev) * 1000000 / freq
+                        ) else (
+                            0
+                        )
+                    ) else (
+                        16667 // first tick's delta corresponds to 60 fps
+                    );
+                maybe_prev = now;
+
+                if (delta_microseconds < 1000) {
+                    // avoid possible divide by zero
+                    SDL_Delay(1);
+                    continue;
+                }
+
+                const refresh_rate = switch (self.framerate_scheme) {
+                    .Fixed => |rate| rate,
+                    .Free => 1000000 / delta_microseconds,
+                };
+
+                if (!tick(self, refresh_rate)) {
+                    break;
+                }
+
+                const threshold = 1000000 / (2 * Constants.ticks_per_second);
+                if (delta_microseconds < threshold) {
+                    // try to ease up on cpu usage in case the computer is
+                    // capable of running far quicker than the desired
+                    // framerate
+                    // TODO - think this through. i don't think the 1ms delay
+                    // is helping at all. a 5ms delay does help a bit but i
+                    // need to be smart about choosing delay values (as well
+                    // as the threshold value above)
+                    SDL_Delay(1);
+                }
+            }
+        },
+    }
+
     deinit(self);
     return 0;
 }
@@ -219,10 +289,13 @@ pub fn main() u8 {
 fn parseOptions() !?Options {
     const allocator = &hunk.low().allocator;
 
+    @setEvalBranchQuota(200000);
     const params = comptime [_]clap.Param(clap.Help) {
-        clap.parseParam("-h, --help          Display this help and exit") catch unreachable,
-        clap.parseParam("-r, --rate <NUM>    Audio sample rate (default 44100)") catch unreachable,
-        clap.parseParam("-b, --bufsize <NUM> Audio buffer size (default 1024)") catch unreachable,
+        clap.parseParam("-h, --help              Display this help and exit") catch unreachable,
+        clap.parseParam("-r, --rate <NUM>        Audio sample rate (default 44100)") catch unreachable,
+        clap.parseParam("-b, --bufsize <NUM>     Audio buffer size (default 1024)") catch unreachable,
+        clap.parseParam("-f, --refreshrate <NUM> Display refresh rate (number or `free`)") catch unreachable,
+        clap.parseParam("--novsync               Disable vsync") catch unreachable,
     };
 
     var iter = clap.args.OsIterator.init(allocator);
@@ -242,6 +315,8 @@ fn parseOptions() !?Options {
     var options = Options {
         .audio_sample_rate = 44100,
         .audio_buffer_size = 1024,
+        .framerate_scheme = null,
+        .vsync = true,
     };
 
     if (args.option("--rate")) |value| {
@@ -250,8 +325,60 @@ fn parseOptions() !?Options {
     if (args.option("--bufsize")) |value| {
         options.audio_buffer_size = try std.fmt.parseInt(usize, value, 10);
     }
+    if (args.option("--refreshrate")) |value| {
+        if (std.mem.eql(u8, value, "free")) {
+            options.framerate_scheme = .Free;
+        } else {
+            options.framerate_scheme = FramerateScheme {
+                .Fixed = try std.fmt.parseInt(usize, value, 10),
+            };
+        }
+    }
+    if (args.flag("--novsync")) {
+        options.vsync = false;
+    }
 
     return options;
+}
+
+fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?FramerateScheme) !FramerateScheme {
+    if (!vsync) {
+        // if vsync isn't enabled, a fixed framerate scheme never makes sense
+        return FramerateScheme { .Free = {} };
+    }
+
+    if (maybe_scheme) |scheme| {
+        // explicit scheme was supplied via command line option. override any
+        // auto-detection.
+        switch (scheme) {
+            .Fixed => |rate| {
+                if (rate < 1 or rate > 300) {
+                    std.debug.warn("Invalid refresh rate: {}\n", rate);
+                    return error.Failed;
+                }
+            },
+            .Free => {},
+        }
+        return scheme;
+    }
+
+    // vsync is enabled, so try to identify the display's native refresh rate
+    // and use that as our fixed rate
+    const display_index = SDL_GetWindowDisplayIndex(window);
+    var mode: SDL_DisplayMode = undefined;
+    if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
+        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n");
+        return FramerateScheme { .Free = {} };
+    }
+    if (mode.refresh_rate <= 0) {
+        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", mode.refresh_rate);
+        return FramerateScheme { .Free = {} };
+    }
+    // TODO - do i need to update this when the window moves (possibly to
+    // another monitor with a different refresh rate)?
+    return FramerateScheme {
+        .Fixed = @intCast(usize, mode.refresh_rate),
+    };
 }
 
 extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
@@ -327,11 +454,11 @@ fn init(options: Options) !*Main {
     SDL_GetWindowPosition(window, &original_window_x, &original_window_y);
 
     if (options.audio_sample_rate < 6000 or options.audio_sample_rate > 192000) {
-        std.debug.warn("Invalid audio sample rate: {}.\n", options.audio_sample_rate);
+        std.debug.warn("Invalid audio sample rate: {}\n", options.audio_sample_rate);
         return error.Failed;
     }
     if (options.audio_buffer_size < 32 or options.audio_buffer_size > 65535) {
-        std.debug.warn("Invalid audio buffer size: {}.\n", options.audio_buffer_size);
+        std.debug.warn("Invalid audio buffer size: {}\n", options.audio_buffer_size);
         return error.Failed;
     }
 
@@ -364,6 +491,28 @@ fn init(options: Options) !*Main {
     errdefer SDL_GL_DeleteContext(glcontext);
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
+
+    if (options.vsync) {
+        if (SDL_GL_SetSwapInterval(1) != 0) {
+            std.debug.warn("Warning: failed to set vsync.\n");
+        }
+    } else {
+        if (SDL_GL_SetSwapInterval(0) != 0) {
+            std.debug.warn("Warning: failed to disable vsync.\n");
+        }
+    }
+
+    // this function can return 1 (vsync), 0 (no vsync), or -1 (adaptive
+    // vsync). i don't really get what adaptive vsync is but it seems like it
+    // should be classed with vsync.
+    const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
+    std.debug.warn("Vsync is {}.\n", if (vsync_enabled) "enabled" else "disabled");
+
+    const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
+    switch (framerate_scheme) {
+        .Fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", refresh_rate),
+        .Free => std.debug.warn("Framerate scheme: free\n"),
+    }
 
     platform_draw.init(&self.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
@@ -453,6 +602,8 @@ fn init(options: Options) !*Main {
     self.audio_sample_rate_current = @intToFloat(f32, options.audio_sample_rate);
     self.audio_device = device;
     self.fast_forward = false;
+    self.framerate_scheme = framerate_scheme;
+    self.t = 0.0;
 
     return self;
 }
@@ -473,44 +624,68 @@ fn deinit(self: *Main) void {
     SDL_Quit();
 }
 
-fn tick(self: *Main) bool {
+// this is run once per monitor frame
+fn tick(self: *Main, refresh_rate: u64) bool {
+    const num_frames_to_simulate = blk: {
+        self.t += Constants.ticks_per_second; // gameplay update rate
+        var n: u32 = 0;
+        while (self.t >= refresh_rate) {
+            self.t -= refresh_rate;
+            n += 1;
+        }
+        break :blk n;
+    };
+
     var toggle_fullscreen = false;
 
-    var evt: SDL_Event = undefined;
-    while (SDL_PollEvent(&evt) != 0) {
-        if (!handleSDLEvent(self, evt)) {
-            return false;
-        }
-    }
-
-    // copy these system values straight into the MainController.
-    // this is kind of a hack, but on the other hand, i'm spawning entities
-    // in this file too, it's not that different...
-    if (self.session.findFirstObject(c.MainController)) |mc| {
-        mc.data.is_fullscreen = self.fullscreen;
-        mc.data.volume = self.cfg.volume;
-    }
-
-    const num_frames = if (self.fast_forward) u32(4) else u32(1);
-    var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
-        // run simulation and create events for drawing, playing sounds, etc.
-        perf.begin(&perf.timers.Frame);
-        gameFrame(&self.session);
-        perf.end(&perf.timers.Frame);
-
-        // respond to certain events (mostly from the menu)
-        if (!handleSystemCommands(self, &toggle_fullscreen)) {
-            return false;
+    var i: usize = 0; while (i < num_frames_to_simulate) : (i += 1) {
+        var evt: SDL_Event = undefined;
+        while (SDL_PollEvent(&evt) != 0) {
+            if (!handleSDLEvent(self, evt)) {
+                return false;
+            }
         }
 
-        // update audio (from sound events)
-        playSounds(self, num_frames);
+        // copy these system values straight into the MainController (this is
+        // context for the menus).
+        // this is kind of a hack, but on the other hand, i'm spawning entities
+        // in this file too, it's not that different...
+        if (self.session.findFirstObject(c.MainController)) |mc| {
+            mc.data.is_fullscreen = self.fullscreen;
+            mc.data.volume = self.cfg.volume;
+        }
 
-        // draw to framebuffer (from draw events)
-        drawMain(self, 1.0 / @intToFloat(f32, frame_index + 1));
+        // when fast forwarding, we'll simulate 4 frames and draw them blended
+        // together. we'll also speed up the sound playback rate by 4x
+        const num_frames = if (self.fast_forward) u32(4) else u32(1);
+        var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
+            // if we're simulating multiple frames for one draw cycle, we only
+            // need to actually draw for the last one of them
+            const draw = i == num_frames_to_simulate - 1;
 
-        // delete events
-        gameFrameCleanup(&self.session);
+            // run simulation and create events for drawing, playing sounds, etc.
+            perf.begin(&perf.timers.Frame);
+            gameFrame(&self.session, draw);
+            perf.end(&perf.timers.Frame);
+
+            // middleware response to certain events (mostly from the menu)
+            if (!handleSystemCommands(self, &toggle_fullscreen)) {
+                return false;
+            }
+
+            // update audio (from events)
+            playSounds(self, num_frames);
+
+            // draw to framebuffer (from events)
+            if (draw) {
+                // this alpha value is calculated to end up with an even blend
+                // of all fast forward frames
+                drawMain(self, 1.0 / @intToFloat(f32, frame_index + 1));
+            }
+
+            // delete events
+            gameFrameCleanup(&self.session);
+        }
     }
 
     SDL_GL_SwapWindow(self.window);
