@@ -17,7 +17,7 @@ pub fn build(b: *Builder) void {
     var main: *std.build.LibExeObjStep = undefined;
 
     if (wasm) {
-        main = b.addStaticLibrary("oxid", "src/oxid_web.zig");
+        main = b.addStaticLibrary("oxid", "src/main_web.zig");
         main.setOutputDir("web");
         main.setBuildMode(mode);
         main.setTarget(.wasm32, .freestanding, .none);
@@ -27,7 +27,7 @@ pub fn build(b: *Builder) void {
         const run_webgl_generate_tool = webgl_generate_tool.run();
         main.step.dependOn(&run_webgl_generate_tool.step);
     } else {
-        main = b.addExecutable("oxid", "src/oxid.zig");
+        main = b.addExecutable("oxid", "src/main_sdl.zig");
         main.setOutputDir("zig-cache");
         main.setBuildMode(mode);
 
