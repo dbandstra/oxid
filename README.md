@@ -27,6 +27,8 @@ zig build -Drelease-fast=true
 zig-cache/oxid
 ```
 
+The native version supports a few command-line options for things like audio sample rate. Run `zig-cache/oxid --help` for a listing.
+
 To build the Web Assembly version:
 ```
 zig build -Dwasm
@@ -53,4 +55,4 @@ Some sound effects from https://opengameart.org/content/512-sound-effects-8-bit-
 
 Uses [Dawnbringer's 16-colour palette](http://pixeljoint.com/forum/forum_posts.asp?TID=12795).
 
-Uses my [zig-hunk](https://github.com/dbandstra/zig-hunk), [zig-pcx](https://github.com/dbandstra/zig-pcx) and [zig-wav](https://github.com/dbandstra/zig-wav) one-file libraries, as well as [zang](https://github.com/dbandstra/zang) for audio.
+Uses Hejsil's [zig-clap](https://github.com/Hejsil/zig-clap), my [zig-hunk](https://github.com/dbandstra/zig-hunk), [zig-pcx](https://github.com/dbandstra/zig-pcx) and [zig-wav](https://github.com/dbandstra/zig-wav) one-file libraries, as well as [zang](https://github.com/dbandstra/zang) for audio.

@@ -38,6 +38,8 @@ pub fn build(b: *Builder) void {
         main.linkSystemLibrary("SDL2");
         main.linkSystemLibrary("epoxy");
         main.linkSystemLibrary("c");
+
+        main.addPackagePath("zig-clap", "zig-clap/clap.zig");
     }
 
     main.addPackagePath("gbe", "gbe/src/gbe.zig");

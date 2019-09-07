@@ -4,6 +4,7 @@ usingnamespace @cImport({
 });
 
 const std = @import("std");
+const clap = @import("zig-clap");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
@@ -176,7 +177,6 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
 }
 
 const Main = struct {
-    hunk: Hunk,
     draw_state: platform_draw.DrawState,
     framebuffer_state: platform_framebuffer.FramebufferState,
     audio_module: audio.MainModule,
@@ -190,11 +190,69 @@ const Main = struct {
     windowed_dims: WindowDims,
     original_window_x: c_int,
     original_window_y: c_int,
-    audio_sample_rate: u32,
+    audio_sample_rate: usize,
     audio_sample_rate_current: f32,
     audio_device: SDL_AudioDeviceID,
     fast_forward: bool,
 };
+
+const Options = struct {
+    audio_sample_rate: usize,
+    audio_buffer_size: usize,
+};
+
+var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
+var hunk = Hunk.init(main_memory[0..]);
+
+pub fn main() u8 {
+    const maybe_options = parseOptions() catch |err| {
+        std.debug.warn("Failed to parse command-line options: {}\n", err);
+        return 1;
+    };
+    const options = maybe_options orelse return 0;
+    var self = init(options) catch |_| return 1;
+    while (tick(self)) {}
+    deinit(self);
+    return 0;
+}
+
+fn parseOptions() !?Options {
+    const allocator = &hunk.low().allocator;
+
+    const params = comptime [_]clap.Param(clap.Help) {
+        clap.parseParam("-h, --help          Display this help and exit") catch unreachable,
+        clap.parseParam("-r, --rate <NUM>    Audio sample rate (default 44100)") catch unreachable,
+        clap.parseParam("-b, --bufsize <NUM> Audio buffer size (default 1024)") catch unreachable,
+    };
+
+    var iter = clap.args.OsIterator.init(allocator);
+    defer iter.deinit();
+
+    _ = try iter.next(); // exe
+
+    var args = try clap.ComptimeClap(clap.Help, params).parse(allocator, clap.args.OsIterator, &iter);
+    defer args.deinit();
+
+    if (args.flag("--help")) {
+        std.debug.warn("Usage:\n");
+        try clap.help(try std.debug.getStderrStream(), params);
+        return null;
+    }
+
+    var options = Options {
+        .audio_sample_rate = 44100,
+        .audio_buffer_size = 1024,
+    };
+
+    if (args.option("--rate")) |value| {
+        options.audio_sample_rate = try std.fmt.parseInt(usize, value, 10);
+    }
+    if (args.option("--bufsize")) |value| {
+        options.audio_buffer_size = try std.fmt.parseInt(usize, value, 10);
+    }
+
+    return options;
+}
 
 extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
     const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
@@ -205,15 +263,7 @@ extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void 
     zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
 }
 
-var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
-
-fn init() !*Main {
-    var hunk = Hunk.init(main_memory[0..]);
-
-    // TODO - implement command line options... using Hejsil's library maybe
-    const audio_sample_rate = 44100;
-    const audio_buffer_size = 1024;
-
+fn init(options: Options) !*Main {
     const self = hunk.low().allocator.create(Main) catch unreachable;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) != 0) {
@@ -276,11 +326,20 @@ fn init() !*Main {
     var original_window_y: c_int = undefined;
     SDL_GetWindowPosition(window, &original_window_x, &original_window_y);
 
+    if (options.audio_sample_rate < 6000 or options.audio_sample_rate > 192000) {
+        std.debug.warn("Invalid audio sample rate: {}.\n", options.audio_sample_rate);
+        return error.Failed;
+    }
+    if (options.audio_buffer_size < 32 or options.audio_buffer_size > 65535) {
+        std.debug.warn("Invalid audio buffer size: {}.\n", options.audio_buffer_size);
+        return error.Failed;
+    }
+
     var want: SDL_AudioSpec = undefined;
-    want.freq = @intCast(c_int, audio_sample_rate);
+    want.freq = @intCast(c_int, options.audio_sample_rate);
     want.format = AUDIO_S16LSB;
     want.channels = 1;
-    want.samples = audio_buffer_size;
+    want.samples = @intCast(u16, options.audio_buffer_size);
     want.callback = audioCallback;
     want.userdata = self;
 
@@ -346,7 +405,7 @@ fn init() !*Main {
     }
 
     // https://github.com/ziglang/zig/issues/3046
-    const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
+    const blah = audio.MainModule.init(&hunk.low(), options.audio_buffer_size) catch |err| {
         std.debug.warn("Failed to load audio module: {}\n", err);
         return error.Failed;
     };
@@ -382,7 +441,6 @@ fn init() !*Main {
 
     std.debug.warn("Initialization complete.\n");
 
-    self.hunk = hunk;
     self.cfg = cfg;
     self.window = window;
     self.glcontext = glcontext;
@@ -391,8 +449,8 @@ fn init() !*Main {
     self.windowed_dims = windowed_dims;
     self.original_window_x = original_window_x;
     self.original_window_y = original_window_y;
-    self.audio_sample_rate = audio_sample_rate;
-    self.audio_sample_rate_current = @intToFloat(f32, audio_sample_rate);
+    self.audio_sample_rate = options.audio_sample_rate;
+    self.audio_sample_rate_current = @intToFloat(f32, options.audio_sample_rate);
     self.audio_device = device;
     self.fast_forward = false;
 
@@ -402,7 +460,7 @@ fn init() !*Main {
 fn deinit(self: *Main) void {
     std.debug.warn("Shutting down.\n");
 
-    saveConfig(self.cfg, &self.hunk.low()) catch |err| {
+    saveConfig(self.cfg, &hunk.low()) catch |err| {
         std.debug.warn("Failed to save config: {}\n", err);
     };
 
@@ -598,7 +656,7 @@ fn handleSystemCommands(self: *Main, toggle_fullscreen: *bool) bool {
                 }
             },
             .SaveHighScores => |high_scores| {
-                saveHighScores(&self.hunk.low(), high_scores) catch |err| {
+                saveHighScores(&hunk.low(), high_scores) catch |err| {
                     std.debug.warn("Failed to save high scores to disk: {}\n", err);
                 };
             },
@@ -645,11 +703,4 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
     platform_framebuffer.postDraw(&self.framebuffer_state, &self.draw_state, blit_rect, blit_alpha);
 
     perf.end(&perf.timers.WholeDraw);
-}
-
-pub fn main() u8 {
-    var self = init() catch |_| return 1;
-    while (tick(self)) {}
-    deinit(self);
-    return 0;
 }

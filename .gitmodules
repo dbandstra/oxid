@@ -10,3 +10,6 @@
 [submodule "zig-wav"]
 	path = zig-wav
 	url = https://github.com/dbandstra/zig-wav.git
+[submodule "zig-clap"]
+	path = zig-clap
+	url = https://github.com/Hejsil/zig-clap.git
