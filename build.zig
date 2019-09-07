@@ -46,8 +46,8 @@ pub fn build(b: *Builder) void {
     main.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     main.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     main.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
+    main.addPackagePath("gbe", "lib/gbe/src/gbe.zig");
 
-    main.addPackagePath("gbe", "gbe/src/gbe.zig");
     main.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
 
     const assets_path = std.fs.path.join(b.allocator, [_][]const u8{b.build_root, "assets"});
