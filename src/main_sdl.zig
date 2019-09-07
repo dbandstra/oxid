@@ -33,20 +33,6 @@ const datadir = "Oxid";
 const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
 
-const GameState = struct {
-    draw_state: platform_draw.DrawState,
-    framebuffer_state: platform_framebuffer.FramebufferState,
-    audio_module: audio.MainModule,
-    session: GameSession,
-    static: common.GameStatic,
-};
-
-const AudioUserData = struct {
-    g: *GameState,
-    sample_rate: f32,
-    volume: u32,
-};
-
 fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, Write }) !std.fs.File {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
@@ -189,36 +175,54 @@ fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
     };
 }
 
+const Main = struct {
+    hunk: Hunk,
+    draw_state: platform_draw.DrawState,
+    framebuffer_state: platform_framebuffer.FramebufferState,
+    audio_module: audio.MainModule,
+    session: GameSession,
+    static: common.GameStatic,
+    cfg: config.Config,
+    window: *SDL_Window,
+    glcontext: SDL_GLContext,
+    fullscreen: bool,
+    fullscreen_dims: ?WindowDims,
+    windowed_dims: WindowDims,
+    original_window_x: c_int,
+    original_window_y: c_int,
+    audio_sample_rate: u32,
+    audio_sample_rate_current: f32,
+    audio_device: SDL_AudioDeviceID,
+    fast_forward: bool,
+};
+
 extern fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) void {
-    const userdata = @ptrCast(*AudioUserData, @alignCast(@alignOf(*AudioUserData), userdata_.?));
+    const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const g = userdata.g;
-
-    const buf = g.audio_module.paint(userdata.sample_rate, &g.session);
-
-    const vol = std.math.min(1.0, @intToFloat(f32, userdata.volume) / 100.0);
-
+    const buf = self.audio_module.paint(self.audio_sample_rate_current, &self.session);
+    const vol = std.math.min(1.0, @intToFloat(f32, self.cfg.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
 }
 
-var main_memory: [@sizeOf(GameState) + 200*1024]u8 = undefined;
+var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
 
-pub fn main() u8 {
+fn init() !*Main {
     var hunk = Hunk.init(main_memory[0..]);
 
+    // TODO - implement command line options... using Hejsil's library maybe
     const audio_sample_rate = 44100;
     const audio_buffer_size = 1024;
 
-    const g = hunk.low().allocator.create(GameState) catch unreachable;
+    const self = hunk.low().allocator.create(Main) catch unreachable;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) != 0) {
-        SDL_Log(c"Unable to initialize SDL: %s", SDL_GetError());
-        return 1;
+        std.debug.warn("Unable to initialize SDL: {s}\n", SDL_GetError());
+        return error.Failed;
     }
-    defer SDL_Quit();
+    errdefer SDL_Quit();
 
-    var fullscreen = false;
+    const fullscreen = false;
     var fullscreen_dims: ?WindowDims = null;
     var windowed_dims = WindowDims {
         .window_width = common.virtual_window_width,
@@ -253,8 +257,6 @@ pub fn main() u8 {
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_GREEN_SIZE), 8);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BLUE_SIZE), 8);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_ALPHA_SIZE), 8);
-    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DEPTH_SIZE), 24);
-    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_STENCIL_SIZE), 8);
 
     // start in windowed mode
     const window = SDL_CreateWindow(
@@ -265,20 +267,14 @@ pub fn main() u8 {
         @intCast(c_int, windowed_dims.window_height),
         SDL_WINDOW_OPENGL,
     ) orelse {
-        SDL_Log(c"Unable to create window: %s", SDL_GetError());
-        return 1;
+        std.debug.warn("Unable to create window: {s}\n", SDL_GetError());
+        return error.Failed;
     };
-    defer SDL_DestroyWindow(window);
+    errdefer SDL_DestroyWindow(window);
 
     var original_window_x: c_int = undefined;
     var original_window_y: c_int = undefined;
     SDL_GetWindowPosition(window, &original_window_x, &original_window_y);
-
-    var audio_user_data = AudioUserData {
-        .g = g,
-        .sample_rate = audio_sample_rate,
-        .volume = 0,
-    };
 
     var want: SDL_AudioSpec = undefined;
     want.freq = @intCast(c_int, audio_sample_rate);
@@ -286,10 +282,9 @@ pub fn main() u8 {
     want.channels = 1;
     want.samples = audio_buffer_size;
     want.callback = audioCallback;
-    want.userdata = &audio_user_data;
+    want.userdata = self;
 
-    // TODO - allow SDL to pick something different? (make sure to update
-    // ps.audio_user_data.sample_rate)
+    // TODO - allow SDL to pick something different?
     const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
         0, // device name (NULL)
         0, // non-zero to open for recording instead of playback
@@ -298,35 +293,34 @@ pub fn main() u8 {
         0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
     );
     if (device == 0) {
-        SDL_Log(c"Failed to open audio: %s", SDL_GetError());
-        return 1;
+        std.debug.warn("Failed to open audio: {s}\n", SDL_GetError());
+        return error.Failed;
     }
-    defer SDL_CloseAudioDevice(device);
-    defer SDL_CloseAudio();
+    errdefer SDL_CloseAudioDevice(device);
 
     const glcontext = SDL_GL_CreateContext(window) orelse {
-        SDL_Log(c"SDL_GL_CreateContext failed: %s", SDL_GetError());
-        return 1;
+        std.debug.warn("SDL_GL_CreateContext failed: {s}\n", SDL_GetError());
+        return error.Failed;
     };
-    defer SDL_GL_DeleteContext(glcontext);
+    errdefer SDL_GL_DeleteContext(glcontext);
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
 
-    platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
+    platform_draw.init(&self.draw_state, platform_draw.DrawInitParams {
         .hunk = &hunk,
         .virtual_window_width = common.virtual_window_width,
         .virtual_window_height = common.virtual_window_height,
     }) catch |err| {
         std.debug.warn("platform_draw.init failed: {}\n", err);
-        return 1;
+        return error.Failed;
     };
-    defer platform_draw.deinit(&g.draw_state);
+    errdefer platform_draw.deinit(&self.draw_state);
 
-    if (!platform_framebuffer.init(&g.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
+    if (!platform_framebuffer.init(&self.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
         std.debug.warn("platform_framebuffer.init failed\n");
-        return 1;
+        return error.Failed;
     }
-    defer platform_framebuffer.deinit(&g.framebuffer_state);
+    errdefer platform_framebuffer.deinit(&self.framebuffer_state);
 
     {
         const num_joysticks = SDL_NumJoysticks();
@@ -343,20 +337,20 @@ pub fn main() u8 {
 
     const initial_high_scores = loadHighScores(&hunk.low()) catch |err| {
         std.debug.warn("Failed to load high scores from disk: {}\n", err);
-        return 1;
+        return error.Failed;
     };
 
-    if (!common.loadStatic(&g.static, &hunk.low())) {
+    if (!common.loadStatic(&self.static, &hunk.low())) {
         // loadStatic prints its own error
-        return 1;
+        return error.Failed;
     }
 
     // https://github.com/ziglang/zig/issues/3046
     const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
         std.debug.warn("Failed to load audio module: {}\n", err);
-        return 1;
+        return error.Failed;
     };
-    g.audio_module = blah;
+    self.audio_module = blah;
 
     var cfg = blk: {
         // if config couldn't load, warn and fall back to default config
@@ -367,242 +361,295 @@ pub fn main() u8 {
         break :blk cfg_;
     };
 
-    defer saveConfig(cfg, &hunk.low()) catch |err| {
-        std.debug.warn("Failed to save config: {}\n", err);
-    };
-
     SDL_PauseAudioDevice(device, 0); // unpause
-    defer SDL_PauseAudioDevice(device, 1);
+    errdefer SDL_PauseAudioDevice(device, 1);
 
-    var fast_forward = false;
-
-    g.session.init(rand_seed);
-    gameInit(&g.session, p.MainController.Params {
+    self.session.init(rand_seed);
+    gameInit(&self.session, p.MainController.Params {
         .is_fullscreen = fullscreen,
         .volume = cfg.volume,
         .high_scores = initial_high_scores,
     }) catch |err| {
         std.debug.warn("Failed to initialize game: {}\n", err);
-        return 1;
+        return error.Failed;
     };
 
     // TODO - this shouldn't be fatal
     perf.init() catch |err| {
         std.debug.warn("Failed to create performance timers: {}\n", err);
-        return 1;
+        return error.Failed;
     };
 
-    var quit = false;
-    while (!quit) {
-        var sdl_event: SDL_Event = undefined;
+    std.debug.warn("Initialization complete.\n");
 
-        while (SDL_PollEvent(&sdl_event) != 0) {
-            switch (sdl_event.type) {
-                SDL_KEYDOWN => {
-                    if (sdl_event.key.repeat == 0) {
-                        if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                            _ = common.spawnInputEvent(&g.session, &cfg, key, true);
+    self.hunk = hunk;
+    self.cfg = cfg;
+    self.window = window;
+    self.glcontext = glcontext;
+    self.fullscreen = fullscreen;
+    self.fullscreen_dims = fullscreen_dims;
+    self.windowed_dims = windowed_dims;
+    self.original_window_x = original_window_x;
+    self.original_window_y = original_window_y;
+    self.audio_sample_rate = audio_sample_rate;
+    self.audio_sample_rate_current = @intToFloat(f32, audio_sample_rate);
+    self.audio_device = device;
+    self.fast_forward = false;
 
-                            switch (key) {
-                                .Backquote => {
-                                    fast_forward = true;
-                                },
-                                .F4 => {
-                                    perf.toggleSpam();
-                                },
-                                .F5 => {
-                                    platform_draw.cycleGlitchMode(&g.draw_state);
-                                },
-                                else => {},
-                            }
-                        }
-                    }
-                },
-                SDL_KEYUP => {
-                    if (translateKey(sdl_event.key.keysym.sym)) |key| {
-                        _ = common.spawnInputEvent(&g.session, &cfg, key, false);
+    return self;
+}
 
-                        switch (key) {
-                            .Backquote => {
-                                fast_forward = false;
-                            },
-                            else => {},
-                        }
-                    }
-                },
-                SDL_JOYAXISMOTION => {
-                    // TODO - look at sdl_event.jbutton.which (to support multiple joysticks)
-                    const threshold = 16384;
-                    var i: usize = 0; while (i < 4) : (i += 1) {
-                        const neg = switch (i) { 0 => Key.JoyAxis0Neg, 1 => Key.JoyAxis1Neg, 2 => Key.JoyAxis2Neg, 3 => Key.JoyAxis3Neg, else => unreachable };
-                        const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
-                        if (sdl_event.jaxis.axis == i) {
-                            if (sdl_event.jaxis.value < -threshold) {
-                                _ = common.spawnInputEvent(&g.session, &cfg, neg, true);
-                                _ = common.spawnInputEvent(&g.session, &cfg, pos, false);
-                            } else if (sdl_event.jaxis.value > threshold) {
-                                _ = common.spawnInputEvent(&g.session, &cfg, pos, true);
-                                _ = common.spawnInputEvent(&g.session, &cfg, neg, false);
-                            } else {
-                                _ = common.spawnInputEvent(&g.session, &cfg, pos, false);
-                                _ = common.spawnInputEvent(&g.session, &cfg, neg, false);
-                            }
-                        }
-                    }
-                },
-                SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
-                    // TODO - look at sdl_event.jbutton.which (to support multiple joysticks)
-                    const down = sdl_event.type == SDL_JOYBUTTONDOWN;
-                    const maybe_key = switch (sdl_event.jbutton.button) {
-                        0 => Key.JoyButton0,
-                        1 => Key.JoyButton1,
-                        2 => Key.JoyButton2,
-                        3 => Key.JoyButton3,
-                        4 => Key.JoyButton4,
-                        5 => Key.JoyButton5,
-                        6 => Key.JoyButton6,
-                        7 => Key.JoyButton7,
-                        8 => Key.JoyButton8,
-                        9 => Key.JoyButton9,
-                        10 => Key.JoyButton10,
-                        11 => Key.JoyButton11,
-                        else => null,
-                    };
-                    if (maybe_key) |key| {
-                        _ = common.spawnInputEvent(&g.session, &cfg, key, down);
-                    }
-                },
-                SDL_WINDOWEVENT => {
-                    if (!fullscreen and sdl_event.window.event == SDL_WINDOWEVENT_MOVED) {
-                        original_window_x = sdl_event.window.data1;
-                        original_window_y = sdl_event.window.data2;
-                    }
-                },
-                SDL_QUIT => {
-                    quit = true;
-                },
-                else => {},
-            }
-        }
+fn deinit(self: *Main) void {
+    std.debug.warn("Shutting down.\n");
 
-        const blit_rect = blk: {
-            if (fullscreen) {
-                if (fullscreen_dims) |dims| {
-                    break :blk dims.blit_rect;
-                }
-            }
-            break :blk windowed_dims.blit_rect;
-        };
+    saveConfig(self.cfg, &self.hunk.low()) catch |err| {
+        std.debug.warn("Failed to save config: {}\n", err);
+    };
 
-        // copy these system values straight into the MainController.
-        // this is kind of a hack, but on the other hand, i'm spawning entities
-        // in this file too, it's not that different...
-        if (g.session.findFirstObject(c.MainController)) |mc| {
-            mc.data.is_fullscreen = fullscreen;
-            mc.data.volume = cfg.volume;
-        }
+    SDL_PauseAudioDevice(self.audio_device, 1);
+    platform_framebuffer.deinit(&self.framebuffer_state);
+    platform_draw.deinit(&self.draw_state);
+    SDL_GL_DeleteContext(self.glcontext);
+    SDL_CloseAudioDevice(self.audio_device);
+    SDL_DestroyWindow(self.window);
+    SDL_Quit();
+}
 
-        var toggle_fullscreen = false;
-        const num_frames = if (fast_forward) u32(4) else u32(1);
-        var i: u32 = 0; while (i < num_frames) : (i += 1) {
-            perf.begin(&perf.timers.Frame);
-            gameFrame(&g.session);
-            perf.end(&perf.timers.Frame);
+fn tick(self: *Main) bool {
+    var toggle_fullscreen = false;
 
-            var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
-                switch (object.data) {
-                    .SetVolume => |value| cfg.volume = value,
-                    .ToggleFullscreen => toggle_fullscreen = true,
-                    .BindGameCommand => |payload| {
-                        const command_index = @enumToInt(payload.command);
-                        const key_in_use =
-                            if (payload.key) |new_key|
-                                for (cfg.game_key_bindings) |maybe_key| {
-                                    if (if (maybe_key) |key| key == new_key else false) {
-                                        break true;
-                                    }
-                                } else false
-                            else false;
-                        if (!key_in_use) {
-                            cfg.game_key_bindings[command_index] = payload.key;
-                        }
-                    },
-                    .SaveHighScores => |high_scores| {
-                        saveHighScores(&hunk.low(), high_scores) catch |err| {
-                            std.debug.warn("Failed to save high scores to disk: {}\n", err);
-                        };
-                    },
-                    .Quit => quit = true,
-                }
-            }
-
-            SDL_LockAudioDevice(device);
-            // speed up audio mixing frequency if game is being fast forwarded
-            audio_user_data.sample_rate = @intToFloat(f32, audio_sample_rate) / @intToFloat(f32, num_frames);
-            audio_user_data.volume = cfg.volume;
-            playSounds(g);
-            SDL_UnlockAudioDevice(device);
-
-            drawMain(g, cfg, blit_rect, 1.0 / @intToFloat(f32, i + 1));
-
-            gameFrameCleanup(&g.session);
-        }
-
-        SDL_GL_SwapWindow(window);
-
-        // FIXME - try to detect if vsync is enabled...
-        // SDL_Delay(17);
-
-        if (toggle_fullscreen) {
-            if (fullscreen) {
-                if (SDL_SetWindowFullscreen(window, 0) < 0) {
-                    std.debug.warn("Failed to disable fullscreen mode");
-                } else {
-                    SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
-                    SDL_SetWindowPosition(window, original_window_x, original_window_y);
-                    fullscreen = false;
-                }
-            } else {
-                if (fullscreen_dims) |dims| {
-                    SDL_SetWindowSize(window, dims.window_width, dims.window_height);
-                    if (SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
-                        std.debug.warn("Failed to enable fullscreen mode\n");
-                        SDL_SetWindowSize(window, windowed_dims.window_width, windowed_dims.window_height);
-                    } else {
-                        fullscreen = true;
-                    }
-                } else {
-                    // couldn't figure out how to go fullscreen so stay in windowed mode
-                }
-            }
+    var evt: SDL_Event = undefined;
+    while (SDL_PollEvent(&evt) != 0) {
+        if (!handleSDLEvent(self, evt)) {
+            return false;
         }
     }
 
-    return 0;
+    // copy these system values straight into the MainController.
+    // this is kind of a hack, but on the other hand, i'm spawning entities
+    // in this file too, it's not that different...
+    if (self.session.findFirstObject(c.MainController)) |mc| {
+        mc.data.is_fullscreen = self.fullscreen;
+        mc.data.volume = self.cfg.volume;
+    }
+
+    const num_frames = if (self.fast_forward) u32(4) else u32(1);
+    var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
+        // run simulation and create events for drawing, playing sounds, etc.
+        perf.begin(&perf.timers.Frame);
+        gameFrame(&self.session);
+        perf.end(&perf.timers.Frame);
+
+        // respond to certain events (mostly from the menu)
+        if (!handleSystemCommands(self, &toggle_fullscreen)) {
+            return false;
+        }
+
+        // update audio (from sound events)
+        playSounds(self, num_frames);
+
+        // draw to framebuffer (from draw events)
+        drawMain(self, 1.0 / @intToFloat(f32, frame_index + 1));
+
+        // delete events
+        gameFrameCleanup(&self.session);
+    }
+
+    SDL_GL_SwapWindow(self.window);
+
+    if (toggle_fullscreen) {
+        toggleFullscreen(self);
+    }
+
+    return true;
 }
 
-fn playSounds(g: *GameState) void {
+fn toggleFullscreen(self: *Main) void {
+    if (self.fullscreen) {
+        if (SDL_SetWindowFullscreen(self.window, 0) < 0) {
+            std.debug.warn("Failed to disable fullscreen mode");
+        } else {
+            SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
+            SDL_SetWindowPosition(self.window, self.original_window_x, self.original_window_y);
+            self.fullscreen = false;
+        }
+    } else {
+        if (self.fullscreen_dims) |dims| {
+            SDL_SetWindowSize(self.window, dims.window_width, dims.window_height);
+            if (SDL_SetWindowFullscreen(self.window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
+                std.debug.warn("Failed to enable fullscreen mode\n");
+                SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
+            } else {
+                self.fullscreen = true;
+            }
+        } else {
+            // couldn't figure out how to go fullscreen so stay in windowed mode
+        }
+    }
+}
+
+fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
+    switch (evt.type) {
+        SDL_KEYDOWN => {
+            if (evt.key.repeat == 0) {
+                if (translateKey(evt.key.keysym.sym)) |key| {
+                    _ = common.spawnInputEvent(&self.session, self.cfg, key, true);
+
+                    switch (key) {
+                        .Backquote => {
+                            self.fast_forward = true;
+                        },
+                        .F4 => {
+                            perf.toggleSpam();
+                        },
+                        .F5 => {
+                            platform_draw.cycleGlitchMode(&self.draw_state);
+                        },
+                        else => {},
+                    }
+                }
+            }
+        },
+        SDL_KEYUP => {
+            if (translateKey(evt.key.keysym.sym)) |key| {
+                _ = common.spawnInputEvent(&self.session, self.cfg, key, false);
+
+                switch (key) {
+                    .Backquote => {
+                        self.fast_forward = false;
+                    },
+                    else => {},
+                }
+            }
+        },
+        SDL_JOYAXISMOTION => {
+            // TODO - look at evt.jbutton.which (to support multiple joysticks)
+            const threshold = 16384;
+            var i: usize = 0; while (i < 4) : (i += 1) {
+                const neg = switch (i) { 0 => Key.JoyAxis0Neg, 1 => Key.JoyAxis1Neg, 2 => Key.JoyAxis2Neg, 3 => Key.JoyAxis3Neg, else => unreachable };
+                const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
+                if (evt.jaxis.axis == i) {
+                    if (evt.jaxis.value < -threshold) {
+                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, true);
+                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, false);
+                    } else if (evt.jaxis.value > threshold) {
+                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, true);
+                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, false);
+                    } else {
+                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, false);
+                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, false);
+                    }
+                }
+            }
+        },
+        SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
+            // TODO - look at evt.jbutton.which (to support multiple joysticks)
+            const down = evt.type == SDL_JOYBUTTONDOWN;
+            const maybe_key = switch (evt.jbutton.button) {
+                0 => Key.JoyButton0,
+                1 => Key.JoyButton1,
+                2 => Key.JoyButton2,
+                3 => Key.JoyButton3,
+                4 => Key.JoyButton4,
+                5 => Key.JoyButton5,
+                6 => Key.JoyButton6,
+                7 => Key.JoyButton7,
+                8 => Key.JoyButton8,
+                9 => Key.JoyButton9,
+                10 => Key.JoyButton10,
+                11 => Key.JoyButton11,
+                else => null,
+            };
+            if (maybe_key) |key| {
+                _ = common.spawnInputEvent(&self.session, self.cfg, key, down);
+            }
+        },
+        SDL_WINDOWEVENT => {
+            if (!self.fullscreen and evt.window.event == SDL_WINDOWEVENT_MOVED) {
+                self.original_window_x = evt.window.data1;
+                self.original_window_y = evt.window.data2;
+            }
+        },
+        SDL_QUIT => {
+            return false;
+        },
+        else => {},
+    }
+    return true;
+}
+
+fn handleSystemCommands(self: *Main, toggle_fullscreen: *bool) bool {
+    var it = self.session.iter(c.EventSystemCommand); while (it.next()) |object| {
+        switch (object.data) {
+            .SetVolume => |value| self.cfg.volume = value,
+            .ToggleFullscreen => toggle_fullscreen.* = true,
+            .BindGameCommand => |payload| {
+                const command_index = @enumToInt(payload.command);
+                const key_in_use =
+                    if (payload.key) |new_key|
+                        for (self.cfg.game_key_bindings) |maybe_key| {
+                            if (if (maybe_key) |key| key == new_key else false) {
+                                break true;
+                            }
+                        } else false
+                    else false;
+                if (!key_in_use) {
+                    self.cfg.game_key_bindings[command_index] = payload.key;
+                }
+            },
+            .SaveHighScores => |high_scores| {
+                saveHighScores(&self.hunk.low(), high_scores) catch |err| {
+                    std.debug.warn("Failed to save high scores to disk: {}\n", err);
+                };
+            },
+            .Quit => return false,
+        }
+    }
+    return true;
+}
+
+fn playSounds(self: *Main, num_frames: u32) void {
+    SDL_LockAudioDevice(self.audio_device);
+    defer SDL_UnlockAudioDevice(self.audio_device);
+
+    // speed up audio mixing frequency if game is being fast forwarded
+    self.audio_sample_rate_current = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
+
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
     // "syncing" to guess where we are in the middle of a mix frame
     const impulse_frame: usize = 0;
 
-    g.audio_module.playSounds(&g.session, impulse_frame);
+    self.audio_module.playSounds(&self.session, impulse_frame);
 }
 
-fn drawMain(g: *GameState, cfg: config.Config, blit_rect: platform_framebuffer.BlitRect, blit_alpha: f32) void {
+fn drawMain(self: *Main, blit_alpha: f32) void {
+    const blit_rect = blk: {
+        if (self.fullscreen) {
+            if (self.fullscreen_dims) |dims| {
+                break :blk dims.blit_rect;
+            }
+        }
+        break :blk self.windowed_dims.blit_rect;
+    };
+
     perf.begin(&perf.timers.WholeDraw);
 
-    platform_framebuffer.preDraw(&g.framebuffer_state);
-    platform_draw.prepare(&g.draw_state);
+    platform_framebuffer.preDraw(&self.framebuffer_state);
+    platform_draw.prepare(&self.draw_state);
 
     perf.begin(&perf.timers.Draw);
-
-    drawGame(&g.draw_state, &g.static, &g.session, cfg);
-
+    drawGame(&self.draw_state, &self.static, &self.session, self.cfg);
     perf.end(&perf.timers.Draw);
 
-    platform_framebuffer.postDraw(&g.framebuffer_state, &g.draw_state, blit_rect, blit_alpha);
+    platform_framebuffer.postDraw(&self.framebuffer_state, &self.draw_state, blit_rect, blit_alpha);
 
     perf.end(&perf.timers.WholeDraw);
+}
+
+pub fn main() u8 {
+    var self = init() catch |_| return 1;
+    while (tick(self)) {}
+    deinit(self);
+    return 0;
 }

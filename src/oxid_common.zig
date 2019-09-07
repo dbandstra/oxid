@@ -41,7 +41,7 @@ pub fn loadStatic(static: *GameStatic, hunk_side: *HunkSide) bool {
 }
 
 // returns true if the key was bound to something
-pub fn spawnInputEvent(gs: *GameSession, cfg: *const config.Config, key: Key, down: bool) bool {
+pub fn spawnInputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool) bool {
     const game_command =
         for (cfg.game_key_bindings) |maybe_key, i| {
             if (if (maybe_key) |k| k == key else false) {

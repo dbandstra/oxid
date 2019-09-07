@@ -171,7 +171,7 @@ fn translateKey(keyCode: c_int) ?Key {
 
 export fn onKeyEvent(keyCode: c_int, down: c_int) c_int {
     if (translateKey(keyCode)) |key| {
-        if (common.spawnInputEvent(&g.session, &cfg, key, down != 0)) {
+        if (common.spawnInputEvent(&g.session, cfg, key, down != 0)) {
             return 1;
         }
     }
