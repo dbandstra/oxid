@@ -1,5 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe_main.zig");
+const ThinkResult = @import("gbe_system.zig").ThinkResult;
 const buildSystem = @import("gbe_system.zig").buildSystem;
 
 const Creature = struct { hit_points: u32 };
@@ -42,12 +43,12 @@ const SystemData1 = struct {
     transform: *Transform,
 };
 
-fn think1(gs: *MockGameSession, self: SystemData1) bool {
+fn think1(gs: *MockGameSession, self: SystemData1) ThinkResult {
     std.testing.expect(self.transform.x == 0);
     std.testing.expect(self.transform.y == 0);
     std.testing.expect(self.creature.hit_points == 8 or self.creature.hit_points == 16);
     g_count += 1;
-    return true;
+    return .Remain;
 }
 
 const run1 = buildSystem(MockGameSession, SystemData1, think1);
@@ -67,12 +68,12 @@ const SystemData2 = struct {
     creature: ?*Creature,
 };
 
-fn think2(gs: *MockGameSession, self: SystemData2) bool {
+fn think2(gs: *MockGameSession, self: SystemData2) ThinkResult {
     std.testing.expect(self.transform.x == 0);
     std.testing.expect(self.transform.y == 0);
     std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
     g_count += 1;
-    return true;
+    return .Remain;
 }
 
 const run2 = buildSystem(MockGameSession, SystemData2, think2);
@@ -92,12 +93,12 @@ const SystemData3 = struct {
     creature: ?*Creature,
 };
 
-fn think3(gs: *MockGameSession, self: SystemData3) bool {
+fn think3(gs: *MockGameSession, self: SystemData3) ThinkResult {
     std.testing.expect(if (self.transform) |transform| transform.x == 0 else false);
     std.testing.expect(if (self.transform) |transform| transform.y == 0 else false);
     std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
     g_count += 1;
-    return true;
+    return .Remain;
 }
 
 const run3 = buildSystem(MockGameSession, SystemData3, think3);
