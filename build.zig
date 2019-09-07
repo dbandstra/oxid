@@ -39,15 +39,16 @@ pub fn build(b: *Builder) void {
         main.linkSystemLibrary("epoxy");
         main.linkSystemLibrary("c");
 
-        main.addPackagePath("zig-clap", "zig-clap/clap.zig");
+        main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
     }
+
+    main.addPackagePath("zang", "lib/zang/src/zang.zig");
+    main.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
+    main.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
+    main.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
 
     main.addPackagePath("gbe", "gbe/src/gbe.zig");
     main.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
-    main.addPackagePath("zang", "zang/src/zang.zig");
-    main.addPackagePath("zig-hunk", "zig-hunk/hunk.zig");
-    main.addPackagePath("zig-pcx", "zig-pcx/pcx.zig");
-    main.addPackagePath("zig-wav", "zig-wav/wav.zig");
 
     const assets_path = std.fs.path.join(b.allocator, [_][]const u8{b.build_root, "assets"});
     main.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", assets_path));

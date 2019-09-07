@@ -1,15 +1,15 @@
 [submodule "zig-pcx"]
-	path = zig-pcx
+	path = lib/zig-pcx
 	url = https://github.com/dbandstra/zig-pcx.git
 [submodule "zig-hunk"]
-	path = zig-hunk
+	path = lib/zig-hunk
 	url = https://github.com/dbandstra/zig-hunk.git
 [submodule "zang"]
-	path = zang
+	path = lib/zang
 	url = https://github.com/dbandstra/zang.git
 [submodule "zig-wav"]
-	path = zig-wav
+	path = lib/zig-wav
 	url = https://github.com/dbandstra/zig-wav.git
 [submodule "zig-clap"]
-	path = zig-clap
+	path = lib/zig-clap
 	url = https://github.com/Hejsil/zig-clap.git
