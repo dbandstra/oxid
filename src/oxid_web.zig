@@ -185,10 +185,12 @@ var g: *GameState = undefined;
 const audio_buffer_size = 1024;
 
 fn init() !void {
-    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
+    // this was hitting an assertion if i assigned directly into the global, it's probably zig #3046
+    const main_memory_ = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", err);
         return error.Failed;
     };
+    main_memory = main_memory_;
     errdefer std.heap.wasm_allocator.free(main_memory);
 
     hunk = Hunk.init(main_memory);
@@ -205,14 +207,16 @@ fn init() !void {
     };
     errdefer platform_draw.deinit(&g.draw_state);
 
-    cfg = blk: {
+    // this was hitting an assertion if i assigned directly into the global, it's probably zig #3046
+    const cfg_ = blk: {
         // if config couldn't load, warn and fall back to default config
-        const cfg_ = loadConfig(&hunk.low()) catch |err| {
+        const cfg__ = loadConfig(&hunk.low()) catch |err| {
             warn("Failed to load config: {}\n", err);
             break :blk config.default;
         };
-        break :blk cfg_;
+        break :blk cfg__;
     };
+    cfg = cfg_;
 
     const initial_high_scores = blk: {
         // if high scores couldn't load, warn and fall back to blank list
