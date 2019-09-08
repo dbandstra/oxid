@@ -263,6 +263,12 @@ pub fn main() u8 {
                     .Free => 1000000 / delta_microseconds,
                 };
 
+                if (refresh_rate == 0) {
+                    // delta was >= 1 second. the computer is hitched up on
+                    // something. let's just wait.
+                    continue;
+                }
+
                 if (!tick(self, refresh_rate)) {
                     break;
                 }

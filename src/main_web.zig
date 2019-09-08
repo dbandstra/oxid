@@ -304,6 +304,10 @@ export fn onAnimationFrame(now: c_int) void {
         );
     maybe_prev = now;
 
+    if (delta == 0 or delta > 1000) {
+        // avoid dividing by zero
+        return;
+    }
     const refresh_rate = 1000 / delta;
 
     const num_frames_to_simulate = blk: {
