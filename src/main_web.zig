@@ -287,7 +287,45 @@ export fn audioCallback(sample_rate: f32) [*]f32 {
     return buf.ptr;
 }
 
-export fn onAnimationFrame(now_time: c_int) void {
+var t: usize = 0;
+var maybe_prev: ?c_int = null;
+
+// `now` is in milliseconds
+export fn onAnimationFrame(now: c_int) void {
+    const delta =
+        if (maybe_prev) |prev| (
+            if (now > prev) (
+                @intCast(usize, now - prev)
+            ) else (
+                0
+            )
+        ) else (
+            16 // first tick's delta corresponds to ~60 fps
+        );
+    maybe_prev = now;
+
+    const refresh_rate = 1000 / delta;
+
+    const num_frames_to_simulate = blk: {
+        t += Constants.ticks_per_second; // gameplay update rate
+        var n: usize = 0;
+        while (t >= refresh_rate) {
+            t -= refresh_rate;
+            n += 1;
+        }
+        break :blk n;
+    };
+
+    var i: usize = 0; while (i < num_frames_to_simulate) : (i += 1) {
+        // if we're simulating multiple frames for one draw cycle, we only
+        // need to actually draw for the last one of them
+        const draw = i == num_frames_to_simulate - 1;
+
+        tick(draw);
+    }
+}
+
+fn tick(draw: bool) void {
     // copy these system values straight into the MainController.
     // this is kind of a hack, but on the other hand, i'm spawning entities
     // in this file too, it's not that different...
@@ -296,8 +334,21 @@ export fn onAnimationFrame(now_time: c_int) void {
         mc.data.volume = cfg.volume;
     }
 
-    gameFrame(&g.session);
+    gameFrame(&g.session, draw);
 
+    handleSystemCommands();
+
+    playSounds();
+
+    if (draw) {
+        platform_draw.prepare(&g.draw_state);
+        drawGame(&g.draw_state, &g.static, &g.session, cfg);
+    }
+
+    gameFrameCleanup(&g.session);
+}
+
+fn handleSystemCommands() void {
     var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
         switch (object.data) {
             .SetVolume => |value| {
@@ -332,31 +383,21 @@ export fn onAnimationFrame(now_time: c_int) void {
             .Quit => {},//quit = true,
         }
     }
-
-    if (audio_enabled) {
-        playSounds();
-    } else {
-        // prevent a bunch sounds from queueing up when audio is disabled (as
-        // the mixing function won't be called to advance them)
-        clearSounds();
-    }
-
-    platform_draw.prepare(&g.draw_state);
-    drawGame(&g.draw_state, &g.static, &g.session, cfg);
-    gameFrameCleanup(&g.session);
 }
 
 fn playSounds() void {
-    // FIXME - impulse_frame being 0 means that sounds will always start
-    // playing at the beginning of the mix buffer. need to implement some
-    // "syncing" to guess where we are in the middle of a mix frame
-    const impulse_frame: usize = 0;
+    if (audio_enabled) {
+        // FIXME - impulse_frame being 0 means that sounds will always start
+        // playing at the beginning of the mix buffer. need to implement some
+        // "syncing" to guess where we are in the middle of a mix frame
+        const impulse_frame: usize = 0;
 
-    g.audio_module.playSounds(&g.session, impulse_frame);
-}
-
-fn clearSounds() void {
-    var it = g.session.iter(c.Voice); while (it.next()) |object| {
-        g.session.markEntityForRemoval(object.entity_id);
+        g.audio_module.playSounds(&g.session, impulse_frame);
+    } else {
+        // prevent a bunch sounds from queueing up when audio is disabled (as
+        // the mixing function won't be called to advance them)
+        var it = g.session.iter(c.Voice); while (it.next()) |object| {
+            g.session.markEntityForRemoval(object.entity_id);
+        }
     }
 }
