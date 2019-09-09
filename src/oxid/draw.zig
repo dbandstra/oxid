@@ -12,17 +12,15 @@ const getGraphicTile = @import("graphics.zig").getGraphicTile;
 const levels = @import("levels.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
-const menus = @import("menus.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
-const drawMenu = @import("draw_menu.zig").drawMenu;
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
-pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, cfg: config.Config) void {
+pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, cfg: config.Config, high_score: u32) void {
     const mc = gs.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
@@ -37,17 +35,13 @@ pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *Gam
         pdraw.end(ds);
 
         drawBoxes(ds, gs);
-        drawHud(ds, static, gs, true);
+        drawHud(ds, static, gs, high_score);
     } else {
         pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
         drawMap(ds, static);
         pdraw.end(ds);
 
-        drawHud(ds, static, gs, false);
-    }
-
-    if (mc.menu_stack_len > 0) {
-        drawMenu(ds, static, cfg, mc, mc.menu_stack_array[mc.menu_stack_len - 1]);
+        drawHud(ds, static, gs, high_score);
     }
 }
 
@@ -174,7 +168,7 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     };
 }
 
-fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, game_active: bool) void {
+fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, high_score: u32) void {
     perf.begin(&perf.timers.DrawHud);
     defer perf.end(&perf.timers.DrawHud);
 
@@ -246,13 +240,9 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
         }
     }
 
-    _ = dest.stream.print("High:{}", mc.high_scores[0]) catch unreachable; // FIXME
+    _ = dest.stream.print("High:{}", high_score) catch unreachable; // FIXME
     fontDrawString(ds, &static.font, 30*8, 0, dest.getWritten());
     dest.reset();
 
     pdraw.end(ds);
-
-    if (if (gc_maybe) |gc| gc.game_over else false) {
-        drawGameOverOverlay(ds, static, mc.new_high_score);
-    }
 }

@@ -4,14 +4,12 @@ const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
-pub fn gameInit(gs: *GameSession, params: p.MainController.Params) !void {
-    _ = try p.MainController.spawn(gs, params);
+pub fn gameInit(gs: *GameSession) !void {
+    _ = try p.MainController.spawn(gs);
 }
 
 // run before "middleware" (rendering, sound, etc)
-pub fn gameFrame(gs: *GameSession, draw: bool) void {
-    @import("systems/input_router.zig").run(gs);
-
+pub fn gameFrame(gs: *GameSession, draw: bool, paused: bool) void {
     @import("systems/main_controller_input.zig").run(gs);
 
     // note: ideally these would be inside the frame loop, but we have to make
@@ -24,7 +22,7 @@ pub fn gameFrame(gs: *GameSession, draw: bool) void {
     // into components like this
     const mc = gs.findFirst(c.MainController).?;
     if (mc.game_running_state) |grs| {
-        if (mc.menu_stack_len == 0) {
+        if (!paused) {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
             @import("systems/animation.zig").run(gs);
@@ -54,9 +52,6 @@ pub fn gameFrame(gs: *GameSession, draw: bool) void {
             @import("systems/game_controller_react.zig").run(gs);
         }
     }
-
-    // main controller reacts to 'post score' event
-    @import("systems/main_controller_react.zig").run(gs);
 
     gs.applyRemovals();
 

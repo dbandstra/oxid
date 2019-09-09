@@ -13,12 +13,15 @@ const Key = @import("common/key.zig").Key;
 const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const Constants = @import("oxid/constants.zig");
+const menus = @import("oxid/menus.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
 const p = @import("oxid/prototypes.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
+const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
+const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
@@ -200,9 +203,15 @@ const Main = struct {
     audio_sample_rate: usize,
     audio_sample_rate_current: f32,
     audio_device: SDL_AudioDeviceID,
+    high_scores: [Constants.num_high_scores]u32,
+    new_high_score: bool,
+    game_over: bool,
+    menu_stack: menus.MenuStack,
+    quit: bool,
     fast_forward: bool,
     framerate_scheme: FramerateScheme,
     t: usize,
+    menu_anim_time: u32,
 };
 
 const Options = struct {
@@ -211,6 +220,17 @@ const Options = struct {
     framerate_scheme: ?FramerateScheme,
     vsync: bool, // if disabled, framerate scheme will be ignored
 };
+
+fn makeMenuContext(self: *Main) menus.MenuContext {
+    return menus.MenuContext {
+        .fullscreen = self.fullscreen,
+        .cfg = self.cfg,
+        .high_scores = self.high_scores,
+        .new_high_score = self.new_high_score,
+        .game_over = self.game_over,
+        .anim_time = self.menu_anim_time,
+    };
+}
 
 var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
 var hunk = Hunk.init(main_memory[0..]);
@@ -233,7 +253,9 @@ pub fn main() u8 {
 
     switch (self.framerate_scheme) {
         .Fixed => |refresh_rate| {
-            while (tick(self, refresh_rate)) {}
+            while (!self.quit) {
+                tick(self, refresh_rate);
+            }
         },
         .Free => {
             const freq: u64 = SDL_GetPerformanceFrequency();
@@ -269,7 +291,8 @@ pub fn main() u8 {
                     continue;
                 }
 
-                if (!tick(self, refresh_rate)) {
+                tick(self, refresh_rate);
+                if (self.quit) {
                     break;
                 }
 
@@ -577,11 +600,7 @@ fn init(options: Options) !*Main {
     errdefer SDL_PauseAudioDevice(device, 1);
 
     self.session.init(rand_seed);
-    gameInit(&self.session, p.MainController.Params {
-        .is_fullscreen = fullscreen,
-        .volume = cfg.volume,
-        .high_scores = initial_high_scores,
-    }) catch |err| {
+    gameInit(&self.session) catch |err| {
         std.debug.warn("Failed to initialize game: {}\n", err);
         return error.Failed;
     };
@@ -605,6 +624,17 @@ fn init(options: Options) !*Main {
     self.audio_sample_rate = options.audio_sample_rate;
     self.audio_sample_rate_current = @intToFloat(f32, options.audio_sample_rate);
     self.audio_device = device;
+    self.high_scores = initial_high_scores;
+    self.new_high_score = false;
+    self.game_over = false;
+    self.menu_stack = menus.MenuStack {
+        .array = undefined,
+        .len = 1,
+    };
+    self.menu_stack.array[0] = menus.Menu {
+        .MainMenu = menus.MainMenu.init(),
+    };
+    self.quit = false;
     self.fast_forward = false;
     self.framerate_scheme = framerate_scheme;
     self.t = 0.0;
@@ -629,7 +659,7 @@ fn deinit(self: *Main) void {
 }
 
 // this is run once per monitor frame
-fn tick(self: *Main, refresh_rate: u64) bool {
+fn tick(self: *Main, refresh_rate: u64) void {
     const num_frames_to_simulate = blk: {
         self.t += Constants.ticks_per_second; // gameplay update rate
         var n: u32 = 0;
@@ -645,19 +675,13 @@ fn tick(self: *Main, refresh_rate: u64) bool {
     var i: usize = 0; while (i < num_frames_to_simulate) : (i += 1) {
         var evt: SDL_Event = undefined;
         while (SDL_PollEvent(&evt) != 0) {
-            if (!handleSDLEvent(self, evt)) {
-                return false;
+            handleSDLEvent(self, evt);
+            if (self.quit) {
+                return;
             }
         }
 
-        // copy these system values straight into the MainController (this is
-        // context for the menus).
-        // this is kind of a hack, but on the other hand, i'm spawning entities
-        // in this file too, it's not that different...
-        if (self.session.findFirstObject(c.MainController)) |mc| {
-            mc.data.is_fullscreen = self.fullscreen;
-            mc.data.volume = self.cfg.volume;
-        }
+        self.menu_anim_time +%= 1;
 
         // when fast forwarding, we'll simulate 4 frames and draw them blended
         // together. we'll also speed up the sound playback rate by 4x
@@ -668,14 +692,14 @@ fn tick(self: *Main, refresh_rate: u64) bool {
             const draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
+            const paused = self.menu_stack.len > 0 and !self.game_over;
+
             perf.begin(&perf.timers.Frame);
-            gameFrame(&self.session, draw);
+            gameFrame(&self.session, draw, paused);
             perf.end(&perf.timers.Frame);
 
-            // middleware response to certain events (mostly from the menu)
-            if (!handleSystemCommands(self, &toggle_fullscreen)) {
-                return false;
-            }
+            // middleware response to certain events
+            handleGameOver(self);
 
             // update audio (from events)
             playSounds(self, num_frames);
@@ -697,8 +721,48 @@ fn tick(self: *Main, refresh_rate: u64) bool {
     if (toggle_fullscreen) {
         toggleFullscreen(self);
     }
+}
 
-    return true;
+fn handleGameOver(self: *Main) void {
+    var it = self.session.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
+        finalizeGame(self);
+        self.menu_stack.push(menus.Menu {
+            .GameOverMenu = menus.GameOverMenu.init(),
+        });
+    }
+}
+
+fn finalizeGame(self: *Main) void {
+    self.game_over = true;
+    self.new_high_score = false;
+
+    // get player's score
+    const pc = self.session.findFirst(c.PlayerController) orelse return;
+
+    // insert the score somewhere in the high score list
+    const new_score = pc.score;
+
+    // the list is always sorted highest to lowest
+    var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
+        if (new_score > self.high_scores[i]) {
+            // insert the new score here
+            std.mem.copyBackwards(u32,
+                self.high_scores[i + 1..Constants.num_high_scores],
+                self.high_scores[i..Constants.num_high_scores - 1]
+            );
+
+            self.high_scores[i] = new_score;
+            if (i == 0) {
+                self.new_high_score = true;
+            }
+
+            saveHighScores(&hunk.low(), self.high_scores) catch |err| {
+                std.debug.warn("Failed to save high scores to disk: {}\n", err);
+            };
+
+            break;
+        }
+    }
 }
 
 fn toggleFullscreen(self: *Main) void {
@@ -725,12 +789,71 @@ fn toggleFullscreen(self: *Main) void {
     }
 }
 
-fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
+fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
+    switch (effect) {
+        .NoOp => {},
+        .Push => |new_menu| {
+            self.menu_stack.push(new_menu);
+        },
+        .Pop => {
+            self.menu_stack.pop();
+        },
+        .StartNewGame => {
+            self.menu_stack.clear();
+            common.startGame(&self.session);
+            self.game_over = false;
+            self.new_high_score = false;
+        },
+        .EndGame => {
+            finalizeGame(self);
+            common.abortGame(&self.session);
+
+            self.menu_stack.clear();
+            self.menu_stack.push(menus.Menu {
+                .MainMenu = menus.MainMenu.init(),
+            });
+        },
+        .SetVolume => |value| {
+            self.cfg.volume = value;
+        },
+        .ToggleFullscreen => {
+            toggleFullscreen(self);
+        },
+        .BindGameCommand => |payload| {
+            const command_index = @enumToInt(payload.command);
+            const key_in_use =
+                if (payload.key) |new_key|
+                    for (self.cfg.game_key_bindings) |maybe_key| {
+                        if (if (maybe_key) |key| key == new_key else false) {
+                            break true;
+                        }
+                    } else false
+                else false;
+            if (!key_in_use) {
+                self.cfg.game_key_bindings[command_index] = payload.key;
+            }
+        },
+        .ResetAnimTime => {
+            self.menu_anim_time = 0;
+        },
+        .Quit => {
+            self.quit = true;
+        },
+    }
+}
+
+fn inputEvent(self: *Main, key: Key, down: bool) void {
+    if (common.inputEvent(&self.session, self.cfg, key, down, &self.menu_stack, makeMenuContext(self))) |effect| {
+        applyMenuEffect(self, effect);
+    }
+}
+
+fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
     switch (evt.type) {
         SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    _ = common.spawnInputEvent(&self.session, self.cfg, key, true);
+                    inputEvent(self, key, true);
 
                     switch (key) {
                         .Backquote => {
@@ -749,7 +872,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
         },
         SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                _ = common.spawnInputEvent(&self.session, self.cfg, key, false);
+                inputEvent(self, key, false);
 
                 switch (key) {
                     .Backquote => {
@@ -767,14 +890,14 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
                 const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
                 if (evt.jaxis.axis == i) {
                     if (evt.jaxis.value < -threshold) {
-                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, true);
-                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, false);
+                        inputEvent(self, neg, true);
+                        inputEvent(self, pos, false);
                     } else if (evt.jaxis.value > threshold) {
-                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, true);
-                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, false);
+                        inputEvent(self, pos, true);
+                        inputEvent(self, neg, false);
                     } else {
-                        _ = common.spawnInputEvent(&self.session, self.cfg, pos, false);
-                        _ = common.spawnInputEvent(&self.session, self.cfg, neg, false);
+                        inputEvent(self, pos, false);
+                        inputEvent(self, neg, false);
                     }
                 }
             }
@@ -798,7 +921,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
                 else => null,
             };
             if (maybe_key) |key| {
-                _ = common.spawnInputEvent(&self.session, self.cfg, key, down);
+                inputEvent(self, key, down);
             }
         },
         SDL_WINDOWEVENT => {
@@ -808,41 +931,10 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) bool {
             }
         },
         SDL_QUIT => {
-            return false;
+            self.quit = true;
         },
         else => {},
     }
-    return true;
-}
-
-fn handleSystemCommands(self: *Main, toggle_fullscreen: *bool) bool {
-    var it = self.session.iter(c.EventSystemCommand); while (it.next()) |object| {
-        switch (object.data) {
-            .SetVolume => |value| self.cfg.volume = value,
-            .ToggleFullscreen => toggle_fullscreen.* = true,
-            .BindGameCommand => |payload| {
-                const command_index = @enumToInt(payload.command);
-                const key_in_use =
-                    if (payload.key) |new_key|
-                        for (self.cfg.game_key_bindings) |maybe_key| {
-                            if (if (maybe_key) |key| key == new_key else false) {
-                                break true;
-                            }
-                        } else false
-                    else false;
-                if (!key_in_use) {
-                    self.cfg.game_key_bindings[command_index] = payload.key;
-                }
-            },
-            .SaveHighScores => |high_scores| {
-                saveHighScores(&hunk.low(), high_scores) catch |err| {
-                    std.debug.warn("Failed to save high scores to disk: {}\n", err);
-                };
-            },
-            .Quit => return false,
-        }
-    }
-    return true;
 }
 
 fn playSounds(self: *Main, num_frames: u32) void {
@@ -876,7 +968,12 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
     platform_draw.prepare(&self.draw_state);
 
     perf.begin(&perf.timers.Draw);
-    drawGame(&self.draw_state, &self.static, &self.session, self.cfg);
+    drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
+    drawMenu(&self.menu_stack, MenuDrawParams {
+        .ds = &self.draw_state,
+        .static = &self.static,
+        .menu_context = makeMenuContext(self),
+    });
     perf.end(&perf.timers.Draw);
 
     platform_framebuffer.postDraw(&self.framebuffer_state, &self.draw_state, blit_rect, blit_alpha);

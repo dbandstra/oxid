@@ -6,8 +6,8 @@ const draw = @import("draw.zig");
 const pcx_helper = @import("pcx_helper.zig");
 
 const font_filename = build_options.assets_path ++ "/font.pcx";
-const font_char_width = 8;
-const font_char_height = 8;
+pub const font_char_width = 8;
+pub const font_char_height = 8;
 const font_num_cols = 16;
 const font_num_rows = 8;
 

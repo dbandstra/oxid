@@ -11,6 +11,10 @@ const input = @import("oxid/input.zig");
 const levels = @import("oxid/levels.zig");
 const p = @import("oxid/prototypes.zig");
 const c = @import("oxid/components.zig");
+const menus = @import("oxid/menus.zig");
+const MenuInputParams = @import("oxid/menu_input.zig").MenuInputParams;
+const menuInput = @import("oxid/menu_input.zig").menuInput;
+const audio = @import("oxid/audio.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -40,31 +44,125 @@ pub fn loadStatic(static: *GameStatic, hunk_side: *HunkSide) bool {
     return true;
 }
 
-// returns true if the key was bound to something
-pub fn spawnInputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool) bool {
-    const game_command =
-        for (cfg.game_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
+pub fn inputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool, menu_stack: *menus.MenuStack, menu_context: menus.MenuContext) ?menus.Effect {
+    if (down) {
+        const maybe_menu_command =
+            for (cfg.menu_key_bindings) |maybe_key, i| {
+                if (if (maybe_key) |k| k == key else false) {
+                    break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
+                }
+            } else null;
+
+        // if menu is open, input goes to it
+        if (menu_stack.len > 0) {
+            // note that the menu receives input even if the menu_command is null
+            // (used by the key rebinding menu)
+            const result = menuInput(menu_stack, MenuInputParams {
+                .key = key,
+                .maybe_command = maybe_menu_command,
+                .menu_context = menu_context,
+            }) orelse return null;
+
+            if (result.sound) |sound| {
+                switch (sound) {
+                    .Blip => {
+                        p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
+                            .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                        });
+                    },
+                    .Ding => {
+                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
+                    },
+                    .Backoff => {
+                        p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                    },
+                }
             }
-        } else null;
 
-    const menu_command =
-        for (cfg.menu_key_bindings) |maybe_key, i| {
-            if (if (maybe_key) |k| k == key else false) {
-                break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
+            return result.effect;
+        }
+
+        // menu is not open, but should we open it?
+        if (maybe_menu_command) |menu_command| {
+            if (menu_command == .Escape) {
+                // assuming that if the menu isn't open, we must be in game
+                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+
+                return menus.Effect { .Push = menus.Menu { .InGameMenu = menus.InGameMenu.init() } };
             }
-        } else null;
+        }
+    }
 
-    // dang.. an event even for unbound keys. oh well
-    // if (game_command != null or menu_command != null) {
-        _ = p.EventRawInput.spawn(gs, c.EventRawInput {
-            .game_command = game_command,
-            .menu_command = menu_command,
-            .key = key,
-            .down = down,
-        }) catch undefined;
-    // }
+    // game command?
+    for (cfg.game_key_bindings) |maybe_key, i| {
+        if (if (maybe_key) |k| k == key else false) {
+            _ = p.EventGameInput.spawn(gs, c.EventGameInput {
+                .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
+                .down = down,
+            }) catch undefined;
 
-    return game_command != null or menu_command != null;
+            // returning non-null signifies that the input event was handled
+            return menus.Effect { .NoOp = {} };
+        }
+    }
+
+    return null;
+}
+
+// i feel like this functions are too heavy to be done inline by this system.
+// they should be created as events and handled by middleware?
+pub fn startGame(gs: *GameSession) void {
+    const mc = &gs.findFirstObject(c.MainController).?.data;
+
+    // remove all entities except the MainController, GameController,
+    // PlayerController, and EventPostScore
+    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
+        switch (field.field_type.ComponentType) {
+            c.MainController,
+            c.GameController,
+            c.PlayerController => {},
+            else => |ComponentType| {
+                var it = gs.iter(ComponentType); while (it.next()) |object| {
+                    gs.markEntityForRemoval(object.entity_id);
+                }
+            },
+        }
+    }
+
+    mc.game_running_state = c.MainController.GameRunningState {
+        .render_move_boxes = false,
+    };
+
+    // reuse these if present
+    if (gs.findFirst(c.GameController)) |gc| {
+        gc.* = p.GameController.defaults;
+    } else {
+        _ = p.GameController.spawn(gs) catch undefined;
+    }
+
+    // FIXME - this doesn't properly handle the case of multiple
+    // PlayerControllers existing, although that doesn't currently happen
+    if (gs.findFirst(c.PlayerController)) |pc| {
+        pc.* = p.PlayerController.defaults;
+    } else {
+        _ = p.PlayerController.spawn(gs) catch undefined;
+    }
+}
+
+pub fn abortGame(gs: *GameSession) void {
+    const mc = &gs.findFirstObject(c.MainController).?.data;
+
+    mc.game_running_state = null;
+
+    // remove all entities except the MainController and EventPostScore
+    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
+        switch (field.field_type.ComponentType) {
+            c.MainController => {},
+            else => |ComponentType| {
+                var it = gs.iter(ComponentType); while (it.next()) |object| {
+                    gs.markEntityForRemoval(object.entity_id);
+                }
+            },
+        }
+    }
 }

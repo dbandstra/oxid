@@ -1,5 +1,9 @@
 let memory;
 
+// these match same values in main_web.zig
+const NOP               = 1;
+const TOGGLE_FULLSCREEN = 2;
+
 const env = {
     ...webgl,
     getRandomSeed() {
@@ -26,6 +30,9 @@ const env = {
     },
 }
 
+let is_fullscreen = false;
+let fullscreen_waiting = false;
+
 fetch('oxid.wasm').then(response => {
     if (!response.ok) {
         throw new Error('Failed to fetch oxid.wasm');
@@ -41,13 +48,49 @@ fetch('oxid.wasm').then(response => {
 
     document.getElementById('loading-text').remove();
 
+    const canvas_element = document.getElementById('canvasgl');
+
     document.addEventListener('keydown', (e) => {
-        if (instance.exports.onKeyEvent(e.keyCode, 1)) {
-            e.preventDefault();
+        const result = instance.exports.onKeyEvent(e.keyCode, 1);
+
+        switch (result) {
+        default:
+            return;
+        case NOP:
+            break;
+        case TOGGLE_FULLSCREEN:
+            if (fullscreen_waiting) {
+                break;
+            }
+            if (!is_fullscreen) {
+                if (canvas_element && canvas_element.requestFullscreen) {
+                    fullscreen_waiting = true;
+                    canvas_element.requestFullscreen().catch((err) => {
+                        console.error(err);
+                    }).then(() => {
+                        fullscreen_waiting = false;
+                    });
+                }
+            } else {
+                fullscreen_waiting = true;
+                document.exitFullscreen().catch((err) => {
+                    console.error(err);
+                }).then(() => {
+                    fullscreen_waiting = false;
+                });
+            }
+            break;
         }
+
+        e.preventDefault();
     });
     document.addEventListener('keyup', (e) => {
         instance.exports.onKeyEvent(e.keyCode, 0);
+    });
+
+    canvas_element.addEventListener('fullscreenchange', (e) => {
+        is_fullscreen = document.fullscreenElement === canvas_element;
+        instance.exports.onFullscreenChange(is_fullscreen);
     });
 
     const step = (timestamp) => {

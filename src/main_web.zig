@@ -18,6 +18,9 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
+const menus = @import("oxid/menus.zig");
+const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
+const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const common = @import("oxid_common.zig");
 
 const config_storagekey = "config";
@@ -31,6 +34,12 @@ const GameState = struct {
     audio_module: audio.MainModule,
     static: common.GameStatic,
     session: GameSession,
+    game_over: bool,
+    new_high_score: bool,
+    high_scores: [Constants.num_high_scores]u32,
+    menu_anim_time: u32,
+    menu_stack: menus.MenuStack,
+    is_fullscreen: bool,
 };
 
 fn loadConfig(hunk_side: *HunkSide) !config.Config {
@@ -169,13 +178,94 @@ fn translateKey(keyCode: c_int) ?Key {
     };
 }
 
-export fn onKeyEvent(keyCode: c_int, down: c_int) c_int {
-    if (translateKey(keyCode)) |key| {
-        if (common.spawnInputEvent(&g.session, cfg, key, down != 0)) {
-            return 1;
-        }
+fn makeMenuContext() menus.MenuContext {
+    return menus.MenuContext {
+        .fullscreen = g.is_fullscreen,
+        .cfg = cfg,
+        .high_scores = g.high_scores,
+        .new_high_score = g.new_high_score,
+        .game_over = g.game_over,
+        .anim_time = g.menu_anim_time,
+    };
+}
+
+export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
+    const key = translateKey(keycode) orelse return 0;
+
+    if (common.inputEvent(&g.session, cfg, key, down != 0, &g.menu_stack, makeMenuContext())) |effect| {
+        return applyMenuEffect(effect);
     }
+
     return 0;
+}
+
+// these match same values in web/js/wasm.js
+const NOP               = 1;
+const TOGGLE_FULLSCREEN = 2;
+
+export fn onFullscreenChange(enabled: c_int) void {
+    g.is_fullscreen = enabled != 0;
+}
+
+fn applyMenuEffect(effect: menus.Effect) c_int {
+    switch (effect) {
+        .NoOp => {},
+        .Push => |new_menu| {
+            g.menu_stack.push(new_menu);
+        },
+        .Pop => {
+            g.menu_stack.pop();
+        },
+        .StartNewGame => {
+            g.menu_stack.clear();
+            common.startGame(&g.session);
+            g.game_over = false;
+            g.new_high_score = false;
+        },
+        .EndGame => {
+            finalizeGame();
+            common.abortGame(&g.session);
+
+            g.menu_stack.clear();
+            g.menu_stack.push(menus.Menu {
+                .MainMenu = menus.MainMenu.init(),
+            });
+        },
+        .SetVolume => |value| {
+            cfg.volume = value;
+            saveConfig(&hunk.low(), cfg) catch |err| {
+                warn("Failed to save config: {}\n", err);
+            };
+        },
+        .ToggleFullscreen => {
+            return TOGGLE_FULLSCREEN;
+        },
+        .BindGameCommand => |payload| {
+            const command_index = @enumToInt(payload.command);
+            const key_in_use =
+                if (payload.key) |new_key|
+                    for (cfg.game_key_bindings) |maybe_key| {
+                        if (if (maybe_key) |key| key == new_key else false) {
+                            break true;
+                        }
+                    } else false
+                else false;
+            if (!key_in_use) {
+                cfg.game_key_bindings[command_index] = payload.key;
+            }
+            saveConfig(&hunk.low(), cfg) catch |err| {
+                warn("Failed to save config: {}\n", err);
+            };
+        },
+        .ResetAnimTime => {
+            g.menu_anim_time = 0;
+        },
+        .Quit => {
+            // not used in web build
+        },
+    }
+
+    return NOP;
 }
 
 var main_memory: []u8 = undefined;
@@ -241,11 +331,7 @@ fn init() !void {
 
     const rand_seed = web.getRandomSeed();
     g.session.init(rand_seed);
-    gameInit(&g.session, p.MainController.Params {
-        .is_fullscreen = false, // fullscreen,
-        .volume = cfg.volume,
-        .high_scores = initial_high_scores,
-    }) catch |err| {
+    gameInit(&g.session) catch |err| {
         warn("Failed to initialize game: {}\n", err);
         return error.Failed;
     };
@@ -255,6 +341,19 @@ fn init() !void {
         warn("Failed to create performance timers: {}\n", err);
         return error.Failed;
     };
+
+    g.game_over = false;
+    g.new_high_score = false;
+    g.high_scores = initial_high_scores;
+    g.menu_anim_time = 0;
+    g.menu_stack = menus.MenuStack {
+        .array = undefined,
+        .len = 1,
+    };
+    g.menu_stack.array[0] = menus.Menu {
+        .MainMenu = menus.MainMenu.init(),
+    };
+    g.is_fullscreen = false;
 }
 
 export fn onInit() bool {
@@ -330,61 +429,66 @@ export fn onAnimationFrame(now: c_int) void {
 }
 
 fn tick(draw: bool) void {
-    // copy these system values straight into the MainController.
-    // this is kind of a hack, but on the other hand, i'm spawning entities
-    // in this file too, it's not that different...
-    if (g.session.findFirstObject(c.MainController)) |mc| {
-        //mc.data.is_fullscreen = fullscreen;
-        mc.data.volume = cfg.volume;
-    }
+    const paused = g.menu_stack.len > 0 and !g.game_over;
 
-    gameFrame(&g.session, draw);
+    gameFrame(&g.session, draw, paused);
 
-    handleSystemCommands();
+    handleGameOver();
 
     playSounds();
 
     if (draw) {
         platform_draw.prepare(&g.draw_state);
-        drawGame(&g.draw_state, &g.static, &g.session, cfg);
+        drawGame(&g.draw_state, &g.static, &g.session, cfg, g.high_scores[0]);
+
+        drawMenu(&g.menu_stack, MenuDrawParams {
+            .ds = &g.draw_state,
+            .static = &g.static,
+            .menu_context = makeMenuContext(),
+        });
     }
 
     gameFrameCleanup(&g.session);
 }
 
-fn handleSystemCommands() void {
-    var it = g.session.iter(c.EventSystemCommand); while (it.next()) |object| {
-        switch (object.data) {
-            .SetVolume => |value| {
-                cfg.volume = value;
-                saveConfig(&hunk.low(), cfg) catch |err| {
-                    warn("Failed to save config: {}\n", err);
-                };
-            },
-            .ToggleFullscreen => {},//toggle_fullscreen = true,
-            .BindGameCommand => |payload| {
-                const command_index = @enumToInt(payload.command);
-                const key_in_use =
-                    if (payload.key) |new_key|
-                        for (cfg.game_key_bindings) |maybe_key| {
-                            if (if (maybe_key) |key| key == new_key else false) {
-                                break true;
-                            }
-                        } else false
-                    else false;
-                if (!key_in_use) {
-                    cfg.game_key_bindings[command_index] = payload.key;
-                }
-                saveConfig(&hunk.low(), cfg) catch |err| {
-                    warn("Failed to save config: {}\n", err);
-                };
-            },
-            .SaveHighScores => |high_scores| {
-                saveHighScores(&hunk.low(), high_scores) catch |err| {
-                    warn("Failed to save high scores: {}\n", err);
-                };
-            },
-            .Quit => {},//quit = true,
+fn handleGameOver() void {
+    var it = g.session.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
+        finalizeGame();
+        g.menu_stack.push(menus.Menu {
+            .GameOverMenu = menus.GameOverMenu.init(),
+        });
+    }
+}
+
+fn finalizeGame() void {
+    g.game_over = true;
+    g.new_high_score = false;
+
+    // get player's score
+    const pc = g.session.findFirst(c.PlayerController) orelse return;
+
+    // insert the score somewhere in the high score list
+    const new_score = pc.score;
+
+    // the list is always sorted highest to lowest
+    var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
+        if (new_score > g.high_scores[i]) {
+            // insert the new score here
+            std.mem.copyBackwards(u32,
+                g.high_scores[i + 1..Constants.num_high_scores],
+                g.high_scores[i..Constants.num_high_scores - 1]
+            );
+
+            g.high_scores[i] = new_score;
+            if (i == 0) {
+                g.new_high_score = true;
+            }
+
+            saveHighScores(&hunk.low(), g.high_scores) catch |err| {
+                warn("Failed to save high scores to disk: {}\n", err);
+            };
+
+            break;
         }
     }
 }

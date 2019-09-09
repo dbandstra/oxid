@@ -42,32 +42,12 @@ pub const bullet_bbox = blk: {
 };
 
 pub const MainController = struct {
-    pub const Params = struct {
-        is_fullscreen: bool,
-        volume: u32,
-        high_scores: [Constants.num_high_scores]u32,
-    };
-
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *GameSession) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        var menu_stack_array: [c.MainController.menu_stack_size]menus.Menu = undefined;
-        menu_stack_array[0] = menus.Menu {
-            .MainMenu = menus.MainMenu {
-                .cursor_pos = .NewGame,
-            },
-        };
-
         try gs.addComponent(entity_id, c.MainController {
-            .is_fullscreen = params.is_fullscreen,
-            .volume = params.volume,
-            .high_scores = params.high_scores,
-            .new_high_score = false,
             .game_running_state = null,
-            .menu_stack_array = menu_stack_array,
-            .menu_stack_len = 1,
-            .menu_anim_time = 0,
         });
 
         return entity_id;
@@ -76,7 +56,6 @@ pub const MainController = struct {
 
 pub const GameController = struct {
     pub const defaults = c.GameController {
-        .game_over = false,
         .monster_count = 0,
         .enemy_speed_level = 0,
         .enemy_speed_timer = Constants.enemy_speed_ticks,
@@ -497,14 +476,10 @@ pub const EventConferBonus = Event(c.EventConferBonus);
 pub const EventDraw = Event(c.EventDraw);
 pub const EventDrawBox = Event(c.EventDrawBox);
 pub const EventGameInput = Event(c.EventGameInput);
-pub const EventMenuInput = Event(c.EventMenuInput);
 pub const EventMonsterDied = Event(c.EventMonsterDied);
 pub const EventPlayerDied = Event(c.EventPlayerDied);
 pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);
-pub const EventPostScore = Event(c.EventPostScore);
-pub const EventRawInput = Event(c.EventRawInput);
 pub const EventShowMessage = Event(c.EventShowMessage);
-pub const EventSystemCommand = Event(c.EventSystemCommand);
 pub const EventTakeDamage = Event(c.EventTakeDamage);
 
 pub fn playSample(gs: *GameSession, sample: audio.Sample) void {

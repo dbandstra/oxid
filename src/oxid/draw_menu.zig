@@ -3,12 +3,15 @@ const std = @import("std");
 const pdraw = @import("pdraw");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const key_names = @import("../common/key.zig").key_names;
+const Key = @import("../common/key.zig").Key;
 const common = @import("../oxid_common.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
 const input = @import("input.zig");
+
+const font_char_width = @import("../common/font.zig").font_char_width;
+const font_char_height = @import("../common/font.zig").font_char_height;
 
 const primary_font_color_index = 15; // near-white
 
@@ -22,304 +25,183 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     };
 }
 
-const Box = struct {
-    x: i32,
-    y: i32,
+pub const DrawMenuContext = struct {
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    menu_context: menus.MenuContext,
+    cursor_pos: usize,
+    position_top: bool,
+    box_x: i32,
+    box_y: i32,
+    box_w: u31,
+    box_h: u31,
     w: u31,
     h: u31,
+    bottom_margin: u31,
+    draw: bool,
+    option_index: usize,
+    key: ?Key,
+    command: ?input.MenuCommand,
+
+    pub fn setPositionTop(self: *@This()) void {
+        self.position_top = true;
+    }
+
+    fn textHelper(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
+        const w = blk: {
+            const base_w = @intCast(u31, s.len) * font_char_width;
+            break :blk switch (alignment) {
+                .Left => base_w + 32, // pad both sides
+                .Center => base_w,
+            };
+        };
+
+        self.h += self.bottom_margin;
+        if (self.draw) {
+            const x = switch (alignment) {
+                .Left => self.box_x + 16,
+                .Center => self.box_x + i32(self.box_w / 2) - i32(w / 2),
+            };
+            const font_color = getColor(self.static, primary_font_color_index);
+            pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
+            fontDrawString(self.ds, &self.static.font, x, self.box_y + i32(self.h), s);
+            pdraw.end(self.ds);
+        }
+        self.w = std.math.max(self.w, w);
+        self.h += font_char_height;
+    }
+
+    pub fn title(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
+        self.textHelper(alignment, s);
+        self.bottom_margin = 2 + 6;
+    }
+
+    pub fn label(self: *@This(), comptime fmt: []const u8, args: ...) void {
+        var buffer: [80]u8 = undefined;
+        var dest = std.io.SliceOutStream.init(buffer[0..]);
+        _ = dest.stream.print(fmt, args) catch {};
+        const s = dest.getWritten();
+
+        self.textHelper(.Left, s);
+        self.bottom_margin = 2;
+    }
+
+    pub fn vspacer(self: *@This()) void {
+        self.bottom_margin += 6;
+    }
+
+    pub fn option(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+        var buffer: [80]u8 = undefined;
+        var dest = std.io.SliceOutStream.init(buffer[0..]);
+        _ = dest.stream.print(fmt, args) catch {};
+        const s = dest.getWritten();
+
+        self.h += self.bottom_margin;
+        if (self.draw) {
+            const font_color = getColor(self.static, primary_font_color_index);
+            pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
+            if (self.cursor_pos == self.option_index) {
+                fontDrawString(self.ds, &self.static.font, self.box_x, self.box_y + i32(self.h), ">");
+            }
+            fontDrawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + i32(self.h), s);
+            pdraw.end(self.ds);
+        }
+        self.option_index += 1;
+        self.w = std.math.max(self.w, @intCast(u31, s.len) * font_char_width + 32); // pad both sides
+        self.h += font_char_height;
+        self.bottom_margin = 2;
+        return false;
+    }
+
+    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: ...) ?menus.OptionSliderResult {
+        _ = self.option(fmt, args);
+        return null;
+    }
+
+    pub fn setEffect(self: *@This(), effect: menus.Effect) void {}
+    pub fn setSound(self: *@This(), sound: menus.Sound) void {}
 };
 
-fn calcBox(contents_w: usize, contents_h: usize, padding: bool) Box {
-    const w = (if (padding) u31(48) else u31(16)) + @intCast(u31, contents_w);
-    const h = (if (padding) u31(32) else u31(16)) + @intCast(u31, contents_h);
+pub const MenuDrawParams = struct {
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    menu_context: menus.MenuContext,
+};
 
-    return Box {
-        .x = common.virtual_window_width / 2 - w / 2,
-        .y = common.virtual_window_height / 2 - h / 2,
-        .w = w,
-        .h = h,
-    };
+pub fn drawMenu(menu_stack: *menus.MenuStack, params: MenuDrawParams) void {
+    if (menu_stack.len == 0) {
+        return;
+    }
+    _ = menu_stack.array[menu_stack.len - 1].dispatch(MenuDrawParams, params, drawMenuInner);
 }
 
-fn drawBlackBox(ds: *pdraw.DrawState, box: Box) void {
-    pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
+fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Result {
+    // first measure the context (.draw = false)
+    var ctx = DrawMenuContext {
+        .ds = params.ds,
+        .static = params.static,
+        .menu_context = params.menu_context,
+        .cursor_pos = state.cursor_pos,
+        .position_top = false,
+        .box_x = 0,
+        .box_y = 0,
+        .box_w = 0,
+        .box_h = 0,
+        .w = 0,
+        .h = 0,
+        .bottom_margin = 0,
+        .draw = false,
+        .option_index = 0,
+        .key = null,
+        .command = null,
+    };
+
+    state.func(DrawMenuContext, &ctx);
+
+    // draw background box
+    const pad_left = 8;
+    const pad_right = 8;
+    const pad_vert = 8;
+    const box_w = pad_left + pad_right + ctx.w;
+    const box_h = pad_vert * 2 + ctx.h;
+    const box_x = i32(common.virtual_window_width / 2) - i32(box_w / 2);
+    const box_y =
+        if (!ctx.position_top)
+            i32(common.virtual_window_height / 2) - i32(box_h / 2)
+        else
+            32;
+
+    pdraw.begin(params.ds, params.ds.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
-        ds,
-        ds.blank_tileset,
+        params.ds,
+        params.ds.blank_tileset,
         draw.Tile { .tx = 0, .ty = 0 },
-        box.x, box.y, box.w, box.h,
+        box_x, box_y, box_w, box_h,
         .Identity,
     );
-    pdraw.end(ds);
-}
+    pdraw.end(params.ds);
 
-pub fn drawGameOverOverlay(ds: *pdraw.DrawState, static: *const common.GameStatic, new_high_score: bool) void {
-    var box = calcBox(15 * 8, if (new_high_score) u31(8+6+8) else u31(8), false);
-    box.y = 8 * 4;
-    drawBlackBox(ds, box);
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, box.x + 8 + 24, box.y + 8, "GAME OVER");
-    if (new_high_score) {
-        fontDrawString(ds, &static.font, box.x + 8, box.y + 8 + 8 + 6, "New high score!");
-    }
-    pdraw.end(ds);
-}
-
-pub fn drawMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, cfg: config.Config, mc: *const c.MainController, menu: menus.Menu) void {
-    switch (menu) {
-        .MainMenu => |menu_state| drawMainMenu(ds, static, mc, menu_state),
-        .InGameMenu => |menu_state| drawInGameMenu(ds, static, mc, menu_state),
-        .ReallyEndGameMenu => drawReallyEndGameMenu(ds, static),
-        .OptionsMenu => |menu_state| drawOptionsMenu(ds, static, mc, menu_state),
-        .KeyBindingsMenu => |menu_state| drawKeyBindingsMenu(ds, static, cfg, mc, menu_state),
-        .HighScoresMenu => |menu_state| drawHighScoresMenu(ds, static, mc, menu_state),
-    }
-}
-
-fn drawMainMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.MainMenu) void {
-    const title = "OXID";
-    const options = [_][]const u8 {
-        "New game",
-        "Options",
-        "High scores",
-        "Quit",
+    // draw menu content
+    ctx = DrawMenuContext {
+        .ds = params.ds,
+        .static = params.static,
+        .menu_context = params.menu_context,
+        .cursor_pos = state.cursor_pos,
+        .position_top = false,
+        .box_x = box_x + pad_left,
+        .box_y = box_y + pad_vert,
+        .box_w = ctx.w,
+        .box_h = ctx.h,
+        .w = 0,
+        .h = 0,
+        .bottom_margin = 0,
+        .draw = true,
+        .option_index = 0,
+        .key = null,
+        .command = null,
     };
 
-    const box = blk: {
-        var longest = title.len;
-        for (options) |option| {
-            longest = std.math.max(longest, option.len);
-        }
-        break :blk calcBox(longest * 8, options.len * 10, true);
-    };
+    state.func(DrawMenuContext, &ctx);
 
-    drawBlackBox(ds, box);
-
-    var sx = box.x + 8;
-    var sy = box.y + 8;
-
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, sx + 16, sy, title);
-    sy += 16;
-    for (options) |option, i| {
-        if (@enumToInt(menu_state.cursor_pos) == i) {
-            fontDrawString(ds, &static.font, sx, sy, ">");
-        }
-        fontDrawString(ds, &static.font, sx + 16, sy, option);
-        sy += 10;
-    }
-    pdraw.end(ds);
-}
-
-fn drawInGameMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.InGameMenu) void {
-    const title = "GAME PAUSED";
-    const options = [_][]const u8 {
-        "Continue game",
-        "Options",
-        "End game",
-    };
-
-    const box = blk: {
-        var longest = title.len;
-        for (options) |option| {
-            longest = std.math.max(longest, option.len);
-        }
-        break :blk calcBox(longest * 8, options.len * 10, true);
-    };
-
-    drawBlackBox(ds, box);
-
-    var sx = box.x + 8;
-    var sy = box.y + 8;
-
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, sx + 16, sy, title);
-    sy += 16;
-    for (options) |option, i| {
-        if (@enumToInt(menu_state.cursor_pos) == i) {
-            fontDrawString(ds, &static.font, sx, sy, ">");
-        }
-        fontDrawString(ds, &static.font, sx + 16, sy, option);
-        sy += 10;
-    }
-    pdraw.end(ds);
-}
-
-fn drawReallyEndGameMenu(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    const string = "Really end game? [Y/N]";
-    const box = calcBox(string.len * 8, 8, false);
-    drawBlackBox(ds, box);
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, box.x + 8, box.y + 8, string);
-    pdraw.end(ds);
-}
-
-fn drawOptionsMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.OptionsMenu) void {
-    const title = "OPTIONS";
-    const options = [_][]const u8 {
-        "Volume",
-        "Fullscreen",
-        "Key bindings",
-        "Back",
-    };
-
-    const box = blk: {
-        var longest = title.len;
-        for (options) |option| {
-            longest = std.math.max(longest, option.len);
-        }
-        break :blk calcBox((longest + 3) * 8, options.len * 10, true);
-    };
-
-    drawBlackBox(ds, box);
-
-    var sx = box.x + 8;
-    var sy = box.y + 8;
-
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, sx + 16, sy, title);
-    sy += 16;
-    for (options) |option, i| {
-        var x = sx;
-        if (@enumToInt(menu_state.cursor_pos) == i) {
-            fontDrawString(ds, &static.font, x, sy, ">");
-        }
-        x += 16;
-        fontDrawString(ds, &static.font, x, sy, option);
-        x += 8 * @intCast(i32, option.len);
-        switch (@intToEnum(menus.OptionsMenu.Option, @intCast(@TagType(menus.OptionsMenu.Option), i))) {
-            .Volume => {
-                var buffer: [40]u8 = undefined;
-                var dest = std.io.SliceOutStream.init(buffer[0..]);
-                _ = dest.stream.print(": {}%", mc.volume) catch unreachable;
-                fontDrawString(ds, &static.font, x, sy, dest.getWritten());
-            },
-            .Fullscreen => {
-                fontDrawString(ds, &static.font, x, sy, if (mc.is_fullscreen) ": ON" else ": OFF");
-            },
-            else => {},
-        }
-        sy += 10;
-    }
-    pdraw.end(ds);
-}
-
-fn drawKeyBindingsMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, cfg: config.Config, mc: *const c.MainController, menu_state: menus.KeyBindingsMenu) void {
-    const title = "KEY BINDINGS";
-    const options = [_][]const u8 {
-        "Up:    ",
-        "Down:  ",
-        "Left:  ",
-        "Right: ",
-        "Shoot: ",
-        "Close",
-    };
-    const box = calcBox(15 * 8, options.len * 10 + 6, true);
-    drawBlackBox(ds, box);
-
-    var sx = box.x + 8;
-    var sy = box.y + 8;
-
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, sx + 16, sy, title);
-    sy += 16;
-    for (options) |option, i| {
-        var x = sx;
-        if (@enumToInt(menu_state.cursor_pos) == i) {
-            fontDrawString(ds, &static.font, x, sy, ">");
-        }
-        x += 16;
-        fontDrawString(ds, &static.font, x, sy, option);
-        x += 8 * @intCast(i32, option.len);
-        if (menu_state.rebinding and @enumToInt(menu_state.cursor_pos) == i) {
-            const str = switch (mc.menu_anim_time / 16 % 4) {
-                0 => ".",
-                1 => "..",
-                2 => "...",
-                else => "",
-            };
-            fontDrawString(ds, &static.font, x, sy, str);
-        } else {
-            switch (@intToEnum(menus.KeyBindingsMenu.Option, @intCast(@TagType(menus.KeyBindingsMenu.Option), i))) {
-                .Up => {
-                    if (cfg.game_key_bindings[@enumToInt(input.GameCommand.Up)]) |key| {
-                        fontDrawString(ds, &static.font, x, sy, key_names[@enumToInt(key)]);
-                    }
-                },
-                .Down => {
-                    if (cfg.game_key_bindings[@enumToInt(input.GameCommand.Down)]) |key| {
-                        fontDrawString(ds, &static.font, x, sy, key_names[@enumToInt(key)]);
-                    }
-                },
-                .Left => {
-                    if (cfg.game_key_bindings[@enumToInt(input.GameCommand.Left)]) |key| {
-                        fontDrawString(ds, &static.font, x, sy, key_names[@enumToInt(key)]);
-                    }
-                },
-                .Right => {
-                    if (cfg.game_key_bindings[@enumToInt(input.GameCommand.Right)]) |key| {
-                        fontDrawString(ds, &static.font, x, sy, key_names[@enumToInt(key)]);
-                    }
-                },
-                .Shoot => {
-                    if (cfg.game_key_bindings[@enumToInt(input.GameCommand.Shoot)]) |key| {
-                        fontDrawString(ds, &static.font, x, sy, key_names[@enumToInt(key)]);
-                    }
-                },
-                .Close => {},
-            }
-        }
-        sy += 10;
-        if (i == options.len - 2) { // hax
-            sy += 6;
-        }
-    }
-    pdraw.end(ds);
-}
-
-fn drawHighScoresMenu(ds: *pdraw.DrawState, static: *const common.GameStatic, mc: *const c.MainController, menu_state: menus.HighScoresMenu) void {
-    const title = "HIGH SCORES";
-    const options = [_][]const u8{"Close"};
-    const box = calcBox(11 * 8, (options.len + mc.high_scores.len) * 10 + 6, true);
-    drawBlackBox(ds, box);
-
-    var sx = box.x + 8;
-    var sy = box.y + 8;
-
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-    fontDrawString(ds, &static.font, sx + 16, sy, title);
-    sy += 16;
-    {
-        var buffer: [40]u8 = undefined;
-        var dest = std.io.SliceOutStream.init(buffer[0..]);
-        for (mc.high_scores) |score, i| {
-            _ = dest.stream.print(" {}{}. {}",
-                if (i < 9) " " else "", // print doesn't have any way to left-pad with spaces
-                i + 1,
-                score
-            ) catch unreachable; // FIXME
-            fontDrawString(ds, &static.font, sx, sy, dest.getWritten());
-            dest.reset();
-            sy += 10;
-        }
-        sy += 6;
-    }
-    for (options) |option, i| {
-        var x = sx;
-        if (@enumToInt(menu_state.cursor_pos) == i) {
-            fontDrawString(ds, &static.font, x, sy, ">");
-        }
-        x += 16;
-        fontDrawString(ds, &static.font, x, sy, option);
-        x += 8 * @intCast(i32, option.len);
-        sy += 10;
-    }
-    pdraw.end(ds);
+    return null;
 }

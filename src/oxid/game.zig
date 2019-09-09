@@ -24,13 +24,9 @@ pub const GameSession = gbe.Session(struct {
     EventDraw: gbe.ComponentList(c.EventDraw, 100),
     EventDrawBox: gbe.ComponentList(c.EventDrawBox, 100),
     EventGameInput: gbe.ComponentList(c.EventGameInput, 20),
-    EventMenuInput: gbe.ComponentList(c.EventMenuInput, 20),
     EventMonsterDied: gbe.ComponentList(c.EventMonsterDied, 20),
     EventPlayerDied: gbe.ComponentList(c.EventPlayerDied, 20),
     EventPlayerOutOfLives: gbe.ComponentList(c.EventPlayerOutOfLives, 20),
-    EventPostScore: gbe.ComponentList(c.EventPostScore, 20),
-    EventRawInput: gbe.ComponentList(c.EventRawInput, 20),
     EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
-    EventSystemCommand: gbe.ComponentList(c.EventSystemCommand, 5),
     EventTakeDamage: gbe.ComponentList(c.EventTakeDamage, 20),
 });

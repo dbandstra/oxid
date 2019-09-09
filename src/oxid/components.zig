@@ -1,7 +1,6 @@
 const zang = @import("zang");
 const gbe = @import("gbe");
 const Math = @import("../common/math.zig");
-const Key = @import("../common/key.zig").Key;
 const Draw = @import("../common/draw.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
@@ -9,23 +8,13 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
 const audio = @import("audio.zig");
-const menus = @import("menus.zig");
 
 pub const MainController = struct {
     pub const GameRunningState = struct {
         render_move_boxes: bool,
     };
 
-    pub const menu_stack_size = 3;
-
-    is_fullscreen: bool,
-    volume: u32,
-    high_scores: [Constants.num_high_scores]u32,
-    new_high_score: bool,
     game_running_state: ?GameRunningState,
-    menu_stack_array: [menu_stack_size]menus.Menu,
-    menu_stack_len: usize,
-    menu_anim_time: u32,
 };
 
 pub const Bullet = struct {
@@ -64,7 +53,6 @@ pub const Web = struct {};
 // maybe this should just be an object inside MainController?
 // combine with GameRunningState
 pub const GameController = struct {
-    game_over: bool,
     monster_count: u32,
     enemy_speed_level: u31,
     enemy_speed_timer: u32,
@@ -225,21 +213,8 @@ pub const EventDrawBox = struct {
     color: Draw.Color,
 };
 
-pub const EventRawInput = struct {
-    game_command: ?input.GameCommand,
-    menu_command: ?input.MenuCommand,
-    key: Key,
-    down: bool,
-};
-
 pub const EventGameInput = struct {
     command: input.GameCommand,
-    down: bool,
-};
-
-pub const EventMenuInput = struct {
-    command: ?input.MenuCommand,
-    key: Key, // used for the key binding menu
     down: bool,
 };
 
@@ -253,25 +228,8 @@ pub const EventPlayerOutOfLives = struct {
     player_controller_id: gbe.EntityId,
 };
 
-pub const EventPostScore = struct {
-    score: u32,
-};
-
 pub const EventShowMessage = struct {
     message: []const u8,
-};
-
-pub const BindGameCommand = struct {
-    command: input.GameCommand,
-    key: ?Key,
-};
-
-pub const EventSystemCommand = union(enum) {
-    SetVolume: u32,
-    ToggleFullscreen,
-    BindGameCommand: BindGameCommand,
-    SaveHighScores: [Constants.num_high_scores]u32,
-    Quit,
 };
 
 pub const EventTakeDamage = struct {
