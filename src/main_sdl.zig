@@ -559,12 +559,10 @@ fn init(options: Options) !*Main {
         return error.Failed;
     }
 
-    // https://github.com/ziglang/zig/issues/3046
-    const blah = audio.MainModule.init(&hunk.low(), options.audio_buffer_size) catch |err| {
+    self.audio_module = audio.MainModule.init(&hunk.low(), options.audio_buffer_size) catch |err| {
         std.debug.warn("Failed to load audio module: {}\n", err);
         return error.Failed;
     };
-    self.audio_module = blah;
 
     var cfg = blk: {
         // if config couldn't load, warn and fall back to default config
