@@ -113,6 +113,10 @@ pub const DrawMenuContext = struct {
         return false;
     }
 
+    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+        return self.option(fmt, args);
+    }
+
     pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: ...) ?menus.OptionSliderResult {
         _ = self.option(fmt, args);
         return null;

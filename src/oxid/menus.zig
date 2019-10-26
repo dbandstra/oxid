@@ -255,18 +255,23 @@ pub const OptionsMenu = struct {
         ctx.title(.Left, "OPTIONS");
     
         if (builtin.arch == .wasm32) {
-            if (ctx.option("Sound: {}", if (ctx.menu_context.sound_enabled) "ON" else "OFF")) {
+            if (ctx.optionToggle("Sound: {}", if (ctx.menu_context.sound_enabled) "ON" else "OFF")) {
                 ctx.setEffect(.ToggleSound);
+                // don't play sound because the sound init/deinit may not be done in time to pick the new sound up
             }
         }
         const volume = ctx.menu_context.cfg.volume;
         if (ctx.optionSlider("Volume: {}%", volume)) |direction| {
             switch (direction) {
                 .Left => {
-                    ctx.setEffect(Effect { .SetVolume = if (volume > 10) volume - 10 else 0 });
+                    if (volume > 0) {
+                        ctx.setEffect(Effect { .SetVolume = if (volume > 10) volume - 10 else 0 });
+                    }
                 },
                 .Right => {
-                    ctx.setEffect(Effect { .SetVolume = if (volume < 90) volume + 10 else 100 });
+                    if (volume < 100) {
+                        ctx.setEffect(Effect { .SetVolume = if (volume < 90) volume + 10 else 100 });
+                    }
                 },
             }
             ctx.setSound(.Ding);
@@ -289,8 +294,9 @@ pub const OptionsMenu = struct {
                 ctx.setSound(.Ding);
             }
         }
-        if (ctx.option("Fullscreen: {}", if (ctx.menu_context.fullscreen) "ON" else "OFF")) {
+        if (ctx.optionToggle("Fullscreen: {}", if (ctx.menu_context.fullscreen) "ON" else "OFF")) {
             ctx.setEffect(.ToggleFullscreen);
+            // don't play a sound because the fullscreen transition might mess with playback
         }
         if (ctx.option("Key bindings")) {
             ctx.setEffect(Effect { .Push = Menu { .KeyBindingsMenu = KeyBindingsMenu.init() } });

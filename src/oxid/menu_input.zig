@@ -27,19 +27,13 @@ const MenuInputContext = struct {
             if (self.command) |command| {
                 switch (command) {
                     .Enter => {
-                        if (!is_slider) {
-                            return OptionInnerResult.Enter;
-                        }
+                        return OptionInnerResult.Enter;
                     },
                     .Left => {
-                        if (is_slider) {
-                            return OptionInnerResult.Left;
-                        }
+                        return OptionInnerResult.Left;
                     },
                     .Right => {
-                        if (is_slider) {
-                            return OptionInnerResult.Right;
-                        }
+                        return OptionInnerResult.Right;
                     },
                     .Up => {
                         self.setSound(.Blip);
@@ -66,7 +60,13 @@ const MenuInputContext = struct {
     }
 
     pub fn option(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+        // for "buttons", only enter key works
         return if (self.optionInner(false, fmt, args)) |result| result == .Enter else false;
+    }
+
+    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+        // for on/off toggles, left, right and enter keys all work
+        return self.optionInner(false, fmt, args) != null;
     }
 
     pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: ...) ?menus.OptionSliderResult {
