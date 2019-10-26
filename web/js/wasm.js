@@ -6,6 +6,7 @@ let memory;
 const NOP               = 1;
 const TOGGLE_SOUND      = 2;
 const TOGGLE_FULLSCREEN = 3;
+const SET_CANVAS_SCALE  = 100;
 
 const env = {
     ...webgl,
@@ -51,12 +52,13 @@ fetch('oxid.wasm').then(response => {
 
     document.getElementById('loading-text').remove();
 
+    // default to 3x scale
+    setCanvasScale(instance, 3);
+
     document.addEventListener('keydown', (e) => {
         const result = instance.exports.onKeyEvent(e.keyCode, 1);
 
         switch (result) {
-        default:
-            return;
         case NOP:
             break;
         case TOGGLE_SOUND:
@@ -65,6 +67,12 @@ fetch('oxid.wasm').then(response => {
         case TOGGLE_FULLSCREEN:
             toggleFullscreen();
             break;
+        default:
+            if (result >= SET_CANVAS_SCALE) {
+                setCanvasScale(instance, result - SET_CANVAS_SCALE);
+                break;
+            }
+            return;
         }
 
         e.preventDefault();
@@ -132,6 +140,12 @@ function toggleSound(instance) {
         });
         return;
     }
+}
+
+function setCanvasScale(instance, scale) {
+    $webgl.style.width = ($webgl.getAttribute('width') * scale) + 'px';
+    $webgl.style.height = ($webgl.getAttribute('height') * scale) + 'px';
+    instance.exports.onCanvasScaleChange(scale);
 }
 
 function toggleFullscreen() {

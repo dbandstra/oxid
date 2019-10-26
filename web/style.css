@@ -6,13 +6,12 @@ body {
 #loading-text {
     position: absolute;
     z-index: 1;
-}
-
-.options {
-    margin-top: 1em;
-}
-.option + .option {
-    margin-top: 0.5em;
+    left: 0;
+    right: 0;
+    top: 110px;
+    text-align: center;
+    font-size: 24px;
+    color: #ccc;
 }
 
 #canvasgl {
@@ -20,24 +19,4 @@ body {
     margin: 0 auto;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
-}
-
-.scale-1x {
-    width: 320px;
-    height: 240px;
-}
-
-.scale-2x {
-    width: 640px;
-    height: 480px;
-}
-
-.scale-3x {
-    width: 960px;
-    height: 720px;
-}
-
-.scale-4x {
-    width: 1280px;
-    height: 960px;
 }

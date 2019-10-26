@@ -10,17 +10,6 @@
             Loading...
         </div>
         <canvas id="canvasgl" width="320" height="240"></canvas>
-        <div class="options">
-            <div class="option">
-                Canvas scale:
-                <select id="scale-select">
-                    <option value="1x">1x</option>
-                    <option value="2x">2x</option>
-                    <option value="3x">3x</option>
-                    <option value="4x">4x</option>
-                </select>
-            </div>
-        </div>
         <script>
             var $webgl = document.getElementById("canvasgl");
         </script>
@@ -28,24 +17,5 @@
         <script src="js/webgl.js"></script>
         <script src="js/webgl_generated.js"></script>
         <script src="js/wasm.js"></script>
-        <script>
-            function setClass(prefix, newValue) {
-                const classList = [...$webgl.classList];
-                for (const className of classList) {
-                    if (className.startsWith(prefix)) {
-                        $webgl.classList.remove(className);
-                    }
-                }
-                $webgl.classList.add(prefix + newValue);
-            }
-            function initializeSelect(elem, prefix, initial) {
-                elem.value = initial;
-                setClass(prefix, initial);
-                elem.addEventListener('change', (event) => {
-                    setClass(prefix, event.target.value);
-                });
-            }
-            initializeSelect(document.getElementById('scale-select'), 'scale-', '3x');
-        </script>
     </body>
 </html>

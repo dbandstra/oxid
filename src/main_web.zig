@@ -40,6 +40,7 @@ const GameState = struct {
     menu_stack: menus.MenuStack,
     sound_enabled: bool,
     is_fullscreen: bool,
+    canvas_scale: u32,
 };
 
 fn loadConfig(hunk_side: *HunkSide) !config.Config {
@@ -187,6 +188,8 @@ fn makeMenuContext() menus.MenuContext {
         .new_high_score = g.new_high_score,
         .game_over = g.game_over,
         .anim_time = g.menu_anim_time,
+        .canvas_scale = g.canvas_scale,
+        .max_canvas_scale = 4,
     };
 }
 
@@ -204,6 +207,7 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
 const NOP               = 1;
 const TOGGLE_SOUND      = 2;
 const TOGGLE_FULLSCREEN = 3;
+const SET_CANVAS_SCALE  = 100;
 
 export fn onSoundEnabledChange(enabled: c_int) void {
     g.sound_enabled = enabled != 0;
@@ -211,6 +215,10 @@ export fn onSoundEnabledChange(enabled: c_int) void {
 
 export fn onFullscreenChange(enabled: c_int) void {
     g.is_fullscreen = enabled != 0;
+}
+
+export fn onCanvasScaleChange(scale: c_int) void {
+    g.canvas_scale = std.math.cast(u32, scale) catch 1;
 }
 
 fn applyMenuEffect(effect: menus.Effect) c_int {
@@ -245,6 +253,9 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
             saveConfig(&hunk.low(), cfg) catch |err| {
                 warn("Failed to save config: {}\n", err);
             };
+        },
+        .SetCanvasScale => |value| {
+            return SET_CANVAS_SCALE + @intCast(c_int, value);
         },
         .ToggleFullscreen => {
             return TOGGLE_FULLSCREEN;
@@ -364,6 +375,7 @@ fn init() !void {
     };
     g.sound_enabled = false;
     g.is_fullscreen = false;
+    g.canvas_scale = 1;
 }
 
 export fn onInit() bool {

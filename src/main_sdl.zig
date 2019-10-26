@@ -230,6 +230,8 @@ fn makeMenuContext(self: *Main) menus.MenuContext {
         .new_high_score = self.new_high_score,
         .game_over = self.game_over,
         .anim_time = self.menu_anim_time,
+        .canvas_scale = 1, // unused in SDL build
+        .max_canvas_scale = 4, // unused in SDL build
     };
 }
 
@@ -819,6 +821,9 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .SetVolume => |value| {
             self.cfg.volume = value;
+        },
+        .SetCanvasScale => |_| {
+            // unused in SDL build
         },
         .ToggleFullscreen => {
             toggleFullscreen(self);

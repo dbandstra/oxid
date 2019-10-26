@@ -24,6 +24,8 @@ pub const MenuContext = struct {
     new_high_score: bool,
     game_over: bool,
     anim_time: u32,
+    canvas_scale: u32,
+    max_canvas_scale: u32,
 };
 
 pub const Effect = union(enum) {
@@ -34,6 +36,7 @@ pub const Effect = union(enum) {
     EndGame,
     ToggleSound,
     SetVolume: u32,
+    SetCanvasScale: u32,
     ToggleFullscreen,
     BindGameCommand: BindGameCommand,
     ResetAnimTime,
@@ -261,12 +264,29 @@ pub const OptionsMenu = struct {
             switch (direction) {
                 .Left => {
                     ctx.setEffect(Effect { .SetVolume = if (volume > 10) volume - 10 else 0 });
-                    ctx.setSound(.Ding);
                 },
                 .Right => {
                     ctx.setEffect(Effect { .SetVolume = if (volume < 90) volume + 10 else 100 });
-                    ctx.setSound(.Ding);
                 },
+            }
+            ctx.setSound(.Ding);
+        }
+        if (builtin.arch == .wasm32) {
+            const scale = ctx.menu_context.canvas_scale;
+            if (ctx.optionSlider("Canvas scale: {}x", ctx.menu_context.canvas_scale)) |direction| {
+                switch (direction) {
+                    .Left => {
+                        if (scale > 1) {
+                            ctx.setEffect(Effect { .SetCanvasScale = scale - 1 });
+                        }
+                    },
+                    .Right => {
+                        if (scale < ctx.menu_context.max_canvas_scale) {
+                            ctx.setEffect(Effect { .SetCanvasScale = scale + 1 });
+                        }
+                    },
+                }
+                ctx.setSound(.Ding);
             }
         }
         if (ctx.option("Fullscreen: {}", if (ctx.menu_context.fullscreen) "ON" else "OFF")) {
