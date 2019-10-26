@@ -223,6 +223,7 @@ const Options = struct {
 
 fn makeMenuContext(self: *Main) menus.MenuContext {
     return menus.MenuContext {
+        .sound_enabled = true, // unused in SDL build
         .fullscreen = self.fullscreen,
         .cfg = self.cfg,
         .high_scores = self.high_scores,
@@ -812,6 +813,9 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
             self.menu_stack.push(menus.Menu {
                 .MainMenu = menus.MainMenu.init(),
             });
+        },
+        .ToggleSound => {
+            // unused in SDL build
         },
         .SetVolume => |value| {
             self.cfg.volume = value;

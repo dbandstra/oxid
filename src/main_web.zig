@@ -27,7 +27,6 @@ const config_storagekey = "config";
 const highscores_storagekey = "highscores";
 
 var cfg = config.default;
-var audio_enabled = false;
 
 const GameState = struct {
     draw_state: platform_draw.DrawState,
@@ -39,6 +38,7 @@ const GameState = struct {
     high_scores: [Constants.num_high_scores]u32,
     menu_anim_time: u32,
     menu_stack: menus.MenuStack,
+    sound_enabled: bool,
     is_fullscreen: bool,
 };
 
@@ -180,6 +180,7 @@ fn translateKey(keyCode: c_int) ?Key {
 
 fn makeMenuContext() menus.MenuContext {
     return menus.MenuContext {
+        .sound_enabled = g.sound_enabled,
         .fullscreen = g.is_fullscreen,
         .cfg = cfg,
         .high_scores = g.high_scores,
@@ -201,7 +202,12 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
 
 // these match same values in web/js/wasm.js
 const NOP               = 1;
-const TOGGLE_FULLSCREEN = 2;
+const TOGGLE_SOUND      = 2;
+const TOGGLE_FULLSCREEN = 3;
+
+export fn onSoundEnabledChange(enabled: c_int) void {
+    g.sound_enabled = enabled != 0;
+}
 
 export fn onFullscreenChange(enabled: c_int) void {
     g.is_fullscreen = enabled != 0;
@@ -230,6 +236,9 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
             g.menu_stack.push(menus.Menu {
                 .MainMenu = menus.MainMenu.init(),
             });
+        },
+        .ToggleSound => {
+            return TOGGLE_SOUND;
         },
         .SetVolume => |value| {
             cfg.volume = value;
@@ -353,6 +362,7 @@ fn init() !void {
     g.menu_stack.array[0] = menus.Menu {
         .MainMenu = menus.MainMenu.init(),
     };
+    g.sound_enabled = false;
     g.is_fullscreen = false;
 }
 
@@ -368,10 +378,6 @@ export fn onDestroy() void {
 
 export fn getAudioBufferSize() c_int {
     return audio_buffer_size;
-}
-
-export fn enableAudio() void {
-    audio_enabled = true;
 }
 
 export fn audioCallback(sample_rate: f32) [*]f32 {
@@ -494,7 +500,7 @@ fn finalizeGame() void {
 }
 
 fn playSounds() void {
-    if (audio_enabled) {
+    if (g.sound_enabled) {
         // FIXME - impulse_frame being 0 means that sounds will always start
         // playing at the beginning of the mix buffer. need to implement some
         // "syncing" to guess where we are in the middle of a mix frame

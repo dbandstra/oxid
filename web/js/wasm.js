@@ -1,8 +1,11 @@
+/* global $webgl */
+
 let memory;
 
 // these match same values in main_web.zig
 const NOP               = 1;
-const TOGGLE_FULLSCREEN = 2;
+const TOGGLE_SOUND      = 2;
+const TOGGLE_FULLSCREEN = 3;
 
 const env = {
     ...webgl,
@@ -48,8 +51,6 @@ fetch('oxid.wasm').then(response => {
 
     document.getElementById('loading-text').remove();
 
-    const canvas_element = document.getElementById('canvasgl');
-
     document.addEventListener('keydown', (e) => {
         const result = instance.exports.onKeyEvent(e.keyCode, 1);
 
@@ -58,27 +59,11 @@ fetch('oxid.wasm').then(response => {
             return;
         case NOP:
             break;
+        case TOGGLE_SOUND:
+            toggleSound(instance);
+            break;
         case TOGGLE_FULLSCREEN:
-            if (fullscreen_waiting) {
-                break;
-            }
-            if (!is_fullscreen) {
-                if (canvas_element && canvas_element.requestFullscreen) {
-                    fullscreen_waiting = true;
-                    canvas_element.requestFullscreen().catch((err) => {
-                        console.error(err);
-                    }).then(() => {
-                        fullscreen_waiting = false;
-                    });
-                }
-            } else {
-                fullscreen_waiting = true;
-                document.exitFullscreen().catch((err) => {
-                    console.error(err);
-                }).then(() => {
-                    fullscreen_waiting = false;
-                });
-            }
+            toggleFullscreen();
             break;
         }
 
@@ -88,8 +73,8 @@ fetch('oxid.wasm').then(response => {
         instance.exports.onKeyEvent(e.keyCode, 0);
     });
 
-    canvas_element.addEventListener('fullscreenchange', (e) => {
-        is_fullscreen = document.fullscreenElement === canvas_element;
+    $webgl.addEventListener('fullscreenchange', (e) => {
+        is_fullscreen = document.fullscreenElement === $webgl;
         instance.exports.onFullscreenChange(is_fullscreen);
     });
 
@@ -98,32 +83,76 @@ fetch('oxid.wasm').then(response => {
         window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
+}).catch(err => {
+    alert(err);
+});
 
-    // some browsers block sound unless initialized in response to a user action
-    document.getElementById('enable-sound-button').addEventListener('click', (event) => {
-        // safari still calls it "webkitAudioContext"
+let audio_state = null;
+let audio_waiting = false;
+
+function toggleSound(instance) {
+    if (audio_waiting) {
+        return;
+    }
+    if (audio_state === null) {
+        // enable sound
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) {
-            event.target.parentNode.replaceChild(document.createTextNode('AudioContext API not supported.'), event.target);
+            alert('AudioContext API not supported.');
             return;
         }
 
-        event.target.parentNode.replaceChild(document.createTextNode('Sound enabled.'), event.target);
-
-        instance.exports.enableAudio();
-
         const audio_buffer_size = instance.exports.getAudioBufferSize();
-        const ctx = new AudioContext();
-        const scriptProcessorNode = ctx.createScriptProcessor(audio_buffer_size, 0, 1); // mono output
-        scriptProcessorNode.onaudioprocess = function(event) {
+        const audio_context = new AudioContext();
+        const script_processor_node = audio_context.createScriptProcessor(audio_buffer_size, 0, 1); // mono output
+        script_processor_node.onaudioprocess = function(event) {
             const samples = event.outputBuffer.getChannelData(0);
-            const audio_buffer_ptr = instance.exports.audioCallback(ctx.sampleRate);
+            const audio_buffer_ptr = instance.exports.audioCallback(audio_context.sampleRate);
             // TODO - any way i can get rid of this `new`? is there a way to pass memory to the zig side?
             samples.set(new Float32Array(memory.buffer, audio_buffer_ptr, audio_buffer_size));
         };
         // Route it to the main output.
-        scriptProcessorNode.connect(ctx.destination);
-    });
-}).catch(err => {
-    alert(err);
-});
+        script_processor_node.connect(audio_context.destination);
+
+        audio_state = {
+            audio_context,
+            script_processor_node,
+        };
+        instance.exports.onSoundEnabledChange(true);
+    } else {
+        // disable sound
+        audio_waiting = true;
+        audio_state.script_processor_node.disconnect();
+        audio_state.audio_context.close().catch((err) => {
+            console.error(err);
+        }).then(() => {
+            audio_waiting = false;
+            audio_state = null;
+            instance.exports.onSoundEnabledChange(false);
+        });
+        return;
+    }
+}
+
+function toggleFullscreen() {
+    if (fullscreen_waiting) {
+        return;
+    }
+    if (!is_fullscreen) {
+        if ($webgl.requestFullscreen) {
+            fullscreen_waiting = true;
+            $webgl.requestFullscreen().catch((err) => {
+                console.error(err);
+            }).then(() => {
+                fullscreen_waiting = false;
+            });
+        }
+    } else {
+        fullscreen_waiting = true;
+        document.exitFullscreen().catch((err) => {
+            console.error(err);
+        }).then(() => {
+            fullscreen_waiting = false;
+        });
+    }
+}

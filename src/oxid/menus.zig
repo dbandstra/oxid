@@ -17,6 +17,7 @@ pub const OptionSliderResult = enum {
 };
 
 pub const MenuContext = struct {
+    sound_enabled: bool,
     fullscreen: bool,
     cfg: config.Config,
     high_scores: [Constants.num_high_scores]u32,
@@ -31,6 +32,7 @@ pub const Effect = union(enum) {
     Pop,
     StartNewGame,
     EndGame,
+    ToggleSound,
     SetVolume: u32,
     ToggleFullscreen,
     BindGameCommand: BindGameCommand,
@@ -249,6 +251,11 @@ pub const OptionsMenu = struct {
 
         ctx.title(.Left, "OPTIONS");
     
+        if (builtin.arch == .wasm32) {
+            if (ctx.option("Sound: {}", if (ctx.menu_context.sound_enabled) "ON" else "OFF")) {
+                ctx.setEffect(.ToggleSound);
+            }
+        }
         const volume = ctx.menu_context.cfg.volume;
         if (ctx.optionSlider("Volume: {}%", volume)) |direction| {
             switch (direction) {
