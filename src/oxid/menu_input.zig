@@ -1,10 +1,10 @@
 const menus = @import("menus.zig");
 const GameSession = @import("game.zig").GameSession;
 const input = @import("input.zig");
-const Key = @import("../common/key.zig").Key;
+const InputSource = @import("../common/key.zig").InputSource;
 
 const MenuInputContext = struct {
-    key: ?Key,
+    source: ?InputSource,
     command: ?input.MenuCommand,
     menu_context: menus.MenuContext,
     cursor_pos: usize,
@@ -89,7 +89,7 @@ const MenuInputContext = struct {
 };
 
 pub const MenuInputParams = struct {
-    key: Key,
+    source: InputSource,
     maybe_command: ?input.MenuCommand,
     menu_context: menus.MenuContext,
 };
@@ -103,7 +103,7 @@ pub fn menuInput(menu_stack: *menus.MenuStack, params: MenuInputParams) ?menus.R
 
 fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.Result {
     var ctx = MenuInputContext {
-        .key = null,
+        .source = null,
         .command = null,
         .menu_context = params.menu_context,
         .cursor_pos = state.cursor_pos,
@@ -121,7 +121,7 @@ fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.R
 
     // handle input
     ctx = MenuInputContext {
-        .key = params.key,
+        .source = params.source,
         .command = params.maybe_command,
         .menu_context = params.menu_context,
         .cursor_pos = state.cursor_pos,

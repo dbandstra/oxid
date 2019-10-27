@@ -4,7 +4,8 @@ const draw = @import("common/draw.zig");
 const Font = @import("common/font.zig").Font;
 const loadFont = @import("common/font.zig").loadFont;
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
-const Key = @import("common/key.zig").Key;
+const InputSource = @import("common/key.zig").InputSource;
+const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const config = @import("oxid/config.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const input = @import("oxid/input.zig");
@@ -44,11 +45,11 @@ pub fn loadStatic(static: *GameStatic, hunk_side: *HunkSide) bool {
     return true;
 }
 
-pub fn inputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool, menu_stack: *menus.MenuStack, menu_context: menus.MenuContext) ?menus.Effect {
+pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, down: bool, menu_stack: *menus.MenuStack, menu_context: menus.MenuContext) ?menus.Effect {
     if (down) {
         const maybe_menu_command =
-            for (cfg.menu_key_bindings) |maybe_key, i| {
-                if (if (maybe_key) |k| k == key else false) {
+            for (cfg.menu_bindings) |maybe_source, i| {
+                if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
                     break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
                 }
             } else null;
@@ -58,7 +59,7 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool, me
             // note that the menu receives input even if the menu_command is null
             // (used by the key rebinding menu)
             const result = menuInput(menu_stack, MenuInputParams {
-                .key = key,
+                .source = source,
                 .maybe_command = maybe_menu_command,
                 .menu_context = menu_context,
             }) orelse return null;
@@ -94,8 +95,8 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, key: Key, down: bool, me
     }
 
     // game command?
-    for (cfg.game_key_bindings) |maybe_key, i| {
-        if (if (maybe_key) |k| k == key else false) {
+    for (cfg.game_bindings) |maybe_source, i| {
+        if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
             _ = p.EventGameInput.spawn(gs, c.EventGameInput {
                 .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                 .down = down,

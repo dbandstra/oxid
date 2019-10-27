@@ -238,28 +238,6 @@ pub const Key = enum {
     App2,
     AudioRewind,
     AudioFastForward,
-
-    JoyAxis0Pos,
-    JoyAxis0Neg,
-    JoyAxis1Pos,
-    JoyAxis1Neg,
-    JoyAxis2Pos,
-    JoyAxis2Neg,
-    JoyAxis3Pos,
-    JoyAxis3Neg,
-
-    JoyButton0,
-    JoyButton1,
-    JoyButton2,
-    JoyButton3,
-    JoyButton4,
-    JoyButton5,
-    JoyButton6,
-    JoyButton7,
-    JoyButton8,
-    JoyButton9,
-    JoyButton10,
-    JoyButton11,
 };
 
 pub const key_names = blk: {
@@ -269,3 +247,33 @@ pub const key_names = blk: {
     }
     break :blk array;
 };
+
+pub const JoyButton = struct {
+    which: usize,
+    button: u32,
+};
+
+pub const JoyAxis = struct {
+    which: usize,
+    axis: u32,
+};
+
+pub const InputSource = union(enum) {
+    Key: Key,
+    JoyButton: JoyButton,
+    JoyAxisNeg: JoyAxis,
+    JoyAxisPos: JoyAxis,
+};
+
+pub fn areInputSourcesEqual(a: InputSource, b: InputSource) bool {
+    return switch (a) {
+        .Key => |a_i|
+            switch (b) { .Key => |b_i| a_i == b_i, else => false },
+        .JoyButton => |a_i|
+            switch (b) { .JoyButton => |b_i| a_i.which == b_i.which and a_i.button == b_i.button, else => false },
+        .JoyAxisNeg => |a_i|
+            switch (b) { .JoyAxisNeg => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis, else => false },
+        .JoyAxisPos => |a_i|
+            switch (b) { .JoyAxisPos => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis, else => false },
+    };
+}

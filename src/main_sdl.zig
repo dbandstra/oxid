@@ -10,6 +10,10 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 
 const Key = @import("common/key.zig").Key;
+const InputSource = @import("common/key.zig").InputSource;
+const JoyButton = @import("common/key.zig").JoyButton;
+const JoyAxis = @import("common/key.zig").JoyAxis;
+const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const Constants = @import("oxid/constants.zig");
@@ -62,7 +66,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
 fn loadConfig(hunk_side: *HunkSide) !config.Config {
     const file = openDataFile(hunk_side, config_filename, .Read) catch |err| {
         if (err == error.FileNotFound) {
-            return config.default;
+            return config.getDefault();
         }
         return err;
     };
@@ -610,7 +614,7 @@ fn init(options: Options) !*Main {
         // if config couldn't load, warn and fall back to default config
         const cfg_ = loadConfig(&hunk.low()) catch |err| {
             std.debug.warn("Failed to load config: {}\n", err);
-            break :blk config.default;
+            break :blk config.getDefault();
         };
         break :blk cfg_;
     };
@@ -880,16 +884,16 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);
-            const key_in_use =
-                if (payload.key) |new_key|
-                    for (self.cfg.game_key_bindings) |maybe_key| {
-                        if (if (maybe_key) |key| key == new_key else false) {
+            const in_use =
+                if (payload.source) |new_source|
+                    for (self.cfg.game_bindings) |maybe_source| {
+                        if (if (maybe_source) |source| areInputSourcesEqual(source, new_source) else false) {
                             break true;
                         }
                     } else false
                 else false;
-            if (!key_in_use) {
-                self.cfg.game_key_bindings[command_index] = payload.key;
+            if (!in_use) {
+                self.cfg.game_bindings[command_index] = payload.source;
             }
         },
         .ResetAnimTime => {
@@ -901,8 +905,8 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
     }
 }
 
-fn inputEvent(self: *Main, key: Key, down: bool) void {
-    if (common.inputEvent(&self.session, self.cfg, key, down, &self.menu_stack, makeMenuContext(self))) |effect| {
+fn inputEvent(self: *Main, source: InputSource, down: bool) void {
+    if (common.inputEvent(&self.session, self.cfg, source, down, &self.menu_stack, makeMenuContext(self))) |effect| {
         applyMenuEffect(self, effect);
     }
 }
@@ -912,7 +916,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    inputEvent(self, key, true);
+                    inputEvent(self, InputSource { .Key = key }, true);
 
                     switch (key) {
                         .Backquote => {
@@ -931,7 +935,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                inputEvent(self, key, false);
+                inputEvent(self, InputSource { .Key = key }, false);
 
                 switch (key) {
                     .Backquote => {
@@ -942,46 +946,28 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
             }
         },
         SDL_JOYAXISMOTION => {
-            // TODO - look at evt.jbutton.which (to support multiple joysticks)
             const threshold = 16384;
-            var i: usize = 0; while (i < 4) : (i += 1) {
-                const neg = switch (i) { 0 => Key.JoyAxis0Neg, 1 => Key.JoyAxis1Neg, 2 => Key.JoyAxis2Neg, 3 => Key.JoyAxis3Neg, else => unreachable };
-                const pos = switch (i) { 0 => Key.JoyAxis0Pos, 1 => Key.JoyAxis1Pos, 2 => Key.JoyAxis2Pos, 3 => Key.JoyAxis3Pos, else => unreachable };
-                if (evt.jaxis.axis == i) {
-                    if (evt.jaxis.value < -threshold) {
-                        inputEvent(self, neg, true);
-                        inputEvent(self, pos, false);
-                    } else if (evt.jaxis.value > threshold) {
-                        inputEvent(self, pos, true);
-                        inputEvent(self, neg, false);
-                    } else {
-                        inputEvent(self, pos, false);
-                        inputEvent(self, neg, false);
-                    }
-                }
+            const joy_axis = JoyAxis {
+                .which = @intCast(usize, evt.jaxis.which),
+                .axis = evt.jaxis.axis,
+            };
+            if (evt.jaxis.value < -threshold) {
+                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, true);
+                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, false);
+            } else if (evt.jaxis.value > threshold) {
+                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, true);
+                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, false);
+            } else {
+                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, false);
+                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, false);
             }
         },
         SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
-            // TODO - look at evt.jbutton.which (to support multiple joysticks)
-            const down = evt.type == SDL_JOYBUTTONDOWN;
-            const maybe_key = switch (evt.jbutton.button) {
-                0 => Key.JoyButton0,
-                1 => Key.JoyButton1,
-                2 => Key.JoyButton2,
-                3 => Key.JoyButton3,
-                4 => Key.JoyButton4,
-                5 => Key.JoyButton5,
-                6 => Key.JoyButton6,
-                7 => Key.JoyButton7,
-                8 => Key.JoyButton8,
-                9 => Key.JoyButton9,
-                10 => Key.JoyButton10,
-                11 => Key.JoyButton11,
-                else => null,
+            const joy_button = JoyButton {
+                .which = @intCast(usize, evt.jbutton.which),
+                .button = evt.jbutton.button,
             };
-            if (maybe_key) |key| {
-                inputEvent(self, key, down);
-            }
+            inputEvent(self, InputSource { .JoyButton = joy_button }, evt.type == SDL_JOYBUTTONDOWN);
         },
         SDL_WINDOWEVENT => {
             if (!self.fullscreen and evt.window.event == SDL_WINDOWEVENT_MOVED) {

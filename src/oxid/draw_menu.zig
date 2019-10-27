@@ -3,7 +3,7 @@ const std = @import("std");
 const pdraw = @import("pdraw");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
-const Key = @import("../common/key.zig").Key;
+const InputSource = @import("../common/key.zig").InputSource;
 const common = @import("../oxid_common.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
@@ -40,7 +40,7 @@ pub const DrawMenuContext = struct {
     bottom_margin: u31,
     draw: bool,
     option_index: usize,
-    key: ?Key,
+    source: ?InputSource,
     command: ?input.MenuCommand,
 
     pub fn setPositionTop(self: *@This()) void {
@@ -156,7 +156,7 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
         .bottom_margin = 0,
         .draw = false,
         .option_index = 0,
-        .key = null,
+        .source = null,
         .command = null,
     };
 
@@ -201,7 +201,7 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
         .bottom_margin = 0,
         .draw = true,
         .option_index = 0,
-        .key = null,
+        .source = null,
         .command = null,
     };
 

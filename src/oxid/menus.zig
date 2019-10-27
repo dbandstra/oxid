@@ -4,6 +4,7 @@ const Constants = @import("constants.zig");
 const config = @import("config.zig");
 const input = @import("input.zig");
 const Key = @import("../common/key.zig").Key;
+const InputSource = @import("../common/key.zig").InputSource;
 const key_names = @import("../common/key.zig").key_names;
 
 pub const TextAlignment = enum {
@@ -45,7 +46,7 @@ pub const Effect = union(enum) {
 
 pub const BindGameCommand = struct {
     command: input.GameCommand,
-    key: ?Key,
+    source: ?InputSource,
 };
 
 pub const Sound = enum {
@@ -338,12 +339,12 @@ pub const KeyBindingsMenu = struct {
         }
 
         if (self.rebinding) { const command = self.rebinding_command;
-            if (ctx.key) |key| {
+            if (ctx.source) |source| {
                 self.rebinding = false;
                 ctx.setEffect(Effect {
                     .BindGameCommand = BindGameCommand {
                         .command = command,
-                        .key = key,
+                        .source = source,
                     },
                 });
                 ctx.setSound(.Ding);
@@ -377,22 +378,31 @@ pub const KeyBindingsMenu = struct {
     }
 
     fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, command: input.GameCommand, command_name: []const u8) void {
-        const key_name =
+        const result =
             //if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
             if (self.rebinding and self.rebinding_command == command) (
-                switch (ctx.menu_context.anim_time / 16 % 4) {
+                ctx.option("{} {}", command_name, switch (ctx.menu_context.anim_time / 16 % 4) {
                     0 => ".  ",
                     1 => ".. ",
                     2 => "...",
                     else => "",
+                })
+            ) else if (ctx.menu_context.cfg.game_bindings[@enumToInt(command)]) |source| (
+                switch (source) {
+                    .Key => |key|
+                        ctx.option("{} {}", command_name, key_names[@enumToInt(key)]),
+                    .JoyButton => |j|
+                        ctx.option("{} Joy{}Button{}", command_name, j.which, j.button),
+                    .JoyAxisPos => |j|
+                        ctx.option("{} Joy{}Axis{}+", command_name, j.which, j.axis),
+                    .JoyAxisNeg => |j|
+                        ctx.option("{} Joy{}Axis{}-", command_name, j.which, j.axis),
                 }
-            ) else if (ctx.menu_context.cfg.game_key_bindings[@enumToInt(command)]) |key| (
-                key_names[@enumToInt(key)]
             ) else (
-                ""
+                ctx.option("{}", command_name)
             );
 
-        if (ctx.option("{} {}", command_name, key_name)) {
+        if (result) {
             self.rebinding = true;
             self.rebinding_command = command;
             ctx.setEffect(.ResetAnimTime);
