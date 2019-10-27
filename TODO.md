@@ -1,17 +1,6 @@
 # Todo
 
-------------
-
-menu todo:
-- allow multiple keys to bind to the same command. e.g. both enter and space could select
-  menu option. this probably kinda works already... but i need to think about how to handle the down/up
-  events when you press them at the same time.
-
-tangential:
-- for the sounds is there a way to use a single instrument/voice and feed it canned note sequences
-  for the three different menu effects?
-
-also - can i get rid of the draw_box systems? or at least combine them into one file...
+can i get rid of the draw_box systems? or at least combine them into one file...
 
 gbe:
 - do spawns take effect immediately?? that doesn't seem good...
