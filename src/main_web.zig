@@ -4,6 +4,8 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
 const web = @import("web.zig");
 const Key = @import("common/key.zig").Key;
+const InputSource = @import("common/key.zig").InputSource;
+const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const levels = @import("oxid/levels.zig");
 const Constants = @import("oxid/constants.zig");
@@ -26,9 +28,8 @@ const common = @import("oxid_common.zig");
 const config_storagekey = "config";
 const highscores_storagekey = "highscores";
 
-var cfg = config.default;
-
 const GameState = struct {
+    cfg: config.Config,
     draw_state: platform_draw.DrawState,
     audio_module: audio.MainModule,
     static: common.GameStatic,
@@ -47,7 +48,7 @@ fn loadConfig(hunk_side: *HunkSide) !config.Config {
     var buffer: [5000]u8 = undefined;
     const bytes_read = try web.getLocalStorage(config_storagekey, buffer[0..]);
     if (bytes_read == 0) {
-        return config.default;
+        return config.getDefault();
     }
     var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
     return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
@@ -183,7 +184,7 @@ fn makeMenuContext() menus.MenuContext {
     return menus.MenuContext {
         .sound_enabled = g.sound_enabled,
         .fullscreen = g.is_fullscreen,
-        .cfg = cfg,
+        .cfg = g.cfg,
         .high_scores = g.high_scores,
         .new_high_score = g.new_high_score,
         .game_over = g.game_over,
@@ -194,9 +195,11 @@ fn makeMenuContext() menus.MenuContext {
 }
 
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
-    const key = translateKey(keycode) orelse return 0;
+    const source = InputSource {
+        .Key = translateKey(keycode) orelse return 0,
+    };
 
-    if (common.inputEvent(&g.session, cfg, key, down != 0, &g.menu_stack, makeMenuContext())) |effect| {
+    if (common.inputEvent(&g.session, g.cfg, source, down != 0, &g.menu_stack, makeMenuContext())) |effect| {
         return applyMenuEffect(effect);
     }
 
@@ -249,8 +252,8 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
             return TOGGLE_SOUND;
         },
         .SetVolume => |value| {
-            cfg.volume = value;
-            saveConfig(&hunk.low(), cfg) catch |err| {
+            g.cfg.volume = value;
+            saveConfig(&hunk.low(), g.cfg) catch |err| {
                 warn("Failed to save config: {}\n", err);
             };
         },
@@ -262,18 +265,18 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);
-            const key_in_use =
-                if (payload.key) |new_key|
-                    for (cfg.game_key_bindings) |maybe_key| {
-                        if (if (maybe_key) |key| key == new_key else false) {
+            const in_use =
+                if (payload.source) |new_source|
+                    for (g.cfg.game_bindings) |maybe_source| {
+                        if (if (maybe_source) |source| areInputSourcesEqual(source, new_source) else false) {
                             break true;
                         }
                     } else false
                 else false;
-            if (!key_in_use) {
-                cfg.game_key_bindings[command_index] = payload.key;
+            if (!in_use) {
+                g.cfg.game_bindings[command_index] = payload.source;
             }
-            saveConfig(&hunk.low(), cfg) catch |err| {
+            saveConfig(&hunk.low(), g.cfg) catch |err| {
                 warn("Failed to save config: {}\n", err);
             };
         },
@@ -322,11 +325,11 @@ fn init() !void {
         // if config couldn't load, warn and fall back to default config
         const cfg__ = loadConfig(&hunk.low()) catch |err| {
             warn("Failed to load config: {}\n", err);
-            break :blk config.default;
+            break :blk config.getDefault();
         };
         break :blk cfg__;
     };
-    cfg = cfg_;
+    g.cfg = cfg_;
 
     const initial_high_scores = blk: {
         // if high scores couldn't load, warn and fall back to blank list
@@ -395,7 +398,7 @@ export fn getAudioBufferSize() c_int {
 export fn audioCallback(sample_rate: f32) [*]f32 {
     const buf = g.audio_module.paint(sample_rate, &g.session);
 
-    const vol = std.math.min(1.0, @intToFloat(f32, cfg.volume) / 100.0);
+    const vol = std.math.min(1.0, @intToFloat(f32, g.cfg.volume) / 100.0);
 
     var i: usize = 0; while (i < audio_buffer_size) : (i += 1) {
         buf[i] *= vol;
@@ -457,7 +460,7 @@ fn tick(draw: bool) void {
 
     if (draw) {
         platform_draw.prepare(&g.draw_state);
-        drawGame(&g.draw_state, &g.static, &g.session, cfg, g.high_scores[0]);
+        drawGame(&g.draw_state, &g.static, &g.session, g.cfg, g.high_scores[0]);
 
         drawMenu(&g.menu_stack, MenuDrawParams {
             .ds = &g.draw_state,
