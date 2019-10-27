@@ -9,7 +9,6 @@ const levels = @import("levels.zig");
 const ConstantTypes = @import("constant_types.zig");
 const Constants = @import("constants.zig");
 const c = @import("components.zig");
-const menus = @import("menus.zig");
 const audio = @import("audio.zig");
 
 fn make_bbox(diameter: u31) math.BoundingBox {

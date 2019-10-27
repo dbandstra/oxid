@@ -265,9 +265,6 @@ pub const Voice = struct {
         Coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
         Explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
         Laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
-        MenuBackoff: Wrapper(audio.MenuBackoffVoice, audio.MenuBackoffVoice.NoteParams),
-        MenuBlip: Wrapper(audio.MenuBlipVoice, audio.MenuBlipVoice.NoteParams),
-        MenuDing: Wrapper(audio.MenuDingVoice, audio.MenuDingVoice.NoteParams),
         Sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
         WaveBegin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
     };

@@ -6,14 +6,16 @@ const wav = @import("zig-wav");
 const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
+const menus = @import("menus.zig");
+
+const MenuBackoffVoice = @import("audio/menu_backoff.zig").MenuBackoffVoice;
+const MenuBlipVoice = @import("audio/menu_blip.zig").MenuBlipVoice;
+const MenuDingVoice = @import("audio/menu_ding.zig").MenuDingVoice;
 
 pub const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 pub const CoinVoice = @import("audio/coin.zig").CoinVoice;
 pub const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 pub const LaserVoice = @import("audio/laser.zig").LaserVoice;
-pub const MenuBackoffVoice = @import("audio/menu_backoff.zig").MenuBackoffVoice;
-pub const MenuBlipVoice = @import("audio/menu_blip.zig").MenuBlipVoice;
-pub const MenuDingVoice = @import("audio/menu_ding.zig").MenuDingVoice;
 pub const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 pub const Sample = enum {
@@ -56,7 +58,39 @@ pub const SamplerNoteParams = struct {
     loop: bool,
 };
 
+fn MenuSoundWrapper(comptime ModuleType_: type) type {
+    return struct {
+        const ModuleType = ModuleType_;
+
+        module: ModuleType,
+        iq: zang.Notes(ModuleType.NoteParams).ImpulseQueue,
+        idgen: zang.IdGenerator,
+        trigger: zang.Trigger(ModuleType.NoteParams),
+
+        fn init() @This() {
+            return @This() {
+                .module = ModuleType.init(),
+                .iq = zang.Notes(ModuleType.NoteParams).ImpulseQueue.init(),
+                .idgen = zang.IdGenerator.init(),
+                .trigger = zang.Trigger(ModuleType.NoteParams).init(),
+            };
+        }
+
+        fn push(self: *@This(), params: ModuleType.NoteParams) void {
+            const impulse_frame: usize = 0;
+
+            self.iq.push(impulse_frame, self.idgen.nextId(), params);
+        }
+    };
+}
+
 pub const MainModule = struct {
+    backoff: MenuSoundWrapper(MenuBackoffVoice),
+    blip: MenuSoundWrapper(MenuBlipVoice),
+    ding: MenuSoundWrapper(MenuDingVoice),
+
+    prng: std.rand.DefaultPrng,
+
     drop_web: zang.Sample,
     extra_life: zang.Sample,
     player_scream: zang.Sample,
@@ -66,13 +100,19 @@ pub const MainModule = struct {
     monster_impact: zang.Sample,
 
     out_buf: []f32,
-    // this will fail to compile if there aren't enough temp bufs to supply each
-    // of the sound module types being used
+    // this will fail to compile if there aren't enough temp bufs to supply
+    // each of the sound module types being used
     tmp_bufs: [3][]f32,
 
     // call this in the main thread before the audio device is set up
     pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
+        const rand_seed: u32 = 0;
+
         return MainModule {
+            .backoff = MenuSoundWrapper(MenuBackoffVoice).init(),
+            .blip = MenuSoundWrapper(MenuBlipVoice).init(),
+            .ding = MenuSoundWrapper(MenuDingVoice).init(),
+            .prng = std.rand.DefaultPrng.init(rand_seed),
             .drop_web = try readWav("sfx_sounds_interaction5.wav"),
             .extra_life = try readWav("sfx_sounds_powerup4.wav"),
             .player_scream = try readWav("sfx_deathscream_human2.wav"),
@@ -80,8 +120,8 @@ pub const MainModule = struct {
             .player_crumble = try readWav("sfx_exp_short_soft10.wav"),
             .power_up = try readWav("sfx_sounds_powerup10.wav"),
             .monster_impact = try readWav("sfx_sounds_impact1.wav"),
-            // these allocations are never freed (but it's ok because this object is
-            // create once in the main function)
+            // these allocations are never freed (but it's ok because this
+            // object is created once in the main function)
             .out_buf = try hunk_side.allocator.alloc(f32, audio_buffer_size),
             .tmp_bufs = [3][]f32 {
                 try hunk_side.allocator.alloc(f32, audio_buffer_size),
@@ -106,6 +146,10 @@ pub const MainModule = struct {
 
         zang.zero(span, self.out_buf);
 
+        self.paintWrapper(span, &self.backoff, sample_rate);
+        self.paintWrapper(span, &self.blip, sample_rate);
+        self.paintWrapper(span, &self.ding, sample_rate);
+
         var it = gs.iter(c.Voice); while (it.next()) |object| {
             const voice = &object.data;
 
@@ -114,9 +158,6 @@ pub const MainModule = struct {
                 .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 .Explosion =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 .Laser =>      |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .MenuBackoff =>|*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .MenuBlip =>   |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .MenuDing =>   |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 .Sample =>     |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 else => {},
@@ -126,11 +167,14 @@ pub const MainModule = struct {
         return self.out_buf;
     }
 
+    // this is called on both MenuSoundWrapper objects, as well as Wrapper
+    // objects (defined in components.zig). the latter has a few more fields
+    // which are not used in this function.
     fn paintWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
         std.debug.assert(@typeId(@typeOf(wrapper)) == .Pointer);
         const ModuleType = @typeInfo(@typeOf(wrapper)).Pointer.child.ModuleType;
         var temps: [ModuleType.num_temps][]f32 = undefined;
-        var i: usize = 0; while (i < ModuleType.num_temps) : (i += 1) {
+        comptime var i: usize = 0; inline while (i < ModuleType.num_temps) : (i += 1) {
             temps[i] = self.tmp_bufs[i];
         }
 
@@ -173,6 +217,24 @@ pub const MainModule = struct {
     }
 
     // called in the main thread
+    pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
+        switch (sound) {
+            .Backoff => {
+                self.backoff.push(MenuBackoffVoice.NoteParams { .unused = undefined });
+            },
+            .Blip => {
+                const rand = &self.prng.random;
+                self.blip.push(MenuBlipVoice.NoteParams {
+                    .freq_mul = 0.95 + 0.1 * rand.float(f32),
+                });
+            },
+            .Ding => {
+                self.ding.push(MenuDingVoice.NoteParams { .unused = undefined });
+            },
+        }
+    }
+
+    // called in the main thread
     pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
         var it = gs.iter(c.Voice); while (it.next()) |object| {
             switch (object.data.wrapper) {
@@ -180,9 +242,6 @@ pub const MainModule = struct {
                 .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
                 .Explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
                 .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
-                .MenuBackoff =>|*wrapper| updateVoice(wrapper, impulse_frame),
-                .MenuBlip =>   |*wrapper| updateVoice(wrapper, impulse_frame),
-                .MenuDing =>   |*wrapper| updateVoice(wrapper, impulse_frame),
                 .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
                 .Sample =>     |*wrapper| {
                     if (wrapper.initial_sample) |sample_alias| {

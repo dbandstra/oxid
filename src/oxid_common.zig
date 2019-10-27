@@ -45,7 +45,7 @@ pub fn loadStatic(static: *GameStatic, hunk_side: *HunkSide) bool {
     return true;
 }
 
-pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, down: bool, menu_stack: *menus.MenuStack, menu_context: menus.MenuContext) ?menus.Effect {
+pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, down: bool, menu_stack: *menus.MenuStack, audio_module: *audio.MainModule, menu_context: menus.MenuContext) ?menus.Effect {
     if (down) {
         const maybe_menu_command =
             for (cfg.menu_bindings) |maybe_source, i| {
@@ -65,19 +65,7 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, dow
             }) orelse return null;
 
             if (result.sound) |sound| {
-                switch (sound) {
-                    .Blip => {
-                        p.playSynth(gs, "MenuBlip", audio.MenuBlipVoice.NoteParams {
-                            .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                        });
-                    },
-                    .Ding => {
-                        p.playSynth(gs, "MenuDing", audio.MenuDingVoice.NoteParams { .unused = undefined });
-                    },
-                    .Backoff => {
-                        p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
-                    },
-                }
+                audio_module.playMenuSound(sound);
             }
 
             return result.effect;
@@ -87,7 +75,7 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, dow
         if (maybe_menu_command) |menu_command| {
             if (menu_command == .Escape) {
                 // assuming that if the menu isn't open, we must be in game
-                p.playSynth(gs, "MenuBackoff", audio.MenuBackoffVoice.NoteParams { .unused = undefined });
+                audio_module.playMenuSound(.Backoff);
 
                 return menus.Effect { .Push = menus.Menu { .InGameMenu = menus.InGameMenu.init() } };
             }

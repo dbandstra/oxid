@@ -199,7 +199,7 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
         .Key = translateKey(keycode) orelse return 0,
     };
 
-    if (common.inputEvent(&g.session, g.cfg, source, down != 0, &g.menu_stack, makeMenuContext())) |effect| {
+    if (common.inputEvent(&g.session, g.cfg, source, down != 0, &g.menu_stack, &g.audio_module, makeMenuContext())) |effect| {
         return applyMenuEffect(effect);
     }
 

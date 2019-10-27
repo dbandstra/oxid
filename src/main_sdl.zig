@@ -906,7 +906,7 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    if (common.inputEvent(&self.session, self.cfg, source, down, &self.menu_stack, makeMenuContext(self))) |effect| {
+    if (common.inputEvent(&self.session, self.cfg, source, down, &self.menu_stack, &self.audio_module, makeMenuContext(self))) |effect| {
         applyMenuEffect(self, effect);
     }
 }
