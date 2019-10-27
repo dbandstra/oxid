@@ -6,19 +6,11 @@ menu todo:
 - allow multiple keys to bind to the same command. e.g. both enter and space could select
   menu option. this probably kinda works already... but i need to think about how to handle the down/up
   events when you press them at the same time.
-- make input bindings data driven - parse from a file?
-- when you're dead, ingame menu should be different. maybe it should go straight to main menu when
-  you hit the escape key to first open the menu after you get game over. monsters will still be
-  roaming around in the background.
 
 tangential:
 - for the sounds is there a way to use a single instrument/voice and feed it canned note sequences
   for the three different menu effects?
 
-the global stuff and game session sharing same component system is causing some trouble.
-(for one - RemoveTimer is incorrectly used by the menu. timers are paused when the menu is open!)
-perhaps they should be totally separated (two component systems) and be forced to communicate using middleware.
-if i do this i might not need input_router anymore.
 also - can i get rid of the draw_box systems? or at least combine them into one file...
 
 gbe:
