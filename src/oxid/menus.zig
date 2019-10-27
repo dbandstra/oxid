@@ -310,27 +310,19 @@ pub const OptionsMenu = struct {
 
 pub const KeyBindingsMenu = struct {
     cursor_pos: usize,
-
-    // there is, i think, a compiler bug preventing me from using ?input.GameCommand.
-    // the value keeps coming back as 0 (first enum value). it reminds me of this issue:
-    // https://github.com/ziglang/zig/issues/3081
-    // but it's not the same. that issue has been fixed but this still doesn't work.
-    rebinding: bool,
-    rebinding_command: input.GameCommand,
-    //rebinding: ?input.GameCommand,
+    rebinding: ?input.GameCommand,
 
     pub fn init() @This() {
         return @This() {
             .cursor_pos = 0,
-            .rebinding = false,
-            .rebinding_command = undefined,
+            .rebinding = null,
         };
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .Escape else false) {
-            if (self.rebinding) {
-                self.rebinding = false;
+            if (self.rebinding != null) {
+                self.rebinding = null;
             } else {
                 ctx.setEffect(.Pop);
             }
@@ -338,9 +330,8 @@ pub const KeyBindingsMenu = struct {
             return;
         }
 
-        if (self.rebinding) { const command = self.rebinding_command;
+        if (self.rebinding) |command| {
             if (ctx.source) |source| {
-                self.rebinding = false;
                 ctx.setEffect(Effect {
                     .BindGameCommand = BindGameCommand {
                         .command = command,
@@ -348,6 +339,7 @@ pub const KeyBindingsMenu = struct {
                     },
                 });
                 ctx.setSound(.Ding);
+                self.rebinding = null;
                 return;
             }
         }
@@ -379,8 +371,7 @@ pub const KeyBindingsMenu = struct {
 
     fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, command: input.GameCommand, command_name: []const u8) void {
         const result =
-            //if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
-            if (self.rebinding and self.rebinding_command == command) (
+            if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
                 ctx.option("{} {}", command_name, switch (ctx.menu_context.anim_time / 16 % 4) {
                     0 => ".  ",
                     1 => ".. ",
@@ -403,8 +394,7 @@ pub const KeyBindingsMenu = struct {
             );
 
         if (result) {
-            self.rebinding = true;
-            self.rebinding_command = command;
+            self.rebinding = command;
             ctx.setEffect(.ResetAnimTime);
             ctx.setSound(.Ding);
         }
