@@ -346,7 +346,7 @@ fn init() !void {
     }
 
     // https://github.com/ziglang/zig/issues/3046
-    const blah = audio.MainModule.init(&hunk.low(), audio_buffer_size) catch |err| {
+    const blah = audio.MainModule.init(&hunk, audio_buffer_size) catch |err| {
         warn("Failed to load audio module: {}\n", err);
         return error.Failed;
     };

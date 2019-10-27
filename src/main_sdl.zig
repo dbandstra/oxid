@@ -246,7 +246,11 @@ fn makeMenuContext(self: *Main) menus.MenuContext {
     };
 }
 
-var main_memory: [@sizeOf(Main) + 200*1024]u8 = undefined;
+// since audio files are loaded at runtime, we need to make room for them in
+// the memory buffer
+const audio_assets_size = 320700;
+
+var main_memory: [@sizeOf(Main) + 200*1024 + audio_assets_size]u8 = undefined;
 var hunk = Hunk.init(main_memory[0..]);
 
 pub fn main() u8 {
@@ -605,7 +609,7 @@ fn init(options: Options) !*Main {
         return error.Failed;
     }
 
-    self.audio_module = audio.MainModule.init(&hunk.low(), options.audio_buffer_size) catch |err| {
+    self.audio_module = audio.MainModule.init(&hunk, options.audio_buffer_size) catch |err| {
         std.debug.warn("Failed to load audio module: {}\n", err);
         return error.Failed;
     };

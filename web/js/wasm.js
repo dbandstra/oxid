@@ -1,5 +1,8 @@
 /* global $webgl */
 
+// this is a `WebAssembly.Memory` object (it comes from
+// `instance.exports.memory`). when zig code calls an extern function passing
+// it a pointer, that value on the js side is an index into `memory`.
 let memory;
 
 // these match same values in main_web.zig
@@ -8,6 +11,7 @@ const TOGGLE_SOUND      = 2;
 const TOGGLE_FULLSCREEN = 3;
 const SET_CANVAS_SCALE  = 100;
 
+// these are implementations of extern functions called from the zig side
 const env = {
     ...webgl,
     getRandomSeed() {
@@ -32,18 +36,86 @@ const env = {
         const value = base64js.fromByteArray(new Uint8Array(memory.buffer, value_ptr, value_len));
         window.localStorage.setItem(name, value);
     },
+    getAssetPtr_(name_ptr, name_len) {
+        const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
+        if (name in assets_dict) {
+            return assets_dict[name].ptr;
+        } else {
+            throw new Error('getAssetPtr: asset not found: ' + name); // FIXME?
+        }
+    },
+    getAssetLen_(name_ptr, name_len) {
+        const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
+        if (name in assets_dict) {
+            return assets_dict[name].len;
+        } else {
+            throw new Error('getAssetLen: asset not found: ' + name); // FIXME?
+        }
+    },
 }
 
 let is_fullscreen = false;
 let fullscreen_waiting = false;
 
-fetch('oxid.wasm').then(response => {
-    if (!response.ok) {
-        throw new Error('Failed to fetch oxid.wasm');
-    }
-    return response.arrayBuffer();
-}).then(bytes => WebAssembly.instantiate(bytes, {env})).then(({instance}) => {
+const assets = [
+    'assets/sfx_deathscream_human2.wav',
+    'assets/sfx_exp_cluster7.wav',
+    'assets/sfx_exp_short_soft10.wav',
+    'assets/sfx_sounds_impact1.wav',
+    'assets/sfx_sounds_interaction5.wav',
+    'assets/sfx_sounds_powerup10.wav',
+    'assets/sfx_sounds_powerup4.wav',
+];
+
+// this will be filled out when assets are loaded
+const assets_dict = {};
+
+// fetch wasm file in parallel with all the assets
+Promise.all([
+    fetch('oxid.wasm').then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch oxid.wasm');
+        }
+        return response.arrayBuffer();
+    }).then(bytes => {
+        return WebAssembly.instantiate(bytes, {env});
+    }),
+    ...assets.map(name => {
+        // assume assets are served from the root path (/assets/...)
+        return fetch('/' + name).then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch ' + name);
+            }
+            return response.arrayBuffer();
+        }).then(bytes => {
+            return {name, bytes};
+        });
+    }),
+]).then(([{instance}, ...assets]) => {
     memory = instance.exports.memory;
+
+    // allocate more memory to store the assets so they can be read by the zig side
+    const total_assets_size = assets.reduce((pv, asset) => pv + asset.bytes.byteLength, 0);
+    const wasm_page_size = 65536;
+    const num_pages_to_add = Math.floor((total_assets_size + wasm_page_size - 1) / wasm_page_size);
+
+    let memory_index = memory.buffer.byteLength;
+
+    memory.grow(num_pages_to_add);
+
+    // write assets into memory
+    for (const asset of assets) {
+        const dest = new Uint8Array(memory.buffer, memory_index, asset.bytes.byteLength);
+        const src = new Uint8Array(asset.bytes);
+        dest.set(src);
+
+        assets_dict[asset.name] = {
+            ptr: memory_index,
+            len: asset.bytes.byteLength,
+        };
+
+        memory_index += asset.bytes.byteLength;
+    }
 
     if (!instance.exports.onInit()) {
         document.getElementById('loading-text').textContent = 'Failed to initialize game.';

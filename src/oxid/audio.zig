@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const build_options = @import("build_options");
 const std = @import("std");
-const HunkSide = @import("zig-hunk").HunkSide;
+const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
 const GameSession = @import("game.zig").GameSession;
@@ -28,17 +28,7 @@ pub const Sample = enum {
     MonsterImpact,
 };
 
-fn readWav(comptime filename: []const u8) !zang.Sample {
-    const buf = @embedFile(build_options.assets_path ++ "/" ++ filename);
-    var sis = std.io.SliceInStream.init(buf);
-    const stream = &sis.stream;
-
-    const verbose = builtin.arch != .wasm32; // wasm doesn't have stderr
-    const Loader = wav.Loader(std.io.SliceInStream.Error, verbose);
-    const preloaded = try Loader.preload(stream);
-
-    // don't call Loader.load because we're working on a slice, so we can just
-    // take a subslice of it
+fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     return zang.Sample {
         .num_channels = preloaded.num_channels,
         .sample_rate = preloaded.sample_rate,
@@ -48,8 +38,66 @@ fn readWav(comptime filename: []const u8) !zang.Sample {
             .S24LSB => zang.SampleFormat.S24LSB,
             .S32LSB => zang.SampleFormat.S32LSB,
         },
-        .data = buf[sis.pos .. sis.pos + preloaded.getNumBytes()],
+        .data = data,
     };
+}
+
+fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
+    // temporary allocations in the high hunk side, persistent in the low side
+    const mark = hunk.getHighMark();
+    defer hunk.freeToHighMark(mark);
+
+    if (builtin.arch == .wasm32) {
+        // wasm build: assets were prefetched in JS code and made available via
+        // the getAssetPtr/getAssetLen API
+        const web = @import("../web.zig");
+
+        const file_path = try std.fs.path.join(&hunk.high().allocator, [_][]const u8 {
+            "assets",
+            filename,
+        });
+
+        // currently these functions just throw an exception on the JS side if
+        // the asset doesn't exist. preferably they would be combined into one
+        // function which returns an `![]u8` but i have no idea if that's even
+        // possible
+        const ptr = web.getAssetPtr(file_path);
+        const len = web.getAssetLen(file_path);
+        const buf = ptr[0..len];
+
+        var sis = std.io.SliceInStream.init(buf);
+        const stream = &sis.stream;
+
+        const Loader = wav.Loader(std.io.SliceInStream.Error, false);
+        const preloaded = try Loader.preload(stream);
+
+        // don't need to allocate new memory or call Loader.load, because:
+        // 1. `buf` is always available (provided from the JS side) and
+        //    contains the wav file contents, and
+        // 2. wavs are decoded and ready to go already, so we can just take a
+        //    slice into the file contents.
+        return makeSample(preloaded, buf[sis.pos .. sis.pos + preloaded.getNumBytes()]);
+    } else {
+        // non-wasm build: load assets from disk, allocating new memory to
+        // store them
+        const file_path = try std.fs.path.join(&hunk.high().allocator, [_][]const u8 {
+            build_options.assets_path,
+            filename,
+        });
+
+        const file = try std.fs.File.openRead(file_path);
+        var fis = file.inStream();
+        const stream = &fis.stream;
+
+        const Loader = wav.Loader(std.fs.File.InStream.Error, true);
+        const preloaded = try Loader.preload(stream);
+
+        const num_bytes = preloaded.getNumBytes();
+        var data = try hunk.low().allocator.alloc(u8, num_bytes);
+        try Loader.load(stream, preloaded, data);
+
+        return makeSample(preloaded, data);
+    }
 }
 
 pub const SamplerNoteParams = struct {
@@ -110,7 +158,7 @@ pub const MainModule = struct {
     tmp_bufs: [3][]f32,
 
     // call this in the main thread before the audio device is set up
-    pub fn init(hunk_side: *HunkSide, audio_buffer_size: usize) !MainModule {
+    pub fn init(hunk: *Hunk, audio_buffer_size: usize) !MainModule {
         const rand_seed: u32 = 0;
 
         return MainModule {
@@ -118,20 +166,20 @@ pub const MainModule = struct {
             .menu_blip = MenuSoundWrapper(MenuBlipVoice).init(),
             .menu_ding = MenuSoundWrapper(MenuDingVoice).init(),
             .prng = std.rand.DefaultPrng.init(rand_seed),
-            .drop_web = try readWav("sfx_sounds_interaction5.wav"),
-            .extra_life = try readWav("sfx_sounds_powerup4.wav"),
-            .player_scream = try readWav("sfx_deathscream_human2.wav"),
-            .player_death = try readWav("sfx_exp_cluster7.wav"),
-            .player_crumble = try readWav("sfx_exp_short_soft10.wav"),
-            .power_up = try readWav("sfx_sounds_powerup10.wav"),
-            .monster_impact = try readWav("sfx_sounds_impact1.wav"),
+            .drop_web = try readWav(hunk, "sfx_sounds_interaction5.wav"),
+            .extra_life = try readWav(hunk, "sfx_sounds_powerup4.wav"),
+            .player_scream = try readWav(hunk, "sfx_deathscream_human2.wav"),
+            .player_death = try readWav(hunk, "sfx_exp_cluster7.wav"),
+            .player_crumble = try readWav(hunk, "sfx_exp_short_soft10.wav"),
+            .power_up = try readWav(hunk, "sfx_sounds_powerup10.wav"),
+            .monster_impact = try readWav(hunk, "sfx_sounds_impact1.wav"),
             // these allocations are never freed (but it's ok because this
             // object is created once in the main function)
-            .out_buf = try hunk_side.allocator.alloc(f32, audio_buffer_size),
+            .out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size),
             .tmp_bufs = [3][]f32 {
-                try hunk_side.allocator.alloc(f32, audio_buffer_size),
-                try hunk_side.allocator.alloc(f32, audio_buffer_size),
-                try hunk_side.allocator.alloc(f32, audio_buffer_size),
+                try hunk.low().allocator.alloc(f32, audio_buffer_size),
+                try hunk.low().allocator.alloc(f32, audio_buffer_size),
+                try hunk.low().allocator.alloc(f32, audio_buffer_size),
             },
         };
     }
