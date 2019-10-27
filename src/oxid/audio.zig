@@ -81,13 +81,18 @@ fn MenuSoundWrapper(comptime ModuleType_: type) type {
 
             self.iq.push(impulse_frame, self.idgen.nextId(), params);
         }
+
+        fn reset(self: *@This()) void {
+            self.iq.length = 0; // FIXME - add a method to zang API for this?
+            self.trigger.reset();
+        }
     };
 }
 
 pub const MainModule = struct {
-    backoff: MenuSoundWrapper(MenuBackoffVoice),
-    blip: MenuSoundWrapper(MenuBlipVoice),
-    ding: MenuSoundWrapper(MenuDingVoice),
+    menu_backoff: MenuSoundWrapper(MenuBackoffVoice),
+    menu_blip: MenuSoundWrapper(MenuBlipVoice),
+    menu_ding: MenuSoundWrapper(MenuDingVoice),
 
     prng: std.rand.DefaultPrng,
 
@@ -109,9 +114,9 @@ pub const MainModule = struct {
         const rand_seed: u32 = 0;
 
         return MainModule {
-            .backoff = MenuSoundWrapper(MenuBackoffVoice).init(),
-            .blip = MenuSoundWrapper(MenuBlipVoice).init(),
-            .ding = MenuSoundWrapper(MenuDingVoice).init(),
+            .menu_backoff = MenuSoundWrapper(MenuBackoffVoice).init(),
+            .menu_blip = MenuSoundWrapper(MenuBlipVoice).init(),
+            .menu_ding = MenuSoundWrapper(MenuDingVoice).init(),
             .prng = std.rand.DefaultPrng.init(rand_seed),
             .drop_web = try readWav("sfx_sounds_interaction5.wav"),
             .extra_life = try readWav("sfx_sounds_powerup4.wav"),
@@ -146,9 +151,9 @@ pub const MainModule = struct {
 
         zang.zero(span, self.out_buf);
 
-        self.paintWrapper(span, &self.backoff, sample_rate);
-        self.paintWrapper(span, &self.blip, sample_rate);
-        self.paintWrapper(span, &self.ding, sample_rate);
+        self.paintWrapper(span, &self.menu_backoff, sample_rate);
+        self.paintWrapper(span, &self.menu_blip, sample_rate);
+        self.paintWrapper(span, &self.menu_ding, sample_rate);
 
         var it = gs.iter(c.Voice); while (it.next()) |object| {
             const voice = &object.data;
@@ -220,18 +225,24 @@ pub const MainModule = struct {
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
             .Backoff => {
-                self.backoff.push(MenuBackoffVoice.NoteParams { .unused = undefined });
+                self.menu_backoff.push(MenuBackoffVoice.NoteParams { .unused = undefined });
             },
             .Blip => {
                 const rand = &self.prng.random;
-                self.blip.push(MenuBlipVoice.NoteParams {
+                self.menu_blip.push(MenuBlipVoice.NoteParams {
                     .freq_mul = 0.95 + 0.1 * rand.float(f32),
                 });
             },
             .Ding => {
-                self.ding.push(MenuDingVoice.NoteParams { .unused = undefined });
+                self.menu_ding.push(MenuDingVoice.NoteParams { .unused = undefined });
             },
         }
+    }
+
+    pub fn resetMenuSounds(self: *MainModule) void {
+        self.menu_backoff.reset();
+        self.menu_blip.reset();
+        self.menu_ding.reset();
     }
 
     // called in the main thread

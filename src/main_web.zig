@@ -528,5 +528,7 @@ fn playSounds() void {
         var it = g.session.iter(c.Voice); while (it.next()) |object| {
             g.session.markEntityForRemoval(object.entity_id);
         }
+
+        g.audio_module.resetMenuSounds();
     }
 }
