@@ -106,66 +106,70 @@ const WindowDims = struct {
     blit_rect: platform_framebuffer.BlitRect,
 };
 
-fn getFullscreenDims(native_w: u31, native_h: u31) WindowDims {
-    // scale the game view up as far as possible, maintaining the
-    // aspect ratio
-    const scaled_w = native_h * common.virtual_window_width / common.virtual_window_height;
-    const scaled_h = native_w * common.virtual_window_height / common.virtual_window_width;
+const NativeScreenSize = struct {
+    width: u31,
+    height: u31,
+};
+
+fn getFullscreenDims(native_screen_size: NativeScreenSize) WindowDims {
+    // scale the game view up as far as possible, maintaining the aspect ratio
+    const scaled_w = native_screen_size.height * common.virtual_window_width / common.virtual_window_height;
+    const scaled_h = native_screen_size.width * common.virtual_window_height / common.virtual_window_width;
 
     return WindowDims {
-        .window_width = native_w,
-        .window_height = native_h,
+        .window_width = native_screen_size.width,
+        .window_height = native_screen_size.height,
         .blit_rect =
-            if (scaled_w < native_w)
+            if (scaled_w < native_screen_size.width)
                 platform_framebuffer.BlitRect {
                     .w = scaled_w,
-                    .h = native_h,
-                    .x = native_w / 2 - scaled_w / 2,
+                    .h = native_screen_size.height,
+                    .x = native_screen_size.width / 2 - scaled_w / 2,
                     .y = 0,
                 }
-            else if (scaled_h < native_h)
+            else if (scaled_h < native_screen_size.height)
                 platform_framebuffer.BlitRect {
-                    .w = native_w,
+                    .w = native_screen_size.width,
                     .h = scaled_h,
                     .x = 0,
-                    .y = native_h / 2 - scaled_h / 2,
+                    .y = native_screen_size.height / 2 - scaled_h / 2,
                 }
             else
                 platform_framebuffer.BlitRect {
-                    .w = native_w,
-                    .h = native_h,
+                    .w = native_screen_size.width,
+                    .h = native_screen_size.height,
                     .x = 0,
                     .y = 0,
                 },
     };
 }
 
-fn getWindowedDims(native_w: u31, native_h: u31) WindowDims {
-    // pick a window size that isn't bigger than the desktop
-    // resolution
+fn getMaxCanvasScale(native_screen_size: NativeScreenSize) u31 {
+    // pick a window size that isn't bigger than the desktop resolution
 
-    // the actual window size will be an integer multiple of the
-    // virtual window size. this value puts a limit on high big it
-    // will be scaled (it will also be limited by the user's screen
-    // resolution)
-    const max_scale = 4;
-    const max_w = native_w;
-    const max_h = native_h - 40; // bias for system menubars/taskbars
+    // the actual window size will be an integer multiple of the virtual window
+    // size. this value puts a limit on high big it will be scaled (it will
+    // also be limited by the user's screen resolution)
+    const max_w = native_screen_size.width;
+    const max_h = native_screen_size.height - 40; // bias for system menubars/taskbars
 
-    var window_width: u31 = common.virtual_window_width;
-    var window_height: u31 = common.virtual_window_height;
+    const scale_limit = 8;
 
-    var scale: u31 = 1; while (scale <= max_scale) : (scale += 1) {
-        const w = scale * common.virtual_window_width;
-        const h = scale * common.virtual_window_height;
+    var scale: u31 = 1; while (scale < scale_limit) : (scale += 1) {
+        const w = (scale + 1) * common.virtual_window_width;
+        const h = (scale + 1) * common.virtual_window_height;
 
         if (w > max_w or h > max_h) {
             break;
         }
-
-        window_width = w;
-        window_height = h;
     }
+
+    return scale;
+}
+
+fn getWindowedDims(scale: u31) WindowDims {
+    const window_width = common.virtual_window_width * scale;
+    const window_height = common.virtual_window_height * scale;
 
     return WindowDims {
         .window_width = window_width,
@@ -195,11 +199,14 @@ const Main = struct {
     cfg: config.Config,
     window: *SDL_Window,
     glcontext: SDL_GLContext,
+    canvas_scale: u31,
+    max_canvas_scale: u31,
     fullscreen: bool,
     fullscreen_dims: ?WindowDims,
     windowed_dims: WindowDims,
-    original_window_x: c_int,
-    original_window_y: c_int,
+    native_screen_size: ?NativeScreenSize,
+    original_window_x: i32,
+    original_window_y: i32,
     audio_sample_rate: usize,
     audio_sample_rate_current: f32,
     audio_device: SDL_AudioDeviceID,
@@ -230,8 +237,8 @@ fn makeMenuContext(self: *Main) menus.MenuContext {
         .new_high_score = self.new_high_score,
         .game_over = self.game_over,
         .anim_time = self.menu_anim_time,
-        .canvas_scale = 1, // unused in SDL build
-        .max_canvas_scale = 4, // unused in SDL build
+        .canvas_scale = self.canvas_scale,
+        .max_canvas_scale = self.max_canvas_scale,
     };
 }
 
@@ -444,6 +451,10 @@ fn init(options: Options) !*Main {
         },
     };
 
+    var max_canvas_scale: u31 = 1;
+    var initial_canvas_scale: u31 = 1;
+    var native_screen_size: ?NativeScreenSize = null;
+
     {
         // get the desktop resolution (for the first display)
         var dm: SDL_DisplayMode = undefined;
@@ -452,11 +463,16 @@ fn init(options: Options) !*Main {
             // if this happens we'll just stick with a small 1:1 scale window
             std.debug.warn("Failed to query desktop display mode.\n");
         } else {
-            const native_w = @intCast(u31, dm.w);
-            const native_h = @intCast(u31, dm.h);
+            native_screen_size = NativeScreenSize {
+                .width = @intCast(u31, dm.w),
+                .height = @intCast(u31, dm.h),
+            };
 
-            fullscreen_dims = getFullscreenDims(native_w, native_h);
-            windowed_dims = getWindowedDims(native_w, native_h);
+            fullscreen_dims = getFullscreenDims(native_screen_size.?);
+
+            max_canvas_scale = getMaxCanvasScale(native_screen_size.?);
+            initial_canvas_scale = std.math.min(4, max_canvas_scale);
+            windowed_dims = getWindowedDims(initial_canvas_scale);
         }
     }
 
@@ -619,9 +635,12 @@ fn init(options: Options) !*Main {
     self.cfg = cfg;
     self.window = window;
     self.glcontext = glcontext;
+    self.canvas_scale = initial_canvas_scale;
+    self.max_canvas_scale = max_canvas_scale;
     self.fullscreen = fullscreen;
     self.fullscreen_dims = fullscreen_dims;
     self.windowed_dims = windowed_dims;
+    self.native_screen_size = native_screen_size;
     self.original_window_x = original_window_x;
     self.original_window_y = original_window_y;
     self.audio_sample_rate = options.audio_sample_rate;
@@ -768,6 +787,37 @@ fn finalizeGame(self: *Main) void {
     }
 }
 
+fn setCanvasScale(self: *Main, scale: u31) void {
+    self.windowed_dims = getWindowedDims(scale);
+
+    if (!self.fullscreen) {
+        SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
+
+        if (self.native_screen_size) |native_screen_size| {
+            var set = false;
+            if (self.original_window_x + i32(self.windowed_dims.window_width) > i32(native_screen_size.width)) {
+                self.original_window_x = i32(native_screen_size.width) - i32(self.windowed_dims.window_width);
+                if (self.original_window_x < 0) {
+                    self.original_window_x = 0;
+                }
+                set = true;
+            }
+            if (self.original_window_y + i32(self.windowed_dims.window_height) > i32(native_screen_size.height)) {
+                self.original_window_y = i32(native_screen_size.height) - i32(self.windowed_dims.window_height);
+                if (self.original_window_y < 0) {
+                    self.original_window_y = 0;
+                }
+                set = true;
+            }
+            if (set) {
+                SDL_SetWindowPosition(self.window, self.original_window_x, self.original_window_y);
+            }
+        }
+    }
+
+    self.canvas_scale = scale;
+}
+
 fn toggleFullscreen(self: *Main) void {
     if (self.fullscreen) {
         if (SDL_SetWindowFullscreen(self.window, 0) < 0) {
@@ -822,8 +872,8 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         .SetVolume => |value| {
             self.cfg.volume = value;
         },
-        .SetCanvasScale => |_| {
-            // unused in SDL build
+        .SetCanvasScale => |value| {
+            setCanvasScale(self, value);
         },
         .ToggleFullscreen => {
             toggleFullscreen(self);

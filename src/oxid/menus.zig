@@ -24,8 +24,8 @@ pub const MenuContext = struct {
     new_high_score: bool,
     game_over: bool,
     anim_time: u32,
-    canvas_scale: u32,
-    max_canvas_scale: u32,
+    canvas_scale: u31,
+    max_canvas_scale: u31,
 };
 
 pub const Effect = union(enum) {
@@ -36,7 +36,7 @@ pub const Effect = union(enum) {
     EndGame,
     ToggleSound,
     SetVolume: u32,
-    SetCanvasScale: u32,
+    SetCanvasScale: u31,
     ToggleFullscreen,
     BindGameCommand: BindGameCommand,
     ResetAnimTime,
@@ -276,23 +276,21 @@ pub const OptionsMenu = struct {
             }
             ctx.setSound(.Ding);
         }
-        if (builtin.arch == .wasm32) {
-            const scale = ctx.menu_context.canvas_scale;
-            if (ctx.optionSlider("Canvas scale: {}x", ctx.menu_context.canvas_scale)) |direction| {
-                switch (direction) {
-                    .Left => {
-                        if (scale > 1) {
-                            ctx.setEffect(Effect { .SetCanvasScale = scale - 1 });
-                        }
-                    },
-                    .Right => {
-                        if (scale < ctx.menu_context.max_canvas_scale) {
-                            ctx.setEffect(Effect { .SetCanvasScale = scale + 1 });
-                        }
-                    },
-                }
-                ctx.setSound(.Ding);
+        const canvas_scale = ctx.menu_context.canvas_scale;
+        if (ctx.optionSlider("Canvas scale: {}x", ctx.menu_context.canvas_scale)) |direction| {
+            switch (direction) {
+                .Left => {
+                    if (canvas_scale > 1) {
+                        ctx.setEffect(Effect { .SetCanvasScale = canvas_scale - 1 });
+                    }
+                },
+                .Right => {
+                    if (canvas_scale < ctx.menu_context.max_canvas_scale) {
+                        ctx.setEffect(Effect { .SetCanvasScale = canvas_scale + 1 });
+                    }
+                },
             }
+            ctx.setSound(.Ding);
         }
         if (ctx.optionToggle("Fullscreen: {}", if (ctx.menu_context.fullscreen) "ON" else "OFF")) {
             ctx.setEffect(.ToggleFullscreen);

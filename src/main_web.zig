@@ -40,7 +40,7 @@ const GameState = struct {
     menu_stack: menus.MenuStack,
     sound_enabled: bool,
     is_fullscreen: bool,
-    canvas_scale: u32,
+    canvas_scale: u31,
 };
 
 fn loadConfig(hunk_side: *HunkSide) !config.Config {
@@ -218,7 +218,7 @@ export fn onFullscreenChange(enabled: c_int) void {
 }
 
 export fn onCanvasScaleChange(scale: c_int) void {
-    g.canvas_scale = std.math.cast(u32, scale) catch 1;
+    g.canvas_scale = std.math.cast(u31, scale) catch 1;
 }
 
 fn applyMenuEffect(effect: menus.Effect) c_int {
