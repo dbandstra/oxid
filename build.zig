@@ -18,7 +18,7 @@ pub fn build(b: *Builder) void {
 
     if (wasm) {
         main = b.addStaticLibrary("oxid", "src/main_web.zig");
-        main.setOutputDir("web");
+        main.setOutputDir(".");
         main.setBuildMode(mode);
         main.setTarget(.wasm32, .freestanding, .none);
 

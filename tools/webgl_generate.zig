@@ -724,5 +724,5 @@ fn writeJsFile(filename: []const u8) !void {
 
 pub fn main() !void {
     try writeZigFile("src/web/webgl_generated.zig");
-    try writeJsFile("web/js/webgl_generated.js");
+    try writeJsFile("js/webgl_generated.js");
 }

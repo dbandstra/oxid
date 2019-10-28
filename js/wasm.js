@@ -81,8 +81,7 @@ Promise.all([
         return WebAssembly.instantiate(bytes, {env});
     }),
     ...assets.map(name => {
-        // assume assets are served from the root path (/assets/...)
-        return fetch('/' + name).then(response => {
+        return fetch(name).then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch ' + name);
             }

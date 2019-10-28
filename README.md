@@ -33,7 +33,7 @@ To build the Web Assembly version:
 ```
 zig build -Dwasm
 ```
-Then run a web server (such as Python's SimpleHTTPServer) from the `web/` folder. (This is needed to work with the Same Origin Policy, as the HTML page loads the wasm binary using `fetch`.)
+Then run a web server (such as Python's SimpleHTTPServer) from the oxid root folder.
 
 Game controls (these can be rebound in the menu):
 * arrow keys: move
