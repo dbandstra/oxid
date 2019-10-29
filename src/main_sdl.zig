@@ -80,7 +80,7 @@ fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
     const file = try openDataFile(hunk_side, config_filename, .Write);
     defer file.close();
 
-    return try config.write(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, cfg, hunk_side);
+    return try config.write(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, cfg);
 }
 
 fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {

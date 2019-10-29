@@ -54,6 +54,10 @@ pub fn getDefault() Config {
     return default;
 }
 
+///////////////////////////////////////////////////////////
+
+// reading config json
+
 pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size: usize, hunk_side: *HunkSide) !Config {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
@@ -83,9 +87,9 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
-                    readMenuBindings(&cfg, kv.value);
+                    readBindings(input.MenuCommand, &cfg.menu_bindings, kv.value);
                 } else if (std.mem.eql(u8, kv.key, "game_bindings")) {
-                    readGameBindings(&cfg, kv.value);
+                    readBindings(input.GameCommand, &cfg.game_bindings, kv.value);
                 } else {
                     warn("Unrecognized config field: '{}'\n", kv.key);
                 }
@@ -99,13 +103,22 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
     return cfg;
 }
 
-fn readMenuBindings(cfg: *Config, value: std.json.Value) void {
+// this function seems to work even if the `bindings` argument is not a
+// pointer. i guess arrays are not copied. but is that something i can rely on
+// always being true, or is it some kind of "undefined" behaviour (e.g. maybe
+// arrays are only copied if below some length known only to the compiler
+// implementation)? seems safer to use a pointer.
+fn readBindings(comptime CommandType: type, bindings: *[@typeInfo(CommandType).Enum.fields.len]?InputSource, value: std.json.Value) void {
     switch (value) {
         .Object => |map| {
             var it = map.iterator();
             while (it.next()) |kv| {
-                const command = parseMenuCommand(kv.key) orelse continue;
-                cfg.menu_bindings[@enumToInt(command)] = parseInputSource(kv.value);
+                const command = parseCommand(CommandType, kv.key) orelse continue;
+                const source = parseInputSource(kv.value) catch {
+                    warn("Error parsing input source for command '{}'\n", kv.key);
+                    continue;
+                };
+                bindings.*[@enumToInt(command)] = source;
             }
         },
         else => {
@@ -114,108 +127,51 @@ fn readMenuBindings(cfg: *Config, value: std.json.Value) void {
     }
 }
 
-fn readGameBindings(cfg: *Config, value: std.json.Value) void {
-    switch (value) {
-        .Object => |map| {
-            var it = map.iterator();
-            while (it.next()) |kv| {
-                const command = parseGameCommand(kv.key) orelse continue;
-                cfg.game_bindings[@enumToInt(command)] = parseInputSource(kv.value);
-            }
-        },
-        else => {
-            warn("Value of \"game_bindings\" must be an object\n");
-        },
-    }
-}
-
-fn parseMenuCommand(s: []const u8) ?input.MenuCommand {
-    inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
+fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
+    inline for (@typeInfo(CommandType).Enum.fields) |field| {
         if (std.mem.eql(u8, s, field.name)) {
-            return @intToEnum(input.MenuCommand, field.value);
+            return @intToEnum(CommandType, field.value);
         }
     } else {
-        warn("Unrecognized menu command: '{}'\n", s);
+        warn("Unrecognized {}: '{}'\n", @typeName(CommandType), s);
         return null;
     }
 }
 
-fn parseGameCommand(s: []const u8) ?input.GameCommand {
-    inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
-        if (std.mem.eql(u8, s, field.name)) {
-            return @intToEnum(input.GameCommand, field.value);
-        }
-    } else {
-        warn("Unrecognized game command: '{}'\n", s);
-        return null;
-    }
-}
-
-fn parseInputSource(value: std.json.Value) ?InputSource {
+fn parseInputSource(value: std.json.Value) !?InputSource {
     switch (value) {
         .Object => |map| {
-            const source_type_value = map.getValue("type") orelse {
-                warn("Input binding value must have \"type\" field\n");
-                return null;
-            };
+            const source_type_value = map.getValue("type") orelse return error.Failed;
             const source_type = switch (source_type_value) {
                 .String => |s| s,
-                else => {
-                    warn("Input binding \"type\" must be a string\n");
-                    return null;
-                },
+                else => return error.Failed,
             };
             if (std.mem.eql(u8, source_type, "key")) {
-                const key_name_value = map.getValue("key") orelse {
-                    warn("Input binding value with type \"key\" is missing field \"key\"\n");
-                    return null;
-                };
+                const key_name_value = map.getValue("key") orelse return error.Failed;
                 const key_name = switch (key_name_value) {
                     .String => |s| s,
-                    else => {
-                        warn("Input binding \"key\" must be a string\n");
-                        return null;
-                    },
+                    else => return error.Failed,
                 };
                 inline for (@typeInfo(Key).Enum.fields) |field| {
                     if (std.mem.eql(u8, key_name, field.name)) {
                         return InputSource { .Key = @intToEnum(Key, field.value) };
                     }
                 } else {
-                    warn("Unrecognized key name: \"{}\"\n", key_name);
-                    return null;
+                    return error.Failed;
                 }
             } else if (std.mem.eql(u8, source_type, "joy_button")) {
-                const button_value = map.getValue("button") orelse {
-                    warn("Input binding value with type \"joy_button\" is missing field \"button\"\n");
-                    return null;
-                };
+                const button_value = map.getValue("button") orelse return error.Failed;
                 const button = switch (button_value) {
-                    .Integer => |n| std.math.cast(u32, n) catch {
-                        warn("Input binding \"button\" value is out of range\n");
-                        return null;
-                    },
-                    else => {
-                        warn("Input binding \"button\" must be a number\n");
-                        return null;
-                    },
+                    .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
+                    else => return error.Failed,
                 };
                 // FIXME - doesn't feel right to reset `which` to 0, but it also doesn't feel right to save which joystick in the config file?
                 return InputSource { .JoyButton = JoyButton { .which = 0, .button = button } };
             } else if (std.mem.eql(u8, source_type, "joy_axis_neg") or std.mem.eql(u8, source_type, "joy_axis_pos")) {
-                const axis_value = map.getValue("axis") orelse {
-                    warn("Input binding value with type \"{}\" is missing field \"axis\"\n", source_type);
-                    return null;
-                };
+                const axis_value = map.getValue("axis") orelse return error.Failed;
                 const axis = switch (axis_value) {
-                    .Integer => |n| std.math.cast(u32, n) catch {
-                        warn("Input binding \"axis\" value is out of range\n");
-                        return null;
-                    },
-                    else => {
-                        warn("Input binding \"axis\" must be a number\n");
-                        return null;
-                    },
+                    .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
+                    else => return error.Failed,
                 };
                 // FIXME - doesn't feel right to reset `which` to 0, but it also doesn't feel right to save which joystick in the config file?
                 if (std.mem.eql(u8, source_type, "joy_axis_neg")) {
@@ -224,19 +180,21 @@ fn parseInputSource(value: std.json.Value) ?InputSource {
                     return InputSource { .JoyAxisPos = JoyAxis { .which = 0, .axis = axis } };
                 }
             } else {
-                warn("Input binding type must be one of: \"key\", \"joy_button\", \"joy_axis_pos\", \"joy_axis_neg\"\n");
-                return null;
+                return error.Failed;
             }
         },
         .Null => {
             return null;
         },
         else => {
-            warn("Input binding value must be an object or null\n");
-            return null;
+            return error.Failed;
         }
     }
 }
+
+///////////////////////////////////////////////////////////
+
+// writing config json
 
 fn getEnumValueName(comptime T: type, value: T) []const u8 {
     inline for (@typeInfo(T).Enum.fields) |field| {
@@ -247,48 +205,20 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
     unreachable;
 }
 
-pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), cfg: Config, hunk_side: *HunkSide) !void {
+pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), cfg: Config) !void {
     try stream.print(
         \\{{
         \\    "volume": {},
         \\    "menu_bindings": {{
         \\
     , cfg.volume);
-    // don't bother with backslash escaping strings because we know none of
-    // the possible values need it
-    for (cfg.menu_bindings) |maybe_source, i| {
-        const command = @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
-        const command_name = getEnumValueName(input.MenuCommand, command);
-        try stream.print("        \"{}\": ", command_name);
-        if (maybe_source) |source| {
-            try writeInputSource(WriteError, stream, source);
-        } else {
-            try stream.print("null");
-        }
-        if (i < cfg.menu_bindings.len - 1) {
-            try stream.print(",");
-        }
-        try stream.print("\n");
-    }
+    try writeBindings(WriteError, stream, input.MenuCommand, cfg.menu_bindings);
     try stream.print(
         \\    }},
         \\    "game_bindings": {{
         \\
     );
-    for (cfg.game_bindings) |maybe_source, i| {
-        const command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i));
-        const command_name = getEnumValueName(input.GameCommand, command);
-        try stream.print("        \"{}\": ", command_name);
-        if (maybe_source) |source| {
-            try writeInputSource(WriteError, stream, source);
-        } else {
-            try stream.print("null");
-        }
-        if (i < cfg.game_bindings.len - 1) {
-            try stream.print(",");
-        }
-        try stream.print("\n");
-    }
+    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings);
     try stream.print(
         \\    }}
         \\}}
@@ -296,19 +226,34 @@ pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), c
     );
 }
 
-fn writeInputSource(comptime WriteError: type, stream: *std.io.OutStream(WriteError), source: InputSource) !void {
-    switch (source) {
-        .Key => |key| {
-            try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", getEnumValueName(Key, key));
-        },
-        .JoyButton => |j| {
-            try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", j.button);
-        },
-        .JoyAxisNeg => |j| {
-            try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", j.axis);
-        },
-        .JoyAxisPos => |j| {
-            try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", j.axis);
-        },
+fn writeBindings(comptime WriteError: type, stream: *std.io.OutStream(WriteError), comptime CommandType: type, bindings: [@typeInfo(CommandType).Enum.fields.len]?InputSource) !void {
+    // don't bother with backslash escaping strings because we know none of
+    // the possible values have characters that would need escaping
+    for (bindings) |maybe_source, i| {
+        const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
+        const command_name = getEnumValueName(CommandType, command);
+        try stream.print("        \"{}\": ", command_name);
+        if (maybe_source) |source| {
+            switch (source) {
+                .Key => |key| {
+                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", getEnumValueName(Key, key));
+                },
+                .JoyButton => |j| {
+                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", j.button);
+                },
+                .JoyAxisNeg => |j| {
+                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", j.axis);
+                },
+                .JoyAxisPos => |j| {
+                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", j.axis);
+                },
+            }
+        } else {
+            try stream.print("null");
+        }
+        if (i < bindings.len - 1) {
+            try stream.print(",");
+        }
+        try stream.print("\n");
     }
 }
