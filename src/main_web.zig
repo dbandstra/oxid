@@ -54,10 +54,10 @@ fn loadConfig(hunk_side: *HunkSide) !config.Config {
     return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
 }
 
-fn saveConfig(hunk_side: *HunkSide, cfg_: config.Config) !void {
+fn saveConfig(cfg: config.Config) !void {
     var buffer: [5000]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
-    try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg_, hunk_side);
+    try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg);
     web.setLocalStorage(config_storagekey, dest.getWritten());
 }
 
@@ -253,7 +253,7 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .SetVolume => |value| {
             g.cfg.volume = value;
-            saveConfig(&hunk.low(), g.cfg) catch |err| {
+            saveConfig(g.cfg) catch |err| {
                 warn("Failed to save config: {}\n", err);
             };
         },
@@ -276,7 +276,7 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
             if (!in_use) {
                 g.cfg.game_bindings[command_index] = payload.source;
             }
-            saveConfig(&hunk.low(), g.cfg) catch |err| {
+            saveConfig(g.cfg) catch |err| {
                 warn("Failed to save config: {}\n", err);
             };
         },
