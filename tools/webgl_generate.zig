@@ -31,25 +31,39 @@ const zig_top =
     \\pub const GLclampf = f32;
 ;
 
-// FIXME - js function bodies assumes `memory` exists at global scope
-// would rather be more explicit about this?
-
+// memory has to be wrapped in a getter because we need the "env" before we can
+// even get the memory
 const js_top =
-    \\const readCharStr = (ptr, len) => {
-    \\    const bytes = new Uint8Array(memory.buffer, ptr, len);
-    \\    let s = "";
-    \\    for (let i = 0; i < len; ++i) {
-    \\        s += String.fromCharCode(bytes[i]);
-    \\    }
-    \\    return s;
-    \\};
+    \\function getWebGLEnv(canvas_element, getMemory) {
+    \\    const readCharStr = (ptr, len) => {
+    \\        const bytes = new Uint8Array(getMemory().buffer, ptr, len);
+    \\        let s = "";
+    \\        for (let i = 0; i < len; ++i) {
+    \\            s += String.fromCharCode(bytes[i]);
+    \\        }
+    \\        return s;
+    \\    };
     \\
-    \\const glShaders = [];
-    \\const glPrograms = [];
-    \\const glBuffers = [];
-    \\const glTextures = [];
-    \\const glFramebuffers = [];
-    \\const glUniformLocations = [];
+    \\    const gl = canvas_element.getContext('webgl', {
+    \\        antialias: false,
+    \\        preserveDrawingBuffer: true,
+    \\    });
+    \\
+    \\    if (!gl) {
+    \\        throw new Error('The browser does not support WebGL');
+    \\    }
+    \\
+    \\    const glShaders = [];
+    \\    const glPrograms = [];
+    \\    const glBuffers = [];
+    \\    const glTextures = [];
+    \\    const glFramebuffers = [];
+    \\    const glUniformLocations = [];
+    \\
+;
+
+const js_bottom =
+    \\}
 ;
 
 const funcs = [_]Func {
@@ -129,7 +143,7 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             // TODO - check for NULL?
-            \\const floats = new Float32Array(memory.buffer, data_ptr, count);
+            \\const floats = new Float32Array(getMemory().buffer, data_ptr, count);
             \\gl.bufferData(type, floats, draw_type);
     },
     // TODO - glBufferSubData
@@ -478,7 +492,7 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\// FIXME - look at data_ptr, not data_len, to determine NULL?
-            \\const data = data_len > 0 ? new Uint8Array(memory.buffer, data_ptr, data_len) : null;
+            \\const data = data_len > 0 ? new Uint8Array(getMemory().buffer, data_ptr, data_len) : null;
             \\gl.texImage2D(target, level, internal_format, width, height, border, format, type, data);
     },
     Func {
@@ -563,7 +577,7 @@ const funcs = [_]Func {
         },
         .ret = "void",
         .js =
-            \\const floats = new Float32Array(memory.buffer, data_ptr, data_len * 16);
+            \\const floats = new Float32Array(getMemory().buffer, data_ptr, data_len * 16);
             \\gl.uniformMatrix4fv(glUniformLocations[location_id], transpose, floats);
     },
     Func {
@@ -685,9 +699,9 @@ fn writeJsFile(filename: []const u8) !void {
 
     var stream = &std.fs.File.outStream(file).stream;
 
-    try stream.print("{}\n\n", js_top);
+    try stream.print("{}\n", js_top);
 
-    try stream.print("const webgl = {{\n");
+    try stream.print("    return {{\n");
     for (funcs) |func| {
         const any_slice = for (func.args) |arg| {
             if (std.mem.eql(u8, arg.type, "SLICE")) {
@@ -695,7 +709,7 @@ fn writeJsFile(filename: []const u8) !void {
             }
         } else false;
 
-        try stream.print("    {}{}(", func.name, if (any_slice) "_" else "");
+        try stream.print("        {}{}(", func.name, if (any_slice) "_" else "");
         for (func.args) |arg, i| {
             if (i > 0) {
                 try stream.print(", ");
@@ -709,20 +723,22 @@ fn writeJsFile(filename: []const u8) !void {
         try stream.print(") {{\n");
         for (func.args) |arg| {
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("        const {} = readCharStr({}_ptr, {}_len);\n", arg.name, arg.name, arg.name);
+                try stream.print("            const {} = readCharStr({}_ptr, {}_len);\n", arg.name, arg.name, arg.name);
             }
         }
         var start: usize = 0; while (start < func.js.len) {
             const rel_newline_pos = nextNewline(func.js[start..]);
-            try stream.print("        {}\n", func.js[start..start + rel_newline_pos]);
+            try stream.print("            {}\n", func.js[start..start + rel_newline_pos]);
             start += rel_newline_pos + 1;
         }
-        try stream.print("    }},\n");
+        try stream.print("        }},\n");
     }
-    try stream.print("}};\n");
+    try stream.print("    }};\n");
+
+    try stream.print("{}\n", js_bottom);
 }
 
 pub fn main() !void {
     try writeZigFile("src/web/webgl_generated.zig");
-    try writeJsFile("js/webgl_generated.js");
+    try writeJsFile("js/oxid_webgl.js");
 }
