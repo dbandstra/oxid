@@ -149,11 +149,8 @@ fn getFullscreenDims(native_screen_size: NativeScreenSize) WindowDims {
 }
 
 fn getMaxCanvasScale(native_screen_size: NativeScreenSize) u31 {
-    // pick a window size that isn't bigger than the desktop resolution
-
-    // the actual window size will be an integer multiple of the virtual window
-    // size. this value puts a limit on high big it will be scaled (it will
-    // also be limited by the user's screen resolution)
+    // pick a window size that isn't bigger than the desktop resolution, and
+    // is an integer multiple of the virtual window size
     const max_w = native_screen_size.width;
     const max_h = native_screen_size.height - 40; // bias for system menubars/taskbars
 
@@ -802,6 +799,8 @@ fn setCanvasScale(self: *Main, scale: u31) void {
         SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
 
         if (self.native_screen_size) |native_screen_size| {
+            // if resizing the window put part of it off-screen, push it back
+            // on-screen
             var set = false;
             if (self.original_window_x + i32(self.windowed_dims.window_width) > i32(native_screen_size.width)) {
                 self.original_window_x = i32(native_screen_size.width) - i32(self.windowed_dims.window_width);

@@ -266,6 +266,7 @@ pub const InputSource = union(enum) {
 };
 
 pub fn areInputSourcesEqual(a: InputSource, b: InputSource) bool {
+    // TODO - use std.meta.eql?
     return switch (a) {
         .Key => |a_i|
             switch (b) { .Key => |b_i| a_i == b_i, else => false },
