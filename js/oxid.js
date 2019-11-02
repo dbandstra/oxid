@@ -42,20 +42,16 @@
             const value = base64js.fromByteArray(new Uint8Array(memory.buffer, value_ptr, value_len));
             window.localStorage.setItem(name, value);
         },
-        getAssetPtr_(name_ptr, name_len) {
+        getAsset_(name_ptr, name_len, result_address_ptr, result_address_len_ptr) {
             const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
             if (name in assets_dict) {
-                return assets_dict[name].ptr;
+                const mem_result_address = new DataView(memory.buffer, result_address_ptr, 4);
+                mem_result_address.setUint32(0, assets_dict[name].ptr, true);
+                const mem_result_address_len = new DataView(memory.buffer, result_address_len_ptr, 4);
+                mem_result_address_len.setUint32(0, assets_dict[name].len, true);
+                return true;
             } else {
-                throw new Error('getAssetPtr: asset not found: ' + name); // FIXME?
-            }
-        },
-        getAssetLen_(name_ptr, name_len) {
-            const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
-            if (name in assets_dict) {
-                return assets_dict[name].len;
-            } else {
-                throw new Error('getAssetLen: asset not found: ' + name); // FIXME?
+                return false;
             }
         },
     }

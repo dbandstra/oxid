@@ -49,7 +49,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
 
     if (builtin.arch == .wasm32) {
         // wasm build: assets were prefetched in JS code and made available via
-        // the getAssetPtr/getAssetLen API
+        // the getAsset API
         const web = @import("../web.zig");
 
         const file_path = try std.fs.path.join(&hunk.high().allocator, [_][]const u8 {
@@ -57,13 +57,9 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
             filename,
         });
 
-        // currently these functions just throw an exception on the JS side if
-        // the asset doesn't exist. preferably they would be combined into one
-        // function which returns an `![]u8` but i have no idea if that's even
-        // possible
-        const ptr = web.getAssetPtr(file_path);
-        const len = web.getAssetLen(file_path);
-        const buf = ptr[0..len];
+        const buf = web.getAsset(file_path) orelse {
+            return error.AssetNotFound;
+        };
 
         var sis = std.io.SliceInStream.init(buf);
         const stream = &sis.stream;

@@ -1,5 +1,15 @@
 const builtin = @import("builtin");
 
+// this file contains declarations for functions implemented on the javascript
+// side.
+//
+// note: zig supports giving a namespace(?) to extern functions, like this:
+//
+//   extern "hello" funcName() void;
+//
+// if not specified, it seems to default to "env". this has to match with the
+// JS side.
+
 pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
 
@@ -25,14 +35,15 @@ pub fn setLocalStorage(name: []const u8, value: []const u8) void {
     setLocalStorage_(name.ptr, @intCast(c_int, name.len), value.ptr, @intCast(c_int, value.len));
 }
 
-extern fn getAssetPtr_(name_ptr: [*]const u8, name_len: c_int) [*]u8;
-pub fn getAssetPtr(name: []const u8) [*]u8 {
-    return getAssetPtr_(name.ptr, @intCast(c_int, name.len));
-}
-
-extern fn getAssetLen_(name_ptr: [*]const u8, name_len: c_int) c_int;
-pub fn getAssetLen(name: []const u8) usize {
-    return @intCast(usize, getAssetLen_(name.ptr, @intCast(c_int, name.len)));
+extern fn getAsset_(name_ptr: [*]const u8, name_len: c_int, result_address_ptr: *[*]const u8, result_address_len_ptr: *c_int) bool;
+pub fn getAsset(name: []const u8) ?[]const u8 {
+    var ptr: [*]const u8 = undefined;
+    var len: c_int = undefined;
+    if (getAsset_(name.ptr, @intCast(c_int, name.len), &ptr, &len)) {
+        return ptr[0..@intCast(usize, len)];
+    } else {
+        return null;
+    }
 }
 
 pub fn panic(message: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
