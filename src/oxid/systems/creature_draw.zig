@@ -42,8 +42,8 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             }) catch undefined;
         } else {
             drawCreature(gs, self, DrawCreatureParams {
-                .graphic1 = .Man1,
-                .graphic2 = .Man2,
+                .graphic1 = if (player.player_number == 0) .Man1Walk1 else .Man2Walk1,
+                .graphic2 = if (player.player_number == 0) .Man1Walk2 else .Man2Walk2,
                 .rotates = true,
                 .z_index = Constants.z_index_player,
             });

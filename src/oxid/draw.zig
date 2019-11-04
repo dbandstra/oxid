@@ -205,6 +205,22 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
             if (pc_maybe) |pc| {
                 const y = player_number * 8;
 
+                if (player_number == 1) {
+                    // multiplayer game: show little colored helmets in the HUD
+                    // to make it clear which player is which
+                    pdraw.end(ds);
+                    pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+                    pdraw.tile(
+                        ds,
+                        static.tileset,
+                        getGraphicTile(.ManIcons),
+                        6*8-2, -1, 16, 16,
+                        .Identity,
+                    );
+                    pdraw.end(ds);
+                    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+                }
+
                 const maybe_player_creature =
                     if (pc.player_id) |player_id|
                         gs.find(player_id, c.Creature)
