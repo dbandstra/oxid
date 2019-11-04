@@ -53,10 +53,8 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
 
     var num_drawables: usize = 0;
     var it = gs.iter(c.EventDraw); while (it.next()) |object| {
-        if (object.is_active) {
-            sort_buffer[num_drawables] = &object.data;
-            num_drawables += 1;
-        }
+        sort_buffer[num_drawables] = &object.data;
+        num_drawables += 1;
     }
     var sorted_drawables = sort_buffer[0..num_drawables];
     std.sort.sort(*const c.EventDraw, sorted_drawables, util.lessThanField(*const c.EventDraw, "z_index"));
@@ -137,24 +135,22 @@ fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_d
 
 fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
     var it = gs.iter(c.EventDrawBox); while (it.next()) |object| {
-        if (object.is_active) {
-            const abs_bbox = object.data.box;
-            const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
-            const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
-            const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
-            const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
-            const w = x1 - x0;
-            const h = y1 - y0;
-            pdraw.begin(ds, ds.blank_tex.handle, object.data.color, 1.0, true);
-            pdraw.tile(
-                ds,
-                ds.blank_tileset,
-                draw.Tile { .tx = 0, .ty = 0 },
-                x0, y0, w, h,
-                .Identity,
-            );
-            pdraw.end(ds);
-        }
+        const abs_bbox = object.data.box;
+        const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
+        const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
+        const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
+        const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
+        const w = x1 - x0;
+        const h = y1 - y0;
+        pdraw.begin(ds, ds.blank_tex.handle, object.data.color, 1.0, true);
+        pdraw.tile(
+            ds,
+            ds.blank_tileset,
+            draw.Tile { .tx = 0, .ty = 0 },
+            x0, y0, w, h,
+            .Identity,
+        );
+        pdraw.end(ds);
     }
 }
 
