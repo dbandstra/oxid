@@ -59,7 +59,7 @@ pub fn getDefault() Config {
             .Down => InputSource { .Key = .S },
             .Left => InputSource { .Key = .A },
             .Right => InputSource { .Key = .D },
-            .Shoot => InputSource { .Key = .LCtrl },
+            .Shoot => InputSource { .Key = .F },
             .KillAllMonsters => null,
             .ToggleDrawBoxes => null,
             .ToggleGodMode => null,
