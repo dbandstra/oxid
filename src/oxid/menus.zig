@@ -33,7 +33,7 @@ pub const Effect = union(enum) {
     NoOp,
     Push: Menu,
     Pop,
-    StartNewGame,
+    StartNewGame: bool,
     EndGame,
     ToggleSound,
     SetVolume: u32,
@@ -45,6 +45,7 @@ pub const Effect = union(enum) {
 };
 
 pub const BindGameCommand = struct {
+    player_number: u32,
     command: input.GameCommand,
     source: ?InputSource,
 };
@@ -124,9 +125,13 @@ pub const MainMenu = struct {
         }
 
         ctx.title(.Left, "OXID");
-    
+
         if (ctx.option("New game")) {
-            ctx.setEffect(.StartNewGame);
+            ctx.setEffect(Effect { .StartNewGame = false });
+            ctx.setSound(.Ding);
+        }
+        if (ctx.option("Multiplayer")) {
+            ctx.setEffect(Effect { .StartNewGame = true });
             ctx.setSound(.Ding);
         }
         if (ctx.option("Options")) {
@@ -163,7 +168,7 @@ pub const InGameMenu = struct {
         }
 
         ctx.title(.Left, "GAME PAUSED");
-    
+
         if (ctx.option("Continue game")) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
@@ -245,7 +250,7 @@ pub const OptionsMenu = struct {
             .cursor_pos = 0,
         };
     }
-    
+
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .Escape else false) {
             ctx.setEffect(.Pop);
@@ -254,7 +259,7 @@ pub const OptionsMenu = struct {
         }
 
         ctx.title(.Left, "OPTIONS");
-    
+
         if (builtin.arch == .wasm32) {
             if (ctx.optionToggle("Sound: {}", if (ctx.menu_context.sound_enabled) "ON" else "OFF")) {
                 ctx.setEffect(.ToggleSound);
@@ -310,11 +315,13 @@ pub const OptionsMenu = struct {
 
 pub const KeyBindingsMenu = struct {
     cursor_pos: usize,
+    for_player: u32,
     rebinding: ?input.GameCommand,
 
     pub fn init() @This() {
         return @This() {
             .cursor_pos = 0,
+            .for_player = 0,
             .rebinding = null,
         };
     }
@@ -334,6 +341,7 @@ pub const KeyBindingsMenu = struct {
             if (ctx.source) |source| {
                 ctx.setEffect(Effect {
                     .BindGameCommand = BindGameCommand {
+                        .player_number = self.for_player,
                         .command = command,
                         .source = source,
                     },
@@ -356,9 +364,19 @@ pub const KeyBindingsMenu = struct {
 
         ctx.title(.Left, "KEY BINDINGS");
 
+        if (ctx.optionToggle("For player: {}", self.for_player + 1)) {
+            self.for_player += 1;
+            if (self.for_player == config.num_players) {
+                self.for_player = 0;
+            }
+            ctx.setSound(.Ding);
+        }
+
+        ctx.vspacer();
+
         inline for (commands) |command, i| {
             const command_name = @tagName(command) ++ ":" ++ " " ** (longest_command_name - @tagName(command).len);
-            self.keyBindingOption(Ctx, ctx, command, command_name);
+            self.keyBindingOption(Ctx, ctx, self.for_player, command, command_name);
         }
 
         ctx.vspacer();
@@ -369,7 +387,7 @@ pub const KeyBindingsMenu = struct {
         }
     }
 
-    fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, command: input.GameCommand, command_name: []const u8) void {
+    fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, for_player: u32, command: input.GameCommand, command_name: []const u8) void {
         const result =
             if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
                 ctx.option("{} {}", command_name, switch (ctx.menu_context.anim_time / 16 % 4) {
@@ -378,7 +396,7 @@ pub const KeyBindingsMenu = struct {
                     2 => "...",
                     else => "",
                 })
-            ) else if (ctx.menu_context.cfg.game_bindings[@enumToInt(command)]) |source| (
+            ) else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
                 switch (source) {
                     .Key => |key|
                         ctx.option("{} {}", command_name, key_names[@enumToInt(key)]),

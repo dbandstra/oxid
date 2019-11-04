@@ -83,15 +83,18 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, dow
     }
 
     // game command?
-    for (cfg.game_bindings) |maybe_source, i| {
-        if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
-            _ = p.EventGameInput.spawn(gs, c.EventGameInput {
-                .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
-                .down = down,
-            }) catch undefined;
+    var player_number: u32 = 0; while (player_number < config.num_players) : (player_number += 1) {
+        for (cfg.game_bindings[player_number]) |maybe_source, i| {
+            if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
+                _ = p.EventGameInput.spawn(gs, c.EventGameInput {
+                    .player_number = player_number,
+                    .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
+                    .down = down,
+                }) catch undefined;
 
-            // returning non-null signifies that the input event was handled
-            return menus.Effect { .NoOp = {} };
+                // returning non-null signifies that the input event was handled
+                return menus.Effect { .NoOp = {} };
+            }
         }
     }
 
@@ -100,16 +103,13 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, dow
 
 // i feel like this functions are too heavy to be done inline by this system.
 // they should be created as events and handled by middleware?
-pub fn startGame(gs: *GameSession) void {
+pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     const mc = &gs.findFirstObject(c.MainController).?.data;
 
-    // remove all entities except the MainController, GameController,
-    // PlayerController, and EventPostScore
+    // remove all entities except the MainController
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
         switch (field.field_type.ComponentType) {
-            c.MainController,
-            c.GameController,
-            c.PlayerController => {},
+            c.MainController => {},
             else => |ComponentType| {
                 var it = gs.iter(ComponentType); while (it.next()) |object| {
                     gs.markEntityForRemoval(object.entity_id);
@@ -122,19 +122,12 @@ pub fn startGame(gs: *GameSession) void {
         .render_move_boxes = false,
     };
 
-    // reuse these if present
-    if (gs.findFirst(c.GameController)) |gc| {
-        gc.* = p.GameController.defaults;
-    } else {
-        _ = p.GameController.spawn(gs) catch undefined;
-    }
+    const num_players = if (is_multiplayer) u32(2) else u32(1);
 
-    // FIXME - this doesn't properly handle the case of multiple
-    // PlayerControllers existing, although that doesn't currently happen
-    if (gs.findFirst(c.PlayerController)) |pc| {
-        pc.* = p.PlayerController.defaults;
-    } else {
-        _ = p.PlayerController.spawn(gs) catch undefined;
+    _ = p.GameController.spawn(gs, p.GameController.Params { .num_players = num_players }) catch undefined;
+
+    var player_number: u32 = 0; while (player_number < num_players) : (player_number += 1) {
+        _ = p.PlayerController.spawn(gs, p.PlayerController.Params { .player_number = player_number }) catch undefined;
     }
 }
 

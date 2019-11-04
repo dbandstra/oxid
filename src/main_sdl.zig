@@ -751,7 +751,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
 }
 
 fn handleGameOver(self: *Main) void {
-    var it = self.session.iter(c.EventPlayerOutOfLives); while (it.next()) |object| {
+    if (self.session.findFirstObject(c.EventGameOver)) |_| {
         finalizeGame(self);
         self.menu_stack.push(menus.Menu {
             .GameOverMenu = menus.GameOverMenu.init(),
@@ -763,32 +763,37 @@ fn finalizeGame(self: *Main) void {
     self.game_over = true;
     self.new_high_score = false;
 
-    // get player's score
-    const pc = self.session.findFirst(c.PlayerController) orelse return;
+    var save_high_scores = true;
 
-    // insert the score somewhere in the high score list
-    const new_score = pc.score;
+    // get players' scores
+    var it = self.session.iter(c.PlayerController); while (it.next()) |object| {
+        // insert the score somewhere in the high score list
+        const new_score = object.data.score;
 
-    // the list is always sorted highest to lowest
-    var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
-        if (new_score > self.high_scores[i]) {
-            // insert the new score here
-            std.mem.copyBackwards(u32,
-                self.high_scores[i + 1..Constants.num_high_scores],
-                self.high_scores[i..Constants.num_high_scores - 1]
-            );
+        // the list is always sorted highest to lowest
+        var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
+            if (new_score > self.high_scores[i]) {
+                // insert the new score here
+                std.mem.copyBackwards(u32,
+                    self.high_scores[i + 1..Constants.num_high_scores],
+                    self.high_scores[i..Constants.num_high_scores - 1]
+                );
 
-            self.high_scores[i] = new_score;
-            if (i == 0) {
-                self.new_high_score = true;
+                self.high_scores[i] = new_score;
+                if (i == 0) {
+                    self.new_high_score = true;
+                }
+
+                save_high_scores = true;
+                break;
             }
-
-            saveHighScores(&hunk.low(), self.high_scores) catch |err| {
-                std.debug.warn("Failed to save high scores to disk: {}\n", err);
-            };
-
-            break;
         }
+    }
+
+    if (save_high_scores) {
+        saveHighScores(&hunk.low(), self.high_scores) catch |err| {
+            std.debug.warn("Failed to save high scores to disk: {}\n", err);
+        };
     }
 }
 
@@ -858,9 +863,9 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         .Pop => {
             self.menu_stack.pop();
         },
-        .StartNewGame => {
+        .StartNewGame => |is_multiplayer| {
             self.menu_stack.clear();
-            common.startGame(&self.session);
+            common.startGame(&self.session, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
         },
@@ -889,14 +894,14 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
             const command_index = @enumToInt(payload.command);
             const in_use =
                 if (payload.source) |new_source|
-                    for (self.cfg.game_bindings) |maybe_source| {
+                    for (self.cfg.game_bindings[payload.player_number]) |maybe_source| {
                         if (if (maybe_source) |source| areInputSourcesEqual(source, new_source) else false) {
                             break true;
                         }
                     } else false
                 else false;
             if (!in_use) {
-                self.cfg.game_bindings[command_index] = payload.source;
+                self.cfg.game_bindings[payload.player_number][command_index] = payload.source;
             }
         },
         .ResetAnimTime => {

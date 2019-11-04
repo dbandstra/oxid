@@ -173,7 +173,6 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
 
     const mc = gs.findFirst(c.MainController).?;
     const gc_maybe = gs.findFirst(c.GameController);
-    const pc_maybe = gs.findFirst(c.PlayerController);
 
     pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
@@ -189,43 +188,55 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
-        if (pc_maybe) |pc| {
-            const maybe_player_creature =
-                if (pc.player_id) |player_id|
-                    gs.find(player_id, c.Creature)
-                else
-                    null;
+        _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
+        fontDrawString(ds, &static.font, 0, 0, dest.getWritten());
+        dest.reset();
 
-            _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
-            fontDrawString(ds, &static.font, 0, 0, dest.getWritten());
-            dest.reset();
-            fontDrawString(ds, &static.font, 8*8, 0, "Lives:");
-
-            pdraw.end(ds);
-            const heart_font_color = getColor(static, heart_font_color_index);
-            pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
-            var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-                fontDrawString(ds, &static.font, (14+i)*8, 0, "\x1E"); // heart
-            }
-            pdraw.end(ds);
-
-            if (pc.lives == 0) {
-                const skull_font_color = getColor(static, skull_font_color_index);
-                pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                fontDrawString(ds, &static.font, 14*8, 0, "\x1F"); // skull
-                pdraw.end(ds);
-            }
-
-            pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-
-            if (maybe_player_creature) |player_creature| {
-                if (player_creature.god_mode) {
-                    fontDrawString(ds, &static.font, 8*8, 8, "god mode");
+        var player_number: u31 = 0; while (player_number < 2) : (player_number += 1) {
+            const pc_maybe = blk: {
+                var it = gs.iter(c.PlayerController); while (it.next()) |object| {
+                    if (object.data.player_number == player_number) {
+                        break :blk &object.data;
+                    }
                 }
+                break :blk null;
+            };
+
+            if (pc_maybe) |pc| {
+                const y = player_number * 8;
+
+                const maybe_player_creature =
+                    if (pc.player_id) |player_id|
+                        gs.find(player_id, c.Creature)
+                    else
+                        null;
+
+                if (if (maybe_player_creature) |creature| creature.god_mode else false) {
+                    fontDrawString(ds, &static.font, 8*8, y, "(god):");
+                } else {
+                    fontDrawString(ds, &static.font, 8*8, y, "Lives:");
+                }
+                pdraw.end(ds);
+
+                const heart_font_color = getColor(static, heart_font_color_index);
+                pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
+                var i: u31 = 0; while (i < pc.lives) : (i += 1) {
+                    fontDrawString(ds, &static.font, (14+i)*8, y, "\x1E"); // heart
+                }
+                pdraw.end(ds);
+
+                if (pc.lives == 0) {
+                    const skull_font_color = getColor(static, skull_font_color_index);
+                    pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
+                    fontDrawString(ds, &static.font, 14*8, y, "\x1F"); // skull
+                    pdraw.end(ds);
+                }
+
+                pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+                _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
+                fontDrawString(ds, &static.font, 19*8, y, dest.getWritten());
+                dest.reset();
             }
-            _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
-            fontDrawString(ds, &static.font, 19*8, 0, dest.getWritten());
-            dest.reset();
         }
 
         if (gc.wave_message) |message| {

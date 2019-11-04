@@ -63,25 +63,20 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         self.gc.next_pickup_timer = Constants.pickup_spawn_time;
     }
     _ = util.decrementTimer(&self.gc.freeze_monsters_timer);
-    if (getPlayerScore(gs)) |score| {
-        const i  = self.gc.extra_lives_spawned;
-        if (i < Constants.extra_life_score_thresholds.len) {
-            const threshold = Constants.extra_life_score_thresholds[i];
-            if (score >= threshold) {
+
+    // spawn extra life pickup when player's score crosses certain thresholds.
+    // note: in multiplayer, extra life will only spawn once per score
+    // threshold (so two players does not mean 2x the extra life bonuses)
+    var it = gs.iter(c.PlayerController); while (it.next()) |object| {
+        if (self.gc.extra_lives_spawned < Constants.extra_life_score_thresholds.len) {
+            const threshold = Constants.extra_life_score_thresholds[self.gc.extra_lives_spawned];
+            if (object.data.score >= threshold) {
                 spawnPickup(gs, .LifeUp);
                 self.gc.extra_lives_spawned += 1;
             }
         }
     }
     return .Remain;
-}
-
-fn getPlayerScore(gs: *GameSession) ?u32 {
-    // FIXME - what if there is multiplayer?
-    var it = gs.iter(c.PlayerController); while (it.next()) |object| {
-        return object.data.score;
-    }
-    return null;
 }
 
 fn countNonPersistentMonsters(gs: *GameSession) u32 {

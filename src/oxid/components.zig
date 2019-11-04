@@ -63,9 +63,11 @@ pub const GameController = struct {
     extra_lives_spawned: u32,
     wave_message: ?[]const u8,
     wave_message_timer: u32,
+    num_players_remaining: u32,
 };
 
 pub const PlayerController = struct {
+    player_number: u32, // 0 (first player) or 1 (second player)
     player_id: ?gbe.EntityId,
     lives: u32,
     score: u32,
@@ -93,6 +95,7 @@ pub const PhysObject = struct {
     pub const FLAG_BULLET: u32 = 1;
     pub const FLAG_MONSTER: u32 = 2;
     pub const FLAG_WEB: u32 = 4;
+    pub const FLAG_PLAYER: u32 = 8;
 
     // `illusory`: if true, this object is non-solid, but still causes 'collide'
     // events when overlapped
@@ -157,6 +160,7 @@ pub const Player = struct {
         Three,
     };
 
+    player_number: u32,
     player_controller_id: gbe.EntityId,
     trigger_released: bool,
     bullets: [Constants.player_max_bullets]?gbe.EntityId,
@@ -214,9 +218,12 @@ pub const EventDrawBox = struct {
 };
 
 pub const EventGameInput = struct {
+    player_number: u32,
     command: input.GameCommand,
     down: bool,
 };
+
+pub const EventGameOver = struct {};
 
 pub const EventMonsterDied = struct {};
 

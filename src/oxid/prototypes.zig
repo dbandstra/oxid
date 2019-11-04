@@ -54,42 +54,48 @@ pub const MainController = struct {
 };
 
 pub const GameController = struct {
-    pub const defaults = c.GameController {
-        .monster_count = 0,
-        .enemy_speed_level = 0,
-        .enemy_speed_timer = Constants.enemy_speed_ticks,
-        .wave_number = 0,
-        .next_wave_timer = Constants.duration60(90),
-        .next_pickup_timer = Constants.duration60(15*60),
-        .freeze_monsters_timer = 0,
-        .extra_lives_spawned = 0,
-        .wave_message = null,
-        .wave_message_timer = 0,
+    pub const Params = struct {
+        num_players: u32,
     };
 
-    pub fn spawn(gs: *GameSession) !gbe.EntityId {
+    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, defaults);
+        try gs.addComponent(entity_id, c.GameController {
+            .monster_count = 0,
+            .enemy_speed_level = 0,
+            .enemy_speed_timer = Constants.enemy_speed_ticks,
+            .wave_number = 0,
+            .next_wave_timer = Constants.duration60(90),
+            .next_pickup_timer = Constants.duration60(15*60),
+            .freeze_monsters_timer = 0,
+            .extra_lives_spawned = 0,
+            .wave_message = null,
+            .wave_message_timer = 0,
+            .num_players_remaining = params.num_players,
+        });
 
         return entity_id;
     }
 };
 
 pub const PlayerController = struct {
-    pub const defaults = c.PlayerController {
-        .player_id = null,
-        .lives = Constants.player_num_lives,
-        .score = 0,
-        .respawn_timer = 1,
+    pub const Params = struct {
+        player_number: u32,
     };
 
-    pub fn spawn(gs: *GameSession) !gbe.EntityId {
+    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
         const entity_id = gs.spawn();
         errdefer gs.undoSpawn(entity_id);
 
-        try gs.addComponent(entity_id, defaults);
+        try gs.addComponent(entity_id, c.PlayerController {
+            .player_number = params.player_number,
+            .player_id = null,
+            .lives = Constants.player_num_lives,
+            .score = 0,
+            .respawn_timer = 1,
+        });
 
         return entity_id;
     }
@@ -97,6 +103,7 @@ pub const PlayerController = struct {
 
 pub const Player = struct {
     pub const Params = struct {
+        player_number: u32,
         player_controller_id: gbe.EntityId,
         pos: math.Vec2,
     };
@@ -117,8 +124,8 @@ pub const Player = struct {
             .speed = 0,
             .push_dir = null,
             .owner_id = gbe.EntityId { .id = 0 },
-            .flags = 0,
-            .ignore_flags = 0,
+            .flags = c.PhysObject.FLAG_PLAYER,
+            .ignore_flags = c.PhysObject.FLAG_PLAYER,
             .internal = undefined,
         });
 
@@ -130,6 +137,7 @@ pub const Player = struct {
         });
 
         try gs.addComponent(entity_id, c.Player {
+            .player_number = params.player_number,
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** Constants.player_max_bullets,
@@ -475,6 +483,7 @@ pub const EventConferBonus = Event(c.EventConferBonus);
 pub const EventDraw = Event(c.EventDraw);
 pub const EventDrawBox = Event(c.EventDrawBox);
 pub const EventGameInput = Event(c.EventGameInput);
+pub const EventGameOver = Event(c.EventGameOver);
 pub const EventMonsterDied = Event(c.EventMonsterDied);
 pub const EventPlayerDied = Event(c.EventPlayerDied);
 pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);

@@ -12,6 +12,9 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
+        if (event.data.player_number != self.player.player_number) {
+            continue;
+        }
         switch (event.data.command) {
             .Up => {
                 self.player.in_up = event.data.down;

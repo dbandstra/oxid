@@ -7,10 +7,12 @@ const JoyButton = @import("../common/key.zig").JoyButton;
 const JoyAxis = @import("../common/key.zig").JoyAxis;
 const input = @import("input.zig");
 
+pub const num_players = 2; // hardcoded for now
+
 pub const Config = struct {
     volume: u32,
     menu_bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?InputSource,
-    game_bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
+    game_bindings: [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
 };
 
 // this used to be a simple global constant but there's a compiler bug there.
@@ -37,7 +39,7 @@ pub fn getDefault() Config {
         };
     }
 
-    for (default.game_bindings) |*binding, i| {
+    for (default.game_bindings[0]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
             .Up => InputSource { .Key = .Up },
             .Down => InputSource { .Key = .Down },
@@ -48,6 +50,20 @@ pub fn getDefault() Config {
             .ToggleDrawBoxes => InputSource { .Key = .F2 },
             .ToggleGodMode => InputSource { .Key = .F3 },
             .Escape => InputSource { .Key = .Escape },
+        };
+    }
+
+    for (default.game_bindings[1]) |*binding, i| {
+        binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
+            .Up => InputSource { .Key = .W },
+            .Down => InputSource { .Key = .S },
+            .Left => InputSource { .Key = .A },
+            .Right => InputSource { .Key = .D },
+            .Shoot => InputSource { .Key = .LCtrl },
+            .KillAllMonsters => null,
+            .ToggleDrawBoxes => null,
+            .ToggleGodMode => null,
+            .Escape => null,
         };
     }
 
@@ -89,7 +105,9 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
                 } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
                     readBindings(input.MenuCommand, &cfg.menu_bindings, kv.value);
                 } else if (std.mem.eql(u8, kv.key, "game_bindings")) {
-                    readBindings(input.GameCommand, &cfg.game_bindings, kv.value);
+                    readBindings(input.GameCommand, &cfg.game_bindings[0], kv.value);
+                } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
+                    readBindings(input.GameCommand, &cfg.game_bindings[1], kv.value);
                 } else {
                     warn("Unrecognized config field: '{}'\n", kv.key);
                 }
@@ -218,7 +236,13 @@ pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), c
         \\    "game_bindings": {{
         \\
     );
-    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings);
+    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[0]);
+    try stream.print(
+        \\    }},
+        \\    "game_bindings2": {{
+        \\
+    );
+    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[1]);
     try stream.print(
         \\    }}
         \\}}
