@@ -161,14 +161,20 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
 }
 
 // this function needs more args if this is going to be any good
-fn getChaseTarget(gs: *GameSession) ?math.Vec2 {
-    // chase the first player in the entity list
-    if (gs.findFirstObject(c.Player)) |player| {
-        if (gs.find(player.entity_id, c.Transform)) |player_transform| {
-            return player_transform.pos;
+fn getChaseTarget(gs: *GameSession, self_pos: math.Vec2) ?math.Vec2 {
+    // choose the nearest player
+    var nearest: ?math.Vec2 = null;
+    var nearest_dist: u32 = 0;
+    var it = gs.iter(c.Player); while (it.next()) |object| {
+        if (gs.find(object.entity_id, c.Transform)) |player_transform| {
+            const dist = math.Vec2.manhattanDistance(player_transform.pos, self_pos);
+            if (nearest == null or dist < nearest_dist) {
+                nearest = player_transform.pos;
+                nearest_dist = dist;
+            }
         }
     }
-    return null;
+    return nearest;
 }
 
 fn chooseTurn(
@@ -186,7 +192,7 @@ fn chooseTurn(
     var choices = GameUtil.Choices.init();
 
     if (personality == .Chase) {
-        if (getChaseTarget(gs)) |target_pos| {
+        if (getChaseTarget(gs, pos)) |target_pos| {
             const fwd = math.Direction.normal(facing);
             const left_normal = math.Direction.normal(left);
             const right_normal = math.Direction.normal(right);
@@ -252,10 +258,7 @@ fn chooseTurn(
 
 // return the direction a bullet would be fired, or null if not in the line of
 // fire
-fn isInLineOfFire(
-    gs: *GameSession,
-    self: SystemData,
-) ?math.Direction {
+fn isInLineOfFire(gs: *GameSession, self: SystemData) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
     var it = gs.iter(c.Player); while (it.next()) |object| {
