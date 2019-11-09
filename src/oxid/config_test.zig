@@ -26,7 +26,7 @@ fn getFixtureConfig() config.Config {
         };
     }
 
-    for (cfg.game_bindings) |*binding, i| {
+    for (cfg.game_bindings[0]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
             .Up => InputSource { .JoyAxisNeg = JoyAxis { .which = 0, .axis = 1 } },
             .Down => InputSource { .JoyAxisPos = JoyAxis { .which = 0, .axis = 1 } },
@@ -37,6 +37,20 @@ fn getFixtureConfig() config.Config {
             .ToggleDrawBoxes => null,
             .ToggleGodMode => null,
             .Escape => InputSource { .Key = .Escape },
+        };
+    }
+
+    for (cfg.game_bindings[1]) |*binding, i| {
+        binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
+            .Up => InputSource { .Key = .W },
+            .Down => InputSource { .Key = .S },
+            .Left => InputSource { .Key = .A },
+            .Right => InputSource { .Key = .D },
+            .Shoot => InputSource { .Key = .F },
+            .KillAllMonsters => null,
+            .ToggleDrawBoxes => null,
+            .ToggleGodMode => null,
+            .Escape => null,
         };
     }
 
@@ -66,6 +80,17 @@ const fixture_json =
 \\        "ToggleDrawBoxes": null,
 \\        "KillAllMonsters": null,
 \\        "Escape": {"type": "key", "key": "Escape"}
+\\    },
+\\    "game_bindings2": {
+\\        "Left": {"type": "key", "key": "A"},
+\\        "Right": {"type": "key", "key": "D"},
+\\        "Up": {"type": "key", "key": "W"},
+\\        "Down": {"type": "key", "key": "S"},
+\\        "Shoot": {"type": "key", "key": "F"},
+\\        "ToggleGodMode": null,
+\\        "ToggleDrawBoxes": null,
+\\        "KillAllMonsters": null,
+\\        "Escape": null
 \\    }
 \\}
 \\

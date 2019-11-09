@@ -456,7 +456,7 @@ pub const Sound = struct {
         // FIXME!!! this timer will be paused when you're in the menu, but we
         // use sounds in the menu too!
         try gs.addComponent(entity_id, c.RemoveTimer {
-            .timer = @floatToInt(u32, params.duration * f32(Constants.ticks_per_second)),
+            .timer = @floatToInt(u32, params.duration * @as(f32, Constants.ticks_per_second)),
         });
 
         return entity_id;

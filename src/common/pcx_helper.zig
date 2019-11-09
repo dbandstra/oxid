@@ -42,12 +42,12 @@ pub fn loadPcx(
     // convert image data to RGBA
     var i: u32 = 0;
     while (i < width * height) : (i += 1) {
-        const index = usize(pixels[i*4+0]);
+        const index: usize = pixels[i*4+0];
         pixels[i*4+0] = palette[index*3+0];
         pixels[i*4+1] = palette[index*3+1];
         pixels[i*4+2] = palette[index*3+2];
         pixels[i*4+3] =
-            if ((transparent_color_index orelse ~index) == index) u8(0) else u8(255);
+            if ((transparent_color_index orelse ~index) == index) @as(u8, 0) else @as(u8, 255);
     }
 
     var image = PcxImage {

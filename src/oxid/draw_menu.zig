@@ -60,11 +60,11 @@ pub const DrawMenuContext = struct {
         if (self.draw) {
             const x = switch (alignment) {
                 .Left => self.box_x + 16,
-                .Center => self.box_x + i32(self.box_w / 2) - i32(w / 2),
+                .Center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
             };
             const font_color = getColor(self.static, primary_font_color_index);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
-            fontDrawString(self.ds, &self.static.font, x, self.box_y + i32(self.h), s);
+            fontDrawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
         }
         self.w = std.math.max(self.w, w);
@@ -101,9 +101,9 @@ pub const DrawMenuContext = struct {
             const font_color = getColor(self.static, primary_font_color_index);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             if (self.cursor_pos == self.option_index) {
-                fontDrawString(self.ds, &self.static.font, self.box_x, self.box_y + i32(self.h), ">");
+                fontDrawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
             }
-            fontDrawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + i32(self.h), s);
+            fontDrawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
         }
         self.option_index += 1;
@@ -168,10 +168,10 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     const pad_vert = 8;
     const box_w = pad_left + pad_right + ctx.w;
     const box_h = pad_vert * 2 + ctx.h;
-    const box_x = i32(common.virtual_window_width / 2) - i32(box_w / 2);
+    const box_x = @as(i32, common.virtual_window_width / 2) - @as(i32, box_w / 2);
     const box_y =
         if (!ctx.position_top)
-            i32(common.virtual_window_height / 2) - i32(box_h / 2)
+            @as(i32, common.virtual_window_height / 2) - @as(i32, box_h / 2)
         else
             32;
 

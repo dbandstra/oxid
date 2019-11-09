@@ -24,7 +24,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.player.spawn_anim_y_remaining > 0) {
         const dy = std.math.min(Constants.player_spawn_arise_speed, self.player.spawn_anim_y_remaining);
-        self.transform.pos.y -= i32(dy);
+        self.transform.pos.y -= @as(i32, dy);
         self.player.spawn_anim_y_remaining -= dy;
         return .Remain;
     } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
@@ -88,9 +88,9 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                     .facing = self.phys.facing,
                     .bullet_type = .PlayerBullet,
                     .cluster_size = switch (self.player.attack_level) {
-                        .One => u32(1),
-                        .Two => u32(2),
-                        .Three => u32(3),
+                        .One => @as(u32, 1),
+                        .Two => @as(u32, 2),
+                        .Three => @as(u32, 3),
                     },
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;

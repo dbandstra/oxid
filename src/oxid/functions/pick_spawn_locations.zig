@@ -30,9 +30,9 @@ fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemDa
     const maxs_x = self.transform.pos.x + self.phys.entity_bbox.maxs.x + pad;
     const maxs_y = self.transform.pos.y + self.phys.entity_bbox.maxs.y + pad;
     const gmins_x = std.math.max(@divFloor(mins_x, levels.subpixels_per_tile), 0);
-    const gmins_y = std.math.min(@divFloor(mins_y, levels.subpixels_per_tile), i32(levels.width) - 1);
+    const gmins_y = std.math.min(@divFloor(mins_y, levels.subpixels_per_tile), @as(i32, levels.width) - 1);
     const gmaxs_x = std.math.max(@divFloor(maxs_x, levels.subpixels_per_tile), 0);
-    const gmaxs_y = std.math.min(@divFloor(maxs_y, levels.subpixels_per_tile), i32(levels.height) - 1);
+    const gmaxs_y = std.math.min(@divFloor(maxs_y, levels.subpixels_per_tile), @as(i32, levels.height) - 1);
     const gx0 = @intCast(u31, gmins_x);
     const gy0 = @intCast(u31, gmins_y);
     const gx1 = @intCast(u31, gmaxs_x);

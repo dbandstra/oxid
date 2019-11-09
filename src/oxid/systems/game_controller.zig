@@ -44,10 +44,10 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             self.gc.enemy_speed_level += 1;
             p.playSynth(gs, "Accelerate", audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (self.gc.enemy_speed_level) {
-                    1 => f32(1.25),
-                    2 => f32(1.5),
-                    3 => f32(1.75),
-                    else => f32(2.0),
+                    1 => @as(f32, 1.25),
+                    2 => @as(f32, 1.5),
+                    3 => @as(f32, 1.75),
+                    else => @as(f32, 2.0),
                 },
             });
         }

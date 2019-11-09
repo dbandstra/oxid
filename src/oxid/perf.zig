@@ -89,7 +89,7 @@ pub fn end(self: *Timer) void {
             }
             if (self.filled) {
                 const avg = getAvg(self);
-                const fps = u64(1000000000) / avg;
+                const fps = @as(u64, 1000000000) / avg;
                 warn("{} - avg: {}, fps: {}\n", self.label, avg, fps);
             }
         }

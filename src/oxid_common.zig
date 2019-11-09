@@ -122,7 +122,7 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
         .render_move_boxes = false,
     };
 
-    const num_players = if (is_multiplayer) u32(2) else u32(1);
+    const num_players = if (is_multiplayer) @as(u32, 2) else @as(u32, 1);
 
     _ = p.GameController.spawn(gs, p.GameController.Params { .num_players = num_players }) catch undefined;
 

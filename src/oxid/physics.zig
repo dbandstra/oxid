@@ -40,20 +40,20 @@ pub fn physicsFrame(gs: *GameSession) void {
         phys.internal.move_bbox.maxs = math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
         if (phys.speed != 0) {
             switch (phys.facing) {
-                .W => phys.internal.move_bbox.mins.x -= i32(phys.speed),
-                .E => phys.internal.move_bbox.maxs.x += i32(phys.speed),
-                .N => phys.internal.move_bbox.mins.y -= i32(phys.speed),
-                .S => phys.internal.move_bbox.maxs.y += i32(phys.speed),
+                .W => phys.internal.move_bbox.mins.x -= @as(i32, phys.speed),
+                .E => phys.internal.move_bbox.maxs.x += @as(i32, phys.speed),
+                .N => phys.internal.move_bbox.mins.y -= @as(i32, phys.speed),
+                .S => phys.internal.move_bbox.maxs.y += @as(i32, phys.speed),
             }
             // push_dir represents the possibility of changing direction in mid-move,
             // so factor that into the move box as well
             if (phys.push_dir) |push_dir| {
                 if (push_dir != phys.facing) {
                     switch (push_dir) {
-                        .W => phys.internal.move_bbox.mins.x -= i32(phys.speed),
-                        .E => phys.internal.move_bbox.maxs.x += i32(phys.speed),
-                        .N => phys.internal.move_bbox.mins.y -= i32(phys.speed),
-                        .S => phys.internal.move_bbox.maxs.y += i32(phys.speed),
+                        .W => phys.internal.move_bbox.mins.x -= @as(i32, phys.speed),
+                        .E => phys.internal.move_bbox.maxs.x += @as(i32, phys.speed),
+                        .N => phys.internal.move_bbox.mins.y -= @as(i32, phys.speed),
+                        .S => phys.internal.move_bbox.maxs.y += @as(i32, phys.speed),
                     }
                 }
             }

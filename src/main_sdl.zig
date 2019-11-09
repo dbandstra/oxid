@@ -342,10 +342,8 @@ fn parseOptions() !?Options {
         clap.parseParam("--novsync               Disable vsync") catch unreachable,
     };
 
-    var iter = clap.args.OsIterator.init(allocator);
+    var iter = try clap.args.OsIterator.init(allocator);
     defer iter.deinit();
-
-    _ = try iter.next(); // exe
 
     var args = try clap.ComptimeClap(clap.Help, params).parse(allocator, clap.args.OsIterator, &iter);
     defer args.deinit();
@@ -712,7 +710,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         // when fast forwarding, we'll simulate 4 frames and draw them blended
         // together. we'll also speed up the sound playback rate by 4x
-        const num_frames = if (self.fast_forward) u32(4) else u32(1);
+        const num_frames = if (self.fast_forward) @as(u32, 4) else @as(u32, 1);
         var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
             // need to actually draw for the last one of them
@@ -807,15 +805,15 @@ fn setCanvasScale(self: *Main, scale: u31) void {
             // if resizing the window put part of it off-screen, push it back
             // on-screen
             var set = false;
-            if (self.original_window_x + i32(self.windowed_dims.window_width) > i32(native_screen_size.width)) {
-                self.original_window_x = i32(native_screen_size.width) - i32(self.windowed_dims.window_width);
+            if (self.original_window_x + @as(i32, self.windowed_dims.window_width) > @as(i32, native_screen_size.width)) {
+                self.original_window_x = @as(i32, native_screen_size.width) - @as(i32, self.windowed_dims.window_width);
                 if (self.original_window_x < 0) {
                     self.original_window_x = 0;
                 }
                 set = true;
             }
-            if (self.original_window_y + i32(self.windowed_dims.window_height) > i32(native_screen_size.height)) {
-                self.original_window_y = i32(native_screen_size.height) - i32(self.windowed_dims.window_height);
+            if (self.original_window_y + @as(i32, self.windowed_dims.window_height) > @as(i32, native_screen_size.height)) {
+                self.original_window_y = @as(i32, native_screen_size.height) - @as(i32, self.windowed_dims.window_height);
                 if (self.original_window_y < 0) {
                     self.original_window_y = 0;
                 }

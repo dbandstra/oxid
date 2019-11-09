@@ -306,7 +306,7 @@ pub fn tile(
     }
 
     // wasm doesn't support quads, so we have to emit two triangles
-    const verts_per_tile = if (builtin.arch == .wasm32) usize(6) else usize(4);
+    const verts_per_tile = if (builtin.arch == .wasm32) @as(usize, 6) else @as(usize, 4);
 
     if (ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices) {
         flush(ds);
@@ -401,11 +401,11 @@ fn flush(ds: *DrawState) void {
 
     glDrawArrays(
         if (builtin.arch == .wasm32)
-            GLenum(GL_TRIANGLES)
+            @as(GLenum, GL_TRIANGLES)
         else if (ds.glitch_mode == .QuadStrips)
-            GLenum(GL_QUAD_STRIP)
+            @as(GLenum, GL_QUAD_STRIP)
         else
-            GLenum(GL_QUADS),
+            @as(GLenum, GL_QUADS),
         0,
         @intCast(if (builtin.arch == .wasm32) c_uint else c_int, ds.draw_buffer.num_vertices),
     );

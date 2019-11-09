@@ -38,9 +38,9 @@ pub fn init(fbs: *FramebufferState, w: u31, h: u31) bool {
     glGenTextures(1, &rt);
     glBindTexture(GL_TEXTURE_2D, rt);
     if (builtin.arch == .wasm32) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, c_int(w), c_int(h), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
     } else {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, c_int(w), c_int(h), 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
