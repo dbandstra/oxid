@@ -149,6 +149,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .facing = self.phys.facing,
                 .bullet_type = p.Bullet.BulletType.MonsterBullet,
                 .cluster_size = 1,
+                .ignore_players = false,
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
             p.playSample(gs, .DropWeb);

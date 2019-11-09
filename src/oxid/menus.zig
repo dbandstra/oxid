@@ -27,6 +27,7 @@ pub const MenuContext = struct {
     anim_time: u32,
     canvas_scale: u31,
     max_canvas_scale: u31,
+    friendly_fire: bool,
 };
 
 pub const Effect = union(enum) {
@@ -39,6 +40,7 @@ pub const Effect = union(enum) {
     SetVolume: u32,
     SetCanvasScale: u31,
     ToggleFullscreen,
+    ToggleFriendlyFire,
     BindGameCommand: BindGameCommand,
     ResetAnimTime,
     Quit,
@@ -67,6 +69,7 @@ pub const Menu = union(enum) {
     GameOverMenu: GameOverMenu,
     ReallyEndGameMenu: ReallyEndGameMenu,
     OptionsMenu: OptionsMenu,
+    GameSettingsMenu: GameSettingsMenu,
     KeyBindingsMenu: KeyBindingsMenu,
     HighScoresMenu: HighScoresMenu,
 
@@ -77,6 +80,7 @@ pub const Menu = union(enum) {
             .GameOverMenu      => |*menu_state| func(GameOverMenu     , menu_state, params),
             .ReallyEndGameMenu => |*menu_state| func(ReallyEndGameMenu, menu_state, params),
             .OptionsMenu       => |*menu_state| func(OptionsMenu      , menu_state, params),
+            .GameSettingsMenu  => |*menu_state| func(GameSettingsMenu , menu_state, params),
             .KeyBindingsMenu   => |*menu_state| func(KeyBindingsMenu  , menu_state, params),
             .HighScoresMenu    => |*menu_state| func(HighScoresMenu   , menu_state, params),
         };
@@ -302,8 +306,45 @@ pub const OptionsMenu = struct {
             ctx.setEffect(.ToggleFullscreen);
             // don't play a sound because the fullscreen transition might mess with playback
         }
+        if (ctx.option("Game settings")) {
+            ctx.setEffect(Effect { .Push = Menu { .GameSettingsMenu = GameSettingsMenu.init() } });
+            ctx.setSound(.Ding);
+        }
         if (ctx.option("Key bindings")) {
             ctx.setEffect(Effect { .Push = Menu { .KeyBindingsMenu = KeyBindingsMenu.init() } });
+            ctx.setSound(.Ding);
+        }
+        if (ctx.option("Back")) {
+            ctx.setEffect(.Pop);
+            ctx.setSound(.Ding);
+        }
+    }
+};
+
+pub const GameSettingsMenu = struct {
+    cursor_pos: usize,
+
+    pub fn init() @This() {
+        return @This() {
+            .cursor_pos = 0,
+        };
+    }
+
+    pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
+        if (if (ctx.command) |command| command == .Escape else false) {
+            ctx.setEffect(.Pop);
+            ctx.setSound(.Backoff);
+            return;
+        }
+
+        ctx.title(.Left, "GAME SETTINGS");
+
+        ctx.label("{}", "Changes will take");
+        ctx.label("{}", "effect when a new");
+        ctx.title(.Left, "game is started.");
+
+        if (ctx.optionToggle("Friendly fire: {}", if (ctx.menu_context.friendly_fire) "ON" else "OFF")) {
+            ctx.setEffect(.ToggleFriendlyFire);
             ctx.setSound(.Ding);
         }
         if (ctx.option("Back")) {

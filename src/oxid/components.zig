@@ -68,6 +68,7 @@ pub const GameController = struct {
 
 pub const PlayerController = struct {
     player_number: u32, // 0 (first player) or 1 (second player)
+    friendly_fire: bool,
     player_id: ?gbe.EntityId,
     lives: u32,
     score: u32,
@@ -161,6 +162,7 @@ pub const Player = struct {
     };
 
     player_number: u32,
+    friendly_fire: bool,
     player_controller_id: gbe.EntityId,
     trigger_released: bool,
     bullets: [Constants.player_max_bullets]?gbe.EntityId,

@@ -92,6 +92,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                         .Two => @as(u32, 2),
                         .Three => @as(u32, 3),
                     },
+                    .ignore_players = !self.player.friendly_fire,
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;
                 } else |_| {}

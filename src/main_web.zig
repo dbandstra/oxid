@@ -42,6 +42,7 @@ const GameState = struct {
     sound_enabled: bool,
     is_fullscreen: bool,
     canvas_scale: u31,
+    friendly_fire: bool,
 };
 
 fn loadConfig(hunk_side: *HunkSide) !config.Config {
@@ -191,6 +192,7 @@ fn makeMenuContext() menus.MenuContext {
         .anim_time = g.menu_anim_time,
         .canvas_scale = g.canvas_scale,
         .max_canvas_scale = 4,
+        .friendly_fire = g.friendly_fire,
     };
 }
 
@@ -235,7 +237,7 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .StartNewGame => |is_multiplayer| {
             g.menu_stack.clear();
-            common.startGame(&g.session, is_multiplayer);
+            common.startGame(&g.session, is_multiplayer, g.friendly_fire);
             g.game_over = false;
             g.new_high_score = false;
         },
@@ -262,6 +264,9 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .ToggleFullscreen => {
             return TOGGLE_FULLSCREEN;
+        },
+        .ToggleFriendlyFire => {
+            g.friendly_fire = !g.friendly_fire;
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);
@@ -373,6 +378,7 @@ fn init() !void {
     g.sound_enabled = false;
     g.is_fullscreen = false;
     g.canvas_scale = 1;
+    g.friendly_fire = true;
 }
 
 export fn onInit() bool {

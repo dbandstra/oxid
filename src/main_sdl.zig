@@ -220,6 +220,7 @@ const Main = struct {
     framerate_scheme: FramerateScheme,
     t: usize,
     menu_anim_time: u32,
+    friendly_fire: bool,
 };
 
 const Options = struct {
@@ -240,6 +241,7 @@ fn makeMenuContext(self: *Main) menus.MenuContext {
         .anim_time = self.menu_anim_time,
         .canvas_scale = self.canvas_scale,
         .max_canvas_scale = self.max_canvas_scale,
+        .friendly_fire = self.friendly_fire,
     };
 }
 
@@ -663,6 +665,7 @@ fn init(options: Options) !*Main {
     self.fast_forward = false;
     self.framerate_scheme = framerate_scheme;
     self.t = 0.0;
+    self.friendly_fire = true;
 
     return self;
 }
@@ -863,7 +866,7 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .StartNewGame => |is_multiplayer| {
             self.menu_stack.clear();
-            common.startGame(&self.session, is_multiplayer);
+            common.startGame(&self.session, is_multiplayer, self.friendly_fire);
             self.game_over = false;
             self.new_high_score = false;
         },
@@ -887,6 +890,9 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .ToggleFullscreen => {
             toggleFullscreen(self);
+        },
+        .ToggleFriendlyFire => {
+            self.friendly_fire = !self.friendly_fire;
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);

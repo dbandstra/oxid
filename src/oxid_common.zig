@@ -103,7 +103,7 @@ pub fn inputEvent(gs: *GameSession, cfg: config.Config, source: InputSource, dow
 
 // i feel like this functions are too heavy to be done inline by this system.
 // they should be created as events and handled by middleware?
-pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
+pub fn startGame(gs: *GameSession, is_multiplayer: bool, friendly_fire: bool) void {
     const mc = &gs.findFirstObject(c.MainController).?.data;
 
     // remove all entities except the MainController
@@ -127,7 +127,10 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     _ = p.GameController.spawn(gs, p.GameController.Params { .num_players = num_players }) catch undefined;
 
     var player_number: u32 = 0; while (player_number < num_players) : (player_number += 1) {
-        _ = p.PlayerController.spawn(gs, p.PlayerController.Params { .player_number = player_number }) catch undefined;
+        _ = p.PlayerController.spawn(gs, p.PlayerController.Params {
+            .player_number = player_number,
+            .friendly_fire = friendly_fire,
+        }) catch undefined;
     }
 }
 
