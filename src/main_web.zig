@@ -30,24 +30,11 @@ const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 const config_storagekey = "config";
 const highscores_storagekey = "highscores";
 
-const GameState = struct {
-    cfg: config.Config,
-    draw_state: platform_draw.DrawState,
-    audio_module: audio.MainModule,
-    static: common.GameStatic,
-    session: GameSession,
-    game_over: bool,
-    new_high_score: bool,
-    high_scores: [Constants.num_high_scores]u32,
-    menu_anim_time: u32,
-    menu_stack: menus.MenuStack,
-    sound_enabled: bool,
-    is_fullscreen: bool,
-    canvas_scale: u31,
-    friendly_fire: bool,
+const Main = struct {
+    main_state: common.MainState,
 };
 
-fn loadConfig(hunk_side: *HunkSide) !config.Config {
+pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     var buffer: [5000]u8 = undefined;
     const bytes_read = try web.getLocalStorage(config_storagekey, buffer[0..]);
     if (bytes_read == 0) {
@@ -57,21 +44,27 @@ fn loadConfig(hunk_side: *HunkSide) !config.Config {
     return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
 }
 
-fn saveConfig(cfg: config.Config) !void {
+pub fn saveConfig(cfg: config.Config) !void {
     var buffer: [5000]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
     try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg);
     web.setLocalStorage(config_storagekey, dest.getWritten());
 }
 
-fn loadHighScores(hunk_side: *HunkSide) ![Constants.num_high_scores]u32 {
+pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
     var buffer: [1000]u8 = undefined;
-    const bytes_read = try web.getLocalStorage(highscores_storagekey, buffer[0..]);
+    const bytes_read = web.getLocalStorage(highscores_storagekey, buffer[0..]) catch |err| {
+        // the high scores exist but there was an error loading them. just
+        // continue with an empty high scores list, even though that might mean
+        // that the user's legitimate high scores might get wiped out (FIXME?)
+        warn("Failed to load high scores from local storage: {}\n", err);
+        return [1]u32{0} ** Constants.num_high_scores;
+    };
     var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
     return datafile.readHighScores(std.io.SliceInStream.Error, &sis.stream);
 }
 
-fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
+pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
     var buffer: [1000]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
     try datafile.writeHighScores(std.io.SliceOutStream.Error, &dest.stream, high_scores);
@@ -183,208 +176,70 @@ fn translateKey(keyCode: c_int) ?Key {
     };
 }
 
-fn makeMenuContext() menus.MenuContext {
-    return menus.MenuContext {
-        .sound_enabled = g.sound_enabled,
-        .fullscreen = g.is_fullscreen,
-        .cfg = g.cfg,
-        .high_scores = g.high_scores,
-        .new_high_score = g.new_high_score,
-        .game_over = g.game_over,
-        .anim_time = g.menu_anim_time,
-        .canvas_scale = g.canvas_scale,
-        .max_canvas_scale = 4,
-        .friendly_fire = g.friendly_fire,
-    };
-}
-
-export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
-    const source = InputSource {
-        .Key = translateKey(keycode) orelse return 0,
-    };
-
-    if (common.inputEvent(&g.session, g.cfg, source, down != 0, &g.menu_stack, &g.audio_module, makeMenuContext())) |effect| {
-        return applyMenuEffect(effect);
-    }
-
-    return 0;
-}
-
 // these match same values in web/js/wasm.js
 const NOP               = 1;
 const TOGGLE_SOUND      = 2;
 const TOGGLE_FULLSCREEN = 3;
 const SET_CANVAS_SCALE  = 100;
 
+export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
+    const key = translateKey(keycode) orelse return 0;
+    const source = InputSource { .Key = key };
+    const special = common.inputEvent(g, @This(), source, down != 0) orelse return NOP;
+    return switch (special) {
+        .NoOp => NOP,
+        .Quit => NOP, // unused in web build
+        .ToggleSound => TOGGLE_SOUND,
+        .ToggleFullscreen => TOGGLE_FULLSCREEN,
+        .SetCanvasScale => |value| SET_CANVAS_SCALE + @intCast(c_int, value),
+    };
+}
+
 export fn onSoundEnabledChange(enabled: c_int) void {
-    g.sound_enabled = enabled != 0;
+    g.main_state.sound_enabled = enabled != 0;
 }
 
 export fn onFullscreenChange(enabled: c_int) void {
-    g.is_fullscreen = enabled != 0;
+    g.main_state.fullscreen = enabled != 0;
 }
 
 export fn onCanvasScaleChange(scale: c_int) void {
-    g.canvas_scale = std.math.cast(u31, scale) catch 1;
-}
-
-fn applyMenuEffect(effect: menus.Effect) c_int {
-    switch (effect) {
-        .NoOp => {},
-        .Push => |new_menu| {
-            g.menu_stack.push(new_menu);
-        },
-        .Pop => {
-            g.menu_stack.pop();
-        },
-        .StartNewGame => |is_multiplayer| {
-            g.menu_stack.clear();
-            common.startGame(&g.session, is_multiplayer);
-            g.game_over = false;
-            g.new_high_score = false;
-        },
-        .EndGame => {
-            finalizeGame();
-            common.abortGame(&g.session);
-
-            g.menu_stack.clear();
-            g.menu_stack.push(menus.Menu {
-                .MainMenu = menus.MainMenu.init(),
-            });
-        },
-        .ToggleSound => {
-            return TOGGLE_SOUND;
-        },
-        .SetVolume => |value| {
-            g.cfg.volume = value;
-            saveConfig(g.cfg) catch |err| {
-                warn("Failed to save config: {}\n", err);
-            };
-        },
-        .SetCanvasScale => |value| {
-            return SET_CANVAS_SCALE + @intCast(c_int, value);
-        },
-        .ToggleFullscreen => {
-            return TOGGLE_FULLSCREEN;
-        },
-        .ToggleFriendlyFire => {
-            g.friendly_fire = !g.friendly_fire;
-            // update existing bullets
-            SetFriendlyFire.run(&g.session, SetFriendlyFire.Context {
-                .friendly_fire = g.friendly_fire,
-            });
-        },
-        .BindGameCommand => |payload| {
-            const command_index = @enumToInt(payload.command);
-            const in_use =
-                if (payload.source) |new_source|
-                    for (g.cfg.game_bindings[payload.player_number]) |maybe_source| {
-                        if (if (maybe_source) |source| areInputSourcesEqual(source, new_source) else false) {
-                            break true;
-                        }
-                    } else false
-                else false;
-            if (!in_use) {
-                g.cfg.game_bindings[payload.player_number][command_index] = payload.source;
-            }
-            saveConfig(g.cfg) catch |err| {
-                warn("Failed to save config: {}\n", err);
-            };
-        },
-        .ResetAnimTime => {
-            g.menu_anim_time = 0;
-        },
-        .Quit => {
-            // not used in web build
-        },
-    }
-
-    return NOP;
+    g.main_state.canvas_scale = std.math.cast(u31, scale) catch 1;
 }
 
 var main_memory: []u8 = undefined;
-var hunk: Hunk = undefined;
-var g: *GameState = undefined;
+var g: *Main = undefined;
 
 const audio_buffer_size = 1024;
 
 fn init() !void {
-    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(GameState) + 200*1024) catch |err| {
+    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(Main) + 200*1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", err);
         return error.Failed;
     };
     errdefer std.heap.wasm_allocator.free(main_memory);
 
-    hunk = Hunk.init(main_memory);
-
-    g = hunk.low().allocator.create(GameState) catch unreachable;
-
-    platform_draw.init(&g.draw_state, platform_draw.DrawInitParams {
-        .hunk = &hunk,
-        .virtual_window_width = common.virtual_window_width,
-        .virtual_window_height = common.virtual_window_height,
-    }) catch |err| {
-        warn("platform_draw.init failed: {}\n", err);
+    var hunk = std.heap.wasm_allocator.create(Hunk) catch |err| {
+        warn("failed to allocate hunk: {}\n", err);
         return error.Failed;
     };
-    errdefer platform_draw.deinit(&g.draw_state);
+    errdefer std.heap.wasm_allocator.destroy(hunk);
+    hunk.* = Hunk.init(main_memory);
 
-    g.cfg = blk: {
-        // if config couldn't load, warn and fall back to default config
-        const cfg_ = loadConfig(&hunk.low()) catch |err| {
-            warn("Failed to load config: {}\n", err);
-            break :blk config.getDefault();
-        };
-        break :blk cfg_;
-    };
+    g = hunk.low().allocator.create(Main) catch unreachable;
 
-    const initial_high_scores = blk: {
-        // if high scores couldn't load, warn and fall back to blank list
-        const high_scores = loadHighScores(&hunk.low()) catch |err| {
-            warn("Failed to load high scores: {}\n", err);
-            break :blk [1]u32{0} ** Constants.num_high_scores;
-        };
-        break :blk high_scores;
-    };
-
-    if (!common.loadStatic(&g.static, &hunk.low())) {
-        // loadStatic prints its own error
+    if (!common.init(&g.main_state, @This(), common.InitParams {
+        .hunk = hunk,
+        .random_seed = web.getRandomSeed(),
+        .audio_buffer_size = audio_buffer_size,
+        .fullscreen = false,
+        .canvas_scale = 1,
+        .max_canvas_scale = 4,
+        .sound_enabled = false,
+    })) {
+        // common.init prints its own errors
         return error.Failed;
     }
-
-    g.audio_module = audio.MainModule.init(&hunk, audio_buffer_size) catch |err| {
-        warn("Failed to load audio module: {}\n", err);
-        return error.Failed;
-    };
-
-    const rand_seed = web.getRandomSeed();
-    g.session.init(rand_seed);
-    gameInit(&g.session) catch |err| {
-        warn("Failed to initialize game: {}\n", err);
-        return error.Failed;
-    };
-
-    // TODO - this shouldn't be fatal
-    perf.init() catch |err| {
-        warn("Failed to create performance timers: {}\n", err);
-        return error.Failed;
-    };
-
-    g.game_over = false;
-    g.new_high_score = false;
-    g.high_scores = initial_high_scores;
-    g.menu_anim_time = 0;
-    g.menu_stack = menus.MenuStack {
-        .array = undefined,
-        .len = 1,
-    };
-    g.menu_stack.array[0] = menus.Menu {
-        .MainMenu = menus.MainMenu.init(),
-    };
-    g.sound_enabled = false;
-    g.is_fullscreen = false;
-    g.canvas_scale = 1;
-    g.friendly_fire = true;
 }
 
 export fn onInit() bool {
@@ -393,7 +248,7 @@ export fn onInit() bool {
 }
 
 export fn onDestroy() void {
-    platform_draw.deinit(&g.draw_state);
+    common.deinit(&g.main_state);
     std.heap.wasm_allocator.free(main_memory);
 }
 
@@ -402,9 +257,9 @@ export fn getAudioBufferSize() c_int {
 }
 
 export fn audioCallback(sample_rate: f32) [*]f32 {
-    const buf = g.audio_module.paint(sample_rate, &g.session);
+    const buf = g.main_state.audio_module.paint(sample_rate, &g.main_state.session);
 
-    const vol = std.math.min(1.0, @intToFloat(f32, g.cfg.volume) / 100.0);
+    const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.cfg.volume) / 100.0);
 
     var i: usize = 0; while (i < audio_buffer_size) : (i += 1) {
         buf[i] *= vol;
@@ -456,94 +311,40 @@ export fn onAnimationFrame(now: c_int) void {
 }
 
 fn tick(draw: bool) void {
-    const paused = g.menu_stack.len > 0 and !g.game_over;
+    const paused = g.main_state.menu_stack.len > 0 and !g.main_state.game_over;
 
     const frame_context = GameFrameContext {
-        .friendly_fire = g.friendly_fire,
+        .friendly_fire = g.main_state.friendly_fire,
     };
 
-    gameFrame(&g.session, frame_context, draw, paused);
+    gameFrame(&g.main_state.session, frame_context, draw, paused);
 
-    handleGameOver();
+    common.handleGameOver(&g.main_state, @This());
 
     playSounds();
 
     if (draw) {
-        platform_draw.prepare(&g.draw_state);
-        drawGame(&g.draw_state, &g.static, &g.session, g.cfg, g.high_scores[0]);
-
-        drawMenu(&g.menu_stack, MenuDrawParams {
-            .ds = &g.draw_state,
-            .static = &g.static,
-            .menu_context = makeMenuContext(),
-        });
+        common.drawMain(&g.main_state);
     }
 
-    gameFrameCleanup(&g.session);
-}
-
-fn handleGameOver() void {
-    if (g.session.findFirstObject(c.EventGameOver)) |_| {
-        finalizeGame();
-        g.menu_stack.push(menus.Menu {
-            .GameOverMenu = menus.GameOverMenu.init(),
-        });
-    }
-}
-
-fn finalizeGame() void {
-    g.game_over = true;
-    g.new_high_score = false;
-
-    var save_high_scores = true;
-
-    // get players' scores
-    var it = g.session.iter(c.PlayerController); while (it.next()) |object| {
-        // insert the score somewhere in the high score list
-        const new_score = object.data.score;
-
-        // the list is always sorted highest to lowest
-        var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
-            if (new_score > g.high_scores[i]) {
-                // insert the new score here
-                std.mem.copyBackwards(u32,
-                    g.high_scores[i + 1..Constants.num_high_scores],
-                    g.high_scores[i..Constants.num_high_scores - 1]
-                );
-
-                g.high_scores[i] = new_score;
-                if (i == 0) {
-                    g.new_high_score = true;
-                }
-
-                save_high_scores = true;
-                break;
-            }
-        }
-    }
-
-    if (save_high_scores) {
-        saveHighScores(&hunk.low(), g.high_scores) catch |err| {
-            warn("Failed to save high scores: {}\n", err);
-        };
-    }
+    gameFrameCleanup(&g.main_state.session);
 }
 
 fn playSounds() void {
-    if (g.sound_enabled) {
+    if (g.main_state.sound_enabled) {
         // FIXME - impulse_frame being 0 means that sounds will always start
         // playing at the beginning of the mix buffer. need to implement some
         // "syncing" to guess where we are in the middle of a mix frame
         const impulse_frame: usize = 0;
 
-        g.audio_module.playSounds(&g.session, impulse_frame);
+        g.main_state.audio_module.playSounds(&g.main_state.session, impulse_frame);
     } else {
         // prevent a bunch sounds from queueing up when audio is disabled (as
         // the mixing function won't be called to advance them)
-        var it = g.session.iter(c.Voice); while (it.next()) |object| {
-            g.session.markEntityForRemoval(object.entity_id);
+        var it = g.main_state.session.iter(c.Voice); while (it.next()) |object| {
+            g.main_state.session.markEntityForRemoval(object.entity_id);
         }
 
-        g.audio_module.resetMenuSounds();
+        g.main_state.audio_module.resetMenuSounds();
     }
 }
