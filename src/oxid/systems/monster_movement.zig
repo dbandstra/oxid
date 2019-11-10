@@ -147,9 +147,9 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .owner_id = self.id,
                 .pos = bullet_pos,
                 .facing = self.phys.facing,
-                .bullet_type = p.Bullet.BulletType.MonsterBullet,
+                .bullet_type = .MonsterBullet,
                 .cluster_size = 1,
-                .ignore_players = false,
+                .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
             p.playSample(gs, .DropWeb);

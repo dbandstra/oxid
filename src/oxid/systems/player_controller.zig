@@ -23,7 +23,6 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {
     if (p.Player.spawn(gs, p.Player.Params {
         .player_number = self.pc.player_number,
-        .friendly_fire = self.pc.friendly_fire,
         .player_controller_id = self.id,
         .pos = math.Vec2.init(
             9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2,

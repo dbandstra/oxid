@@ -83,7 +83,6 @@ pub const GameController = struct {
 pub const PlayerController = struct {
     pub const Params = struct {
         player_number: u32,
-        friendly_fire: bool,
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
@@ -92,7 +91,6 @@ pub const PlayerController = struct {
 
         try gs.addComponent(entity_id, c.PlayerController {
             .player_number = params.player_number,
-            .friendly_fire = params.friendly_fire,
             .player_id = null,
             .lives = Constants.player_num_lives,
             .score = 0,
@@ -106,7 +104,6 @@ pub const PlayerController = struct {
 pub const Player = struct {
     pub const Params = struct {
         player_number: u32,
-        friendly_fire: bool,
         player_controller_id: gbe.EntityId,
         pos: math.Vec2,
     };
@@ -141,7 +138,6 @@ pub const Player = struct {
 
         try gs.addComponent(entity_id, c.Player {
             .player_number = params.player_number,
-            .friendly_fire = params.friendly_fire,
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** Constants.player_max_bullets,
@@ -297,19 +293,14 @@ pub const Web = struct {
 };
 
 pub const Bullet = struct {
-    pub const BulletType = enum{
-        MonsterBullet,
-        PlayerBullet,
-    };
-
     pub const Params = struct {
         inflictor_player_controller_id: ?gbe.EntityId,
         owner_id: gbe.EntityId,
         pos: math.Vec2,
         facing: math.Direction,
-        bullet_type: BulletType,
+        bullet_type: c.Bullet.Type,
         cluster_size: u32,
-        ignore_players: bool,
+        friendly_fire: bool,
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
@@ -336,13 +327,16 @@ pub const Bullet = struct {
                 // monster bullets ignore all monsters and webs
                 .MonsterBullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
                 // player bullets ignore only the player that shot it (via `owner_id`),
-                // unless `ignore_players` (friendly fire disabled) is set
-                .PlayerBullet => if (params.ignore_players) c.PhysObject.FLAG_PLAYER else 0,
+                // unless friendly fire is disabled.
+                // see also src/oxid/set_friendly_fire.zig, where this value is changed
+                // (called when user toggles friendly fire in the menu)
+                .PlayerBullet => if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
             },
             .internal = undefined,
         });
 
         try gs.addComponent(entity_id, c.Bullet {
+            .bullet_type = params.bullet_type,
             .inflictor_player_controller_id = params.inflictor_player_controller_id,
             .damage = params.cluster_size,
             .line_of_fire = null,

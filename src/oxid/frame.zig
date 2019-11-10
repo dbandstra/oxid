@@ -4,12 +4,16 @@ const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
+pub const GameFrameContext = struct {
+    friendly_fire: bool,
+};
+
 pub fn gameInit(gs: *GameSession) !void {
     _ = try p.MainController.spawn(gs);
 }
 
 // run before "middleware" (rendering, sound, etc)
-pub fn gameFrame(gs: *GameSession, draw: bool, paused: bool) void {
+pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused: bool) void {
     @import("systems/main_controller_input.zig").run(gs);
 
     // note: ideally these would be inside the frame loop, but we have to make
@@ -26,7 +30,7 @@ pub fn gameFrame(gs: *GameSession, draw: bool, paused: bool) void {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
             @import("systems/animation.zig").run(gs);
-            @import("systems/player_movement.zig").run(gs);
+            @import("systems/player_movement.zig").run(gs, context);
             @import("systems/monster_movement.zig").run(gs);
             @import("systems/bullet.zig").run(gs);
             @import("systems/creature.zig").run(gs);

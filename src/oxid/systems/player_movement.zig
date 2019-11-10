@@ -3,6 +3,7 @@ const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const Constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
+const GameFrameContext = @import("../frame.zig").GameFrameContext;
 const GameSession = @import("../game.zig").GameSession;
 const GameUtil = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
@@ -17,6 +18,7 @@ const SystemData = struct {
     phys: *c.PhysObject,
     player: *c.Player,
     transform: *c.Transform,
+    context: GameFrameContext,
 };
 
 pub const run = gbe.buildSystem(GameSession, SystemData, think);
@@ -92,7 +94,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                         .Two => @as(u32, 2),
                         .Three => @as(u32, 3),
                     },
-                    .ignore_players = !self.player.friendly_fire,
+                    .friendly_fire = self.context.friendly_fire,
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;
                 } else |_| {}

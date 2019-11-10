@@ -10,6 +10,7 @@ const platform_draw = @import("platform/opengl/draw.zig");
 const levels = @import("oxid/levels.zig");
 const Constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession; 
+const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
@@ -24,6 +25,7 @@ const menus = @import("oxid/menus.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const common = @import("oxid_common.zig");
+const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 
 const config_storagekey = "config";
 const highscores_storagekey = "highscores";
@@ -237,7 +239,7 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .StartNewGame => |is_multiplayer| {
             g.menu_stack.clear();
-            common.startGame(&g.session, is_multiplayer, g.friendly_fire);
+            common.startGame(&g.session, is_multiplayer);
             g.game_over = false;
             g.new_high_score = false;
         },
@@ -267,6 +269,10 @@ fn applyMenuEffect(effect: menus.Effect) c_int {
         },
         .ToggleFriendlyFire => {
             g.friendly_fire = !g.friendly_fire;
+            // update existing bullets
+            SetFriendlyFire.run(&g.session, SetFriendlyFire.Context {
+                .friendly_fire = g.friendly_fire,
+            });
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);
@@ -452,7 +458,11 @@ export fn onAnimationFrame(now: c_int) void {
 fn tick(draw: bool) void {
     const paused = g.menu_stack.len > 0 and !g.game_over;
 
-    gameFrame(&g.session, draw, paused);
+    const frame_context = GameFrameContext {
+        .friendly_fire = g.friendly_fire,
+    };
+
+    gameFrame(&g.session, frame_context, draw, paused);
 
     handleGameOver();
 

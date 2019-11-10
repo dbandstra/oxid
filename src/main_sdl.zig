@@ -19,6 +19,7 @@ const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const Constants = @import("oxid/constants.zig");
 const menus = @import("oxid/menus.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
+const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
@@ -33,6 +34,7 @@ const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
 const translateKey = @import("main_sdl/translate_key.zig").translateKey;
+const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 
 // See https://github.com/zig-lang/zig/issues/565
 const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
@@ -711,6 +713,10 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         self.menu_anim_time +%= 1;
 
+        const frame_context = GameFrameContext {
+            .friendly_fire = self.friendly_fire,
+        };
+
         // when fast forwarding, we'll simulate 4 frames and draw them blended
         // together. we'll also speed up the sound playback rate by 4x
         const num_frames = if (self.fast_forward) @as(u32, 4) else @as(u32, 1);
@@ -723,7 +729,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             const paused = self.menu_stack.len > 0 and !self.game_over;
 
             perf.begin(&perf.timers.Frame);
-            gameFrame(&self.session, draw, paused);
+            gameFrame(&self.session, frame_context, draw, paused);
             perf.end(&perf.timers.Frame);
 
             // middleware response to certain events
@@ -866,7 +872,7 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .StartNewGame => |is_multiplayer| {
             self.menu_stack.clear();
-            common.startGame(&self.session, is_multiplayer, self.friendly_fire);
+            common.startGame(&self.session, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
         },
@@ -893,6 +899,10 @@ fn applyMenuEffect(self: *Main, effect: menus.Effect) void {
         },
         .ToggleFriendlyFire => {
             self.friendly_fire = !self.friendly_fire;
+            // update existing bullets
+            SetFriendlyFire.run(&self.session, SetFriendlyFire.Context {
+                .friendly_fire = self.friendly_fire,
+            });
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);

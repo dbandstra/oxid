@@ -339,10 +339,6 @@ pub const GameSettingsMenu = struct {
 
         ctx.title(.Left, "GAME SETTINGS");
 
-        ctx.label("{}", "Changes will take");
-        ctx.label("{}", "effect when a new");
-        ctx.title(.Left, "game is started.");
-
         if (ctx.optionToggle("Friendly fire: {}", if (ctx.menu_context.friendly_fire) "ON" else "OFF")) {
             ctx.setEffect(.ToggleFriendlyFire);
             ctx.setSound(.Ding);
