@@ -656,9 +656,9 @@ fn tick(self: *Main, refresh_rate: u64) void {
             // run simulation and create events for drawing, playing sounds, etc.
             const paused = self.main_state.menu_stack.len > 0 and !self.main_state.game_over;
 
-            perf.begin(&perf.timers.Frame);
+            perf.begin(.Frame);
             gameFrame(&self.main_state.session, frame_context, draw, paused);
-            perf.end(&perf.timers.Frame);
+            perf.end(.Frame);
 
             // middleware response to certain events
             common.handleGameOver(&self.main_state, @This());
@@ -850,17 +850,17 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
         break :blk self.windowed_dims.blit_rect;
     };
 
-    perf.begin(&perf.timers.WholeDraw);
+    perf.begin(.WholeDraw);
 
     platform_framebuffer.preDraw(&self.framebuffer_state);
 
-    perf.begin(&perf.timers.Draw);
+    perf.begin(.Draw);
     common.drawMain(&self.main_state);
-    perf.end(&perf.timers.Draw);
+    perf.end(.Draw);
 
     platform_framebuffer.postDraw(&self.framebuffer_state, &self.main_state.draw_state, blit_rect, blit_alpha);
 
-    perf.end(&perf.timers.WholeDraw);
+    perf.end(.WholeDraw);
 }
 
 fn translateKey(sym: SDL_Keycode) ?Key {

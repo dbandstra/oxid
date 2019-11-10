@@ -105,11 +105,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    // TODO - this shouldn't be fatal
-    perf.init() catch |err| {
-        warn("Failed to create performance timers: {}\n", err);
-        return false;
-    };
+    perf.init();
 
     platform_draw.init(&self.draw_state, platform_draw.DrawInitParams {
         .hunk = self.hunk,

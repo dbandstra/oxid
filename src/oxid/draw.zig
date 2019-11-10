@@ -48,8 +48,8 @@ pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *Gam
 ///////////////////////////////////////
 
 fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
-    perf.begin(&perf.timers.DrawSort);
-    defer perf.end(&perf.timers.DrawSort);
+    perf.begin(.DrawSort);
+    defer perf.end(.DrawSort);
 
     var num_drawables: usize = 0;
     var it = gs.iter(c.EventDraw); while (it.next()) |object| {
@@ -90,8 +90,8 @@ fn drawMapTile(ds: *pdraw.DrawState, static: *const common.GameStatic, x: u31, y
 }
 
 fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    perf.begin(&perf.timers.DrawMap);
-    defer perf.end(&perf.timers.DrawMap);
+    perf.begin(.DrawMap);
+    defer perf.end(.DrawMap);
 
     var y: u31 = 0; while (y < levels.height) : (y += 1) {
         var x: u31 = 0; while (x < levels.width) : (x += 1) {
@@ -104,8 +104,8 @@ fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
 fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    perf.begin(&perf.timers.DrawMapForeground);
-    defer perf.end(&perf.timers.DrawMapForeground);
+    perf.begin(.DrawMapForeground);
+    defer perf.end(.DrawMapForeground);
 
     var y: u31 = 6; while (y < 8) : (y += 1) {
         var x: u31 = 9; while (x < 11) : (x += 1) {
@@ -115,8 +115,8 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) voi
 }
 
 fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_drawables: []*const c.EventDraw) void {
-    perf.begin(&perf.timers.DrawEntities);
-    defer perf.end(&perf.timers.DrawEntities);
+    perf.begin(.DrawEntities);
+    defer perf.end(.DrawEntities);
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
@@ -165,8 +165,8 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
 }
 
 fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, high_score: u32) void {
-    perf.begin(&perf.timers.DrawHud);
-    defer perf.end(&perf.timers.DrawHud);
+    perf.begin(.DrawHud);
+    defer perf.end(.DrawHud);
 
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
