@@ -12,4 +12,3 @@ pub const EventIterator = iterators.EventIterator;
 pub const Session = main.Session;
 pub const ThinkResult = system.ThinkResult;
 pub const buildSystem = system.buildSystem;
-pub const buildSystemWithContext = system.buildSystemWithContext;

@@ -15,11 +15,12 @@ const SystemData = struct {
     creature: ?*const c.Creature,
     web: ?*const c.Web,
     pickup: ?*const c.Pickup,
+    context: *LocalState,
 };
 
-pub const avoidObjectsOfInterest = gbe.buildSystemWithContext(GameSession, SystemData, LocalState, avoidObjectsOfInterestFunc);
+pub const avoidObjectsOfInterest = gbe.buildSystem(GameSession, SystemData, avoidObjectsOfInterestFunc);
 
-fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemData) gbe.ThinkResult {
+fn avoidObjectsOfInterestFunc(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     // avoid all creatures (except webs) and pickups
     if (self.web != null) {
         return .Remain;
@@ -39,7 +40,7 @@ fn avoidObjectsOfInterestFunc(gs: *GameSession, ctx: *LocalState, self: SystemDa
     const gy1 = @intCast(u31, gmaxs_y);
     var gy = gy0; while (gy <= gy1) : (gy += 1) {
         var gx = gx0; while (gx <= gx1) : (gx += 1) {
-            ctx.gridmask[gy * levels.width + gx] = false;
+            self.context.gridmask[gy * levels.width + gx] = false;
         }
     }
     return .Remain;

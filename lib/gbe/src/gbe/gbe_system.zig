@@ -1,7 +1,7 @@
 const std = @import("std");
 const Gbe = @import("gbe_main.zig");
 
-// `SessionType` param to these functions must have be of type  `Gbe.Session(...)`
+// `SessionType` param to these functions must have be of type `Gbe.Session(...)`
 
 // TODO - implement a system that exposes an iterator instead of running
 // everything internally
@@ -11,25 +11,42 @@ pub const ThinkResult = enum {
     Remain,
 };
 
-pub fn buildSystemWithContext(
+fn getRunFunctionType(comptime SessionType: type, comptime SystemType: type) type {
+    inline for (@typeInfo(SystemType).Struct.fields) |field| {
+        if (comptime std.mem.eql(u8, field.name, "context")) {
+            return fn(*SessionType, field.field_type)void;
+        }
+    }
+    // no context field in SystemType = no context argument in the run function
+    return fn(*SessionType)void;
+}
+
+pub fn buildSystem(
     comptime SessionType: type,
-    comptime SelfType: type,
-    comptime ContextType: type,
-    comptime think: fn(*SessionType, *ContextType, SelfType)ThinkResult,
-) fn(*SessionType, *ContextType)void {
-    std.debug.assert(@typeId(SelfType) == .Struct);
+    comptime SystemType: type,
+    comptime think: fn(*SessionType, SystemType)ThinkResult,
+) getRunFunctionType(SessionType, SystemType) {
+    const ContextType = inline for (@typeInfo(SystemType).Struct.fields) |field| {
+        if (comptime std.mem.eql(u8, field.name, "context")) {
+            break field.field_type;
+        }
+    } else void;
 
     const Impl = struct {
         fn runOne(
             gs: *SessionType,
-            ctx: *ContextType,
+            context: ContextType,
             self_id: Gbe.EntityId,
             comptime MainComponentType: type,
             main_component: *MainComponentType,
         ) ThinkResult {
-            // fill in the fields of the `self` structure
-            var self: SelfType = undefined;
-            inline for (@typeInfo(SelfType).Struct.fields) |field| {
+            // fill in the fields of the `system` structure
+            var self: SystemType = undefined;
+            inline for (@typeInfo(SystemType).Struct.fields) |field| {
+                if (comptime std.mem.eql(u8, field.name, "context")) {
+                    self.context = context;
+                    continue;
+                }
                 // if the field is of type EntityId, fill it in....
                 if (field.field_type == Gbe.EntityId) {
                     @field(self, field.name) = self_id;
@@ -47,16 +64,16 @@ pub fn buildSystemWithContext(
                         gs.find(self_id, ComponentType) orelse return .Remain;
             }
             // call the think function
-            return think(gs, ctx, self);
+            return think(gs, self);
         }
 
         fn runAll(
             gs: *SessionType,
-            ctx: *ContextType,
+            context: ContextType,
             comptime MainComponentType: type,
         ) void {
             var it = gs.iter(MainComponentType); while (it.next()) |object| {
-                const result = runOne(gs, ctx, object.entity_id, MainComponentType, &object.data);
+                const result = runOne(gs, context, object.entity_id, MainComponentType, &object.data);
                 if (result == .RemoveSelf) {
                     gs.markEntityForRemoval(object.entity_id);
                 }
@@ -65,39 +82,38 @@ pub fn buildSystemWithContext(
 
         // variant of `run` that is simpler (definitely) but slower (probably). but
         // the effect should be exactly the same
-        fn runSimple(gs: *SessionType, ctx: *ContextType) void {
-            inline for (@typeInfo(SelfType).Struct.fields) |field| {
-                if (field.field_type == Gbe.EntityId) {
-                    continue;
-                }
-                runAll(gs, ctx, unpackComponentType(field.field_type));
+        fn runSimple(gs: *SessionType, context: ContextType) void {
+            inline for (@typeInfo(SystemType).Struct.fields) |field| {
+                if (comptime std.mem.eql(u8, field.name, "context")) continue;
+                if (field.field_type == Gbe.EntityId) continue;
+                runAll(gs, context, unpackComponentType(field.field_type));
                 return;
             }
         }
 
-        fn run(gs: *SessionType, ctx: *ContextType) void {
+        fn run(gs: *SessionType, context: ContextType) void {
             // only if all fields are optional will we consider optional fields when
             // determining the best component type
             comptime var all_fields_optional = true;
 
-            inline for (@typeInfo(SelfType).Struct.fields) |field| {
-                if (field.field_type != Gbe.EntityId and
-                        @typeId(field.field_type) != .Optional) {
+            inline for (@typeInfo(SystemType).Struct.fields) |field| {
+                if (comptime std.mem.eql(u8, field.name, "context")) continue;
+                if (field.field_type == Gbe.EntityId) continue;
+                if (@typeId(field.field_type) != .Optional) {
                     all_fields_optional = false;
                 }
             }
 
-            // go through the fields in the SelfType struct (where each field is
-            // either an EntityId or a pointer to a component). decide which
+            // go through the fields in the SystemType struct (where each field
+            // is either an EntityId or a pointer to a component). decide which
             // component type to do the outermost iteration over. choose the
             // component type with the lowest amount of active entities.
             var best: usize = std.math.maxInt(usize);
             var which: ?usize = null;
 
-            inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
-                if (field.field_type == Gbe.EntityId) {
-                    continue;
-                }
+            inline for (@typeInfo(SystemType).Struct.fields) |field, i| {
+                if (comptime std.mem.eql(u8, field.name, "context")) continue;
+                if (field.field_type == Gbe.EntityId) continue;
                 // skip optional fields, unless all fields are optional
                 if (@typeId(field.field_type) == .Optional and !all_fields_optional) {
                     continue;
@@ -110,16 +126,17 @@ pub fn buildSystemWithContext(
             }
 
             // run the iteration
-            // note: i can't just look up `which_index` in Struct.fields because of a
-            // compiler bug https://github.com/ziglang/zig/issues/1435
             if (which) |which_index| {
-                inline for (@typeInfo(SelfType).Struct.fields) |field, i| {
+                inline for (@typeInfo(SystemType).Struct.fields) |field, i| {
                     if (i == which_index) {
+                        if (comptime std.mem.eql(u8, field.name, "context")) {
+                            unreachable;
+                        }
                         if (field.field_type == Gbe.EntityId) {
                             // this actually avoids the compile error in unpackComponentType
                             unreachable;
                         }
-                        runAll(gs, ctx, unpackComponentType(field.field_type));
+                        runAll(gs, context, unpackComponentType(field.field_type));
                         return;
                     }
                 }
@@ -141,26 +158,12 @@ pub fn buildSystemWithContext(
         }
     };
 
-    // return Impl.runSimple;
-    return Impl.run;
-}
-
-pub fn buildSystem(
-    comptime SessionType: type,
-    comptime SelfType: type,
-    comptime think: fn(*SessionType, SelfType)ThinkResult,
-) fn(*SessionType)void {
-    const WrappedThink = struct {
-        fn wrappedThink(gs: *SessionType, _: *void, self: SelfType) ThinkResult {
-            return think(gs, self);
-        }
-    };
-    const wrappedRun = buildSystemWithContext(SessionType, SelfType, void,
-                                              WrappedThink.wrappedThink);
-    const Impl = struct {
-        fn run(gs: *SessionType) void {
-            wrappedRun(gs, {});
-        }
-    };
-    return Impl.run;
+    if (ContextType == void) {
+        // stupid convenience feature - if there's no `context`, the run
+        // function won't have a context argument
+        return struct { fn f(gs: *SessionType) void { Impl.run(gs, {}); } }.f;
+    } else {
+        // return Impl.runSimple;
+        return Impl.run;
+    }
 }
