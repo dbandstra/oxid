@@ -683,6 +683,8 @@ fn tick(self: *Main, refresh_rate: u64) void {
     if (toggle_fullscreen) {
         toggleFullscreen(self);
     }
+
+    perf.display();
 }
 
 fn setCanvasScale(self: *Main, scale: u31) void {
