@@ -61,7 +61,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
             glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &error_size);
             const mark = hunk_side.getMark();
             defer hunk_side.freeToMark(mark);
-            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
                 glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
                 warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
             } else |_| {
@@ -98,7 +98,7 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
             glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &error_size);
             const mark = hunk_side.getMark();
             defer hunk_side.freeToMark(mark);
-            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size))) |message| {
+            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
                 glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
                 warn("SHADER INFO LOG:\n{s}\n", message.ptr);
             } else |_| {
