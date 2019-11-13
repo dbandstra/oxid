@@ -27,13 +27,13 @@ const MenuInputContext = struct {
             if (self.command) |command| {
                 switch (command) {
                     .Enter => {
-                        return OptionInnerResult.Enter;
+                        return .Enter;
                     },
                     .Left => {
-                        return OptionInnerResult.Left;
+                        return .Left;
                     },
                     .Right => {
-                        return OptionInnerResult.Right;
+                        return .Right;
                     },
                     .Up => {
                         self.setSound(.Blip);
@@ -102,7 +102,7 @@ pub fn menuInput(menu_stack: *menus.MenuStack, params: MenuInputParams) ?menus.R
 }
 
 fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.Result {
-    var ctx = MenuInputContext {
+    var ctx: MenuInputContext = .{
         .source = null,
         .command = null,
         .menu_context = params.menu_context,
@@ -120,7 +120,7 @@ fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.R
     const num_options = ctx.option_index;
 
     // handle input
-    ctx = MenuInputContext {
+    ctx = .{
         .source = params.source,
         .command = params.maybe_command,
         .menu_context = params.menu_context,
@@ -137,8 +137,10 @@ fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.R
     state.cursor_pos = ctx.new_cursor_pos;
 
     if (ctx.effect != null or ctx.sound != null) {
+        // FIXME - can't use anonymous struct literal here (for menus.Result)
+        // file an issue?
         return menus.Result {
-            .effect = ctx.effect orelse menus.Effect { .NoOp = {} },
+            .effect = ctx.effect orelse .NoOp,
             .sound = ctx.sound,
         };
     }

@@ -16,7 +16,7 @@ test "box_in_wall" {
 
     const s = levels.subpixels_per_tile;
 
-    const bbox = math.BoundingBox {
+    const bbox: math.BoundingBox = .{
         .mins = math.Vec2.init(0, 0),
         .maxs = math.Vec2.init(s-1, s-1),
     };

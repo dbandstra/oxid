@@ -39,9 +39,9 @@ pub const player_num_lives: u32 = 3;
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
     return switch (monster_type) {
-        .Spider => MonsterValues {
+        .Spider => .{
             .hit_points = 1,
-            .move_speed = [4]u31{
+            .move_speed = .{
                 speed60(6),
                 speed60(9),
                 speed60(12),
@@ -52,9 +52,9 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .Knight => MonsterValues {
+        .Knight => .{
             .hit_points = 2,
-            .move_speed = [4]u31{
+            .move_speed = .{
                 speed60(6),
                 speed60(9),
                 speed60(12),
@@ -65,9 +65,9 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .FastBug => MonsterValues {
+        .FastBug => .{
             .hit_points = 1,
-            .move_speed = [4]u31{
+            .move_speed = .{
                 speed60(12),
                 speed60(16),
                 speed60(20),
@@ -78,9 +78,9 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .Squid => MonsterValues {
+        .Squid => .{
             .hit_points = 5,
-            .move_speed = [4]u31{
+            .move_speed = .{
                 speed60(3),
                 speed60(4),
                 speed60(6),
@@ -91,9 +91,9 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = true,
             .persistent = false,
         },
-        .Juggernaut => MonsterValues {
+        .Juggernaut => .{
             .hit_points = 9999,
-            .move_speed = [4]u31{
+            .move_speed = .{
                 speed60(4),
                 speed60(4),
                 speed60(4),
@@ -109,22 +109,22 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
 
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     return switch (pickup_type) {
-        .Coin => PickupValues {
+        .Coin => .{
             .lifetime = duration60(6*60),
             .get_points = 20,
             .message = null,
         },
-        .LifeUp => PickupValues {
+        .LifeUp => .{
             .lifetime = duration60(15*60),
             .get_points = 0,
             .message = "Life up!",
         },
-        .PowerUp => PickupValues {
+        .PowerUp => .{
             .lifetime = duration60(12*60),
             .get_points = 0,
             .message = "Power up!",
         },
-        .SpeedUp => PickupValues {
+        .SpeedUp => .{
             .lifetime = duration60(12*60),
             .get_points = 0,
             .message = "Speed up!",

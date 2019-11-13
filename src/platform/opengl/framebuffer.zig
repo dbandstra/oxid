@@ -83,6 +83,6 @@ pub fn postDraw(fbs: *FramebufferState, ds: *pdraw.DrawState, blit_rect: BlitRec
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
     pdraw.begin(ds, fbs.render_texture, draw.white, blit_alpha, false);
-    pdraw.tile(ds, ds.blank_tileset, draw.Tile { .tx = 0, .ty = 0 }, 0, 0, 1, 1, .FlipVertical);
+    pdraw.tile(ds, ds.blank_tileset, .{.tx = 0, .ty = 0}, 0, 0, 1, 1, .FlipVertical);
     pdraw.end(ds);
 }

@@ -18,7 +18,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             if (self.pc.lives > 0) {
                 self.pc.respawn_timer = Constants.player_respawn_time;
             } else {
-                _ = p.EventPlayerOutOfLives.spawn(gs, c.EventPlayerOutOfLives {
+                _ = p.EventPlayerOutOfLives.spawn(gs, .{
                     .player_controller_id = self.id,
                 }) catch undefined;
             }

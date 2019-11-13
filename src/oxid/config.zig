@@ -20,7 +20,7 @@ pub const Config = struct {
 // keys it worked fine. it's probably this issue:
 // https://github.com/ziglang/zig/issues/3532 )
 pub fn getDefault() Config {
-    var default = Config {
+    var default: Config = .{
         .volume = 100,
         .menu_bindings = undefined,
         .game_bindings = undefined,
@@ -28,38 +28,38 @@ pub fn getDefault() Config {
 
     for (default.menu_bindings) |*binding, i| {
         binding.* = switch (@intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i))) {
-            .Left => InputSource { .Key = .Left },
-            .Right => InputSource { .Key = .Right },
-            .Up => InputSource { .Key = .Up },
-            .Down => InputSource { .Key = .Down },
-            .Escape => InputSource { .Key = .Escape },
-            .Enter => InputSource { .Key = .Return },
-            .Yes => InputSource { .Key = .Y },
-            .No => InputSource { .Key = .N },
+            .Left => .{.Key = .Left},
+            .Right => .{.Key = .Right},
+            .Up => .{.Key = .Up},
+            .Down => .{.Key = .Down},
+            .Escape => .{.Key = .Escape},
+            .Enter => .{.Key = .Return},
+            .Yes => .{.Key = .Y},
+            .No => .{.Key = .N},
         };
     }
 
     for (default.game_bindings[0]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => InputSource { .Key = .Up },
-            .Down => InputSource { .Key = .Down },
-            .Left => InputSource { .Key = .Left },
-            .Right => InputSource { .Key = .Right },
-            .Shoot => InputSource { .Key = .Space },
-            .KillAllMonsters => InputSource { .Key = .Backspace },
-            .ToggleDrawBoxes => InputSource { .Key = .F2 },
-            .ToggleGodMode => InputSource { .Key = .F3 },
-            .Escape => InputSource { .Key = .Escape },
+            .Up => .{.Key = .Up},
+            .Down => .{.Key = .Down},
+            .Left => .{.Key = .Left},
+            .Right => .{.Key = .Right},
+            .Shoot => .{.Key = .Space},
+            .KillAllMonsters => .{.Key = .Backspace},
+            .ToggleDrawBoxes => .{.Key = .F2},
+            .ToggleGodMode => .{.Key = .F3},
+            .Escape => .{.Key = .Escape},
         };
     }
 
     for (default.game_bindings[1]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => InputSource { .Key = .W },
-            .Down => InputSource { .Key = .S },
-            .Left => InputSource { .Key = .A },
-            .Right => InputSource { .Key = .D },
-            .Shoot => InputSource { .Key = .F },
+            .Up => .{.Key = .W},
+            .Down => .{.Key = .S},
+            .Left => .{.Key = .A},
+            .Right => .{.Key = .D},
+            .Shoot => .{.Key = .F},
             .KillAllMonsters => null,
             .ToggleDrawBoxes => null,
             .ToggleGodMode => null,

@@ -13,7 +13,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.player.line_of_fire) |box| {
-        _ = p.EventDrawBox.spawn(gs, c.EventDrawBox {
+        _ = p.EventDrawBox.spawn(gs, .{
             .box = box,
             .color = draw.black,
         }) catch undefined;

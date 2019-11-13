@@ -18,7 +18,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         if (self.gc.num_players_remaining > 0) {
             self.gc.num_players_remaining -= 1;
             if (self.gc.num_players_remaining == 0) {
-                _ = p.EventGameOver.spawn(gs, c.EventGameOver {}) catch undefined;
+                _ = p.EventGameOver.spawn(gs, .{}) catch undefined;
             }
         }
     }

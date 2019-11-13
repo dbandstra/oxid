@@ -24,19 +24,20 @@ pub const AccelerateVoice = struct {
         const IParams = Instrument.NoteParams;
         const speed = 0.125;
 
-        return AccelerateVoice {
+        return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
             .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
                 // same as wave_begin but with some notes chopped off
-                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
-                SongEvent { .params = IParams { .freq = 36.0, .note_on = true }, .note_id = 2, .t = 1.0 * speed },
-                SongEvent { .params = IParams { .freq = 40.0, .note_on = true }, .note_id = 3, .t = 2.0 * speed },
-                SongEvent { .params = IParams { .freq = 45.0, .note_on = true }, .note_id = 4, .t = 3.0 * speed },
-                SongEvent { .params = IParams { .freq = 43.0, .note_on = true }, .note_id = 5, .t = 4.0 * speed },
-                SongEvent { .params = IParams { .freq = 35.0, .note_on = true }, .note_id = 6, .t = 5.0 * speed },
-                SongEvent { .params = IParams { .freq = 38.0, .note_on = true }, .note_id = 7, .t = 6.0 * speed },
-                SongEvent { .params = IParams { .freq = 38.0, .note_on = false }, .note_id = 8, .t = 7.0 * speed },
+       // https://github.com/ziglang/zig/issues/3679
+       SongEvent { .params = .{ .freq = 43.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
+                .{ .params = .{ .freq = 36.0, .note_on = true }, .note_id = 2, .t = 1.0 * speed },
+                .{ .params = .{ .freq = 40.0, .note_on = true }, .note_id = 3, .t = 2.0 * speed },
+                .{ .params = .{ .freq = 45.0, .note_on = true }, .note_id = 4, .t = 3.0 * speed },
+                .{ .params = .{ .freq = 43.0, .note_on = true }, .note_id = 5, .t = 4.0 * speed },
+                .{ .params = .{ .freq = 35.0, .note_on = true }, .note_id = 6, .t = 5.0 * speed },
+                .{ .params = .{ .freq = 38.0, .note_on = true }, .note_id = 7, .t = 6.0 * speed },
+                .{ .params = .{ .freq = 38.0, .note_on = false }, .note_id = 8, .t = 7.0 * speed },
             }),
         };
     }
@@ -49,7 +50,7 @@ pub const AccelerateVoice = struct {
 
         var ctr = self.trigger.counter(span, self.note_tracker.consume(params.sample_rate / params.playback_speed, span.end - span.start));
         while (self.trigger.next(&ctr)) |result| {
-            self.instrument.paint(result.span, outputs, temps, note_id_changed or result.note_id_changed, Instrument.Params {
+            self.instrument.paint(result.span, outputs, temps, note_id_changed or result.note_id_changed, .{
                 .sample_rate = params.sample_rate,
                 .freq = result.params.freq * params.playback_speed,
                 .note_on = result.params.note_on,

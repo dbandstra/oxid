@@ -29,14 +29,14 @@ pub const Sample = enum {
 };
 
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
-    return zang.Sample {
+    return .{
         .num_channels = preloaded.num_channels,
         .sample_rate = preloaded.sample_rate,
         .format = switch (preloaded.format) {
-            .U8 => zang.SampleFormat.U8,
-            .S16LSB => zang.SampleFormat.S16LSB,
-            .S24LSB => zang.SampleFormat.S24LSB,
-            .S32LSB => zang.SampleFormat.S32LSB,
+            .U8 => .U8,
+            .S16LSB => .S16LSB,
+            .S24LSB => .S24LSB,
+            .S32LSB => .S32LSB,
         },
         .data = data,
     };
@@ -112,7 +112,7 @@ fn MenuSoundWrapper(comptime ModuleType_: type) type {
         trigger: zang.Trigger(ModuleType.NoteParams),
 
         fn init() @This() {
-            return @This() {
+            return .{
                 .module = ModuleType.init(),
                 .iq = zang.Notes(ModuleType.NoteParams).ImpulseQueue.init(),
                 .idgen = zang.IdGenerator.init(),
@@ -172,7 +172,7 @@ pub const MainModule = struct {
             // these allocations are never freed (but it's ok because this
             // object is created once in the main function)
             .out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            .tmp_bufs = [3][]f32 {
+            .tmp_bufs = .{
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
@@ -188,7 +188,7 @@ pub const MainModule = struct {
     // painting, so that the thread doesn't need to be locked during the actual
     // painting
     pub fn paint(self: *MainModule, sample_rate: f32, gs: *GameSession) []f32 {
-        const span = zang.Span {
+        const span: zang.Span = .{
             .start = 0,
             .end = self.out_buf.len,
         };
@@ -261,7 +261,7 @@ pub const MainModule = struct {
             }
             params.sample_rate = sample_rate;
 
-            wrapper.module.paint(result.span, [1][]f32{self.out_buf}, temps, result.note_id_changed, params);
+            wrapper.module.paint(result.span, .{self.out_buf}, temps, result.note_id_changed, params);
         }
     }
 
@@ -269,16 +269,14 @@ pub const MainModule = struct {
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
             .Backoff => {
-                self.menu_backoff.push(MenuBackoffVoice.NoteParams { .unused = undefined });
+                self.menu_backoff.push(.{.unused = undefined});
             },
             .Blip => {
                 const rand = &self.prng.random;
-                self.menu_blip.push(MenuBlipVoice.NoteParams {
-                    .freq_mul = 0.95 + 0.1 * rand.float(f32),
-                });
+                self.menu_blip.push(.{.freq_mul = 0.95 + 0.1 * rand.float(f32)});
             },
             .Ding => {
-                self.menu_ding.push(MenuDingVoice.NoteParams { .unused = undefined });
+                self.menu_ding.push(.{.unused = undefined});
             },
         }
     }
@@ -304,7 +302,7 @@ pub const MainModule = struct {
                         const sample = sample_alias;
 
                         wrapper.initial_sample = null; // this invalidates sample_alias
-                        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), SamplerNoteParams {
+                        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), .{
                             .loop = false,
                             .channel = 0,
                             .sample = switch (sample) {

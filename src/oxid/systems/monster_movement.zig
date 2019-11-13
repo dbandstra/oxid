@@ -142,7 +142,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
             const dir_vec = math.Direction.normal(self.phys.facing);
             const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
             const bullet_pos = math.Vec2.add(pos, ofs);
-            _ = p.Bullet.spawn(gs, p.Bullet.Params {
+            _ = p.Bullet.spawn(gs, .{
                 .inflictor_player_controller_id = null,
                 .owner_id = self.id,
                 .pos = bullet_pos,
@@ -153,7 +153,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
             p.playSample(gs, .DropWeb);
-            _ = p.Web.spawn(gs, p.Web.Params {
+            _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;
         }

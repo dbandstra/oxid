@@ -78,16 +78,16 @@ pub const InitError = error {
 
 fn detectGLSLVersion() InitError!shaders.GLSLVersion {
     if (builtin.arch == .wasm32) {
-        return shaders.GLSLVersion.WebGL;
+        return .WebGL;
     } else {
         const v = glGetString(GL_VERSION);
 
         if (v != 0) { // null check
             if (v[1] == '.') {
                 if (v[0] == '2' and v[2] != '0') {
-                    return shaders.GLSLVersion.V120;
+                    return .V120;
                 } else if (v[0] >= '3' and v[0] <= '9') {
-                    return shaders.GLSLVersion.V130;
+                    return .V130;
                 }
             }
 
@@ -134,7 +134,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
 
     const blank_tex_pixels = [_]u8{255, 255, 255, 255};
     ds.blank_tex = uploadTexture(1, 1, blank_tex_pixels);
-    ds.blank_tileset = draw.Tileset {
+    ds.blank_tileset = .{
         .texture = ds.blank_tex,
         .xtiles = 1,
         .ytiles = 1,
@@ -194,7 +194,7 @@ pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
             &pixels[0],
         );
     }
-    return Texture {
+    return .{
         .handle = texid,
     };
 }
@@ -211,7 +211,7 @@ pub fn cycleGlitchMode(ds: *DrawState) void {
 }
 
 pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
-    return [16]f32 {
+    return .{
         2.0 / (right - left), 0.0, 0.0, -(right + left) / (right - left),
         0.0, 2.0 / (top - bottom), 0.0, -(top + bottom) / (top - bottom),
         0.0, 0.0, -1.0, 0.0,
@@ -237,18 +237,18 @@ pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f3
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
-    ds.shader_textured.bind(shader_textured.BindParams {
+    ds.shader_textured.bind(.{
         .tex = 0,
         .color =
             if (maybe_color) |color|
-                shader_textured.Color {
+                .{
                     .r = @intToFloat(f32, color.r) / 255.0,
                     .g = @intToFloat(f32, color.g) / 255.0,
                     .b = @intToFloat(f32, color.b) / 255.0,
                     .a = alpha,
                 }
             else
-                shader_textured.Color {
+                .{
                     .r = 1.0,
                     .g = 1.0,
                     .b = 1.0,

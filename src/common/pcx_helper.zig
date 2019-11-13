@@ -50,7 +50,7 @@ pub fn loadPcx(
             if ((transparent_color_index orelse ~index) == index) @as(u8, 0) else @as(u8, 255);
     }
 
-    var image = PcxImage {
+    var image: PcxImage = .{
         .pixels = pixels,
         .width = width,
         .height = height,

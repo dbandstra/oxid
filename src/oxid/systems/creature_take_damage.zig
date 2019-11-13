@@ -1,6 +1,5 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const SimpleAnim = @import("../graphics.zig").SimpleAnim;
 const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
@@ -37,11 +36,11 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                 p.playSample(gs, .PlayerScream);
                 p.playSample(gs, .PlayerDeath);
                 self_player.dying_timer = Constants.player_death_anim_time;
-                _ = p.EventPlayerDied.spawn(gs, c.EventPlayerDied {
+                _ = p.EventPlayerDied.spawn(gs, .{
                     .player_controller_id = self_player.player_controller_id,
                 }) catch undefined;
                 if (self_player.last_pickup) |pickup_type| {
-                    _ = p.Pickup.spawn(gs, p.Pickup.Params {
+                    _ = p.Pickup.spawn(gs, .{
                         .pos = self.transform.pos,
                         .pickup_type = pickup_type,
                     }) catch undefined;
@@ -50,15 +49,15 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             } else {
                 // something other than a player died
                 if (self.monster) |self_monster| {
-                    _ = p.EventMonsterDied.spawn(gs, c.EventMonsterDied {}) catch undefined;
+                    _ = p.EventMonsterDied.spawn(gs, .{}) catch undefined;
                     if (event.inflictor_player_controller_id) |player_controller_id| {
-                        _ = p.EventAwardPoints.spawn(gs, c.EventAwardPoints {
+                        _ = p.EventAwardPoints.spawn(gs, .{
                             .player_controller_id = player_controller_id,
                             .points = self_monster.kill_points,
                         }) catch undefined;
                     }
                     if (self_monster.has_coin) {
-                        _ = p.Pickup.spawn(gs, p.Pickup.Params {
+                        _ = p.Pickup.spawn(gs, .{
                             .pos = self.transform.pos,
                             .pickup_type = .Coin,
                         }) catch undefined;
@@ -68,9 +67,9 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                 p.playSynth(gs, "Explosion", audio.ExplosionVoice.NoteParams {
                     .unused = false,
                 });
-                _ = p.Animation.spawn(gs, p.Animation.Params {
+                _ = p.Animation.spawn(gs, .{
                     .pos = self.transform.pos,
-                    .simple_anim = SimpleAnim.Explosion,
+                    .simple_anim = .Explosion,
                     .z_index = Constants.z_index_explosion,
                 }) catch undefined;
                 return .RemoveSelf;

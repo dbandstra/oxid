@@ -36,7 +36,7 @@ fn playerReact(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             },
             .LifeUp => {
                 p.playSample(gs, .ExtraLife);
-                _ = p.EventAwardLife.spawn(gs, c.EventAwardLife {
+                _ = p.EventAwardLife.spawn(gs, .{
                     .player_controller_id = self.player.player_controller_id,
                 }) catch undefined;
             },

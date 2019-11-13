@@ -139,7 +139,7 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 
-    return Shader{
+    return Shader {
         .program = program,
         .attrib_position = try shaders.getAttribLocation(program, "VertexPosition\x00"),
         .attrib_texcoord = try shaders.getAttribLocation(program, "TexCoord\x00"),

@@ -17,28 +17,28 @@ pub const Direction = enum {
 
     pub fn invert(direction: Direction) Direction {
         return switch (direction) {
-            .N => Direction.S,
-            .E => Direction.W,
-            .S => Direction.N,
-            .W => Direction.E,
+            .N => .S,
+            .E => .W,
+            .S => .N,
+            .W => .E,
         };
     }
 
     pub fn rotateCw(direction: Direction) Direction {
         return switch (direction) {
-            .N => Direction.E,
-            .E => Direction.S,
-            .S => Direction.W,
-            .W => Direction.N,
+            .N => .E,
+            .E => .S,
+            .S => .W,
+            .W => .N,
         };
     }
 
     pub fn rotateCcw(direction: Direction) Direction {
         return switch (direction) {
-            .N => Direction.W,
-            .E => Direction.N,
-            .S => Direction.E,
-            .W => Direction.S,
+            .N => .W,
+            .E => .N,
+            .S => .E,
+            .W => .S,
         };
     }
 };
@@ -48,21 +48,21 @@ pub const Vec2 = struct {
     y: i32,
 
     pub fn init(x: i32, y: i32) Vec2 {
-        return Vec2 {
+        return .{
             .x = x,
             .y = y,
         };
     }
 
     pub fn add(a: Vec2, b: Vec2) Vec2 {
-        return Vec2 {
+        return .{
             .x = a.x + b.x,
             .y = a.y + b.y,
         };
     }
 
     pub fn scale(a: Vec2, f: i32) Vec2 {
-        return Vec2 {
+        return .{
             .x = a.x * f,
             .y = a.y * f,
         };
@@ -86,7 +86,7 @@ pub const BoundingBox = struct{
     maxs: Vec2,
 
     pub fn move(bbox: BoundingBox, vec: Vec2) BoundingBox {
-        return BoundingBox {
+        return .{
             .mins = Vec2.add(bbox.mins, vec),
             .maxs = Vec2.add(bbox.maxs, vec),
         };
@@ -115,7 +115,7 @@ pub fn boxesOverlap(
 }
 
 test "boxesOverlap" {
-    const bbox = BoundingBox {
+    const bbox: BoundingBox = .{
         .mins = Vec2.init(0, 0),
         .maxs = Vec2.init(15, 15),
     };

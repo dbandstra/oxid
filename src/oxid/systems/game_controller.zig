@@ -97,7 +97,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
     var spawn_locs = spawn_locs_buf[0..count];
     pickSpawnLocations(gs, spawn_locs);
     for (spawn_locs) |loc, i| {
-        _ = p.Monster.spawn(gs, p.Monster.Params {
+        _ = p.Monster.spawn(gs, .{
             .wave_number = wave_number,
             .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
             .monster_type =
@@ -121,7 +121,7 @@ fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
     var spawn_locs: [1]math.Vec2 = undefined;
     pickSpawnLocations(gs, spawn_locs[0..]);
     const pos = math.Vec2.scale(spawn_locs[0], levels.subpixels_per_tile);
-    _ = p.Pickup.spawn(gs, p.Pickup.Params {
+    _ = p.Pickup.spawn(gs, .{
         .pos = pos,
         .pickup_type = pickup_type,
     }) catch undefined;

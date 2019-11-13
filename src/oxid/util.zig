@@ -28,10 +28,10 @@ pub fn decrementTimer(timer: *u32) bool {
 
 pub fn getDirTransform(direction: math.Direction) draw.Transform {
     return switch (direction) {
-        .N => draw.Transform.RotateCounterClockwise,
-        .E => draw.Transform.Identity,
-        .S => draw.Transform.RotateClockwise,
-        .W => draw.Transform.FlipHorizontal,
+        .N => .RotateCounterClockwise,
+        .E => .Identity,
+        .S => .RotateClockwise,
+        .W => .FlipHorizontal,
     };
 }
 
@@ -45,14 +45,14 @@ pub const Choices = struct {
     num_choices: usize,
 
     pub fn init() Choices {
-        return Choices {
+        return .{
             .choices = undefined,
             .num_choices = 0,
         };
     }
 
     pub fn add(self: *Choices, direction: math.Direction, score: u32) void {
-        self.choices[self.num_choices] = Choice {
+        self.choices[self.num_choices] = .{
             .direction = direction,
             .score = score,
         };

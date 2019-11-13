@@ -23,6 +23,7 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
+            //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
@@ -41,7 +42,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                 .z_index = Constants.z_index_player,
             }) catch undefined;
         } else {
-            drawCreature(gs, self, DrawCreatureParams {
+            drawCreature(gs, self, .{
                 .graphic1 = if (player.player_number == 0) .Man1Walk1 else .Man2Walk1,
                 .graphic2 = if (player.player_number == 0) .Man1Walk2 else .Man2Walk2,
                 .rotates = true,
@@ -53,6 +54,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 
     if (self.monster) |monster| {
         if (monster.spawning_timer > 0) {
+            //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
@@ -65,7 +67,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             }) catch undefined;
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
-                ConstantTypes.MonsterType.Spider => DrawCreatureParams {
+                .Spider => DrawCreatureParams {
                     .graphic1 = .Spider1,
                     .graphic2 = .Spider2,
                     .rotates = true,
@@ -102,7 +104,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 
     if (self.web) |web| {
         const graphic = if (self.creature.flinch_timer > 0) Graphic.Web2 else Graphic.Web1;
-        drawCreature(gs, self, DrawCreatureParams {
+        drawCreature(gs, self, .{
             .graphic1 = graphic,
             .graphic2 = graphic,
             .rotates = false,
@@ -144,7 +146,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
     };
     const sxpos = @divFloor(xpos, levels.subpixels_per_pixel);
 
-    _ = p.EventDraw.spawn(gs, c.EventDraw {
+    _ = p.EventDraw.spawn(gs, .{
         .pos = self.transform.pos,
         // animate legs every 6 screen pixels
         .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,

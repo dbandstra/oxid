@@ -30,7 +30,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         self.player.spawn_anim_y_remaining -= dy;
         return .Remain;
     } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
-        _ = p.PlayerCorpse.spawn(gs, p.PlayerCorpse.Params {
+        _ = p.PlayerCorpse.spawn(gs, .{
             .pos = self.transform.pos,
         }) catch undefined;
         return .RemoveSelf;
@@ -83,7 +83,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                 const dir_vec = math.Direction.normal(self.phys.facing);
                 const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
                 const bullet_pos = math.Vec2.add(pos, ofs);
-                if (p.Bullet.spawn(gs, p.Bullet.Params {
+                if (p.Bullet.spawn(gs, .{
                     .inflictor_player_controller_id = self.player.player_controller_id,
                     .owner_id = self.id,
                     .pos = bullet_pos,
@@ -188,21 +188,21 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysOb
     while (i < Constants.player_slip_threshold) : (i += 1) {
         if (dir == .W or dir == .E) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
-                slip_dir = math.Direction.N;
+                slip_dir = .N;
                 break;
             }
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y + i))) {
-                slip_dir = math.Direction.S;
+                slip_dir = .S;
                 break;
             }
         }
         if (dir == .N or dir == .S) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x - i, pos1.y))) {
-                slip_dir = math.Direction.W;
+                slip_dir = .W;
                 break;
             }
             if (!physInWall(self_phys, math.Vec2.init(pos1.x + i, pos1.y))) {
-                slip_dir = math.Direction.E;
+                slip_dir = .E;
                 break;
             }
         }

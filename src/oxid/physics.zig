@@ -83,7 +83,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                     my_move_group = move_group;
                     // add self to the move group
                     const member = &move_group_members[i];
-                    member.* = MoveGroupMember {
+                    member.* = .{
                         .phys = phys,
                         .entity_id = object.entity_id,
                         .progress = 0,
@@ -97,7 +97,7 @@ pub fn physicsFrame(gs: *GameSession) void {
         if (my_move_group == null) {
             // create a new move group
             const member = &move_group_members[i];
-            member.* = MoveGroupMember {
+            member.* = .{
                 .phys = phys,
                 .entity_id = object.entity_id,
                 .progress = 0,
@@ -113,7 +113,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 num_move_groups += 1;
                 break :blk mg;
             };
-            move_group.* = MoveGroup {
+            move_group.* = .{
                 .is_active = true,
                 .head = member,
             };
@@ -203,9 +203,9 @@ pub fn physicsFrame(gs: *GameSession) void {
                 var hit_something = false;
 
                 if (physInWall(m.phys, new_pos)) {
-                    _ = p.EventCollide.spawn(gs, c.EventCollide {
+                    _ = p.EventCollide.spawn(gs, .{
                         .self_id = m.entity_id,
-                        .other_id = gbe.EntityId { .id = 0 },
+                        .other_id = .{.id = 0},
                         .propelled = true,
                     }) catch undefined;
                     hit_something = true;
@@ -247,7 +247,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
-        _ = p.EventCollide.spawn(gs, c.EventCollide {
+        _ = p.EventCollide.spawn(gs, .{
             .self_id = self_id,
             .other_id = other_id,
             .propelled = true,
@@ -255,7 +255,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     }
 
     if (findCollisionEvent(gs, other_id, self_id) == null) {
-        _ = p.EventCollide.spawn(gs, c.EventCollide {
+        _ = p.EventCollide.spawn(gs, .{
             .self_id = other_id,
             .other_id = self_id,
             .propelled = false,

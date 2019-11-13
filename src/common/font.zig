@@ -21,7 +21,7 @@ pub fn loadFont(hunk_side: *HunkSide, font: *Font) pcx_helper.LoadPcxError!void 
 
     const img = try pcx_helper.loadPcx(hunk_side, font_filename, 0);
 
-    font.tileset = draw.Tileset {
+    font.tileset = .{
         .texture = pdraw.uploadTexture(img.width, img.height, img.pixels),
         .xtiles = font_num_cols,
         .ytiles = font_num_rows,
@@ -33,7 +33,7 @@ pub fn fontDrawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, s
     const w = font_char_width;
     const h = font_char_height;
     for (string) |char| {
-        const tile = draw.Tile {
+        const tile: draw.Tile = .{
             .tx = char % font_num_cols,
             .ty = char / font_num_cols,
         };

@@ -107,7 +107,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
 
     perf.init();
 
-    platform_draw.init(&self.draw_state, platform_draw.DrawInitParams {
+    platform_draw.init(&self.draw_state, .{
         .hunk = self.hunk,
         .virtual_window_width = virtual_window_width,
         .virtual_window_height = virtual_window_height,
@@ -121,11 +121,11 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
-    self.menu_stack = menus.MenuStack {
+    self.menu_stack = .{
         .array = undefined,
         .len = 1,
     };
-    self.menu_stack.array[0] = menus.Menu {
+    self.menu_stack.array[0] = .{
         .MainMenu = menus.MainMenu.init(),
     };
     self.fullscreen = params.fullscreen;
@@ -142,7 +142,7 @@ pub fn deinit(self: *MainState) void {
 }
 
 pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
-    return menus.MenuContext {
+    return .{
         .sound_enabled = self.sound_enabled,
         .fullscreen = self.fullscreen,
         .cfg = self.cfg,
@@ -179,7 +179,7 @@ pub fn inputEvent(outer_self: var, comptime ns: type, source: InputSource, down:
         if (main_state.menu_stack.len > 0) {
             // note that the menu receives input even if the menu_command is null
             // (used by the key rebinding menu)
-            const result = menuInput(&main_state.menu_stack, MenuInputParams {
+            const result = menuInput(&main_state.menu_stack, .{
                 .source = source,
                 .maybe_command = maybe_menu_command,
                 .menu_context = makeMenuContext(main_state),
@@ -207,7 +207,7 @@ pub fn inputEvent(outer_self: var, comptime ns: type, source: InputSource, down:
     var player_number: u32 = 0; while (player_number < config.num_players) : (player_number += 1) {
         for (main_state.cfg.game_bindings[player_number]) |maybe_source, i| {
             if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
-                _ = p.EventGameInput.spawn(&main_state.session, c.EventGameInput {
+                _ = p.EventGameInput.spawn(&main_state.session, .{
                     .player_number = player_number,
                     .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                     .down = down,
@@ -243,7 +243,7 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
             abortGame(&self.session);
 
             self.menu_stack.clear();
-            self.menu_stack.push(menus.Menu {
+            self.menu_stack.push(.{
                 .MainMenu = menus.MainMenu.init(),
             });
         },
@@ -262,7 +262,7 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
         .ToggleFriendlyFire => {
             self.friendly_fire = !self.friendly_fire;
             // update existing bullets
-            SetFriendlyFire.run(&self.session, SetFriendlyFire.Context {
+            SetFriendlyFire.run(&self.session, .{
                 .friendly_fire = self.friendly_fire,
             });
         },
@@ -308,16 +308,16 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
         }
     }
 
-    mc.game_running_state = c.MainController.GameRunningState {
+    mc.game_running_state = .{
         .render_move_boxes = false,
     };
 
     const num_players = if (is_multiplayer) @as(u32, 2) else @as(u32, 1);
 
-    _ = p.GameController.spawn(gs, p.GameController.Params { .num_players = num_players }) catch undefined;
+    _ = p.GameController.spawn(gs, .{ .num_players = num_players }) catch undefined;
 
     var player_number: u32 = 0; while (player_number < num_players) : (player_number += 1) {
-        _ = p.PlayerController.spawn(gs, p.PlayerController.Params {
+        _ = p.PlayerController.spawn(gs, .{
             .player_number = player_number,
         }) catch undefined;
     }
@@ -344,7 +344,7 @@ pub fn abortGame(gs: *GameSession) void {
 pub fn handleGameOver(self: *MainState, comptime ns: var) void {
     if (self.session.findFirstObject(c.EventGameOver)) |_| {
         finalizeGame(self, ns);
-        self.menu_stack.push(menus.Menu {
+        self.menu_stack.push(.{
             .GameOverMenu = menus.GameOverMenu.init(),
         });
     }
@@ -391,7 +391,8 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
 pub fn drawMain(self: *MainState) void {
     platform_draw.prepare(&self.draw_state);
     drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
-    drawMenu(&self.menu_stack, MenuDrawParams {
+    drawMenu(&self.menu_stack, .{
+    //drawMenu(&self.menu_stack, .{ // this crashes the compiler
         .ds = &self.draw_state,
         .static = &self.static,
         .menu_context = makeMenuContext(self),

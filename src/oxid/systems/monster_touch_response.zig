@@ -29,7 +29,7 @@ fn monsterCollide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             if (gs.find(event.other_id, c.Player) != null) {
                 // if it's a player creature, inflict damage on it
                 if (self.monster.spawning_timer == 0) {
-                    _ = p.EventTakeDamage.spawn(gs, c.EventTakeDamage {
+                    _ = p.EventTakeDamage.spawn(gs, .{
                         .inflictor_player_controller_id = null,
                         .self_id = event.other_id,
                         .amount = 1,

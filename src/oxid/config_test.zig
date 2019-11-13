@@ -7,7 +7,7 @@ const input = @import("input.zig");
 const config = @import("config.zig");
 
 fn getFixtureConfig() config.Config {
-    var cfg = config.Config {
+    var cfg: config.Config = .{
         .volume = 100,
         .menu_bindings = undefined,
         .game_bindings = undefined,
@@ -15,38 +15,38 @@ fn getFixtureConfig() config.Config {
 
     for (cfg.menu_bindings) |*binding, i| {
         binding.* = switch (@intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i))) {
-            .Left => InputSource { .Key = .Left },
-            .Right => InputSource { .Key = .Right },
-            .Up => InputSource { .Key = .Up },
-            .Down => InputSource { .Key = .Down },
-            .Escape => InputSource { .Key = .Escape },
-            .Enter => InputSource { .Key = .Return },
-            .Yes => InputSource { .Key = .Y },
-            .No => InputSource { .Key = .N },
+            .Left => .{.Key = .Left},
+            .Right => .{.Key = .Right},
+            .Up => .{.Key = .Up},
+            .Down => .{.Key = .Down},
+            .Escape => .{.Key = .Escape},
+            .Enter => .{.Key = .Return},
+            .Yes => .{.Key = .Y},
+            .No => .{.Key = .N},
         };
     }
 
     for (cfg.game_bindings[0]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => InputSource { .JoyAxisNeg = JoyAxis { .which = 0, .axis = 1 } },
-            .Down => InputSource { .JoyAxisPos = JoyAxis { .which = 0, .axis = 1 } },
-            .Left => InputSource { .JoyAxisNeg = JoyAxis { .which = 0, .axis = 0 } },
-            .Right => InputSource { .JoyAxisPos = JoyAxis { .which = 0, .axis = 0 } },
-            .Shoot => InputSource { .JoyButton = JoyButton { .which = 0, .button = 1 } },
+            .Up => .{.JoyAxisNeg = .{.which = 0, .axis = 1}},
+            .Down => .{.JoyAxisPos = .{.which = 0, .axis = 1}},
+            .Left => .{.JoyAxisNeg = .{.which = 0, .axis = 0}},
+            .Right => .{.JoyAxisPos = .{.which = 0, .axis = 0}},
+            .Shoot => .{.JoyButton = .{.which = 0, .button = 1}},
             .KillAllMonsters => null,
             .ToggleDrawBoxes => null,
             .ToggleGodMode => null,
-            .Escape => InputSource { .Key = .Escape },
+            .Escape => .{.Key = .Escape},
         };
     }
 
     for (cfg.game_bindings[1]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => InputSource { .Key = .W },
-            .Down => InputSource { .Key = .S },
-            .Left => InputSource { .Key = .A },
-            .Right => InputSource { .Key = .D },
-            .Shoot => InputSource { .Key = .F },
+            .Up => .{.Key = .W},
+            .Down => .{.Key = .S},
+            .Left => .{.Key = .A},
+            .Right => .{.Key = .D},
+            .Shoot => .{.Key = .F},
             .KillAllMonsters => null,
             .ToggleDrawBoxes => null,
             .ToggleGodMode => null,

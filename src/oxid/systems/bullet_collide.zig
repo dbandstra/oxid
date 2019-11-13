@@ -14,13 +14,13 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
-        _ = p.Animation.spawn(gs, p.Animation.Params {
+        _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
             .simple_anim = .PlaSparks,
             .z_index = Constants.z_index_sparks,
         }) catch undefined;
         if (!gbe.EntityId.isZero(event.other_id)) {
-            _ = p.EventTakeDamage.spawn(gs, c.EventTakeDamage {
+            _ = p.EventTakeDamage.spawn(gs, .{
                 .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
                 .self_id = event.other_id,
                 .amount = self.bullet.damage,

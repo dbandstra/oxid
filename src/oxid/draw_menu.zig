@@ -18,7 +18,7 @@ const primary_font_color_index = 15; // near-white
 fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
-    return draw.Color {
+    return .{
         .r = static.palette[index * 3 + 0],
         .g = static.palette[index * 3 + 1],
         .b = static.palette[index * 3 + 2],
@@ -141,7 +141,7 @@ pub fn drawMenu(menu_stack: *menus.MenuStack, params: MenuDrawParams) void {
 
 fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Result {
     // first measure the context (.draw = false)
-    var ctx = DrawMenuContext {
+    var ctx: DrawMenuContext = .{
         .ds = params.ds,
         .static = params.static,
         .menu_context = params.menu_context,
@@ -179,14 +179,14 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     pdraw.tile(
         params.ds,
         params.ds.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
+        .{.tx = 0, .ty = 0},
         box_x, box_y, box_w, box_h,
         .Identity,
     );
     pdraw.end(params.ds);
 
     // draw menu content
-    ctx = DrawMenuContext {
+    ctx = .{
         .ds = params.ds,
         .static = params.static,
         .menu_context = params.menu_context,

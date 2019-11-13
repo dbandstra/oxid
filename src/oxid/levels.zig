@@ -25,7 +25,7 @@ pub const Level = struct {
     data: [width * height]u8,
 
     pub fn init(data: [width * height]u8) Level {
-        return Level {
+        return .{
             .data = data,
         };
     }

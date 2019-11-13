@@ -313,7 +313,7 @@ export fn onAnimationFrame(now: c_int) void {
 fn tick(draw: bool) void {
     const paused = g.main_state.menu_stack.len > 0 and !g.main_state.game_over;
 
-    const frame_context = GameFrameContext {
+    const frame_context: GameFrameContext = .{
         .friendly_fire = g.main_state.friendly_fire,
     };
 

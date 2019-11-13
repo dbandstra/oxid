@@ -122,7 +122,7 @@ fn getFullscreenDims(native_screen_size: NativeScreenSize) WindowDims {
     const scaled_w = native_screen_size.height * common.virtual_window_width / common.virtual_window_height;
     const scaled_h = native_screen_size.width * common.virtual_window_height / common.virtual_window_width;
 
-    return WindowDims {
+    return .{
         .window_width = native_screen_size.width,
         .window_height = native_screen_size.height,
         .blit_rect =
@@ -174,7 +174,7 @@ fn getWindowedDims(scale: u31) WindowDims {
     const window_width = common.virtual_window_width * scale;
     const window_height = common.virtual_window_height * scale;
 
-    return WindowDims {
+    return .{
         .window_width = window_width,
         .window_height = window_height,
         .blit_rect = platform_framebuffer.BlitRect {
@@ -334,7 +334,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         return null;
     }
 
-    var options = Options {
+    var options: Options = .{
         .audio_sample_rate = 44100,
         .audio_buffer_size = 1024,
         .framerate_scheme = null,
@@ -351,7 +351,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         if (std.mem.eql(u8, value, "free")) {
             options.framerate_scheme = .Free;
         } else {
-            options.framerate_scheme = FramerateScheme {
+            options.framerate_scheme = .{
                 .Fixed = try std.fmt.parseInt(usize, value, 10),
             };
         }
@@ -423,7 +423,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     const fullscreen = false;
     var fullscreen_dims: ?WindowDims = null;
-    var windowed_dims = WindowDims {
+    var windowed_dims: WindowDims = .{
         .window_width = common.virtual_window_width,
         .window_height = common.virtual_window_height,
         .blit_rect = platform_framebuffer.BlitRect {
@@ -446,7 +446,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
             // if this happens we'll just stick with a small 1:1 scale window
             std.debug.warn("Failed to query desktop display mode.\n");
         } else {
-            native_screen_size = NativeScreenSize {
+            native_screen_size = .{
                 .width = @intCast(u31, dm.w),
                 .height = @intCast(u31, dm.h),
             };
@@ -562,6 +562,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         }
     }
 
+    // FIXME - this one crashes the compiler if i try to use an anonymous struct literal
     if (!common.init(&self.main_state, @This(), common.InitParams {
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
@@ -641,7 +642,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         self.main_state.menu_anim_time +%= 1;
 
-        const frame_context = GameFrameContext {
+        const frame_context: GameFrameContext = .{
             .friendly_fire = self.main_state.friendly_fire,
         };
 
@@ -761,7 +762,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    inputEvent(self, InputSource { .Key = key }, true);
+                    inputEvent(self, .{.Key = key}, true);
 
                     switch (key) {
                         .Backquote => {
@@ -780,7 +781,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                inputEvent(self, InputSource { .Key = key }, false);
+                inputEvent(self, .{.Key = key}, false);
 
                 switch (key) {
                     .Backquote => {
@@ -797,22 +798,22 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 .axis = evt.jaxis.axis,
             };
             if (evt.jaxis.value < -threshold) {
-                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, true);
-                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, false);
+                inputEvent(self, .{.JoyAxisNeg = joy_axis}, true);
+                inputEvent(self, .{.JoyAxisPos = joy_axis}, false);
             } else if (evt.jaxis.value > threshold) {
-                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, true);
-                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, false);
+                inputEvent(self, .{.JoyAxisPos = joy_axis}, true);
+                inputEvent(self, .{.JoyAxisNeg = joy_axis}, false);
             } else {
-                inputEvent(self, InputSource { .JoyAxisPos = joy_axis }, false);
-                inputEvent(self, InputSource { .JoyAxisNeg = joy_axis }, false);
+                inputEvent(self, .{.JoyAxisPos = joy_axis}, false);
+                inputEvent(self, .{.JoyAxisNeg = joy_axis}, false);
             }
         },
         SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
-            const joy_button = JoyButton {
+            const joy_button: JoyButton = .{
                 .which = @intCast(usize, evt.jbutton.which),
                 .button = evt.jbutton.button,
             };
-            inputEvent(self, InputSource { .JoyButton = joy_button }, evt.type == SDL_JOYBUTTONDOWN);
+            inputEvent(self, .{.JoyButton = joy_button}, evt.type == SDL_JOYBUTTONDOWN);
         },
         SDL_WINDOWEVENT => {
             if (!self.main_state.fullscreen and evt.window.event == SDL_WINDOWEVENT_MOVED) {

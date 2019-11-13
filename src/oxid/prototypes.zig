@@ -15,7 +15,7 @@ fn make_bbox(diameter: u31) math.BoundingBox {
     const graphic_diameter = levels.subpixels_per_tile;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
-    return math.BoundingBox {
+    return .{
         .mins = math.Vec2.init(min, min),
         .maxs = math.Vec2.init(max, max),
     };
@@ -123,7 +123,7 @@ pub const Player = struct {
             .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId { .id = 0 },
+            .owner_id = .{.id = 0},
             .flags = c.PhysObject.FLAG_PLAYER,
             .ignore_flags = c.PhysObject.FLAG_PLAYER,
             .internal = undefined,
@@ -206,7 +206,7 @@ pub const Monster = struct {
             .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId { .id = 0 },
+            .owner_id = .{.id = 0},
             .flags = c.PhysObject.FLAG_MONSTER,
             .ignore_flags = 0,
             .internal = undefined,
@@ -273,7 +273,7 @@ pub const Web = struct {
             .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId { .id = 0 },
+            .owner_id = .{.id = 0},
             .flags = c.PhysObject.FLAG_WEB,
             .ignore_flags = 0,
             .internal = undefined,
@@ -419,7 +419,7 @@ pub const Pickup = struct {
             .facing = .E,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId { .id = 0 },
+            .owner_id = .{.id = 0},
             .flags = 0,
             .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,
@@ -491,10 +491,10 @@ pub const EventShowMessage = Event(c.EventShowMessage);
 pub const EventTakeDamage = Event(c.EventTakeDamage);
 
 pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
-    _ = Sound.spawn(gs, Sound.Params {
+    _ = Sound.spawn(gs, .{
         .duration = 2.0,
-        .wrapper = c.Voice.WrapperU {
-            .Sample = c.Voice.Wrapper(zang.Sampler, audio.SamplerNoteParams) {
+        .wrapper = .{
+            .Sample = .{
                 .initial_params = null,
                 .initial_sample = sample,
                 .iq = zang.Notes(audio.SamplerNoteParams).ImpulseQueue.init(),
@@ -509,9 +509,9 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
 pub fn playSynth(gs: *GameSession, comptime name: []const u8, params: @field(audio, name ++ "Voice").NoteParams) void {
     const VoiceType = @field(audio, name ++ "Voice");
 
-    _ = Sound.spawn(gs, Sound.Params {
+    _ = Sound.spawn(gs, .{
         .duration = VoiceType.sound_duration,
-        .wrapper = @unionInit(c.Voice.WrapperU, name, c.Voice.Wrapper(VoiceType, VoiceType.NoteParams) {
+        .wrapper = @unionInit(c.Voice.WrapperU, name, .{
             .initial_params = params,
             .initial_sample = null,
             .iq = zang.Notes(VoiceType.NoteParams).ImpulseQueue.init(),

@@ -146,7 +146,7 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
         pdraw.tile(
             ds,
             ds.blank_tileset,
-            draw.Tile { .tx = 0, .ty = 0 },
+            .{.tx = 0, .ty = 0},
             x0, y0, w, h,
             .Identity,
         );
@@ -157,7 +157,7 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
 fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     std.debug.assert(index < 16);
 
-    return draw.Color {
+    return .{
         .r = static.palette[index * 3 + 0],
         .g = static.palette[index * 3 + 1],
         .b = static.palette[index * 3 + 2],
@@ -178,7 +178,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
     pdraw.tile(
         ds,
         ds.blank_tileset,
-        draw.Tile { .tx = 0, .ty = 0 },
+        .{.tx = 0, .ty = 0},
         0, 0, @intToFloat(f32, common.virtual_window_width), @intToFloat(f32, common.hud_height),
         .Identity,
     );

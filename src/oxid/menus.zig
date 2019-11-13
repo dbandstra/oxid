@@ -117,7 +117,7 @@ pub const MainMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -131,19 +131,19 @@ pub const MainMenu = struct {
         ctx.title(.Left, "OXID");
 
         if (ctx.option("New game")) {
-            ctx.setEffect(Effect { .StartNewGame = false });
+            ctx.setEffect(.{.StartNewGame = false});
             ctx.setSound(.Ding);
         }
         if (ctx.option("Multiplayer")) {
-            ctx.setEffect(Effect { .StartNewGame = true });
+            ctx.setEffect(.{.StartNewGame = true});
             ctx.setSound(.Ding);
         }
         if (ctx.option("Options")) {
-            ctx.setEffect(Effect { .Push = Menu { .OptionsMenu = OptionsMenu.init() } });
+            ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
             ctx.setSound(.Ding);
         }
         if (ctx.option("High scores")) {
-            ctx.setEffect(Effect { .Push = Menu { .HighScoresMenu = HighScoresMenu.init() } });
+            ctx.setEffect(.{.Push = .{.HighScoresMenu = HighScoresMenu.init()}});
             ctx.setSound(.Ding);
         }
         // quit button is removed in web build
@@ -159,7 +159,7 @@ pub const InGameMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -178,11 +178,11 @@ pub const InGameMenu = struct {
             ctx.setSound(.Ding);
         }
         if (ctx.option("Options")) {
-            ctx.setEffect(Effect { .Push = Menu { .OptionsMenu = OptionsMenu.init() } });
+            ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
             ctx.setSound(.Ding);
         }
         if (ctx.option("End game")) {
-            ctx.setEffect(Effect { .Push = Menu { .ReallyEndGameMenu = ReallyEndGameMenu.init() } });
+            ctx.setEffect(.{.Push = .{.ReallyEndGameMenu = ReallyEndGameMenu.init()}});
             ctx.setSound(.Ding);
         }
     }
@@ -192,7 +192,7 @@ pub const GameOverMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -200,7 +200,7 @@ pub const GameOverMenu = struct {
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (ctx.command) |command| {
             if (command == .Escape) {
-                ctx.setEffect(Effect { .Push = Menu { .MainMenu = MainMenu.init() } });
+                ctx.setEffect(.{.Push = .{.MainMenu = MainMenu.init()}});
                 ctx.setSound(.Backoff);
                 return;
             }
@@ -219,7 +219,7 @@ pub const ReallyEndGameMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -250,7 +250,7 @@ pub const OptionsMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -275,12 +275,12 @@ pub const OptionsMenu = struct {
             switch (direction) {
                 .Left => {
                     if (volume > 0) {
-                        ctx.setEffect(Effect { .SetVolume = if (volume > 10) volume - 10 else 0 });
+                        ctx.setEffect(.{.SetVolume = if (volume > 10) volume - 10 else 0});
                     }
                 },
                 .Right => {
                     if (volume < 100) {
-                        ctx.setEffect(Effect { .SetVolume = if (volume < 90) volume + 10 else 100 });
+                        ctx.setEffect(.{.SetVolume = if (volume < 90) volume + 10 else 100});
                     }
                 },
             }
@@ -291,12 +291,12 @@ pub const OptionsMenu = struct {
             switch (direction) {
                 .Left => {
                     if (canvas_scale > 1) {
-                        ctx.setEffect(Effect { .SetCanvasScale = canvas_scale - 1 });
+                        ctx.setEffect(.{.SetCanvasScale = canvas_scale - 1});
                     }
                 },
                 .Right => {
                     if (canvas_scale < ctx.menu_context.max_canvas_scale) {
-                        ctx.setEffect(Effect { .SetCanvasScale = canvas_scale + 1 });
+                        ctx.setEffect(.{.SetCanvasScale = canvas_scale + 1});
                     }
                 },
             }
@@ -307,11 +307,11 @@ pub const OptionsMenu = struct {
             // don't play a sound because the fullscreen transition might mess with playback
         }
         if (ctx.option("Game settings")) {
-            ctx.setEffect(Effect { .Push = Menu { .GameSettingsMenu = GameSettingsMenu.init() } });
+            ctx.setEffect(.{.Push = .{.GameSettingsMenu = GameSettingsMenu.init()}});
             ctx.setSound(.Ding);
         }
         if (ctx.option("Key bindings")) {
-            ctx.setEffect(Effect { .Push = Menu { .KeyBindingsMenu = KeyBindingsMenu.init() } });
+            ctx.setEffect(.{.Push = .{.KeyBindingsMenu = KeyBindingsMenu.init()}});
             ctx.setSound(.Ding);
         }
         if (ctx.option("Back")) {
@@ -325,7 +325,7 @@ pub const GameSettingsMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }
@@ -356,7 +356,7 @@ pub const KeyBindingsMenu = struct {
     rebinding: ?input.GameCommand,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
             .for_player = 0,
             .rebinding = null,
@@ -376,8 +376,8 @@ pub const KeyBindingsMenu = struct {
 
         if (self.rebinding) |command| {
             if (ctx.source) |source| {
-                ctx.setEffect(Effect {
-                    .BindGameCommand = BindGameCommand {
+                ctx.setEffect(.{
+                    .BindGameCommand = .{
                         .player_number = self.for_player,
                         .command = command,
                         .source = source,
@@ -460,7 +460,7 @@ pub const HighScoresMenu = struct {
     cursor_pos: usize,
 
     pub fn init() @This() {
-        return @This() {
+        return .{
             .cursor_pos = 0,
         };
     }

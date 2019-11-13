@@ -21,7 +21,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {
-    if (p.Player.spawn(gs, p.Player.Params {
+    if (p.Player.spawn(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
         .pos = math.Vec2.init(
