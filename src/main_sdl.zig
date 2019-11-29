@@ -468,7 +468,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     // start in windowed mode
     const window = SDL_CreateWindow(
-        c"Oxid",
+        "Oxid",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         @intCast(c_int, windowed_dims.window_width),

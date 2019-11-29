@@ -29,6 +29,19 @@ pub const InitError = error {
     ShaderInvalidAttrib,
 };
 
+fn printLog(s: []const u8, comptime indentation: usize) void {
+    const held = std.debug.getStderrMutex().acquire();
+    defer held.release();
+    const stderr = std.debug.getStderrStream();
+    var new_line = true;
+    for (s) |ch| {
+        if (new_line) stderr.write(" " ** indentation) catch return;
+        stderr.writeByte(ch) catch return;
+        new_line = ch == '\n';
+    }
+    if (s.len > 0 and s[s.len - 1] != '\n') stderr.write("\n") catch return;
+}
+
 pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
     errdefer warn("Failed to compile and link shader program \"{}\".\n", description);
 
@@ -63,7 +76,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
             defer hunk_side.freeToMark(mark);
             if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
                 glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
-                warn("PROGRAM INFO LOG:\n{s}\n", message.ptr);
+                printLog(message[0..@intCast(usize, error_size)], 8);
             } else |_| {
                 warn("Failed to retrieve program info log (out of memory).\n");
             }
@@ -100,7 +113,7 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
             defer hunk_side.freeToMark(mark);
             if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
                 glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
-                warn("SHADER INFO LOG:\n{s}\n", message.ptr);
+                printLog(message[0..@intCast(usize, error_size)], 8);
             } else |_| {
                 warn("Failed to retrieve shader info log (out of memory).\n");
             }
@@ -119,29 +132,18 @@ pub fn destroy(sp: Program) void {
     glDeleteProgram(sp.program_id);
 }
 
-pub fn getAttribLocation(sp: Program, name: []const u8) !GLint {
-    std.debug.assert(name[name.len - 1] == 0);
-    const id =
-        if (builtin.arch == .wasm32)
-            glGetAttribLocation(sp.program_id, name[0..name.len - 1])
-        else
-            glGetAttribLocation(sp.program_id, name.ptr);
+pub fn getAttribLocation(sp: Program, name: [:0]const u8) GLint {
+    const id = glGetAttribLocation(sp.program_id, name);
     if (id == -1) {
-        warn("invalid attrib: {s}\n", name);
-        return error.ShaderInvalidAttrib;
+        warn("(warning) invalid attrib: {}\n", name);
     }
     return id;
 }
 
-pub fn getUniformLocation(sp: Program, name: []const u8) GLint {
-    std.debug.assert(name[name.len - 1] == 0);
-    const id =
-        if (builtin.arch == .wasm32)
-            glGetUniformLocation(sp.program_id, name[0..name.len - 1])
-        else
-            glGetUniformLocation(sp.program_id, name.ptr);
+pub fn getUniformLocation(sp: Program, name: [:0]const u8) GLint {
+    const id = glGetUniformLocation(sp.program_id, name);
     if (id == -1) {
-        warn("(warning) invalid uniform: {s}\n", name);
+        warn("(warning) invalid uniform: {}\n", name);
     }
     return id;
 }

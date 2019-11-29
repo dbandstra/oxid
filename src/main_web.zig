@@ -213,17 +213,17 @@ var g: *Main = undefined;
 const audio_buffer_size = 1024;
 
 fn init() !void {
-    main_memory = std.heap.wasm_allocator.alloc(u8, @sizeOf(Main) + 200*1024) catch |err| {
+    main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200*1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", err);
         return error.Failed;
     };
-    errdefer std.heap.wasm_allocator.free(main_memory);
+    errdefer std.heap.page_allocator.free(main_memory);
 
-    var hunk = std.heap.wasm_allocator.create(Hunk) catch |err| {
+    var hunk = std.heap.page_allocator.create(Hunk) catch |err| {
         warn("failed to allocate hunk: {}\n", err);
         return error.Failed;
     };
-    errdefer std.heap.wasm_allocator.destroy(hunk);
+    errdefer std.heap.page_allocator.destroy(hunk);
     hunk.* = Hunk.init(main_memory);
 
     g = hunk.low().allocator.create(Main) catch unreachable;
@@ -249,7 +249,7 @@ export fn onInit() bool {
 
 export fn onDestroy() void {
     common.deinit(&g.main_state);
-    std.heap.wasm_allocator.free(main_memory);
+    std.heap.page_allocator.free(main_memory);
 }
 
 export fn getAudioBufferSize() c_int {

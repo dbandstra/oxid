@@ -56,25 +56,31 @@ pub const Shader = struct {
             glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.ptr);
         }
 
-        glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
-        if (params.vertex_buffer) |vertex_buffer| {
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-            glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
+        if (self.attrib_position != -1) {
+            glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
+            if (params.vertex_buffer) |vertex_buffer| {
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+                glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
+            }
         }
-
-        glEnableVertexAttribArray(@intCast(GLuint, self.attrib_texcoord));
-        if (params.texcoord_buffer) |texcoord_buffer| {
-            glBindBuffer(GL_ARRAY_BUFFER, texcoord_buffer);
-            glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
+        if (self.attrib_texcoord != -1) {
+            glEnableVertexAttribArray(@intCast(GLuint, self.attrib_texcoord));
+            if (params.texcoord_buffer) |texcoord_buffer| {
+                glBindBuffer(GL_ARRAY_BUFFER, texcoord_buffer);
+                glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
+            }
         }
     }
 
     pub fn update(self: Shader, params: UpdateParams) void {
         updateVbo(params.vertex_buffer, params.vertex2f);
-        glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
-
+        if (self.attrib_position != -1) {
+            glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
+        }
         updateVbo(params.texcoord_buffer, params.texcoord2f);
-        glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
+        if (self.attrib_texcoord != -1) {
+            glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
+        }
     }
 };
 
@@ -141,10 +147,10 @@ pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.I
 
     return Shader {
         .program = program,
-        .attrib_position = try shaders.getAttribLocation(program, "VertexPosition\x00"),
-        .attrib_texcoord = try shaders.getAttribLocation(program, "TexCoord\x00"),
-        .uniform_mvp = shaders.getUniformLocation(program, "MVP\x00"),
-        .uniform_tex = shaders.getUniformLocation(program, "Tex\x00"),
-        .uniform_color = shaders.getUniformLocation(program, "Color\x00"),
+        .attrib_position = shaders.getAttribLocation(program, "VertexPosition"),
+        .attrib_texcoord = shaders.getAttribLocation(program, "TexCoord"),
+        .uniform_mvp = shaders.getUniformLocation(program, "MVP"),
+        .uniform_tex = shaders.getUniformLocation(program, "Tex"),
+        .uniform_color = shaders.getUniformLocation(program, "Color"),
     };
 }
