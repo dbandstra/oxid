@@ -31,7 +31,7 @@ The native version supports a few command-line options for things like audio sam
 
 To build the Web Assembly version:
 ```
-zig build -Dwasm
+zig build wasm
 ```
 Then run a web server (such as Python's SimpleHTTPServer) from the oxid root folder.
 
