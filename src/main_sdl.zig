@@ -322,10 +322,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         clap.parseParam("--novsync               Disable vsync") catch unreachable,
     };
 
-    var iter = try clap.args.OsIterator.init(allocator);
-    defer iter.deinit();
-
-    var args = try clap.ComptimeClap(clap.Help, params).parse(allocator, clap.args.OsIterator, &iter);
+    var args = try clap.parse(clap.Help, params, allocator);
     defer args.deinit();
 
     if (args.flag("--help")) {
