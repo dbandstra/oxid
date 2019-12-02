@@ -132,7 +132,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     ds.virtual_window_height = params.virtual_window_height;
     ds.draw_buffer.num_vertices = 0;
 
-    const blank_tex_pixels = [_]u8{255, 255, 255, 255};
+    const blank_tex_pixels = &[_]u8{255, 255, 255, 255};
     ds.blank_tex = uploadTexture(1, 1, blank_tex_pixels);
     ds.blank_tileset = .{
         .texture = ds.blank_tex,
@@ -325,45 +325,45 @@ pub fn tile(
         std.mem.copy(
             GLfloat,
             vertex2f,
-            [12]GLfloat{fx0,fy0, fx0,fy1, fx1,fy1, fx1,fy1, fx1,fy0, fx0,fy0},
+            &[12]GLfloat{fx0,fy0, fx0,fy1, fx1,fy1, fx1,fy1, fx1,fy0, fx0,fy0},
         );
         std.mem.copy(
             GLfloat,
             texcoord2f,
             switch (transform) {
                 .Identity =>
-                    [12]f32{s0,t0, s0,t1, s1,t1, s1,t1, s1,t0, s0,t0},
+                    &[12]f32{s0,t0, s0,t1, s1,t1, s1,t1, s1,t0, s0,t0},
                 .FlipVertical =>
-                    [12]f32{s0,t1, s0,t0, s1,t0, s1,t0, s1,t1, s0,t1},
+                    &[12]f32{s0,t1, s0,t0, s1,t0, s1,t0, s1,t1, s0,t1},
                 .FlipHorizontal =>
-                    [12]f32{s1,t0, s1,t1, s0,t1, s0,t1, s0,t0, s1,t0},
+                    &[12]f32{s1,t0, s1,t1, s0,t1, s0,t1, s0,t0, s1,t0},
                 .RotateClockwise =>
-                    [12]f32{s0,t1, s1,t1, s1,t0, s1,t0, s0,t0, s0,t1},
+                    &[12]f32{s0,t1, s1,t1, s1,t0, s1,t0, s0,t0, s0,t1},
                 .RotateCounterClockwise =>
-                    [12]f32{s1,t0, s0,t0, s0,t1, s0,t1, s1,t1, s1,t0},
+                    &[12]f32{s1,t0, s0,t0, s0,t1, s0,t1, s1,t1, s1,t0},
             },
         );
     } else {
-    // top left, bottom left, bottom right, top right
-    std.mem.copy(
-        GLfloat,
-        vertex2f,
-        [8]GLfloat{fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0},
+        // top left, bottom left, bottom right, top right
+        std.mem.copy(
+            GLfloat,
+            vertex2f,
+            &[8]GLfloat{fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0},
     );
     std.mem.copy(
         GLfloat,
         texcoord2f,
         switch (transform) {
             .Identity =>
-                [8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
+                &[8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
             .FlipVertical =>
-                [8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
+                &[8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
             .FlipHorizontal =>
-                [8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
+                &[8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
             .RotateClockwise =>
-                [8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
+                &[8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
             .RotateCounterClockwise =>
-                [8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
+                &[8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
         },
     );
     }

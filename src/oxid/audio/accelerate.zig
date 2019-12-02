@@ -27,10 +27,9 @@ pub const AccelerateVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init(&[_]SongEvent {
                 // same as wave_begin but with some notes chopped off
-       // https://github.com/ziglang/zig/issues/3679
-       SongEvent { .params = .{ .freq = 43.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
+                .{ .params = .{ .freq = 43.0, .note_on = true }, .note_id = 1, .t = 0.0 * speed },
                 .{ .params = .{ .freq = 36.0, .note_on = true }, .note_id = 2, .t = 1.0 * speed },
                 .{ .params = .{ .freq = 40.0, .note_on = true }, .note_id = 3, .t = 2.0 * speed },
                 .{ .params = .{ .freq = 45.0, .note_on = true }, .note_id = 4, .t = 3.0 * speed },

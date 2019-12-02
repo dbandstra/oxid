@@ -31,9 +31,8 @@ pub const ExplosionVoice = struct {
         self.cutoff_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .SmoothStep,
-            .curve = [_]zang.CurveNode {
-  // https://github.com/ziglang/zig/issues/3679
-  zang.CurveNode { .t = 0.0, .value = 3000.0 },
+            .curve = &[_]zang.CurveNode {
+                .{ .t = 0.0, .value = 3000.0 },
                 .{ .t = 0.5, .value = 1000.0 },
                 .{ .t = 0.7, .value = 200.0 },
             },
@@ -55,9 +54,8 @@ pub const ExplosionVoice = struct {
         self.volume_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .SmoothStep,
-            .curve = [_]zang.CurveNode {
-  // https://github.com/ziglang/zig/issues/3679
-  zang.CurveNode { .t = 0.0, .value = 0.0 },
+            .curve = &[_]zang.CurveNode {
+                .{ .t = 0.0, .value = 0.0 },
                 .{ .t = 0.004, .value = 0.75 },
                 .{ .t = 0.7, .value = 0.0 },
             },

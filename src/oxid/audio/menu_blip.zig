@@ -62,9 +62,8 @@ pub const MenuBlipVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init([_]SongEvent {
-       // https://github.com/ziglang/zig/issues/3679
-       SongEvent { .params = .{ .freq = 60.0, .note_on =  true }, .note_id = 1, .t = 0.0  },
+            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init(&[_]SongEvent {
+                .{ .params = .{ .freq = 60.0, .note_on =  true }, .note_id = 1, .t = 0.0  },
                 .{ .params = .{ .freq = 60.0, .note_on = false }, .note_id = 2, .t = 0.02 },
                 .{ .params = .{ .freq = 40.0, .note_on =  true }, .note_id = 3, .t = 0.08 },
                 .{ .params = .{ .freq = 40.0, .note_on = false }, .note_id = 4, .t = 0.1  },

@@ -52,7 +52,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
         // the getAsset API
         const web = @import("../web.zig");
 
-        const file_path = try std.fs.path.join(&hunk.high().allocator, [_][]const u8 {
+        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8 {
             "assets",
             filename,
         });

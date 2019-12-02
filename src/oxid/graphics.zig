@@ -128,15 +128,15 @@ pub const SimpleAnimConfig = struct {
 pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
     return switch (simpleAnim) {
         .PlaSparks => .{
-            .frames = [_]Graphic { .PlaSpark1, .PlaSpark2 },
+            .frames = &[_]Graphic { .PlaSpark1, .PlaSpark2 },
             .ticks_per_frame = Constants.duration60(6),
         },
         .MonSparks => .{
-            .frames = [_]Graphic { .MonSpark1, .MonSpark2 },
+            .frames = &[_]Graphic { .MonSpark1, .MonSpark2 },
             .ticks_per_frame = Constants.duration60(6),
         },
         .Explosion => .{
-            .frames = [_]Graphic { .Explode1, .Explode2, .Explode3, .Explode4 },
+            .frames = &[_]Graphic { .Explode1, .Explode2, .Explode3, .Explode4 },
             .ticks_per_frame = Constants.duration60(6),
         }
     };

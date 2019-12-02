@@ -69,8 +69,8 @@ const js_bottom =
 const funcs = [_]Func {
     Func {
         .name = "glActiveTexture",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -78,9 +78,9 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glAttachShader",
-        .args = [_]Arg {
-            Arg { .name = "program", .type = "c_uint" },
-            Arg { .name = "shader", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "program", .type = "c_uint" },
+            .{ .name = "shader", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -89,9 +89,9 @@ const funcs = [_]Func {
     // TODO - glBindAttribLocation
     Func {
         .name = "glBindBuffer",
-        .args = [_]Arg {
-            Arg { .name = "type", .type = "c_uint" },
-            Arg { .name = "buffer_id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "type", .type = "c_uint" },
+            .{ .name = "buffer_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -99,9 +99,9 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glBindFramebuffer",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
-            Arg { .name = "framebuffer", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
+            .{ .name = "framebuffer", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -110,9 +110,9 @@ const funcs = [_]Func {
     // TODO - glBindRenderbuffer
     Func {
         .name = "glBindTexture",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
-            Arg { .name = "texture_id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
+            .{ .name = "texture_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -123,9 +123,9 @@ const funcs = [_]Func {
     // TODO - glBlendEquationSeparate
     Func {
         .name = "glBlendFunc",
-        .args = [_]Arg {
-            Arg { .name = "x", .type = "c_uint" },
-            Arg { .name = "y", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "x", .type = "c_uint" },
+            .{ .name = "y", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -134,11 +134,11 @@ const funcs = [_]Func {
     // TODO - glBlendFuncSeparate
     Func {
         .name = "glBufferData",
-        .args = [_]Arg {
-            Arg { .name = "type", .type = "c_uint" },
-            Arg { .name = "count", .type = "c_uint" },
-            Arg { .name = "data_ptr", .type = "[*c]const f32" },
-            Arg { .name = "draw_type", .type = "c_uint" },
+        .args =& [_]Arg {
+            .{ .name = "type", .type = "c_uint" },
+            .{ .name = "count", .type = "c_uint" },
+            .{ .name = "data_ptr", .type = "[*c]const f32" },
+            .{ .name = "draw_type", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -149,8 +149,8 @@ const funcs = [_]Func {
     // TODO - glBufferSubData
     Func {
         .name = "glCheckFramebufferStatus",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "GLenum" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "GLenum" },
         },
         .ret = "GLenum",
         .js =
@@ -158,8 +158,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glClear",
-        .args = [_]Arg {
-            Arg { .name = "mask", .type = "GLbitfield" },
+        .args = &[_]Arg {
+            .{ .name = "mask", .type = "GLbitfield" },
         },
         .ret = "void",
         .js =
@@ -167,11 +167,11 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glClearColor",
-        .args = [_]Arg {
-            Arg { .name = "r", .type = "f32" },
-            Arg { .name = "g", .type = "f32" },
-            Arg { .name = "b", .type = "f32" },
-            Arg { .name = "a", .type = "f32" },
+        .args = &[_]Arg {
+            .{ .name = "r", .type = "f32" },
+            .{ .name = "g", .type = "f32" },
+            .{ .name = "b", .type = "f32" },
+            .{ .name = "a", .type = "f32" },
         },
         .ret = "void",
         .js =
@@ -183,8 +183,8 @@ const funcs = [_]Func {
     // TODO - glCommit
     Func {
         .name = "glCompileShader",
-        .args = [_]Arg {
-            Arg { .name = "shader", .type = "GLuint" },
+        .args = &[_]Arg {
+            .{ .name = "shader", .type = "GLuint" },
         },
         .ret = "void",
         .js =
@@ -201,7 +201,7 @@ const funcs = [_]Func {
     // TODO - glCopyTexSubImage2D
     Func {
         .name = "glCreateBuffer",
-        .args = [_]Arg {},
+        .args = &[_]Arg {},
         .ret = "c_uint",
         .js =
             \\glBuffers.push(gl.createBuffer());
@@ -209,7 +209,7 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glCreateFramebuffer",
-        .args = [_]Arg {},
+        .args = &[_]Arg {},
         .ret = "GLuint",
         .js =
             \\glFramebuffers.push(gl.createFramebuffer());
@@ -217,7 +217,7 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glCreateProgram",
-        .args = [_]Arg {},
+        .args = &[_]Arg {},
         .ret = "GLuint",
         .js =
             \\glPrograms.push(gl.createProgram());
@@ -226,8 +226,8 @@ const funcs = [_]Func {
     // TODO - glCreateRenderbuffer
     Func {
         .name = "glCreateShader",
-        .args = [_]Arg {
-            Arg { .name = "shader_type", .type = "GLenum" },
+        .args = &[_]Arg {
+            .{ .name = "shader_type", .type = "GLenum" },
         },
         .ret = "GLuint",
         .js =
@@ -236,7 +236,7 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glCreateTexture",
-        .args = [_]Arg {},
+        .args = &[_]Arg {},
         .ret = "c_uint",
         .js =
             \\glTextures.push(gl.createTexture());
@@ -245,8 +245,8 @@ const funcs = [_]Func {
     // TODO - glCullFace
     Func {
         .name = "glDeleteBuffer",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -256,8 +256,8 @@ const funcs = [_]Func {
     // TODO - glDeleteFramebuffer
     Func {
         .name = "glDeleteProgram",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -267,8 +267,8 @@ const funcs = [_]Func {
     // TODO - glDeleteRenderbuffer
     Func {
         .name = "glDeleteShader",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -277,8 +277,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glDeleteTexture",
-        .args = [_]Arg {
-            Arg { .name = "id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -287,8 +287,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glDepthFunc",
-        .args = [_]Arg {
-            Arg { .name = "x", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -298,9 +298,9 @@ const funcs = [_]Func {
     // TODO - glDepthRange
     Func {
         .name = "glDetachShader",
-        .args = [_]Arg {
-            Arg { .name = "program", .type = "c_uint" },
-            Arg { .name = "shader", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "program", .type = "c_uint" },
+            .{ .name = "shader", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -308,8 +308,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glDisable",
-        .args = [_]Arg {
-            Arg { .name = "cap", .type = "GLenum" },
+        .args = &[_]Arg {
+            .{ .name = "cap", .type = "GLenum" },
         },
         .ret = "void",
         .js =
@@ -318,10 +318,10 @@ const funcs = [_]Func {
     // TODO - glDisableVertexAttribArray
     Func {
         .name = "glDrawArrays",
-        .args = [_]Arg {
-            Arg { .name = "type", .type = "c_uint" },
-            Arg { .name = "offset", .type = "c_uint" },
-            Arg { .name = "count", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "type", .type = "c_uint" },
+            .{ .name = "offset", .type = "c_uint" },
+            .{ .name = "count", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -330,8 +330,8 @@ const funcs = [_]Func {
     // TODO - glDrawElements
     Func {
         .name = "glEnable",
-        .args = [_]Arg {
-            Arg { .name = "x", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -339,8 +339,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glEnableVertexAttribArray",
-        .args = [_]Arg {
-            Arg { .name = "x", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -351,12 +351,12 @@ const funcs = [_]Func {
     // TODO - glFramebufferRenderbuffer
     Func {
         .name = "glFramebufferTexture2D",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "GLenum" },
-            Arg { .name = "attachment", .type = "GLenum" },
-            Arg { .name = "textarget", .type = "GLenum" },
-            Arg { .name = "texture", .type = "GLuint" },
-            Arg { .name = "level", .type = "GLint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "GLenum" },
+            .{ .name = "attachment", .type = "GLenum" },
+            .{ .name = "textarget", .type = "GLenum" },
+            .{ .name = "texture", .type = "GLuint" },
+            .{ .name = "level", .type = "GLint" },
         },
         .ret = "void",
         .js =
@@ -364,8 +364,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glFrontFace",
-        .args = [_]Arg {
-            Arg { .name = "mode", .type = "GLenum" },
+        .args = &[_]Arg {
+            .{ .name = "mode", .type = "GLenum" },
         },
         .ret = "void",
         .js =
@@ -377,9 +377,9 @@ const funcs = [_]Func {
     // TODO - glGetAttachedShaders
     Func {
         .name = "glGetAttribLocation",
-        .args = [_]Arg {
-            Arg { .name = "program_id", .type = "c_uint" },
-            Arg { .name = "name", .type = "SLICE" },
+        .args = &[_]Arg {
+            .{ .name = "program_id", .type = "c_uint" },
+            .{ .name = "name", .type = "SLICE" },
         },
         .ret = "c_int",
         .js =
@@ -389,7 +389,7 @@ const funcs = [_]Func {
     // TODO - glGetContextAttributes
     Func {
         .name = "glGetError",
-        .args = [_]Arg {},
+        .args = &[_]Arg {},
         .ret = "c_int",
         .js =
             \\return gl.getError();
@@ -409,9 +409,9 @@ const funcs = [_]Func {
     // TODO - glGetUniform
     Func {
         .name = "glGetUniformLocation",
-        .args = [_]Arg {
-            Arg { .name = "program_id", .type = "c_uint" },
-            Arg { .name = "name", .type = "SLICE" },
+        .args = &[_]Arg {
+            .{ .name = "program_id", .type = "c_uint" },
+            .{ .name = "name", .type = "SLICE" },
         },
         .ret = "c_int",
         .js =
@@ -432,8 +432,8 @@ const funcs = [_]Func {
     // TODO - glLineWidth
     Func {
         .name = "glLinkProgram",
-        .args = [_]Arg {
-            Arg { .name = "program", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "program", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -445,9 +445,9 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glPixelStorei",
-        .args = [_]Arg {
-            Arg { .name = "pname", .type = "GLenum" },
-            Arg { .name = "param", .type = "GLint" },
+        .args = &[_]Arg {
+            .{ .name = "pname", .type = "GLenum" },
+            .{ .name = "param", .type = "GLint" },
         },
         .ret = "void",
         .js =
@@ -460,9 +460,9 @@ const funcs = [_]Func {
     // TODO - glScissor
     Func {
         .name = "glShaderSource",
-        .args = [_]Arg {
-            Arg { .name = "shader", .type = "GLuint" },
-            Arg { .name = "string", .type = "SLICE" },
+        .args = &[_]Arg {
+            .{ .name = "shader", .type = "GLuint" },
+            .{ .name = "string", .type = "SLICE" },
         },
         .ret = "void",
         .js =
@@ -477,17 +477,17 @@ const funcs = [_]Func {
     Func {
         .name = "glTexImage2D",
         // FIXME - take slice for data. note it needs to be optional
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
-            Arg { .name = "level", .type = "c_uint" },
-            Arg { .name = "internal_format", .type = "c_uint" },
-            Arg { .name = "width", .type = "c_int" },
-            Arg { .name = "height", .type = "c_int" },
-            Arg { .name = "border", .type = "c_uint" },
-            Arg { .name = "format", .type = "c_uint" },
-            Arg { .name = "type", .type = "c_uint" },
-            Arg { .name = "data_ptr", .type = "?[*]const u8" },
-            Arg { .name = "data_len", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
+            .{ .name = "level", .type = "c_uint" },
+            .{ .name = "internal_format", .type = "c_uint" },
+            .{ .name = "width", .type = "c_int" },
+            .{ .name = "height", .type = "c_int" },
+            .{ .name = "border", .type = "c_uint" },
+            .{ .name = "format", .type = "c_uint" },
+            .{ .name = "type", .type = "c_uint" },
+            .{ .name = "data_ptr", .type = "?[*]const u8" },
+            .{ .name = "data_len", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -497,10 +497,10 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glTexParameterf",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
-            Arg { .name = "pname", .type = "c_uint" },
-            Arg { .name = "param", .type = "f32" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
+            .{ .name = "pname", .type = "c_uint" },
+            .{ .name = "param", .type = "f32" },
         },
         .ret = "void",
         .js =
@@ -508,10 +508,10 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glTexParameteri",
-        .args = [_]Arg {
-            Arg { .name = "target", .type = "c_uint" },
-            Arg { .name = "pname", .type = "c_uint" },
-            Arg { .name = "param", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "target", .type = "c_uint" },
+            .{ .name = "pname", .type = "c_uint" },
+            .{ .name = "param", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -520,9 +520,9 @@ const funcs = [_]Func {
     // TODO - glTexSubImage2D
     Func {
         .name = "glUniform1f",
-        .args = [_]Arg {
-            Arg { .name = "location_id", .type = "c_int" },
-            Arg { .name = "x", .type = "f32" },
+        .args = &[_]Arg {
+            .{ .name = "location_id", .type = "c_int" },
+            .{ .name = "x", .type = "f32" },
         },
         .ret = "void",
         .js =
@@ -531,9 +531,9 @@ const funcs = [_]Func {
     // TODO - glUniform1fv
     Func {
         .name = "glUniform1i",
-        .args = [_]Arg {
-            Arg { .name = "location_id", .type = "c_int" },
-            Arg { .name = "x", .type = "c_int" },
+        .args = &[_]Arg {
+            .{ .name = "location_id", .type = "c_int" },
+            .{ .name = "x", .type = "c_int" },
         },
         .ret = "void",
         .js =
@@ -550,12 +550,12 @@ const funcs = [_]Func {
     // TODO - glUniform3iv
     Func {
         .name = "glUniform4f",
-        .args = [_]Arg {
-            Arg { .name = "location_id", .type = "c_int" },
-            Arg { .name = "x", .type = "f32" },
-            Arg { .name = "y", .type = "f32" },
-            Arg { .name = "z", .type = "f32" },
-            Arg { .name = "w", .type = "f32" },
+        .args = &[_]Arg {
+            .{ .name = "location_id", .type = "c_int" },
+            .{ .name = "x", .type = "f32" },
+            .{ .name = "y", .type = "f32" },
+            .{ .name = "z", .type = "f32" },
+            .{ .name = "w", .type = "f32" },
         },
         .ret = "void",
         .js =
@@ -569,11 +569,11 @@ const funcs = [_]Func {
     Func {
         .name = "glUniformMatrix4fv",
         // FIXME - take three args, not four.. transpose should be second arg
-        .args = [_]Arg {
-            Arg { .name = "location_id", .type = "c_int" },
-            Arg { .name = "data_len", .type = "c_int" },
-            Arg { .name = "transpose", .type = "c_uint" },
-            Arg { .name = "data_ptr", .type = "[*]const f32" },
+        .args = &[_]Arg {
+            .{ .name = "location_id", .type = "c_int" },
+            .{ .name = "data_len", .type = "c_int" },
+            .{ .name = "transpose", .type = "c_uint" },
+            .{ .name = "data_ptr", .type = "[*]const f32" },
         },
         .ret = "void",
         .js =
@@ -582,8 +582,8 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glUseProgram",
-        .args = [_]Arg {
-            Arg { .name = "program_id", .type = "c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "program_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
@@ -600,13 +600,13 @@ const funcs = [_]Func {
     // TODO - glVertexAttrib4fv
     Func {
         .name = "glVertexAttribPointer",
-        .args = [_]Arg {
-            Arg { .name = "attrib_location", .type = "c_uint" },
-            Arg { .name = "size", .type = "c_uint" },
-            Arg { .name = "type", .type = "c_uint" },
-            Arg { .name = "normalize", .type = "c_uint" },
-            Arg { .name = "stride", .type = "c_uint" },
-            Arg { .name = "offset", .type = "[*c]const c_uint" },
+        .args = &[_]Arg {
+            .{ .name = "attrib_location", .type = "c_uint" },
+            .{ .name = "size", .type = "c_uint" },
+            .{ .name = "type", .type = "c_uint" },
+            .{ .name = "normalize", .type = "c_uint" },
+            .{ .name = "stride", .type = "c_uint" },
+            .{ .name = "offset", .type = "[*c]const c_uint" },
         },
         .ret = "void",
         .js =
@@ -614,11 +614,11 @@ const funcs = [_]Func {
     },
     Func {
         .name = "glViewport",
-        .args = [_]Arg {
-            Arg { .name = "x", .type = "c_int" },
-            Arg { .name = "y", .type = "c_int" },
-            Arg { .name = "width", .type = "c_int" },
-            Arg { .name = "height", .type = "c_int" },
+        .args = &[_]Arg {
+            .{ .name = "x", .type = "c_int" },
+            .{ .name = "y", .type = "c_int" },
+            .{ .name = "width", .type = "c_int" },
+            .{ .name = "height", .type = "c_int" },
         },
         .ret = "void",
         .js =
