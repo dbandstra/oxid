@@ -76,7 +76,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
     } else {
         // non-wasm build: load assets from disk, allocating new memory to
         // store them
-        const file_path = try std.fs.path.join(&hunk.high().allocator, [_][]const u8 {
+        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8 {
             build_options.assets_path,
             filename,
         });

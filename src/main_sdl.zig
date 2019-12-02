@@ -51,7 +51,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
         };
     }
 
-    const file_path = try std.fs.path.join(&hunk_side.allocator, [_][]const u8{dir_path, filename});
+    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{dir_path, filename});
 
     return switch (mode) {
         .Read => std.fs.File.openRead(file_path),
@@ -322,12 +322,12 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         clap.parseParam("--novsync               Disable vsync") catch unreachable,
     };
 
-    var args = try clap.parse(clap.Help, params, allocator);
+    var args = try clap.parse(clap.Help, &params, allocator);
     defer args.deinit();
 
     if (args.flag("--help")) {
         std.debug.warn("Usage:\n");
-        try clap.help(std.debug.getStderrStream(), params);
+        try clap.help(std.debug.getStderrStream(), &params);
         return null;
     }
 
