@@ -12,4 +12,4 @@
 	url = https://github.com/dbandstra/zig-wav.git
 [submodule "zig-clap"]
 	path = lib/zig-clap
-	url = https://github.com/dbandstra/zig-clap.git
+	url = https://github.com/Hejsil/zig-clap.git
