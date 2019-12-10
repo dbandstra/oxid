@@ -76,24 +76,24 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.high_scores = ns.loadHighScores(&self.hunk.low());
 
     loadFont(&self.hunk.low(), &self.static.font) catch |err| {
-        warn("Failed to load font: {}\n", err);
+        warn("Failed to load font: {}\n", .{err});
         return false;
     };
 
     loadTileset(&self.hunk.low(), &self.static.tileset, self.static.palette[0..]) catch |err| {
-        warn("Failed to load tileset: {}\n", err);
+        warn("Failed to load tileset: {}\n", .{err});
         return false;
     };
 
     self.audio_module = audio.MainModule.init(self.hunk, params.audio_buffer_size) catch |err| {
-        warn("Failed to load audio module: {}\n", err);
+        warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
 
     self.cfg = blk: {
         // if config couldn't load, warn and fall back to default config
         const cfg = ns.loadConfig(&self.hunk.low()) catch |err| {
-            warn("Failed to load config: {}\n", err);
+            warn("Failed to load config: {}\n", .{err});
             break :blk config.getDefault();
         };
         break :blk cfg;
@@ -101,7 +101,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
 
     self.session.init(params.random_seed);
     gameInit(&self.session) catch |err| {
-        warn("Failed to initialize game: {}\n", err);
+        warn("Failed to initialize game: {}\n", .{err});
         return false;
     };
 
@@ -112,7 +112,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         .virtual_window_width = virtual_window_width,
         .virtual_window_height = virtual_window_height,
     }) catch |err| {
-        warn("platform_draw.init failed: {}\n", err);
+        warn("platform_draw.init failed: {}\n", .{err});
         return false;
     };
     // note: if any failure conditions are added to this function below this
@@ -383,7 +383,7 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
 
     if (save_high_scores) {
         ns.saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
-            warn("Failed to save high scores: {}\n", err);
+            warn("Failed to save high scores: {}\n", .{err});
         };
     }
 }
@@ -392,7 +392,6 @@ pub fn drawMain(self: *MainState) void {
     platform_draw.prepare(&self.draw_state);
     drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
-    //drawMenu(&self.menu_stack, .{ // this crashes the compiler
         .ds = &self.draw_state,
         .static = &self.static,
         .menu_context = makeMenuContext(self),

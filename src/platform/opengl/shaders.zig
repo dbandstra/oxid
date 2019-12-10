@@ -43,7 +43,7 @@ fn printLog(s: []const u8, comptime indentation: usize) void {
 }
 
 pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
-    errdefer warn("Failed to compile and link shader program \"{}\".\n", description);
+    errdefer warn("Failed to compile and link shader program \"{}\".\n", .{description});
 
     const vertex_id = try compile(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
     const fragment_id = try compile(hunk_side, source.fragment, "fragment", GL_FRAGMENT_SHADER);
@@ -78,7 +78,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
                 glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
                 printLog(message[0..@intCast(usize, error_size)], 8);
             } else |_| {
-                warn("Failed to retrieve program info log (out of memory).\n");
+                warn("Failed to retrieve program info log (out of memory).\n", .{});
             }
             return error.ShaderLinkFailed;
         }
@@ -86,7 +86,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
 }
 
 fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
-    errdefer warn("Failed to compile {} shader.\n", shader_type);
+    errdefer warn("Failed to compile {} shader.\n", .{shader_type});
 
     const shader_id = glCreateShader(kind);
     if (builtin.arch == .wasm32) {
@@ -115,7 +115,7 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
                 glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
                 printLog(message[0..@intCast(usize, error_size)], 8);
             } else |_| {
-                warn("Failed to retrieve shader info log (out of memory).\n");
+                warn("Failed to retrieve shader info log (out of memory).\n", .{});
             }
             return error.ShaderCompileFailed;
         }
@@ -135,7 +135,7 @@ pub fn destroy(sp: Program) void {
 pub fn getAttribLocation(sp: Program, name: [:0]const u8) GLint {
     const id = glGetAttribLocation(sp.program_id, name);
     if (id == -1) {
-        warn("(warning) invalid attrib: {}\n", name);
+        warn("(warning) invalid attrib: {}\n", .{name});
     }
     return id;
 }
@@ -143,7 +143,7 @@ pub fn getAttribLocation(sp: Program, name: [:0]const u8) GLint {
 pub fn getUniformLocation(sp: Program, name: [:0]const u8) GLint {
     const id = glGetUniformLocation(sp.program_id, name);
     if (id == -1) {
-        warn("(warning) invalid uniform: {}\n", name);
+        warn("(warning) invalid uniform: {}\n", .{name});
     }
     return id;
 }

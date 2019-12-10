@@ -88,7 +88,7 @@ pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
             // the file exists but there was an error loading it. just continue
             // with an empty high scores list, even though that might mean that
             // the user's legitimate high scores might get wiped out (FIXME?)
-            std.debug.warn("Failed to load high scores file: {}\n", err);
+            std.debug.warn("Failed to load high scores file: {}\n", .{err});
         }
         return [1]u32{0} ** Constants.num_high_scores;
     };
@@ -230,7 +230,7 @@ pub fn main() u8 {
 
     const self = blk: {
         const options = parseOptions(&hunk.low()) catch |err| {
-            std.debug.warn("Failed to parse command-line options: {}\n", err);
+            std.debug.warn("Failed to parse command-line options: {}\n", .{err});
             return 1;
         } orelse {
             // --help flag was set, don't start the program
@@ -326,7 +326,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     defer args.deinit();
 
     if (args.flag("--help")) {
-        std.debug.warn("Usage:\n");
+        std.debug.warn("Usage:\n", .{});
         try clap.help(std.debug.getStderrStream(), &params);
         return null;
     }
@@ -372,7 +372,7 @@ fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?Framerate
         switch (scheme) {
             .Fixed => |rate| {
                 if (rate < 1 or rate > 300) {
-                    std.debug.warn("Invalid refresh rate: {}\n", rate);
+                    std.debug.warn("Invalid refresh rate: {}\n", .{rate});
                     return error.Failed;
                 }
             },
@@ -386,11 +386,11 @@ fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?Framerate
     const display_index = SDL_GetWindowDisplayIndex(window);
     var mode: SDL_DisplayMode = undefined;
     if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
-        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n");
+        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n", .{});
         return FramerateScheme { .Free = {} };
     }
     if (mode.refresh_rate <= 0) {
-        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", mode.refresh_rate);
+        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", .{mode.refresh_rate});
         return FramerateScheme { .Free = {} };
     }
     // TODO - do i need to update this when the window moves (possibly to
@@ -413,7 +413,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     const self = hunk.low().allocator.create(Main) catch unreachable;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) != 0) {
-        std.debug.warn("Unable to initialize SDL: {s}\n", SDL_GetError());
+        std.debug.warn("Unable to initialize SDL: {s}\n", .{SDL_GetError()});
         return error.Failed;
     }
     errdefer SDL_Quit();
@@ -441,7 +441,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
         if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
             // if this happens we'll just stick with a small 1:1 scale window
-            std.debug.warn("Failed to query desktop display mode.\n");
+            std.debug.warn("Failed to query desktop display mode.\n", .{});
         } else {
             native_screen_size = .{
                 .width = @intCast(u31, dm.w),
@@ -472,7 +472,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         @intCast(c_int, windowed_dims.window_height),
         SDL_WINDOW_OPENGL,
     ) orelse {
-        std.debug.warn("Unable to create window: {s}\n", SDL_GetError());
+        std.debug.warn("Unable to create window: {s}\n", .{SDL_GetError()});
         return error.Failed;
     };
     errdefer SDL_DestroyWindow(window);
@@ -482,11 +482,11 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     SDL_GetWindowPosition(window, &original_window_x, &original_window_y);
 
     if (options.audio_sample_rate < 6000 or options.audio_sample_rate > 192000) {
-        std.debug.warn("Invalid audio sample rate: {}\n", options.audio_sample_rate);
+        std.debug.warn("Invalid audio sample rate: {}\n", .{options.audio_sample_rate});
         return error.Failed;
     }
     if (options.audio_buffer_size < 32 or options.audio_buffer_size > 65535) {
-        std.debug.warn("Invalid audio buffer size: {}\n", options.audio_buffer_size);
+        std.debug.warn("Invalid audio buffer size: {}\n", .{options.audio_buffer_size});
         return error.Failed;
     }
 
@@ -507,13 +507,13 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
     );
     if (device == 0) {
-        std.debug.warn("Failed to open audio: {s}\n", SDL_GetError());
+        std.debug.warn("Failed to open audio: {s}\n", .{SDL_GetError()});
         return error.Failed;
     }
     errdefer SDL_CloseAudioDevice(device);
 
     const glcontext = SDL_GL_CreateContext(window) orelse {
-        std.debug.warn("SDL_GL_CreateContext failed: {s}\n", SDL_GetError());
+        std.debug.warn("SDL_GL_CreateContext failed: {s}\n", .{SDL_GetError()});
         return error.Failed;
     };
     errdefer SDL_GL_DeleteContext(glcontext);
@@ -522,11 +522,11 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     if (options.vsync) {
         if (SDL_GL_SetSwapInterval(1) != 0) {
-            std.debug.warn("Warning: failed to set vsync.\n");
+            std.debug.warn("Warning: failed to set vsync.\n", .{});
         }
     } else {
         if (SDL_GL_SetSwapInterval(0) != 0) {
-            std.debug.warn("Warning: failed to disable vsync.\n");
+            std.debug.warn("Warning: failed to disable vsync.\n", .{});
         }
     }
 
@@ -534,27 +534,29 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     // vsync). i don't really get what adaptive vsync is but it seems like it
     // should be classed with vsync.
     const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
-    std.debug.warn("Vsync is {}.\n", if (vsync_enabled) "enabled" else "disabled");
+    std.debug.warn("Vsync is {}.\n", [_][]const u8 {
+        if (vsync_enabled) "enabled" else "disabled",
+    });
 
     const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
     switch (framerate_scheme) {
-        .Fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", refresh_rate),
-        .Free => std.debug.warn("Framerate scheme: free\n"),
+        .Fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
+        .Free => std.debug.warn("Framerate scheme: free\n", .{}),
     }
 
     if (!platform_framebuffer.init(&self.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
-        std.debug.warn("platform_framebuffer.init failed\n");
+        std.debug.warn("platform_framebuffer.init failed\n", .{});
         return error.Failed;
     }
     errdefer platform_framebuffer.deinit(&self.framebuffer_state);
 
     {
         const num_joysticks = SDL_NumJoysticks();
-        std.debug.warn("{} joystick(s)\n", num_joysticks);
+        std.debug.warn("{} joystick(s)\n", .{num_joysticks});
         var i: c_int = 0; while (i < 2 and i < num_joysticks) : (i += 1) {
             const joystick = SDL_JoystickOpen(i);
             if (joystick == null) {
-                std.debug.warn("Failed to open joystick {}\n", i + 1);
+                std.debug.warn("Failed to open joystick {}\n", .{i + 1});
             }
         }
     }
@@ -593,16 +595,16 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     SDL_PauseAudioDevice(device, 0); // unpause
     errdefer SDL_PauseAudioDevice(device, 1);
 
-    std.debug.warn("Initialization complete.\n");
+    std.debug.warn("Initialization complete.\n", .{});
 
     return self;
 }
 
 fn deinit(self: *Main) void {
-    std.debug.warn("Shutting down.\n");
+    std.debug.warn("Shutting down.\n", .{});
 
     saveConfig(self.main_state.cfg, &self.main_state.hunk.low()) catch |err| {
-        std.debug.warn("Failed to save config: {}\n", err);
+        std.debug.warn("Failed to save config: {}\n", .{err});
     };
 
     SDL_PauseAudioDevice(self.audio_device, 1);
@@ -721,7 +723,7 @@ fn setCanvasScale(self: *Main, scale: u31) void {
 fn toggleFullscreen(self: *Main) void {
     if (self.main_state.fullscreen) {
         if (SDL_SetWindowFullscreen(self.window, 0) < 0) {
-            std.debug.warn("Failed to disable fullscreen mode");
+            std.debug.warn("Failed to disable fullscreen mode", .{});
         } else {
             SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
             SDL_SetWindowPosition(self.window, self.original_window_x, self.original_window_y);
@@ -731,7 +733,7 @@ fn toggleFullscreen(self: *Main) void {
         if (self.fullscreen_dims) |dims| {
             SDL_SetWindowSize(self.window, dims.window_width, dims.window_height);
             if (SDL_SetWindowFullscreen(self.window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
-                std.debug.warn("Failed to enable fullscreen mode\n");
+                std.debug.warn("Failed to enable fullscreen mode\n", .{});
                 SDL_SetWindowSize(self.window, self.windowed_dims.window_width, self.windowed_dims.window_height);
             } else {
                 self.main_state.fullscreen = true;

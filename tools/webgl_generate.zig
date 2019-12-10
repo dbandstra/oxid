@@ -641,7 +641,7 @@ fn writeZigFile(filename: []const u8) !void {
 
     var stream = &std.fs.File.outStream(file).stream;
 
-    try stream.print("{}\n\n", zig_top);
+    try stream.print("{}\n\n", .{zig_top});
 
     for (funcs) |func| {
         const any_slice = for (func.args) |arg| {
@@ -650,45 +650,52 @@ fn writeZigFile(filename: []const u8) !void {
             }
         } else false;
 
-        try stream.print("{}extern fn {}{}(", if (any_slice) "" else "pub ", func.name, if (any_slice) "_" else "");
+        try stream.print("{}extern fn {}{}(", [_][]const u8 {
+            if (any_slice) "" else "pub ",
+            func.name,
+            if (any_slice) "_" else "",
+        });
         for (func.args) |arg, i| {
             if (i > 0) {
-                try stream.print(", ");
+                try stream.print(", ", .{});
             }
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("{}_ptr: [*]const u8, {}_len: c_uint", arg.name, arg.name);
+                try stream.print("{}_ptr: [*]const u8, {}_len: c_uint", .{arg.name, arg.name});
             } else {
-                try stream.print("{}: {}", arg.name, arg.type);
+                try stream.print("{}: {}", .{arg.name, arg.type});
             }
         }
-        try stream.print(") {};\n", func.ret);
+        try stream.print(") {};\n", .{func.ret});
 
         if (any_slice) {
-            try stream.print("pub fn {}(", func.name);
+            try stream.print("pub fn {}(", .{func.name});
             for (func.args) |arg, i| {
                 if (i > 0) {
-                    try stream.print(", ");
+                    try stream.print(", ", .{});
                 }
                 if (std.mem.eql(u8, arg.type, "SLICE")) {
-                    try stream.print("{}: []const u8", arg.name);
+                    try stream.print("{}: []const u8", .{arg.name});
                 } else {
-                    try stream.print("{}: {}", arg.name, arg.type);
+                    try stream.print("{}: {}", .{arg.name, arg.type});
                 }
             }
-            try stream.print(") {} {{\n", func.ret);
-            try stream.print("    {}{}_(", if (std.mem.eql(u8, func.ret, "void")) "" else "return ", func.name);
+            try stream.print(") {} {{\n", .{func.ret});
+            try stream.print("    {}{}_(", [_][]const u8 {
+                if (std.mem.eql(u8, func.ret, "void")) "" else "return ",
+                func.name,
+            });
             for (func.args) |arg, i| {
                 if (i > 0) {
-                    try stream.print(", ");
+                    try stream.print(", ", .{});
                 }
                 if (std.mem.eql(u8, arg.type, "SLICE")) {
-                    try stream.print("{}.ptr, {}.len", arg.name, arg.name);
+                    try stream.print("{}.ptr, {}.len", .{arg.name, arg.name});
                 } else {
-                    try stream.print("{}", arg.name);
+                    try stream.print("{}", .{arg.name});
                 }
             }
-            try stream.print(");\n");
-            try stream.print("}}\n");
+            try stream.print(");\n", .{});
+            try stream.print("}}\n", .{});
         }
     }
 }
@@ -699,9 +706,9 @@ fn writeJsFile(filename: []const u8) !void {
 
     var stream = &std.fs.File.outStream(file).stream;
 
-    try stream.print("{}\n", js_top);
+    try stream.print("{}\n", .{js_top});
 
-    try stream.print("    return {{\n");
+    try stream.print("    return {{\n", .{});
     for (funcs) |func| {
         const any_slice = for (func.args) |arg| {
             if (std.mem.eql(u8, arg.type, "SLICE")) {
@@ -709,33 +716,36 @@ fn writeJsFile(filename: []const u8) !void {
             }
         } else false;
 
-        try stream.print("        {}{}(", func.name, if (any_slice) "_" else "");
+        try stream.print("        {}{}(", [_][]const u8 {
+            func.name,
+            if (any_slice) "_" else "",
+        });
         for (func.args) |arg, i| {
             if (i > 0) {
-                try stream.print(", ");
+                try stream.print(", ", .{});
             }
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("{}_ptr, {}_len", arg.name, arg.name);
+                try stream.print("{}_ptr, {}_len", .{arg.name, arg.name});
             } else {
-                try stream.print("{}", arg.name);
+                try stream.print("{}", .{arg.name});
             }
         }
-        try stream.print(") {{\n");
+        try stream.print(") {{\n", .{});
         for (func.args) |arg| {
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("            const {} = readCharStr({}_ptr, {}_len);\n", arg.name, arg.name, arg.name);
+                try stream.print("            const {} = readCharStr({}_ptr, {}_len);\n", .{arg.name, arg.name, arg.name});
             }
         }
         var start: usize = 0; while (start < func.js.len) {
             const rel_newline_pos = nextNewline(func.js[start..]);
-            try stream.print("            {}\n", func.js[start..start + rel_newline_pos]);
+            try stream.print("            {}\n", .{func.js[start..start + rel_newline_pos]});
             start += rel_newline_pos + 1;
         }
-        try stream.print("        }},\n");
+        try stream.print("        }},\n", .{});
     }
-    try stream.print("    }};\n");
+    try stream.print("    }};\n", .{});
 
-    try stream.print("{}\n", js_bottom);
+    try stream.print("{}\n", .{js_bottom});
 }
 
 pub fn main() !void {

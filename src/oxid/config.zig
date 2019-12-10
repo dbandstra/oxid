@@ -99,7 +99,7 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
                             cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
                         else => {
-                            warn("Value of \"volume\" must be an integer\n");
+                            warn("Value of \"volume\" must be an integer\n", .{});
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
@@ -109,12 +109,12 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
                 } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
                     readBindings(input.GameCommand, &cfg.game_bindings[1], kv.value);
                 } else {
-                    warn("Unrecognized config field: '{}'\n", kv.key);
+                    warn("Unrecognized config field: '{}'\n", .{kv.key});
                 }
             }
         },
         else => {
-            warn("Top-level value must be an object\n");
+            warn("Top-level value must be an object\n", .{});
         },
     }
 
@@ -133,14 +133,14 @@ fn readBindings(comptime CommandType: type, bindings: *[@typeInfo(CommandType).E
             while (it.next()) |kv| {
                 const command = parseCommand(CommandType, kv.key) orelse continue;
                 const source = parseInputSource(kv.value) catch {
-                    warn("Error parsing input source for command '{}'\n", kv.key);
+                    warn("Error parsing input source for command '{}'\n", .{kv.key});
                     continue;
                 };
                 bindings.*[@enumToInt(command)] = source;
             }
         },
         else => {
-            warn("Value of \"menu_bindings\" must be an object\n");
+            warn("Value of \"menu_bindings\" must be an object\n", .{});
         },
     }
 }
@@ -151,7 +151,7 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
             return @intToEnum(CommandType, field.value);
         }
     } else {
-        warn("Unrecognized {}: '{}'\n", @typeName(CommandType), s);
+        warn("Unrecognized {}: '{}'\n", .{@typeName(CommandType), s});
         return null;
     }
 }
@@ -229,25 +229,25 @@ pub fn write(comptime WriteError: type, stream: *std.io.OutStream(WriteError), c
         \\    "volume": {},
         \\    "menu_bindings": {{
         \\
-    , cfg.volume);
+    , .{cfg.volume});
     try writeBindings(WriteError, stream, input.MenuCommand, cfg.menu_bindings);
     try stream.print(
         \\    }},
         \\    "game_bindings": {{
         \\
-    );
+    , .{});
     try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[0]);
     try stream.print(
         \\    }},
         \\    "game_bindings2": {{
         \\
-    );
+    , .{});
     try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[1]);
     try stream.print(
         \\    }}
         \\}}
         \\
-    );
+    , .{});
 }
 
 fn writeBindings(comptime WriteError: type, stream: *std.io.OutStream(WriteError), comptime CommandType: type, bindings: [@typeInfo(CommandType).Enum.fields.len]?InputSource) !void {
@@ -256,28 +256,28 @@ fn writeBindings(comptime WriteError: type, stream: *std.io.OutStream(WriteError
     for (bindings) |maybe_source, i| {
         const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
         const command_name = getEnumValueName(CommandType, command);
-        try stream.print("        \"{}\": ", command_name);
+        try stream.print("        \"{}\": ", .{command_name});
         if (maybe_source) |source| {
             switch (source) {
                 .Key => |key| {
-                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", getEnumValueName(Key, key));
+                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(Key, key)});
                 },
                 .JoyButton => |j| {
-                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", j.button);
+                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});
                 },
                 .JoyAxisNeg => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", j.axis);
+                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", .{j.axis});
                 },
                 .JoyAxisPos => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", j.axis);
+                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", .{j.axis});
                 },
             }
         } else {
-            try stream.print("null");
+            try stream.print("null", .{});
         }
         if (i < bindings.len - 1) {
-            try stream.print(",");
+            try stream.print(",", .{});
         }
-        try stream.print("\n");
+        try stream.print("\n", .{});
     }
 }

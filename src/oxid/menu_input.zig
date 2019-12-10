@@ -59,17 +59,17 @@ const MenuInputContext = struct {
         return null;
     }
 
-    pub fn option(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+    pub fn option(self: *@This(), comptime fmt: []const u8, args: var) bool {
         // for "buttons", only enter key works
         return if (self.optionInner(false, fmt, args)) |result| result == .Enter else false;
     }
 
-    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: var) bool {
         // for on/off toggles, left, right and enter keys all work
         return self.optionInner(false, fmt, args) != null;
     }
 
-    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: ...) ?menus.OptionSliderResult {
+    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: var) ?menus.OptionSliderResult {
         return if (self.optionInner(true, fmt, args)) |result|
             switch (result) {
                 .Left => menus.OptionSliderResult.Left,

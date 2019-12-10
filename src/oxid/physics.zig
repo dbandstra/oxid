@@ -341,7 +341,7 @@ fn assertNoOverlaps(gs: *GameSession) void {
                 self_transform.pos, self.data.entity_bbox,
                 other_transform.pos, other.data.entity_bbox,
             )) {
-                warn("who is this joker\n");
+                warn("who is this joker\n", .{});
             }
         }
     }

@@ -141,7 +141,7 @@ fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
 }
 
 pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
-    errdefer warn("Failed to create textured shader program.\n");
+    errdefer warn("Failed to create textured shader program.\n", .{});
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 

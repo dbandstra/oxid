@@ -35,6 +35,6 @@ pub fn getLineOfFire(
         }
     }
 
-    warn("getLineOfFire: infinite loop?\n");
+    warn("getLineOfFire: infinite loop?\n", .{});
     return null;
 }

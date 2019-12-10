@@ -76,7 +76,7 @@ pub const DrawMenuContext = struct {
         self.bottom_margin = 2 + 6;
     }
 
-    pub fn label(self: *@This(), comptime fmt: []const u8, args: ...) void {
+    pub fn label(self: *@This(), comptime fmt: []const u8, args: var) void {
         var buffer: [80]u8 = undefined;
         var dest = std.io.SliceOutStream.init(buffer[0..]);
         _ = dest.stream.print(fmt, args) catch {};
@@ -90,7 +90,7 @@ pub const DrawMenuContext = struct {
         self.bottom_margin += 6;
     }
 
-    pub fn option(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+    pub fn option(self: *@This(), comptime fmt: []const u8, args: var) bool {
         var buffer: [80]u8 = undefined;
         var dest = std.io.SliceOutStream.init(buffer[0..]);
         _ = dest.stream.print(fmt, args) catch {};
@@ -113,11 +113,11 @@ pub const DrawMenuContext = struct {
         return false;
     }
 
-    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: ...) bool {
+    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: var) bool {
         return self.option(fmt, args);
     }
 
-    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: ...) ?menus.OptionSliderResult {
+    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: var) ?menus.OptionSliderResult {
         _ = self.option(fmt, args);
         return null;
     }

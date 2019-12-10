@@ -130,25 +130,25 @@ pub const MainMenu = struct {
 
         ctx.title(.Left, "OXID");
 
-        if (ctx.option("New game")) {
+        if (ctx.option("New game", .{})) {
             ctx.setEffect(.{.StartNewGame = false});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Multiplayer")) {
+        if (ctx.option("Multiplayer", .{})) {
             ctx.setEffect(.{.StartNewGame = true});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Options")) {
+        if (ctx.option("Options", .{})) {
             ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("High scores")) {
+        if (ctx.option("High scores", .{})) {
             ctx.setEffect(.{.Push = .{.HighScoresMenu = HighScoresMenu.init()}});
             ctx.setSound(.Ding);
         }
         // quit button is removed in web build
         if (builtin.arch != .wasm32) {
-            if (ctx.option("Quit")) {
+            if (ctx.option("Quit", .{})) {
                 ctx.setEffect(.Quit);
             }
         }
@@ -173,15 +173,15 @@ pub const InGameMenu = struct {
 
         ctx.title(.Left, "GAME PAUSED");
 
-        if (ctx.option("Continue game")) {
+        if (ctx.option("Continue game", .{})) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Options")) {
+        if (ctx.option("Options", .{})) {
             ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("End game")) {
+        if (ctx.option("End game", .{})) {
             ctx.setEffect(.{.Push = .{.ReallyEndGameMenu = ReallyEndGameMenu.init()}});
             ctx.setSound(.Ding);
         }
@@ -265,13 +265,15 @@ pub const OptionsMenu = struct {
         ctx.title(.Left, "OPTIONS");
 
         if (builtin.arch == .wasm32) {
-            if (ctx.optionToggle("Sound: {}", if (ctx.menu_context.sound_enabled) "ON" else "OFF")) {
+            if (ctx.optionToggle("Sound: {}", [_][]const u8 {
+                if (ctx.menu_context.sound_enabled) "ON" else "OFF",
+            })) {
                 ctx.setEffect(.ToggleSound);
                 // don't play sound because the sound init/deinit may not be done in time to pick the new sound up
             }
         }
         const volume = ctx.menu_context.cfg.volume;
-        if (ctx.optionSlider("Volume: {}%", volume)) |direction| {
+        if (ctx.optionSlider("Volume: {}%", .{volume})) |direction| {
             switch (direction) {
                 .Left => {
                     if (volume > 0) {
@@ -287,7 +289,7 @@ pub const OptionsMenu = struct {
             ctx.setSound(.Ding);
         }
         const canvas_scale = ctx.menu_context.canvas_scale;
-        if (ctx.optionSlider("Canvas scale: {}x", ctx.menu_context.canvas_scale)) |direction| {
+        if (ctx.optionSlider("Canvas scale: {}x", .{ctx.menu_context.canvas_scale})) |direction| {
             switch (direction) {
                 .Left => {
                     if (canvas_scale > 1) {
@@ -302,19 +304,21 @@ pub const OptionsMenu = struct {
             }
             ctx.setSound(.Ding);
         }
-        if (ctx.optionToggle("Fullscreen: {}", if (ctx.menu_context.fullscreen) "ON" else "OFF")) {
+        if (ctx.optionToggle("Fullscreen: {}", [_][]const u8 {
+            if (ctx.menu_context.fullscreen) "ON" else "OFF",
+        })) {
             ctx.setEffect(.ToggleFullscreen);
             // don't play a sound because the fullscreen transition might mess with playback
         }
-        if (ctx.option("Game settings")) {
+        if (ctx.option("Game settings", .{})) {
             ctx.setEffect(.{.Push = .{.GameSettingsMenu = GameSettingsMenu.init()}});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Key bindings")) {
+        if (ctx.option("Key bindings", .{})) {
             ctx.setEffect(.{.Push = .{.KeyBindingsMenu = KeyBindingsMenu.init()}});
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Back")) {
+        if (ctx.option("Back", .{})) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
         }
@@ -339,11 +343,13 @@ pub const GameSettingsMenu = struct {
 
         ctx.title(.Left, "GAME SETTINGS");
 
-        if (ctx.optionToggle("Friendly fire: {}", if (ctx.menu_context.friendly_fire) "ON" else "OFF")) {
+        if (ctx.optionToggle("Friendly fire: {}", [_][]const u8 {
+            if (ctx.menu_context.friendly_fire) "ON" else "OFF",
+        })) {
             ctx.setEffect(.ToggleFriendlyFire);
             ctx.setSound(.Ding);
         }
-        if (ctx.option("Back")) {
+        if (ctx.option("Back", .{})) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
         }
@@ -401,7 +407,7 @@ pub const KeyBindingsMenu = struct {
 
         ctx.title(.Left, "KEY BINDINGS");
 
-        if (ctx.optionToggle("For player: {}", self.for_player + 1)) {
+        if (ctx.optionToggle("For player: {}", .{self.for_player + 1})) {
             self.for_player += 1;
             if (self.for_player == config.num_players) {
                 self.for_player = 0;
@@ -418,7 +424,7 @@ pub const KeyBindingsMenu = struct {
 
         ctx.vspacer();
 
-        if (ctx.option("Close")) {
+        if (ctx.option("Close", .{})) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
         }
@@ -427,25 +433,28 @@ pub const KeyBindingsMenu = struct {
     fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, for_player: u32, command: input.GameCommand, command_name: []const u8) void {
         const result =
             if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
-                ctx.option("{} {}", command_name, switch (ctx.menu_context.anim_time / 16 % 4) {
-                    0 => ".  ",
-                    1 => ".. ",
-                    2 => "...",
-                    else => "",
+                ctx.option("{} {}", [_][]const u8 {
+                    command_name,
+                    switch (ctx.menu_context.anim_time / 16 % 4) {
+                        0 => ".  ",
+                        1 => ".. ",
+                        2 => "...",
+                        else => "",
+                    },
                 })
             ) else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
                 switch (source) {
                     .Key => |key|
-                        ctx.option("{} {}", command_name, key_names[@enumToInt(key)]),
+                        ctx.option("{} {}", .{command_name, key_names[@enumToInt(key)]}),
                     .JoyButton => |j|
-                        ctx.option("{} Joy{}Button{}", command_name, j.which, j.button),
+                        ctx.option("{} Joy{}Button{}", .{command_name, j.which, j.button}),
                     .JoyAxisPos => |j|
-                        ctx.option("{} Joy{}Axis{}+", command_name, j.which, j.axis),
+                        ctx.option("{} Joy{}Axis{}+", .{command_name, j.which, j.axis}),
                     .JoyAxisNeg => |j|
-                        ctx.option("{} Joy{}Axis{}-", command_name, j.which, j.axis),
+                        ctx.option("{} Joy{}Axis{}-", .{command_name, j.which, j.axis}),
                 }
             ) else (
-                ctx.option("{}", command_name)
+                ctx.option("{}", .{command_name})
             );
 
         if (result) {
@@ -475,12 +484,12 @@ pub const HighScoresMenu = struct {
         ctx.title(.Left, "HIGH SCORES");
 
         for (ctx.menu_context.high_scores) |score, i| {
-            ctx.label("{:3}. {}", i + 1, score);
+            ctx.label("{:3}. {}", .{i + 1, score});
         }
 
         ctx.vspacer();
 
-        if (ctx.option("Close")) {
+        if (ctx.option("Close", .{})) {
             ctx.setEffect(.Pop);
             ctx.setSound(.Ding);
         }

@@ -188,7 +188,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
-        _ = dest.stream.print("Wave:{}", gc.wave_number) catch unreachable; // FIXME
+        _ = dest.stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
         fontDrawString(ds, &static.font, 0, 0, dest.getWritten());
         dest.reset();
 
@@ -249,7 +249,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
                 }
 
                 pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-                _ = dest.stream.print("Score:{}", pc.score) catch unreachable; // FIXME
+                _ = dest.stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
                 fontDrawString(ds, &static.font, 19*8, y, dest.getWritten());
                 dest.reset();
             }
@@ -263,7 +263,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
         }
     }
 
-    _ = dest.stream.print("High:{}", high_score) catch unreachable; // FIXME
+    _ = dest.stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
     fontDrawString(ds, &static.font, 30*8, 0, dest.getWritten());
     dest.reset();
 

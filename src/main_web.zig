@@ -57,7 +57,7 @@ pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
         // the high scores exist but there was an error loading them. just
         // continue with an empty high scores list, even though that might mean
         // that the user's legitimate high scores might get wiped out (FIXME?)
-        warn("Failed to load high scores from local storage: {}\n", err);
+        warn("Failed to load high scores from local storage: {}\n", .{err});
         return [1]u32{0} ** Constants.num_high_scores;
     };
     var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
@@ -214,13 +214,13 @@ const audio_buffer_size = 1024;
 
 fn init() !void {
     main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200*1024) catch |err| {
-        warn("failed to allocate main_memory: {}\n", err);
+        warn("failed to allocate main_memory: {}\n", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.free(main_memory);
 
     var hunk = std.heap.page_allocator.create(Hunk) catch |err| {
-        warn("failed to allocate hunk: {}\n", err);
+        warn("failed to allocate hunk: {}\n", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.destroy(hunk);
