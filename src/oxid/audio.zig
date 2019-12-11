@@ -220,8 +220,8 @@ pub const MainModule = struct {
     // objects (defined in components.zig). the latter has a few more fields
     // which are not used in this function.
     fn paintWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
-        std.debug.assert(@typeId(@typeOf(wrapper)) == .Pointer);
-        const ModuleType = @typeInfo(@typeOf(wrapper)).Pointer.child.ModuleType;
+        std.debug.assert(@typeId(@TypeOf(wrapper)) == .Pointer);
+        const ModuleType = @typeInfo(@TypeOf(wrapper)).Pointer.child.ModuleType;
         var temps: [ModuleType.num_temps][]f32 = undefined;
         comptime var i: usize = 0; inline while (i < ModuleType.num_temps) : (i += 1) {
             temps[i] = self.tmp_bufs[i];

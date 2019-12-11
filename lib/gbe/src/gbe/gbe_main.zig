@@ -148,7 +148,7 @@ pub fn Session(comptime ComponentLists: type) type {
         // ComponentStorage config, per component type. obviously, kicking out old
         // entities to make room for new ones is not always the right choice)
         pub fn addComponent(self: *@This(), entity_id: EntityId, data: var) !void {
-            const T: type = @typeOf(data);
+            const T: type = @TypeOf(data);
             // assert(@typeId(T) == .Struct);
             var list = &@field(&self.components, @typeName(T));
             const slot = blk: {
