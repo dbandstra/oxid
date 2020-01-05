@@ -40,7 +40,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             // https://github.com/ziglang/zig/issues/3679
             WaveChoice {
                 // all regular spiders
-                .weight = if (wavenum < 20) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum < 20) 10 else 0,
                 .spider_basecount = 8,
                 .knight_basecount = 0,
                 .fastbug_basecount = 0,
@@ -56,7 +56,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             .{
                 // all fastbugs
-                .weight = if (wavenum > fastbug_intro) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum > fastbug_intro) 10 else 0,
                 .spider_basecount = 0,
                 .knight_basecount = 0,
                 .fastbug_basecount = 5,
@@ -80,7 +80,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             .{
                 // spiders, red spiders and squids
-                .weight = if (wavenum > squid_intro) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum > squid_intro) 10 else 0,
                 .spider_basecount = 4,
                 .knight_basecount = 2,
                 .fastbug_basecount = 0,
@@ -88,7 +88,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             .{
                 // red spiders and squids
-                .weight = if (wavenum > squid_intro) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum > squid_intro) 10 else 0,
                 .spider_basecount = 0,
                 .knight_basecount = 5,
                 .fastbug_basecount = 0,
@@ -96,7 +96,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             .{
                 // regular spiders, fastbugs, and squids
-                .weight = if (wavenum > fastbug_intro) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum > fastbug_intro) 10 else 0,
                 .spider_basecount = 4,
                 .knight_basecount = 0,
                 .fastbug_basecount = 2,
@@ -104,7 +104,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             },
             .{
                 // everything
-                .weight = if (wavenum > 20) @as(u32, 10) else @as(u32, 0),
+                .weight = if (wavenum > 20) 10 else 0,
                 .spider_basecount = 2,
                 .knight_basecount = 2,
                 .fastbug_basecount = 2,
@@ -140,13 +140,13 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
         .fastbugs = fastbugs,
         .squids = squids,
         .juggernauts = switch (wavenum) {
-            11, 20, 28 => @as(u32, 1),
-            else => @as(u32, 0),
+            11, 20, 28 => 1,
+            else => 0,
         },
         .speed = switch (wavenum) {
-            1...9 => @as(u31, 0),
-            10...14 => @as(u31, 1),
-            else => @as(u31, 2),
+            1...9 => 0,
+            10...14 => 1,
+            else => 2,
         },
         .message = switch (wavenum) {
             1 => "GET READY!",
@@ -165,7 +165,7 @@ fn scaleMonsterCount(prng: *std.rand.Random, basenum: u31, wavenum: u32) u31 {
     const whole = std.math.floor(f);
     const frac = f - whole;
 
-    const add = if (prng.float(f32) < frac) @as(u31, 1) else @as(u31, 0);
+    const add: u31 = if (prng.float(f32) < frac) 1 else 0;
 
     return @floatToInt(u31, whole) + add;
 }

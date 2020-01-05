@@ -643,7 +643,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         // when fast forwarding, we'll simulate 4 frames and draw them blended
         // together. we'll also speed up the sound playback rate by 4x
-        const num_frames = if (self.fast_forward) @as(u32, 4) else @as(u32, 1);
+        const num_frames: u32 = if (self.fast_forward) 4 else 1;
         var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
             // need to actually draw for the last one of them

@@ -90,9 +90,9 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                     .facing = self.phys.facing,
                     .bullet_type = .PlayerBullet,
                     .cluster_size = switch (self.player.attack_level) {
-                        .One => @as(u32, 1),
-                        .Two => @as(u32, 2),
-                        .Three => @as(u32, 3),
+                        .One => 1,
+                        .Two => 2,
+                        .Three => 3,
                     },
                     .friendly_fire = self.context.friendly_fire,
                 })) |bullet_entity_id| {

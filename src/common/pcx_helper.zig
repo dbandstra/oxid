@@ -47,7 +47,7 @@ pub fn loadPcx(
         pixels[i*4+1] = palette[index*3+1];
         pixels[i*4+2] = palette[index*3+2];
         pixels[i*4+3] =
-            if ((transparent_color_index orelse ~index) == index) @as(u8, 0) else @as(u8, 255);
+            if ((transparent_color_index orelse ~index) == index) 0 else 255;
     }
 
     var image: PcxImage = .{

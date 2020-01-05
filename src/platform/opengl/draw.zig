@@ -306,7 +306,7 @@ pub fn tile(
     }
 
     // wasm doesn't support quads, so we have to emit two triangles
-    const verts_per_tile = if (builtin.arch == .wasm32) @as(usize, 6) else @as(usize, 4);
+    const verts_per_tile: usize = if (builtin.arch == .wasm32) 6 else 4;
 
     if (ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices) {
         flush(ds);
