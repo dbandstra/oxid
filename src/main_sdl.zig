@@ -30,9 +30,6 @@ const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
 
-// See https://github.com/zig-lang/zig/issues/565
-const SDL_WINDOWPOS_UNDEFINED = @bitCast(c_int, SDL_WINDOWPOS_UNDEFINED_MASK);
-
 const datadir = "Oxid";
 const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
@@ -534,9 +531,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     // vsync). i don't really get what adaptive vsync is but it seems like it
     // should be classed with vsync.
     const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
-    std.debug.warn("Vsync is {}.\n", [_][]const u8 {
-        if (vsync_enabled) "enabled" else "disabled",
-    });
+    const vsync_str = if (vsync_enabled) "enabled" else "disabled"; // https://github.com/ziglang/zig/issues/3882
+    std.debug.warn("Vsync is {}.\n", .{vsync_str});
 
     const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
     switch (framerate_scheme) {

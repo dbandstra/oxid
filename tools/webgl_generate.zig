@@ -650,11 +650,10 @@ fn writeZigFile(filename: []const u8) !void {
             }
         } else false;
 
-        try stream.print("{}extern fn {}{}(", [_][]const u8 {
-            if (any_slice) "" else "pub ",
-            func.name,
-            if (any_slice) "_" else "",
-        });
+        // https://github.com/ziglang/zig/issues/3882
+        const fmtarg_pub = if (any_slice) "" else "pub ";
+        const fmtarg_suf = if (any_slice) "_" else "";
+        try stream.print("{}extern fn {}{}(", .{fmtarg_pub, func.name, fmtarg_suf});
         for (func.args) |arg, i| {
             if (i > 0) {
                 try stream.print(", ", .{});
@@ -680,10 +679,9 @@ fn writeZigFile(filename: []const u8) !void {
                 }
             }
             try stream.print(") {} {{\n", .{func.ret});
-            try stream.print("    {}{}_(", [_][]const u8 {
-                if (std.mem.eql(u8, func.ret, "void")) "" else "return ",
-                func.name,
-            });
+            // https://github.com/ziglang/zig/issues/3882
+            const fmtarg_ret = if (std.mem.eql(u8, func.ret, "void")) "" else "return ";
+            try stream.print("    {}{}_(", .{fmtarg_ret, func.name});
             for (func.args) |arg, i| {
                 if (i > 0) {
                     try stream.print(", ", .{});
@@ -716,10 +714,9 @@ fn writeJsFile(filename: []const u8) !void {
             }
         } else false;
 
-        try stream.print("        {}{}(", [_][]const u8 {
-            func.name,
-            if (any_slice) "_" else "",
-        });
+        // https://github.com/ziglang/zig/issues/3882
+        const fmtarg_suf = if (any_slice) "_" else "";
+        try stream.print("        {}{}(", .{func.name, fmtarg_suf});
         for (func.args) |arg, i| {
             if (i > 0) {
                 try stream.print(", ", .{});

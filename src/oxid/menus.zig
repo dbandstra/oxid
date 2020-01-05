@@ -265,9 +265,8 @@ pub const OptionsMenu = struct {
         ctx.title(.Left, "OPTIONS");
 
         if (builtin.arch == .wasm32) {
-            if (ctx.optionToggle("Sound: {}", [_][]const u8 {
-                if (ctx.menu_context.sound_enabled) "ON" else "OFF",
-            })) {
+            const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
+            if (ctx.optionToggle("Sound: {}", .{sound_str})) {
                 ctx.setEffect(.ToggleSound);
                 // don't play sound because the sound init/deinit may not be done in time to pick the new sound up
             }
@@ -304,9 +303,8 @@ pub const OptionsMenu = struct {
             }
             ctx.setSound(.Ding);
         }
-        if (ctx.optionToggle("Fullscreen: {}", [_][]const u8 {
-            if (ctx.menu_context.fullscreen) "ON" else "OFF",
-        })) {
+        const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
+        if (ctx.optionToggle("Fullscreen: {}", .{fullscreen_str})) {
             ctx.setEffect(.ToggleFullscreen);
             // don't play a sound because the fullscreen transition might mess with playback
         }
@@ -343,9 +341,8 @@ pub const GameSettingsMenu = struct {
 
         ctx.title(.Left, "GAME SETTINGS");
 
-        if (ctx.optionToggle("Friendly fire: {}", [_][]const u8 {
-            if (ctx.menu_context.friendly_fire) "ON" else "OFF",
-        })) {
+        const friendly_fire_str = if (ctx.menu_context.friendly_fire) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
+        if (ctx.optionToggle("Friendly fire: {}", .{friendly_fire_str})) {
             ctx.setEffect(.ToggleFriendlyFire);
             ctx.setSound(.Ding);
         }
@@ -432,17 +429,16 @@ pub const KeyBindingsMenu = struct {
 
     fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, for_player: u32, command: input.GameCommand, command_name: []const u8) void {
         const result =
-            if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) (
-                ctx.option("{} {}", [_][]const u8 {
-                    command_name,
-                    switch (ctx.menu_context.anim_time / 16 % 4) {
-                        0 => ".  ",
-                        1 => ".. ",
-                        2 => "...",
-                        else => "",
-                    },
-                })
-            ) else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
+            if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) blk: {
+                // https://github.com/ziglang/zig/issues/3882
+                const dots = switch (ctx.menu_context.anim_time / 16 % 4) {
+                    0 => ".  ",
+                    1 => ".. ",
+                    2 => "...",
+                    else => "",
+                };
+                break :blk ctx.option("{} {}", .{command_name, dots});
+            } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
                 switch (source) {
                     .Key => |key|
                         ctx.option("{} {}", .{command_name, key_names[@enumToInt(key)]}),
