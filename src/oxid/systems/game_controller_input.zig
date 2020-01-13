@@ -11,9 +11,9 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
-        switch (event.data.command) {
+        switch (event.command) {
             .KillAllMonsters => {
-                if (event.data.down) {
+                if (event.down) {
                     killAllMonsters(gs);
                 }
             },

@@ -1,4 +1,5 @@
 const std = @import("std");
+const gbe = @import("gbe");
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
@@ -70,17 +71,19 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
 
 // run after "middleware" (rendering, sound, etc)
 pub fn gameFrameCleanup(gs: *GameSession) void {
-    markAllEventsForRemoval(gs);
-    gs.applyRemovals();
-}
-
-fn markAllEventsForRemoval(gs: *GameSession) void {
+    // mark all events for removal
+    var cc: usize = 0;
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
-        if (std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
-            var it = gs.iter(ComponentType); while (it.next()) |object| {
-                gs.markEntityForRemoval(object.entity_id);
+        if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+            var id: gbe.EntityId = undefined;
+            var it = gs.iter(ComponentType);
+            while (it.nextWithId(&id) != null) {
+                cc += 1;
+                gs.markEntityForRemoval(id);
             }
         }
     }
+
+    gs.applyRemovals();
 }

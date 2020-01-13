@@ -12,27 +12,27 @@ pub const run = gbe.buildSystem(GameSession, SystemData, think);
 
 fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.iter(c.EventGameInput); while (it.next()) |event| {
-        if (event.data.player_number != self.player.player_number) {
+        if (event.player_number != self.player.player_number) {
             continue;
         }
-        switch (event.data.command) {
+        switch (event.command) {
             .Up => {
-                self.player.in_up = event.data.down;
+                self.player.in_up = event.down;
             },
             .Down => {
-                self.player.in_down = event.data.down;
+                self.player.in_down = event.down;
             },
             .Left => {
-                self.player.in_left = event.data.down;
+                self.player.in_left = event.down;
             },
             .Right => {
-                self.player.in_right = event.data.down;
+                self.player.in_right = event.down;
             },
             .Shoot => {
-                self.player.in_shoot = event.data.down;
+                self.player.in_shoot = event.down;
             },
             .ToggleGodMode => {
-                if (event.data.down) {
+                if (event.down) {
                     self.creature.god_mode = !self.creature.god_mode;
                 }
             },

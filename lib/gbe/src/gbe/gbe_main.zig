@@ -2,7 +2,6 @@
 
 const builtin = @import("builtin");
 const std = @import("std");
-const assert = std.debug.assert;
 
 const GbeConstants = @import("gbe_constants.zig");
 const GbeIterators = @import("gbe_iterators.zig");
@@ -21,8 +20,7 @@ pub const EntityId = struct {
 
 pub fn ComponentObject(comptime T: type) type {
     return struct {
-        is_active: bool,
-        entity_id: EntityId,
+        entity_id: EntityId, // if 0, the slot is not in use
         data: T,
     };
 }
@@ -38,15 +36,15 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
 }
 
 pub fn Session(comptime ComponentLists: type) type {
-    assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        // ?! is it possible to assert that a type == ComponentList(X)?
+    std.debug.assert(@typeId(ComponentLists) == builtin.TypeId.Struct);
+    //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    //    // ?! is it possible to assert that a type == ComponentList(X)?
 
-        // without doing some kind of duck typing check on every field
-        // so that it "looks like" ComponentList?
+    //    // without doing some kind of duck typing check on every field
+    //    // so that it "looks like" ComponentList?
 
-        // @compileError(@typeName(field.field_type));
-    }
+    //    // @compileError(@typeName(field.field_type));
+    //}
 
     return struct {
         pub const ComponentListsType = ComponentLists;
@@ -69,6 +67,10 @@ pub fn Session(comptime ComponentLists: type) type {
             }
         }
 
+        pub fn getRand(self: *@This()) *std.rand.Random {
+            return &self.prng.random;
+        }
+
         pub fn getCapacity(comptime T: type) usize {
             @setEvalBranchQuota(10000);
             comptime var capacity: usize = 0;
@@ -80,16 +82,13 @@ pub fn Session(comptime ComponentLists: type) type {
             return capacity;
         }
 
-        pub fn iter(self: *@This(), comptime T: type) GbeIterators.ComponentObjectIterator(T, getCapacity(T)) {
+        pub fn iter(self: *@This(), comptime T: type) GbeIterators.ComponentIterator(T, getCapacity(T)) {
             const list = &@field(&self.components, @typeName(T));
-            return GbeIterators.ComponentObjectIterator(T, comptime getCapacity(T)).init(list);
+            return GbeIterators.ComponentIterator(T, comptime getCapacity(T)).init(list);
         }
 
         pub fn entityIter(self: *@This(), comptime T: type) GbeIterators.EntityIterator(@This(), T) {
-            return .{
-                .state = self,
-                .index = 0,
-            };
+            return GbeIterators.EntityIterator(@This(), T).init(self);
         }
 
         pub fn eventIter(self: *@This(), comptime T: type, comptime field: []const u8, entity_id: EntityId) GbeIterators.EventIterator(T, getCapacity(T), field) {
@@ -97,17 +96,15 @@ pub fn Session(comptime ComponentLists: type) type {
             return GbeIterators.EventIterator(T, comptime getCapacity(T), field).init(list, entity_id);
         }
 
-        pub fn findObject(self: *@This(), entity_id: EntityId, comptime T: type) ?*ComponentObject(T) {
-            var it = self.iter(T); while (it.next()) |object| {
-                if (EntityId.eql(object.entity_id, entity_id)) {
+        pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
+            var id: EntityId = undefined;
+            var it = self.iter(T);
+            while (it.nextWithId(&id)) |object| {
+                if (EntityId.eql(id, entity_id)) {
                     return object;
                 }
             }
             return null;
-        }
-
-        pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
-            return if (self.findObject(entity_id, T)) |object| &object.data else null;
         }
 
         pub fn findEntity(self: *@This(), entity_id: EntityId, comptime T: type) ?T {
@@ -121,21 +118,12 @@ pub fn Session(comptime ComponentLists: type) type {
             return null;
         }
 
-        // use this for ad-hoc singleton component types
-        pub fn findFirstObject(self: *@This(), comptime T: type) ?*ComponentObject(T) {
+        pub fn findFirst(self: *@This(), comptime T: type) ?*T {
             return self.iter(T).next();
         }
 
-        pub fn findFirst(self: *@This(), comptime T: type) ?*T {
-            return if (self.findFirstObject(T)) |object| &object.data else null;
-        }
-
-        pub fn getRand(self: *@This()) *std.rand.Random {
-            return &self.prng.random;
-        }
-
         pub fn spawn(self: *@This()) EntityId {
-            const id: EntityId = .{.id = self.next_entity_id};
+            const id: EntityId = .{ .id = self.next_entity_id };
             self.next_entity_id += 1; // TODO - reuse these?
             return id;
         }
@@ -143,23 +131,13 @@ pub fn Session(comptime ComponentLists: type) type {
         // this is only called in spawn functions, to clean up components of a
         // partially constructed entity, when something goes wrong
         pub fn undoSpawn(self: *@This(), entity_id: EntityId) void {
-            inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-                self.destroyComponent(entity_id, field.field_type.ComponentType);
-            }
-        }
-
-        pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
-            if (self.num_removals >= GbeConstants.max_removals_per_frame) {
-                @panic("markEntityForRemoval: no removal slots available");
-            }
-            self.removals[self.num_removals] = entity_id;
-            self.num_removals += 1;
+            self.freeEntity(entity_id);
+            //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+            //    self.destroyComponent(entity_id, field.field_type.ComponentType);
+            //}
         }
 
         // `data` must be a struct object, and it must be one of the structs in ComponentLists.
-        // FIXME - before i used duck typing for this, `data` had type `*const T`.
-        // then you could pass struct using as-value syntax, and it was implicitly sent as a reference
-        // (like c++ references). but with `var`, i don't think this is possible?
         // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
         // component to an entity twice?
         // TODO - optional LRU reuse (whether this is used would be up to the
@@ -167,13 +145,13 @@ pub fn Session(comptime ComponentLists: type) type {
         // entities to make room for new ones is not always the right choice)
         pub fn addComponent(self: *@This(), entity_id: EntityId, data: var) !void {
             const T: type = @TypeOf(data);
-            // assert(@typeId(T) == .Struct);
+            // std.debug.assert(@typeId(T) == .Struct);
             var list = &@field(&self.components, @typeName(T));
             const slot = blk: {
                 var i: usize = 0;
                 while (i < list.count) : (i += 1) {
                     const object = &list.objects[i];
-                    if (!object.is_active) {
+                    if (EntityId.isZero(object.entity_id)) {
                         break :blk object;
                     }
                 }
@@ -185,7 +163,6 @@ pub fn Session(comptime ComponentLists: type) type {
                 break :blk null;
             };
             if (slot) |object| {
-                object.is_active = true;
                 object.data = data;
                 object.entity_id = entity_id;
             } else {
@@ -194,17 +171,34 @@ pub fn Session(comptime ComponentLists: type) type {
             }
         }
 
-        pub fn destroyComponent(self: *@This(), entity_id: EntityId, comptime T: type) void {
-            if (self.findObject(entity_id, T)) |object| {
-                object.is_active = false;
+        pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
+            if (self.num_removals >= GbeConstants.max_removals_per_frame) {
+                @panic("markEntityForRemoval: no removal slots available");
+            }
+            self.removals[self.num_removals] = entity_id;
+            self.num_removals += 1;
+        }
+
+        // (internal) actually free all components using this entity id
+        fn freeEntity(self: *@This(), entity_id: EntityId) void {
+            if (EntityId.isZero(entity_id)) {
+                return;
+            }
+            // FIXME - this implementation is not good. it's going through
+            // every slot of every component type, for each removal.
+            inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
+                const list = &@field(self.components, @typeName(field.field_type.ComponentType));
+                for (list.objects[0..list.count]) |*object| {
+                    if (EntityId.eql(object.entity_id, entity_id)) {
+                        object.entity_id = .{ .id = 0 };
+                    }
+                }
             }
         }
 
         pub fn applyRemovals(self: *@This()) void {
             for (self.removals[0..self.num_removals]) |entity_id| {
-                inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-                    self.destroyComponent(entity_id, field.field_type.ComponentType);
-                }
+                self.freeEntity(entity_id);
             }
             self.num_removals = 0;
         }

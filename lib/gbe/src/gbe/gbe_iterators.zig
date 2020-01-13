@@ -1,7 +1,7 @@
 const std = @import("std");
 const Gbe = @import("gbe_main.zig");
 
-pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type {
+pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
     return struct {
         list: *Gbe.ComponentList(T, capacity),
         index: usize,
@@ -13,12 +13,20 @@ pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type 
             };
         }
 
-        pub fn next(self: *@This()) ?*Gbe.ComponentObject(T) {
+        pub inline fn next(self: *@This()) ?*T {
+            return self.nextWithId(null);
+        }
+
+        pub fn nextWithId(self: *@This(), maybe_out_id: ?*Gbe.EntityId) ?*T {
             for (self.list.objects[self.index..self.list.count]) |*object, i| {
-                if (object.is_active) {
-                    self.index += i + 1;
-                    return object;
+                if (Gbe.EntityId.isZero(object.entity_id)) {
+                    continue;
                 }
+                if (maybe_out_id) |out_id| {
+                    out_id.* = object.entity_id;
+                }
+                self.index += i + 1;
+                return &object.data;
             }
             self.index = self.list.count + 1;
             return null;
@@ -26,11 +34,8 @@ pub fn ComponentObjectIterator(comptime T: type, comptime capacity: usize) type 
     };
 }
 
-// EventIterator is like ComponentObjectIterator, with the following
-// differences:
-// - takes a field name (compile-time) and entity id (run-time), and only
-//   yields events where event.field == entity_id
-// - returns *T (component data) directly, instead of *ComponentObject(T)
+// EventIterator takes a field name (compile-time) and an entity id (run-time),
+// and only yields events where event.field == entity_id
 pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field: []const u8) type {
     return struct {
         list: *Gbe.ComponentList(T, capacity),
@@ -46,11 +51,18 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field:
         }
 
         pub fn next(self: *@This()) ?*T {
+            if (Gbe.EntityId.isZero(self.entity_id)) {
+                return null;
+            }
             for (self.list.objects[self.index..self.list.count]) |*object, i| {
-                if (object.is_active and Gbe.EntityId.eql(@field(&object.data, field), self.entity_id)) {
-                    self.index += i + 1;
-                    return &object.data;
+                if (Gbe.EntityId.isZero(object.entity_id)) {
+                    continue;
                 }
+                if (!Gbe.EntityId.eql(@field(&object.data, field), self.entity_id)) {
+                    continue;
+                }
+                self.index += i + 1;
+                return &object.data;
             }
             self.index = self.list.count + 1;
             return null;
@@ -61,10 +73,17 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field:
 // `T` is a struct containing pointers to components
 pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
     return struct {
-        state: *SessionType,
+        gs: *SessionType,
         index: usize, // component index within "best" component type's slot array
 
-        pub fn next(self: *@This()) ?T {
+        pub fn init(gs: *SessionType) @This() {
+            return .{
+                .gs = gs,
+                .index = 0,
+            };
+        }
+
+        pub inline fn next(self: *@This()) ?T {
             return self.nextWithId(null);
         }
 
@@ -99,8 +118,8 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     continue;
                 }
                 comptime const field_type = UnpackComponentType(field.field_type);
-                if (@field(&self.state.components, @typeName(field_type)).count < best) {
-                    best = @field(&self.state.components, @typeName(field_type)).count;
+                if (@field(&self.gs.components, @typeName(field_type)).count < best) {
+                    best = @field(&self.gs.components, @typeName(field_type)).count;
                     maybe_which = i;
                 }
             }
@@ -125,19 +144,19 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
 
                         comptime var found_component_type = false;
 
-                        // find the component list in the GBE state
+                        // find the component list in the GBE session
                         inline for (@typeInfo(SessionType.ComponentListsType).Struct.fields) |c_field, c_field_index| {
                             if (c_field.field_type.ComponentType == ComponentType) {
                                 found_component_type = true;
 
-                                const slots = &@field(self.state.components, c_field.name);
+                                const slots = &@field(self.gs.components, c_field.name);
 
                                 // for the best component type, we are iterating through the
                                 // component array using self.index...
-                                while (self.index < slots.objects.len) {
+                                while (self.index < slots.count) {
                                     const i = self.index;
                                     self.index += 1;
-                                    if (slots.objects[i].is_active) {
+                                    if (!Gbe.EntityId.isZero(slots.objects[i].entity_id)) {
                                         @field(result, field.name) = &slots.objects[i].data;
                                         entity_id = slots.objects[i].entity_id;
                                         break;
@@ -180,11 +199,11 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                                 // this component array corresponds to the field in the iterator struct...
                                 found_component_type = true;
 
-                                const slots = &@field(self.state.components, c_field.name);
+                                const slots = &@field(self.gs.components, c_field.name);
 
                                 // look for a component with an entity_id matching the entity we're currently looking at.
-                                for (slots.objects) |*object, i| {
-                                    if (object.is_active and Gbe.EntityId.eql(object.entity_id, entity_id)) {
+                                for (slots.objects[0..slots.count]) |*object, i| {
+                                    if (Gbe.EntityId.eql(object.entity_id, entity_id)) {
                                         @field(result, field.name) = &slots.objects[i].data;
                                         break;
                                     }

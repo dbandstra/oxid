@@ -1,4 +1,5 @@
 const std = @import("std");
+const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
@@ -292,15 +293,17 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
 // i feel like this functions are too heavy to be done inline by this system.
 // they should be created as events and handled by middleware?
 pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
-    const mc = &gs.findFirstObject(c.MainController).?.data;
+    const mc = gs.findFirst(c.MainController).?;
 
     // remove all entities except the MainController
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
         switch (field.field_type.ComponentType) {
             c.MainController => {},
             else => |ComponentType| {
-                var it = gs.iter(ComponentType); while (it.next()) |object| {
-                    gs.markEntityForRemoval(object.entity_id);
+                var id: gbe.EntityId = undefined;
+                var it = gs.iter(ComponentType);
+                while (it.nextWithId(&id) != null) {
+                    gs.markEntityForRemoval(id);
                 }
             },
         }
@@ -322,17 +325,19 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
 }
 
 pub fn abortGame(gs: *GameSession) void {
-    const mc = &gs.findFirstObject(c.MainController).?.data;
+    const mc = gs.findFirst(c.MainController).?;
 
     mc.game_running_state = null;
 
-    // remove all entities except the MainController and EventPostScore
+    // remove all entities except the MainController
     inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
         switch (field.field_type.ComponentType) {
             c.MainController => {},
             else => |ComponentType| {
-                var it = gs.iter(ComponentType); while (it.next()) |object| {
-                    gs.markEntityForRemoval(object.entity_id);
+                var id: gbe.EntityId = undefined;
+                var it = gs.iter(ComponentType);
+                while (it.nextWithId(&id) != null) {
+                    gs.markEntityForRemoval(id);
                 }
             },
         }
@@ -340,7 +345,7 @@ pub fn abortGame(gs: *GameSession) void {
 }
 
 pub fn handleGameOver(self: *MainState, comptime ns: var) void {
-    if (self.session.findFirstObject(c.EventGameOver)) |_| {
+    if (self.session.findFirst(c.EventGameOver) != null) {
         finalizeGame(self, ns);
         self.menu_stack.push(.{
             .GameOverMenu = menus.GameOverMenu.init(),
@@ -355,9 +360,9 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
     var save_high_scores = true;
 
     // get players' scores
-    var it = self.session.iter(c.PlayerController); while (it.next()) |object| {
+    var it = self.session.iter(c.PlayerController); while (it.next()) |pc| {
         // insert the score somewhere in the high score list
-        const new_score = object.data.score;
+        const new_score = pc.score;
 
         // the list is always sorted highest to lowest
         var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {

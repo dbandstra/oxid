@@ -52,8 +52,8 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
     defer perf.end(.DrawSort);
 
     var num_drawables: usize = 0;
-    var it = gs.iter(c.EventDraw); while (it.next()) |object| {
-        sort_buffer[num_drawables] = &object.data;
+    var it = gs.iter(c.EventDraw); while (it.next()) |event| {
+        sort_buffer[num_drawables] = event;
         num_drawables += 1;
     }
     var sorted_drawables = sort_buffer[0..num_drawables];
@@ -134,15 +134,15 @@ fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_d
 }
 
 fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
-    var it = gs.iter(c.EventDrawBox); while (it.next()) |object| {
-        const abs_bbox = object.data.box;
+    var it = gs.iter(c.EventDrawBox); while (it.next()) |event| {
+        const abs_bbox = event.box;
         const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
         const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
         const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
         const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
         const w = x1 - x0;
         const h = y1 - y0;
-        pdraw.begin(ds, ds.blank_tex.handle, object.data.color, 1.0, true);
+        pdraw.begin(ds, ds.blank_tex.handle, event.color, 1.0, true);
         pdraw.tile(
             ds,
             ds.blank_tileset,
@@ -194,9 +194,9 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
 
         var player_number: u31 = 0; while (player_number < 2) : (player_number += 1) {
             const pc_maybe = blk: {
-                var it = gs.iter(c.PlayerController); while (it.next()) |object| {
-                    if (object.data.player_number == player_number) {
-                        break :blk &object.data;
+                var it = gs.iter(c.PlayerController); while (it.next()) |pc| {
+                    if (pc.player_number == player_number) {
+                        break :blk pc;
                     }
                 }
                 break :blk null;

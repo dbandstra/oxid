@@ -33,27 +33,30 @@ var move_groups: [max_phys_objects]MoveGroup = undefined;
 
 pub fn physicsFrame(gs: *GameSession) void {
     // calculate move bboxes
-    var it = gs.iter(c.PhysObject); while (it.next()) |object| {
-        const phys = &object.data;
-        const transform = gs.find(object.entity_id, c.Transform) orelse continue;
-        phys.internal.move_bbox.mins = math.Vec2.add(transform.pos, phys.entity_bbox.mins);
-        phys.internal.move_bbox.maxs = math.Vec2.add(transform.pos, phys.entity_bbox.maxs);
-        if (phys.speed != 0) {
-            switch (phys.facing) {
-                .W => phys.internal.move_bbox.mins.x -= @as(i32, phys.speed),
-                .E => phys.internal.move_bbox.maxs.x += @as(i32, phys.speed),
-                .N => phys.internal.move_bbox.mins.y -= @as(i32, phys.speed),
-                .S => phys.internal.move_bbox.maxs.y += @as(i32, phys.speed),
+    var it = gs.entityIter(struct {
+        id: gbe.EntityId,
+        phys: *c.PhysObject,
+        transform: *const c.Transform,
+    });
+    while (it.next()) |self| {
+        self.phys.internal.move_bbox.mins = math.Vec2.add(self.transform.pos, self.phys.entity_bbox.mins);
+        self.phys.internal.move_bbox.maxs = math.Vec2.add(self.transform.pos, self.phys.entity_bbox.maxs);
+        if (self.phys.speed != 0) {
+            switch (self.phys.facing) {
+                .W => self.phys.internal.move_bbox.mins.x -= @as(i32, self.phys.speed),
+                .E => self.phys.internal.move_bbox.maxs.x += @as(i32, self.phys.speed),
+                .N => self.phys.internal.move_bbox.mins.y -= @as(i32, self.phys.speed),
+                .S => self.phys.internal.move_bbox.maxs.y += @as(i32, self.phys.speed),
             }
             // push_dir represents the possibility of changing direction in mid-move,
             // so factor that into the move box as well
-            if (phys.push_dir) |push_dir| {
-                if (push_dir != phys.facing) {
+            if (self.phys.push_dir) |push_dir| {
+                if (push_dir != self.phys.facing) {
                     switch (push_dir) {
-                        .W => phys.internal.move_bbox.mins.x -= @as(i32, phys.speed),
-                        .E => phys.internal.move_bbox.maxs.x += @as(i32, phys.speed),
-                        .N => phys.internal.move_bbox.mins.y -= @as(i32, phys.speed),
-                        .S => phys.internal.move_bbox.maxs.y += @as(i32, phys.speed),
+                        .W => self.phys.internal.move_bbox.mins.x -= @as(i32, self.phys.speed),
+                        .E => self.phys.internal.move_bbox.maxs.x += @as(i32, self.phys.speed),
+                        .N => self.phys.internal.move_bbox.mins.y -= @as(i32, self.phys.speed),
+                        .S => self.phys.internal.move_bbox.maxs.y += @as(i32, self.phys.speed),
                     }
                 }
             }
@@ -65,15 +68,18 @@ pub fn physicsFrame(gs: *GameSession) void {
     // group intersecting moves
     var num_move_groups: usize = 0;
     var i: usize = 0;
-    it = gs.iter(c.PhysObject); while (it.next()) |object| : (i += 1) {
-        const phys = &object.data;
+    var it2 = gs.entityIter(struct {
+        id: gbe.EntityId,
+        phys: *c.PhysObject,
+    });
+    while (it2.next()) |self| : (i += 1) {
         var my_move_group: ?*MoveGroup = null;
         // try to add to an existing move_group
         for (move_groups[0..num_move_groups]) |*move_group| {
             if (!move_group.is_active) {
                 continue;
             }
-            if (phys_overlaps_move_group(phys, move_group)) {
+            if (phys_overlaps_move_group(self.phys, move_group)) {
                 if (my_move_group) |mmg| {
                     // this is a subsequent move_group that phys overlaps.
                     // merge move_group into my_move_group
@@ -84,8 +90,8 @@ pub fn physicsFrame(gs: *GameSession) void {
                     // add self to the move group
                     const member = &move_group_members[i];
                     member.* = .{
-                        .phys = phys,
-                        .entity_id = object.entity_id,
+                        .phys = self.phys,
+                        .entity_id = self.id,
                         .progress = 0,
                         .step = undefined,
                         .next = move_group.head,
@@ -98,8 +104,8 @@ pub fn physicsFrame(gs: *GameSession) void {
             // create a new move group
             const member = &move_group_members[i];
             member.* = .{
-                .phys = phys,
-                .entity_id = object.entity_id,
+                .phys = self.phys,
+                .entity_id = self.id,
                 .progress = 0,
                 .step = undefined,
                 .next = null,
@@ -305,9 +311,9 @@ fn phys_overlaps_move_group(phys: *c.PhysObject, move_group: *MoveGroup) bool {
 // a and b params in this function should be commutative
 fn couldObjectsCollide(
     a_id: gbe.EntityId,
-    a_phys: *c.PhysObject,
+    a_phys: *const c.PhysObject,
     b_id: gbe.EntityId,
-    b_phys: *c.PhysObject,
+    b_phys: *const c.PhysObject,
 ) bool {
     if (gbe.EntityId.eql(a_id, b_id)) {
         return false;
@@ -328,18 +334,25 @@ fn couldObjectsCollide(
 }
 
 fn assertNoOverlaps(gs: *GameSession) void {
-    var it = gs.iter(c.PhysObject); while (it.next()) |self| {
-        if (self.data.illusory) continue;
-        const self_transform = gs.find(self.entity_id, c.Transform) orelse continue;
-        var it2 = gs.iter(c.PhysObject); while (it2.next()) |other| {
-            if (other.data.illusory) continue;
-            if (!couldObjectsCollide(self.entity_id, &self.data, other.entity_id, &other.data)) {
+    const T = struct {
+        id: gbe.EntityId,
+        phys: *const c.PhysObject,
+        transform: *const c.Transform,
+    };
+    var it = gs.entityIter(T); while (it.next()) |self| {
+        if (self.phys.illusory) {
+            continue;
+        }
+        var it2 = gs.entityIter(T); while (it2.next()) |other| {
+            if (other.phys.illusory) {
                 continue;
             }
-            const other_transform = gs.find(other.entity_id, c.Transform) orelse continue;
+            if (!couldObjectsCollide(self.id, self.phys, other.id, other.phys)) {
+                continue;
+            }
             if (math.boxesOverlap(
-                self_transform.pos, self.data.entity_bbox,
-                other_transform.pos, other.data.entity_bbox,
+                self.transform.pos, self.phys.entity_bbox,
+                other.transform.pos, other.phys.entity_bbox,
             )) {
                 warn("who is this joker\n", .{});
             }
