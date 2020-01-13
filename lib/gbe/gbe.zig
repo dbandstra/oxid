@@ -1,12 +1,202 @@
+// (g)ame (b)ack (e)nd
+// an entity component system for zig
+
 const std = @import("std");
-const Gbe = @import("gbe_main.zig");
+
+pub const max_removals_per_frame: usize = 1000;
+
+pub const EntityId = struct {
+    id: u64,
+
+    pub fn eql(a: EntityId, b: EntityId) bool {
+        return a.id == b.id;
+    }
+
+    pub fn isZero(a: EntityId) bool {
+        return a.id == 0;
+    }
+};
+
+pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
+    return struct {
+        pub const ComponentType = T;
+        const capacity = capacity_;
+
+        id: [capacity]u64, // if 0, the slot is not in use
+        data: [capacity]T,
+
+        // `count` is incremented as slots are allocated, and never decremented.
+        // slots (`id` and `data` elements) past `count` are uninitialized.
+        count: usize,
+    };
+}
+
+pub fn Session(comptime ComponentLists: type) type {
+    std.debug.assert(@typeId(ComponentLists) == .Struct);
+    //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    //    // ?! is it possible to assert that a type == ComponentList(X)?
+
+    //    // without doing some kind of duck typing check on every field
+    //    // so that it "looks like" ComponentList?
+
+    //    // @compileError(@typeName(field.field_type));
+    //}
+
+    return struct {
+        pub const ComponentListsType = ComponentLists;
+
+        prng: std.rand.DefaultPrng,
+
+        next_entity_id: usize,
+
+        removals: [max_removals_per_frame]EntityId,
+        num_removals: usize,
+
+        components: ComponentLists,
+
+        pub fn init(self: *@This(), rand_seed: u32) void {
+            self.prng = std.rand.DefaultPrng.init(rand_seed);
+            self.next_entity_id = 1;
+            self.num_removals = 0;
+            inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+                @field(&self.components, field.name).count = 0;
+            }
+        }
+
+        pub fn getRand(self: *@This()) *std.rand.Random {
+            return &self.prng.random;
+        }
+
+        pub fn getCapacity(comptime T: type) usize {
+            @setEvalBranchQuota(10000);
+            comptime var capacity: usize = 0;
+            inline for (@typeInfo(ComponentLists).Struct.fields) |sfield| {
+                if (comptime std.mem.eql(u8, sfield.name, @typeName(T))) {
+                    capacity = sfield.field_type.capacity;
+                }
+            }
+            return capacity;
+        }
+
+        pub fn iter(self: *@This(), comptime T: type) ComponentIterator(T, getCapacity(T)) {
+            const list = &@field(&self.components, @typeName(T));
+            return ComponentIterator(T, comptime getCapacity(T)).init(list);
+        }
+
+        pub fn entityIter(self: *@This(), comptime T: type) EntityIterator(@This(), T) {
+            return EntityIterator(@This(), T).init(self);
+        }
+
+        pub fn eventIter(self: *@This(), comptime T: type, comptime field: []const u8, entity_id: EntityId) EventIterator(T, getCapacity(T), field) {
+            const list = &@field(&self.components, @typeName(T));
+            return EventIterator(T, comptime getCapacity(T), field).init(list, entity_id);
+        }
+
+        pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
+            var id: EntityId = undefined;
+            var it = self.iter(T);
+            while (it.nextWithId(&id)) |object| {
+                if (EntityId.eql(id, entity_id)) {
+                    return object;
+                }
+            }
+            return null;
+        }
+
+        pub fn findEntity(self: *@This(), entity_id: EntityId, comptime T: type) ?T {
+            var entry_id: EntityId = undefined;
+            var it = self.entityIter(T);
+            while (it.nextWithId(&entry_id)) |entry| {
+                if (EntityId.eql(entry_id, entity_id)) {
+                    return entry;
+                }
+            }
+            return null;
+        }
+
+        pub fn findFirst(self: *@This(), comptime T: type) ?*T {
+            return self.iter(T).next();
+        }
+
+        pub fn spawn(self: *@This()) EntityId {
+            const id: EntityId = .{ .id = self.next_entity_id };
+            self.next_entity_id += 1; // TODO - reuse these?
+            return id;
+        }
+
+        // this is only called in spawn functions, to clean up components of a
+        // partially constructed entity, when something goes wrong
+        pub fn undoSpawn(self: *@This(), entity_id: EntityId) void {
+            self.freeEntity(entity_id);
+        }
+
+        // `data` must be a struct object, and it must be one of the structs in ComponentLists.
+        // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
+        // component to an entity twice?
+        // TODO - optional LRU reuse (whether this is used would be up to the
+        // ComponentStorage config, per component type. obviously, kicking out old
+        // entities to make room for new ones is not always the right choice)
+        pub fn addComponent(self: *@This(), entity_id: EntityId, data: var) !void {
+            var list = &@field(self.components, @typeName(@TypeOf(data)));
+            const slot_index = blk: {
+                var i: usize = 0;
+                while (i < list.count) : (i += 1) {
+                    if (list.id[i] != 0) {
+                        continue;
+                    }
+                    break :blk i;
+                }
+                if (list.count < list.id.len) {
+                    i = list.count;
+                    list.count += 1;
+                    break :blk i;
+                }
+                return error.NoComponentSlotsAvailable;
+            };
+            list.id[slot_index] = entity_id.id;
+            list.data[slot_index] = data;
+        }
+
+        pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
+            if (self.num_removals >= max_removals_per_frame) {
+                @panic("markEntityForRemoval: no removal slots available");
+            }
+            self.removals[self.num_removals] = entity_id;
+            self.num_removals += 1;
+        }
+
+        pub fn applyRemovals(self: *@This()) void {
+            for (self.removals[0..self.num_removals]) |entity_id| {
+                self.freeEntity(entity_id);
+            }
+            self.num_removals = 0;
+        }
+
+        // (internal) actually free all components using this entity id
+        fn freeEntity(self: *@This(), entity_id: EntityId) void {
+            if (EntityId.isZero(entity_id)) {
+                return;
+            }
+            // FIXME - this implementation is not good. it's going through
+            // every slot of every component type, for each removal.
+            inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
+                const list = &@field(self.components, @typeName(field.field_type.ComponentType));
+                for (list.id[0..list.count]) |*id| {
+                    if (id.* == entity_id.id) {
+                        id.* = 0;
+                    }
+                }
+            }
+        }
+    };
+}
 
 pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
     return struct {
-        list: *Gbe.ComponentList(T, capacity),
+        list: *ComponentList(T, capacity),
         index: usize,
 
-        pub fn init(list: *Gbe.ComponentList(T, capacity)) @This() {
+        pub fn init(list: *ComponentList(T, capacity)) @This() {
             return .{
                 .list = list,
                 .index = 0,
@@ -17,7 +207,7 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
             return self.nextWithId(null);
         }
 
-        pub fn nextWithId(self: *@This(), maybe_out_id: ?*Gbe.EntityId) ?*T {
+        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?*T {
             for (self.list.id[self.index..self.list.count]) |id, i| {
                 if (id == 0) {
                     continue;
@@ -39,11 +229,11 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
 // and only yields events where event.field_name == entity_id
 pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_name: []const u8) type {
     return struct {
-        list: *Gbe.ComponentList(T, capacity),
-        entity_id: Gbe.EntityId,
+        list: *ComponentList(T, capacity),
+        entity_id: EntityId,
         index: usize,
 
-        pub fn init(list: *Gbe.ComponentList(T, capacity), entity_id: Gbe.EntityId) @This() {
+        pub fn init(list: *ComponentList(T, capacity), entity_id: EntityId) @This() {
             return .{
                 .list = list,
                 .entity_id = entity_id,
@@ -52,7 +242,7 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_
         }
 
         pub fn next(self: *@This()) ?*T {
-            if (Gbe.EntityId.isZero(self.entity_id)) {
+            if (EntityId.isZero(self.entity_id)) {
                 return null;
             }
             for (self.list.id[self.index..self.list.count]) |id, i| {
@@ -60,7 +250,7 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_
                     continue;
                 }
                 const data = &self.list.data[self.index + i];
-                if (!Gbe.EntityId.eql(@field(data, field_name), self.entity_id)) {
+                if (!EntityId.eql(@field(data, field_name), self.entity_id)) {
                     continue;
                 }
                 self.index += i + 1;
@@ -89,14 +279,14 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
             return self.nextWithId(null);
         }
 
-        pub fn nextWithId(self: *@This(), maybe_out_id: ?*Gbe.EntityId) ?T {
+        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?T {
             // choose the best field
             // only if all fields are optional will we consider optional fields when
             // determining the best component type
             comptime var all_fields_optional = true;
 
             inline for (@typeInfo(T).Struct.fields) |field| {
-                if (field.field_type == Gbe.EntityId) continue;
+                if (field.field_type == EntityId) continue;
                 if (@typeId(field.field_type) != .Optional) {
                     all_fields_optional = false;
                 }
@@ -114,7 +304,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
             var maybe_which: ?usize = null;
 
             inline for (@typeInfo(T).Struct.fields) |field, i| {
-                if (field.field_type == Gbe.EntityId) continue;
+                if (field.field_type == EntityId) continue;
                 // skip optional fields, unless all fields are optional
                 if (@typeId(field.field_type) == .Optional and !all_fields_optional) {
                     continue;
@@ -140,7 +330,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
 
                 // go through the components of the "best" type. find the next one that exists
                 inline for (@typeInfo(T).Struct.fields) |field, field_index| {
-                    if (field.field_type == Gbe.EntityId) continue;
+                    if (field.field_type == EntityId) continue;
                     if (field_index == best_field_index) {
                         const ComponentType = UnpackComponentType(field.field_type);
 
@@ -188,7 +378,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     } else if (nope) {
                         // keep going till we get out of the loop (not allowed to break out of an
                         // inline loop using a runtime condition)
-                    } else if (comptime field.field_type == Gbe.EntityId) {
+                    } else if (comptime field.field_type == EntityId) {
                         // entity id (special field), will fill in later.
                     } else {
                         const ComponentType = UnpackComponentType(field.field_type);
@@ -234,7 +424,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                 if (!nope) {
                     // if there's an entity id field, fill it in now
                     inline for (@typeInfo(T).Struct.fields) |field| {
-                        if (comptime field.field_type == Gbe.EntityId) {
+                        if (comptime field.field_type == EntityId) {
                             @field(result, field.name) = .{ .id = entity_id };
                         }
                     }
@@ -261,4 +451,52 @@ fn UnpackComponentType(comptime field_type: type) type {
     }
     ft = @typeInfo(ft).Pointer.child;
     return ft;
+}
+
+// `SessionType` param to these functions must be of type `Session(...)`
+
+pub const ThinkResult = enum {
+    RemoveSelf,
+    Remain,
+};
+
+pub fn buildSystem(
+    comptime SessionType: type,
+    comptime SystemType: type,
+    comptime think: fn(*SessionType, SystemType)ThinkResult,
+) fn(*SessionType)void {
+    const Impl = struct {
+        fn run(gs: *SessionType) void {
+            var it = gs.entityIter(SystemType);
+            var entity_id: EntityId = undefined;
+            while (it.nextWithId(&entity_id)) |entry| {
+                const result = think(gs, entry);
+                if (result == .RemoveSelf) {
+                    gs.markEntityForRemoval(entity_id);
+                }
+            }
+        }
+    };
+    return Impl.run;
+}
+
+pub fn buildSystemWithContext(
+    comptime SessionType: type,
+    comptime SystemType: type,
+    comptime ContextType: type,
+    comptime think: fn(*SessionType, SystemType, ContextType)ThinkResult,
+) fn(*SessionType, ContextType)void {
+    const Impl = struct {
+        fn run(gs: *SessionType, ctx: ContextType) void {
+            var it = gs.entityIter(SystemType);
+            var entity_id: EntityId = undefined;
+            while (it.nextWithId(&entity_id)) |entry| {
+                const result = think(gs, entry, ctx);
+                if (result == .RemoveSelf) {
+                    gs.markEntityForRemoval(entity_id);
+                }
+            }
+        }
+    };
+    return Impl.run;
 }

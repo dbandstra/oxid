@@ -1,7 +1,5 @@
 const std = @import("std");
-const gbe = @import("gbe_main.zig");
-const ThinkResult = @import("gbe_system.zig").ThinkResult;
-const buildSystem = @import("gbe_system.zig").buildSystem;
+const gbe = @import("gbe.zig");
 
 const Creature = struct { hit_points: u32 };
 const Monster = struct { chasing: bool };
@@ -22,28 +20,88 @@ fn prepareGs(gs: *MockGameSession) !void {
 
     i = 0; while (i < 8) : (i += 1) {
         const entity_id = gs.spawn();
-        try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-        try gs.addComponent(entity_id, Creature{ .hit_points = 8 });
-        try gs.addComponent(entity_id, Monster{ .chasing = true });
+        try gs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
+        try gs.addComponent(entity_id, Creature { .hit_points = 8 });
+        try gs.addComponent(entity_id, Monster { .chasing = true });
     }
     i = 0; while (i < 8) : (i += 1) {
         const entity_id = gs.spawn();
-        try gs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
-        try gs.addComponent(entity_id, Creature{ .hit_points = 16 });
-        try gs.addComponent(entity_id, Player{ .attack_level = 0 });
+        try gs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
+        try gs.addComponent(entity_id, Creature { .hit_points = 16 });
+        try gs.addComponent(entity_id, Player { .attack_level = 0 });
     }
 }
 
-var g_count: u32 = undefined;
+test "EntityIterator basic test" {
+    var gs: MockGameSession = undefined;
+    try prepareGs(&gs);
+
+    var it = gs.entityIter(struct {
+        creature: *Creature,
+        transform: *Transform,
+    });
+    var i: usize = 0; while (i < 16) : (i += 1) {
+        const entry = it.next().?;
+        std.testing.expect(entry.transform.x == 0);
+        std.testing.expect(entry.transform.y == 0);
+        if (i < 8) {
+            std.testing.expect(entry.creature.hit_points == 8);
+        } else {
+            std.testing.expect(entry.creature.hit_points == 16);
+        }
+    }
+    std.testing.expect(it.next() == null);
+}
+
+test "EntityIterator only players" {
+    var gs: MockGameSession = undefined;
+    try prepareGs(&gs);
+
+    var it = gs.entityIter(struct {
+        player: *Player,
+    });
+    var i: usize = 0; while (i < 8) : (i += 1) {
+        const entry = it.next().?;
+        std.testing.expect(entry.player.attack_level == 0);
+    }
+    std.testing.expect(it.next() == null);
+}
+
+test "EntityIterator test with optionals and id field" {
+    var gs: MockGameSession = undefined;
+    try prepareGs(&gs);
+
+    var it = gs.entityIter(struct {
+        id: gbe.EntityId,
+        monster: ?*Monster,
+        player: ?*Player,
+        creature: *Creature,
+        transform: *Transform,
+    });
+    var i: usize = 0; while (i < 16) : (i += 1) {
+        const entry = it.next().?;
+        std.testing.expect(entry.id.id == i + 1);
+        if (i < 8) {
+            std.testing.expect(entry.monster != null);
+            std.testing.expect(entry.player == null);
+        } else {
+            std.testing.expect(entry.monster == null);
+            std.testing.expect(entry.player != null);
+        }
+    }
+    std.testing.expect(it.next() == null);
+}
 
 ///////////////////////////////////////
+
+var g_count: usize = 0;
 
 const SystemData1 = struct {
     creature: *Creature,
     transform: *Transform,
 };
 
-fn think1(gs: *MockGameSession, self: SystemData1) ThinkResult {
+fn think1(gs: *MockGameSession, self: SystemData1) gbe.ThinkResult {
     std.testing.expect(self.transform.x == 0);
     std.testing.expect(self.transform.y == 0);
     std.testing.expect(self.creature.hit_points == 8 or self.creature.hit_points == 16);
@@ -51,7 +109,7 @@ fn think1(gs: *MockGameSession, self: SystemData1) ThinkResult {
     return .Remain;
 }
 
-const run1 = buildSystem(MockGameSession, SystemData1, think1);
+const run1 = gbe.buildSystem(MockGameSession, SystemData1, think1);
 
 test "GbeSystem basic test" {
     var gs: MockGameSession = undefined;
@@ -68,7 +126,7 @@ const SystemData2 = struct {
     creature: ?*Creature,
 };
 
-fn think2(gs: *MockGameSession, self: SystemData2) ThinkResult {
+fn think2(gs: *MockGameSession, self: SystemData2) gbe.ThinkResult {
     std.testing.expect(self.transform.x == 0);
     std.testing.expect(self.transform.y == 0);
     std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
@@ -76,7 +134,7 @@ fn think2(gs: *MockGameSession, self: SystemData2) ThinkResult {
     return .Remain;
 }
 
-const run2 = buildSystem(MockGameSession, SystemData2, think2);
+const run2 = gbe.buildSystem(MockGameSession, SystemData2, think2);
 
 test "GbeSystem works with one optional and one required component" {
     var gs: MockGameSession = undefined;
@@ -93,7 +151,7 @@ test "GbeSystem works with one optional and one required component" {
 //    creature: ?*Creature,
 //};
 //
-//fn think3(gs: *MockGameSession, self: SystemData3) ThinkResult {
+//fn think3(gs: *MockGameSession, self: SystemData3) gbe.ThinkResult {
 //    std.testing.expect(if (self.transform) |transform| transform.x == 0 else false);
 //    std.testing.expect(if (self.transform) |transform| transform.y == 0 else false);
 //    std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
@@ -101,7 +159,7 @@ test "GbeSystem works with one optional and one required component" {
 //    return .Remain;
 //}
 //
-//const run3 = buildSystem(MockGameSession, SystemData3, think3);
+//const run3 = gbe.buildSystem(MockGameSession, SystemData3, think3);
 //
 //test "GbeSystem works if all components are optional" {
 //    var gs: MockGameSession = undefined;

@@ -32,7 +32,7 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) voi
     o.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
-    o.addPackagePath("gbe", "lib/gbe/src/gbe.zig");
+    o.addPackagePath("gbe", "lib/gbe/gbe.zig");
     o.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
     const assets_path = std.fs.path.join(b.allocator, &[_][]const u8{ b.build_root, "assets" });
     o.addBuildOption([]const u8, "assets_path", b.fmt("\"{}\"", .{assets_path}));
