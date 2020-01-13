@@ -18,25 +18,26 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
         }
 
         pub fn nextWithId(self: *@This(), maybe_out_id: ?*Gbe.EntityId) ?*T {
-            for (self.list.objects[self.index..self.list.count]) |*object, i| {
-                if (Gbe.EntityId.isZero(object.entity_id)) {
+            for (self.list.id[self.index..self.list.count]) |id, i| {
+                if (id == 0) {
                     continue;
                 }
                 if (maybe_out_id) |out_id| {
-                    out_id.* = object.entity_id;
+                    out_id.* = .{ .id = id };
                 }
+                const data = &self.list.data[self.index + i];
                 self.index += i + 1;
-                return &object.data;
+                return data;
             }
-            self.index = self.list.count + 1;
+            self.index = self.list.count;
             return null;
         }
     };
 }
 
 // EventIterator takes a field name (compile-time) and an entity id (run-time),
-// and only yields events where event.field == entity_id
-pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field: []const u8) type {
+// and only yields events where event.field_name == entity_id
+pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_name: []const u8) type {
     return struct {
         list: *Gbe.ComponentList(T, capacity),
         entity_id: Gbe.EntityId,
@@ -54,17 +55,18 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field:
             if (Gbe.EntityId.isZero(self.entity_id)) {
                 return null;
             }
-            for (self.list.objects[self.index..self.list.count]) |*object, i| {
-                if (Gbe.EntityId.isZero(object.entity_id)) {
+            for (self.list.id[self.index..self.list.count]) |id, i| {
+                if (id == 0) {
                     continue;
                 }
-                if (!Gbe.EntityId.eql(@field(&object.data, field), self.entity_id)) {
+                const data = &self.list.data[self.index + i];
+                if (!Gbe.EntityId.eql(@field(data, field_name), self.entity_id)) {
                     continue;
                 }
                 self.index += i + 1;
-                return &object.data;
+                return data;
             }
-            self.index = self.list.count + 1;
+            self.index = self.list.count;
             return null;
         }
     };
@@ -134,7 +136,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
 
                 // fields of the result will be filled out one at a time
                 var result: T = undefined;
-                var entity_id: Gbe.EntityId = undefined;
+                var entity_id: u64 = undefined;
 
                 // go through the components of the "best" type. find the next one that exists
                 inline for (@typeInfo(T).Struct.fields) |field, field_index| {
@@ -149,20 +151,22 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                             if (c_field.field_type.ComponentType == ComponentType) {
                                 found_component_type = true;
 
-                                const slots = &@field(self.gs.components, c_field.name);
+                                const list = &@field(self.gs.components, c_field.name);
 
                                 // for the best component type, we are iterating through the
                                 // component array using self.index...
-                                while (self.index < slots.count) {
-                                    const i = self.index;
-                                    self.index += 1;
-                                    if (!Gbe.EntityId.isZero(slots.objects[i].entity_id)) {
-                                        @field(result, field.name) = &slots.objects[i].data;
-                                        entity_id = slots.objects[i].entity_id;
+                                for (list.id[self.index..list.count]) |id, i| {
+                                    // i can't do `if (id == 0) continue;` here. the compiler thinks
+                                    // i'm mixing up runtime and compile-time control flow, which is not true.
+                                    if (id != 0) {
+                                        @field(result, field.name) = &list.data[self.index + i];
+                                        entity_id = id;
+                                        self.index += i + 1;
                                         break;
                                     }
                                 } else {
                                     // hit the end of the component list - nothing left
+                                    self.index = list.count;
                                     return null;
                                 }
                             }
@@ -199,12 +203,12 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                                 // this component array corresponds to the field in the iterator struct...
                                 found_component_type = true;
 
-                                const slots = &@field(self.gs.components, c_field.name);
+                                const list = &@field(self.gs.components, c_field.name);
 
                                 // look for a component with an entity_id matching the entity we're currently looking at.
-                                for (slots.objects[0..slots.count]) |*object, i| {
-                                    if (Gbe.EntityId.eql(object.entity_id, entity_id)) {
-                                        @field(result, field.name) = &slots.objects[i].data;
+                                for (list.id[0..list.count]) |id, i| {
+                                    if (id == entity_id) {
+                                        @field(result, field.name) = &list.data[i];
                                         break;
                                     }
                                 } else {
@@ -231,12 +235,12 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     // if there's an entity id field, fill it in now
                     inline for (@typeInfo(T).Struct.fields) |field| {
                         if (comptime field.field_type == Gbe.EntityId) {
-                            @field(result, field.name) = entity_id;
+                            @field(result, field.name) = .{ .id = entity_id };
                         }
                     }
 
                     if (maybe_out_id) |out_id| {
-                        out_id.* = entity_id;
+                        out_id.* = .{ .id = entity_id };
                     }
 
                     return result;

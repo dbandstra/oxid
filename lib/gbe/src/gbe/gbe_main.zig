@@ -7,7 +7,7 @@ const GbeConstants = @import("gbe_constants.zig");
 const GbeIterators = @import("gbe_iterators.zig");
 
 pub const EntityId = struct {
-    id: usize,
+    id: u64,
 
     pub fn eql(a: EntityId, b: EntityId) bool {
         return a.id == b.id;
@@ -18,19 +18,16 @@ pub const EntityId = struct {
     }
 };
 
-pub fn ComponentObject(comptime T: type) type {
-    return struct {
-        entity_id: EntityId, // if 0, the slot is not in use
-        data: T,
-    };
-}
-
 pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
     return struct {
         pub const ComponentType = T;
         const capacity = capacity_;
 
-        objects: [capacity]ComponentObject(T),
+        id: [capacity]u64, // if 0, the slot is not in use
+        data: [capacity]T,
+
+        // `count` is incremented as slots are allocated, and never decremented.
+        // slots (`id` and `data` elements) past `count` are uninitialized.
         count: usize,
     };
 }
@@ -132,9 +129,6 @@ pub fn Session(comptime ComponentLists: type) type {
         // partially constructed entity, when something goes wrong
         pub fn undoSpawn(self: *@This(), entity_id: EntityId) void {
             self.freeEntity(entity_id);
-            //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-            //    self.destroyComponent(entity_id, field.field_type.ComponentType);
-            //}
         }
 
         // `data` must be a struct object, and it must be one of the structs in ComponentLists.
@@ -144,31 +138,24 @@ pub fn Session(comptime ComponentLists: type) type {
         // ComponentStorage config, per component type. obviously, kicking out old
         // entities to make room for new ones is not always the right choice)
         pub fn addComponent(self: *@This(), entity_id: EntityId, data: var) !void {
-            const T: type = @TypeOf(data);
-            // std.debug.assert(@typeId(T) == .Struct);
-            var list = &@field(&self.components, @typeName(T));
-            const slot = blk: {
+            var list = &@field(self.components, @typeName(@TypeOf(data)));
+            const slot_index = blk: {
                 var i: usize = 0;
                 while (i < list.count) : (i += 1) {
-                    const object = &list.objects[i];
-                    if (EntityId.isZero(object.entity_id)) {
-                        break :blk object;
+                    if (list.id[i] != 0) {
+                        continue;
                     }
+                    break :blk i;
                 }
-                if (list.count < list.objects.len) {
+                if (list.count < list.id.len) {
                     i = list.count;
                     list.count += 1;
-                    break :blk &list.objects[i];
+                    break :blk i;
                 }
-                break :blk null;
-            };
-            if (slot) |object| {
-                object.data = data;
-                object.entity_id = entity_id;
-            } else {
-                //std.debug.warn("warning: no slots available for new `" ++ @typeName(T) ++ "` component\n");
                 return error.NoComponentSlotsAvailable;
-            }
+            };
+            list.id[slot_index] = entity_id.id;
+            list.data[slot_index] = data;
         }
 
         pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
@@ -177,6 +164,13 @@ pub fn Session(comptime ComponentLists: type) type {
             }
             self.removals[self.num_removals] = entity_id;
             self.num_removals += 1;
+        }
+
+        pub fn applyRemovals(self: *@This()) void {
+            for (self.removals[0..self.num_removals]) |entity_id| {
+                self.freeEntity(entity_id);
+            }
+            self.num_removals = 0;
         }
 
         // (internal) actually free all components using this entity id
@@ -188,19 +182,12 @@ pub fn Session(comptime ComponentLists: type) type {
             // every slot of every component type, for each removal.
             inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
                 const list = &@field(self.components, @typeName(field.field_type.ComponentType));
-                for (list.objects[0..list.count]) |*object| {
-                    if (EntityId.eql(object.entity_id, entity_id)) {
-                        object.entity_id = .{ .id = 0 };
+                for (list.id[0..list.count]) |*id| {
+                    if (id.* == entity_id.id) {
+                        id.* = 0;
                     }
                 }
             }
-        }
-
-        pub fn applyRemovals(self: *@This()) void {
-            for (self.removals[0..self.num_removals]) |entity_id| {
-                self.freeEntity(entity_id);
-            }
-            self.num_removals = 0;
         }
     };
 }
