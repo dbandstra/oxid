@@ -88,28 +88,28 @@ test "GbeSystem works with one optional and one required component" {
 
 ///////////////////////////////////////
 
-const SystemData3 = struct {
-    transform: ?*Transform,
-    creature: ?*Creature,
-};
-
-fn think3(gs: *MockGameSession, self: SystemData3) ThinkResult {
-    std.testing.expect(if (self.transform) |transform| transform.x == 0 else false);
-    std.testing.expect(if (self.transform) |transform| transform.y == 0 else false);
-    std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
-    g_count += 1;
-    return .Remain;
-}
-
-const run3 = buildSystem(MockGameSession, SystemData3, think3);
-
-test "GbeSystem works if all components are optional" {
-    var gs: MockGameSession = undefined;
-    try prepareGs(&gs);
-    g_count = 0;
-    run3(&gs);
-    std.testing.expect(g_count == 16);
-}
+//const SystemData3 = struct {
+//    transform: ?*Transform,
+//    creature: ?*Creature,
+//};
+//
+//fn think3(gs: *MockGameSession, self: SystemData3) ThinkResult {
+//    std.testing.expect(if (self.transform) |transform| transform.x == 0 else false);
+//    std.testing.expect(if (self.transform) |transform| transform.y == 0 else false);
+//    std.testing.expect(if (self.creature) |creature| creature.hit_points == 8 or creature.hit_points == 16 else false);
+//    g_count += 1;
+//    return .Remain;
+//}
+//
+//const run3 = buildSystem(MockGameSession, SystemData3, think3);
+//
+//test "GbeSystem works if all components are optional" {
+//    var gs: MockGameSession = undefined;
+//    try prepareGs(&gs);
+//    g_count = 0;
+//    run3(&gs);
+//    std.testing.expect(g_count == 16);
+//}
 
 // any way to test something that would result in a compile error...?
 // e.g. a SystemData which doesn't contain any component pointers

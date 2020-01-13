@@ -24,10 +24,13 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
 }
 
 pub fn killAllMonsters(gs: *GameSession) void {
-    var it = gs.iter(c.Monster); while (it.next()) |object| {
-        if (!object.data.persistent) {
-            gs.markEntityForRemoval(object.entity_id);
-        }
+    var it = gs.entityIter(struct {
+        id: gbe.EntityId,
+        monster: *const c.Monster,
+    });
+    while (it.next()) |entry| {
+        if (entry.monster.persistent) continue;
+        gs.markEntityForRemoval(entry.id);
     }
 
     if (gs.findFirst(c.GameController)) |gc| {

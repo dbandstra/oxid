@@ -67,24 +67,30 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
     // threshold (so two players does not mean 2x the extra life bonuses)
-    var it = gs.iter(c.PlayerController); while (it.next()) |object| {
+    var it = gs.entityIter(struct {
+        pc: *const c.PlayerController,
+    });
+    while (it.next()) |entry| {
         if (self.gc.extra_lives_spawned < Constants.extra_life_score_thresholds.len) {
             const threshold = Constants.extra_life_score_thresholds[self.gc.extra_lives_spawned];
-            if (object.data.score >= threshold) {
+            if (entry.pc.score >= threshold) {
                 spawnPickup(gs, .LifeUp);
                 self.gc.extra_lives_spawned += 1;
             }
         }
     }
+
     return .Remain;
 }
 
 fn countNonPersistentMonsters(gs: *GameSession) u32 {
     var count: u32 = 0;
-    var it = gs.iter(c.Monster); while (it.next()) |object| {
-        if (!object.data.persistent) {
-            count += 1;
-        }
+    var it = gs.entityIter(struct {
+        monster: *const c.Monster,
+    });
+    while (it.next()) |entry| {
+        if (entry.monster.persistent) continue;
+        count += 1;
     }
     return count;
 }

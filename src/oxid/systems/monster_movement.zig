@@ -166,13 +166,15 @@ fn getChaseTarget(gs: *GameSession, self_pos: math.Vec2) ?math.Vec2 {
     // choose the nearest player
     var nearest: ?math.Vec2 = null;
     var nearest_dist: u32 = 0;
-    var it = gs.iter(c.Player); while (it.next()) |object| {
-        if (gs.find(object.entity_id, c.Transform)) |player_transform| {
-            const dist = math.Vec2.manhattanDistance(player_transform.pos, self_pos);
-            if (nearest == null or dist < nearest_dist) {
-                nearest = player_transform.pos;
-                nearest_dist = dist;
-            }
+    var it = gs.entityIter(struct {
+        player: *const c.Player,
+        transform: *const c.Transform,
+    });
+    while (it.next()) |entry| {
+        const dist = math.Vec2.manhattanDistance(entry.transform.pos, self_pos);
+        if (nearest == null or dist < nearest_dist) {
+            nearest = entry.transform.pos;
+            nearest_dist = dist;
         }
     }
     return nearest;
@@ -262,21 +264,24 @@ fn chooseTurn(
 fn isInLineOfFire(gs: *GameSession, self: SystemData) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
-    var it = gs.iter(c.Player); while (it.next()) |object| {
-        if (object.data.line_of_fire) |box| {
-            if (math.absBoxesOverlap(self_absbox, box)) {
-                const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
-                return phys.facing;
-            }
-        }
+    var it = gs.entityIter(struct {
+        player: *const c.Player,
+        phys: *const c.PhysObject,
+    });
+    while (it.next()) |entry| {
+        const box = entry.player.line_of_fire orelse continue;
+        if (!math.absBoxesOverlap(self_absbox, box)) continue;
+        return entry.phys.facing;
     }
-    var it2 = gs.iter(c.Bullet); while (it2.next()) |object| {
-        if (object.data.line_of_fire) |box| {
-            if (math.absBoxesOverlap(self_absbox, box)) {
-                const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
-                return phys.facing;
-            }
-        }
+
+    var it2 = gs.entityIter(struct {
+        bullet: *const c.Bullet,
+        phys: *const c.PhysObject,
+    });
+    while (it2.next()) |entry| {
+        const box = entry.bullet.line_of_fire orelse continue;
+        if (!math.absBoxesOverlap(self_absbox, box)) continue;
+        return entry.phys.facing;
     }
 
     return null;

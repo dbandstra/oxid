@@ -25,7 +25,7 @@ const audio = @import("oxid/audio.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
-const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
+const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -262,9 +262,7 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
         .ToggleFriendlyFire => {
             self.friendly_fire = !self.friendly_fire;
             // update existing bullets
-            SetFriendlyFire.run(&self.session, .{
-                .friendly_fire = self.friendly_fire,
-            });
+            setFriendlyFire(&self.session, self.friendly_fire);
         },
         .BindGameCommand => |payload| {
             const command_index = @enumToInt(payload.command);

@@ -85,6 +85,13 @@ pub fn Session(comptime ComponentLists: type) type {
             return GbeIterators.ComponentObjectIterator(T, comptime getCapacity(T)).init(list);
         }
 
+        pub fn entityIter(self: *@This(), comptime T: type) GbeIterators.EntityIterator(@This(), T) {
+            return .{
+                .state = self,
+                .index = 0,
+            };
+        }
+
         pub fn eventIter(self: *@This(), comptime T: type, comptime field: []const u8, entity_id: EntityId) GbeIterators.EventIterator(T, getCapacity(T), field) {
             const list = &@field(&self.components, @typeName(T));
             return GbeIterators.EventIterator(T, comptime getCapacity(T), field).init(list, entity_id);
@@ -101,6 +108,17 @@ pub fn Session(comptime ComponentLists: type) type {
 
         pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
             return if (self.findObject(entity_id, T)) |object| &object.data else null;
+        }
+
+        pub fn findEntity(self: *@This(), entity_id: EntityId, comptime T: type) ?T {
+            var entry_id: EntityId = undefined;
+            var it = self.entityIter(T);
+            while (it.nextWithId(&entry_id)) |entry| {
+                if (EntityId.eql(entry_id, entity_id)) {
+                    return entry;
+                }
+            }
+            return null;
         }
 
         // use this for ad-hoc singleton component types

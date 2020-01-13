@@ -18,12 +18,11 @@ const SystemData = struct {
     phys: *c.PhysObject,
     player: *c.Player,
     transform: *c.Transform,
-    context: GameFrameContext,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub const run = gbe.buildSystemWithContext(GameSession, SystemData, GameFrameContext, think);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
+fn think(gs: *GameSession, self: SystemData, context: GameFrameContext) gbe.ThinkResult {
     if (self.player.spawn_anim_y_remaining > 0) {
         const dy = std.math.min(Constants.player_spawn_arise_speed, self.player.spawn_anim_y_remaining);
         self.transform.pos.y -= @as(i32, dy);
@@ -44,7 +43,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     } else {
         playerUpdate(gs, self);
         playerMove(gs, self);
-        playerShoot(gs, self);
+        playerShoot(gs, self, context);
         playerUpdateLineOfFire(gs, self);
     }
     return .Remain;
@@ -56,7 +55,7 @@ fn playerUpdate(gs: *GameSession, self: SystemData) void {
     }
 }
 
-fn playerShoot(gs: *GameSession, self: SystemData) void {
+fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) void {
     if (self.player.in_shoot) {
         if (self.player.trigger_released) {
             // the player can only have a certain amount of bullets in play at a
@@ -94,7 +93,7 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
                         .Two => 2,
                         .Three => 3,
                     },
-                    .friendly_fire = self.context.friendly_fire,
+                    .friendly_fire = context.friendly_fire,
                 })) |bullet_entity_id| {
                     slot.* = bullet_entity_id;
                 } else |_| {}
@@ -107,18 +106,19 @@ fn playerShoot(gs: *GameSession, self: SystemData) void {
 }
 
 fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
-    var it = gs.iter(c.Web); while (it.next()) |object| {
-        const transform = gs.find(object.entity_id, c.Transform) orelse continue;
-        const phys = gs.find(object.entity_id, c.PhysObject) orelse continue;
-
+    var it = gs.entityIter(struct {
+        transform: *const c.Transform,
+        phys: *const c.PhysObject,
+        web: *const c.Web,
+    });
+    while (it.next()) |other| {
         if (math.boxesOverlap(
             self.transform.pos, self.phys.entity_bbox,
-            transform.pos, phys.entity_bbox,
+            other.transform.pos, other.phys.entity_bbox,
         )) {
             return true;
         }
     }
-
     return false;
 }
 

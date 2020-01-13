@@ -19,28 +19,33 @@ fn monsterCollide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
     var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
         if (gbe.EntityId.isZero(event.other_id)) {
             hit_wall = true;
-        } else {
-            const other_creature = gs.find(event.other_id, c.Creature) orelse continue;
-            const other_phys = gs.find(event.other_id, c.PhysObject) orelse continue;
+            continue;
+        }
 
-            if (event.propelled and !self.phys.illusory and !other_phys.illusory) {
-                hit_creature = true;
-            }
-            if (gs.find(event.other_id, c.Player) != null) {
-                // if it's a player creature, inflict damage on it
-                if (self.monster.spawning_timer == 0) {
-                    _ = p.EventTakeDamage.spawn(gs, .{
-                        .inflictor_player_controller_id = null,
-                        .self_id = event.other_id,
-                        .amount = 1,
-                    }) catch undefined;
-                }
-            }
+        const other = gs.findEntity(event.other_id, struct {
+            creature: *const c.Creature,
+            phys: *const c.PhysObject,
+            player: ?*const c.Player,
+        }) orelse continue;
+
+        if (event.propelled and !self.phys.illusory and !other.phys.illusory) {
+            hit_creature = true;
+        }
+
+        // if it's a player creature, inflict damage on it
+        if (other.player != null and self.monster.spawning_timer == 0) {
+            _ = p.EventTakeDamage.spawn(gs, .{
+                .inflictor_player_controller_id = null,
+                .self_id = event.other_id,
+                .amount = 1,
+            }) catch undefined;
         }
     }
+
     if (hit_creature) {
         // reverse direction
         self.phys.facing = math.Direction.invert(self.phys.facing);
     }
+
     return .Remain;
 }
