@@ -15,17 +15,10 @@ pub fn gameInit(gs: *GameSession) !void {
 // run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused: bool) void {
     @import("systems/main_controller_input.zig").run(gs);
-
-    // note: ideally these would be inside the frame loop, but we have to make
-    // sure that key-up events take effect even when the game is paused
     @import("systems/game_controller_input.zig").run(gs);
     @import("systems/player_input.zig").run(gs);
 
-    // this is kind of ugly. i think main controller should have a system that
-    // calls into these game systems. top level gameFrame shouldn't be looking
-    // into components like this
-    const mc = gs.findFirst(c.MainController).?;
-    if (mc.game_running_state) |grs| {
+    if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
         if (!paused) {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
