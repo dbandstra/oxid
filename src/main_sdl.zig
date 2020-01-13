@@ -59,7 +59,7 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
 pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     const file = openDataFile(hunk_side, config_filename, .Read) catch |err| {
         if (err == error.FileNotFound) {
-            return config.getDefault();
+            return config.default;
         }
         return err;
     };

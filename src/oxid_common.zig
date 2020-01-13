@@ -94,7 +94,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         // if config couldn't load, warn and fall back to default config
         const cfg = ns.loadConfig(&self.hunk.low()) catch |err| {
             warn("Failed to load config: {}\n", .{err});
-            break :blk config.getDefault();
+            break :blk config.default;
         };
         break :blk cfg;
     };

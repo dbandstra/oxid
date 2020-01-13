@@ -15,60 +15,61 @@ pub const Config = struct {
     game_bindings: [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
 };
 
-// this used to be a simple global constant but there's a compiler bug there.
-// (things went haywire when i created the InputSource struct. when it was just
-// keys it worked fine. it's probably this issue:
-// https://github.com/ziglang/zig/issues/3532 )
-pub fn getDefault() Config {
-    var default: Config = .{
-        .volume = 100,
-        .menu_bindings = undefined,
-        .game_bindings = undefined,
-    };
-
-    for (default.menu_bindings) |*binding, i| {
-        binding.* = switch (@intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i))) {
-            .Left => .{.Key = .Left},
-            .Right => .{.Key = .Right},
-            .Up => .{.Key = .Up},
-            .Down => .{.Key = .Down},
-            .Escape => .{.Key = .Escape},
-            .Enter => .{.Key = .Return},
-            .Yes => .{.Key = .Y},
-            .No => .{.Key = .N},
-        };
-    }
-
-    for (default.game_bindings[0]) |*binding, i| {
-        binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => .{.Key = .Up},
-            .Down => .{.Key = .Down},
-            .Left => .{.Key = .Left},
-            .Right => .{.Key = .Right},
-            .Shoot => .{.Key = .Space},
-            .KillAllMonsters => .{.Key = .Backspace},
-            .ToggleDrawBoxes => .{.Key = .F2},
-            .ToggleGodMode => .{.Key = .F3},
-            .Escape => .{.Key = .Escape},
-        };
-    }
-
-    for (default.game_bindings[1]) |*binding, i| {
-        binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => .{.Key = .W},
-            .Down => .{.Key = .S},
-            .Left => .{.Key = .A},
-            .Right => .{.Key = .D},
-            .Shoot => .{.Key = .F},
-            .KillAllMonsters => null,
-            .ToggleDrawBoxes => null,
-            .ToggleGodMode => null,
-            .Escape => null,
-        };
-    }
-
-    return default;
-}
+pub const default = Config {
+    .volume = 100,
+    .menu_bindings = blk: {
+        var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?InputSource = undefined;
+        for (bindings) |*binding, i| {
+            binding.* = switch (@intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i))) {
+                .Left => .{ .Key = .Left },
+                .Right => .{ .Key = .Right },
+                .Up => .{ .Key = .Up },
+                .Down => .{ .Key = .Down },
+                .Escape => .{ .Key = .Escape },
+                .Enter => .{ .Key = .Return },
+                .Yes => .{ .Key = .Y },
+                .No => .{ .Key = .N },
+            };
+        }
+        break :blk bindings;
+    },
+    .game_bindings = .{
+        blk: {
+            var bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?InputSource = undefined;
+            for (bindings) |*binding, i| {
+                binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
+                    .Up => .{ .Key = .Up },
+                    .Down => .{ .Key = .Down },
+                    .Left => .{ .Key = .Left },
+                    .Right => .{ .Key = .Right },
+                    .Shoot => .{ .Key = .Space },
+                    .KillAllMonsters => .{ .Key = .Backspace },
+                    .ToggleDrawBoxes => .{ .Key = .F2 },
+                    .ToggleGodMode => .{ .Key = .F3 },
+                    .Escape => .{ .Key = .Escape },
+                };
+            }
+            break :blk bindings;
+        },
+        blk: {
+            var bindings: [@typeInfo(input.GameCommand).Enum.fields.len]?InputSource = undefined;
+            for (bindings) |*binding, i| {
+                binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
+                    .Up => .{ .Key = .W },
+                    .Down => .{ .Key = .S },
+                    .Left => .{ .Key = .A },
+                    .Right => .{ .Key = .D },
+                    .Shoot => .{ .Key = .F },
+                    .KillAllMonsters => null,
+                    .ToggleDrawBoxes => null,
+                    .ToggleGodMode => null,
+                    .Escape => null,
+                };
+            }
+            break :blk bindings;
+        },
+    },
+};
 
 ///////////////////////////////////////////////////////////
 
@@ -87,7 +88,7 @@ pub fn read(comptime ReadError: type, stream: *std.io.InStream(ReadError), size:
     var tree = try p.parse(contents);
     defer tree.deinit();
 
-    var cfg = getDefault();
+    var cfg = default;
 
     switch (tree.root) {
         .Object => |map| {
