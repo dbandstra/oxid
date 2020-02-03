@@ -266,20 +266,10 @@ pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_
 pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
     return struct {
         gs: *SessionType,
-        index: usize, // component index within "best" component type's slot array
+        best_field_index: ?usize, // which component type we are iterating through
+        index: usize, // current position within the "best" component type's slot array
 
         pub fn init(gs: *SessionType) @This() {
-            return .{
-                .gs = gs,
-                .index = 0,
-            };
-        }
-
-        pub inline fn next(self: *@This()) ?T {
-            return self.nextWithId(null);
-        }
-
-        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?T {
             // choose the best field
             // only if all fields are optional will we consider optional fields when
             // determining the best component type
@@ -310,132 +300,137 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     continue;
                 }
                 comptime const field_type = UnpackComponentType(field.field_type);
-                if (@field(&self.gs.components, @typeName(field_type)).count < best) {
-                    best = @field(&self.gs.components, @typeName(field_type)).count;
+                if (@field(&gs.components, @typeName(field_type)).count < best) {
+                    best = @field(&gs.components, @typeName(field_type)).count;
                     maybe_which = i;
                 }
             }
 
-            const best_field_index = maybe_which orelse {
-                // no valid component?
-                return null;
+            return .{
+                .gs = gs,
+                .best_field_index = maybe_which,
+                .index = 0,
             };
+        }
 
-            while (true) {
-                var nope = false;
+        pub inline fn next(self: *@This()) ?T {
+            return self.nextWithId(null);
+        }
 
-                // fields of the result will be filled out one at a time
-                var result: T = undefined;
-                var entity_id: u64 = undefined;
+        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?T {
+            var result: T = undefined;
 
-                // go through the components of the "best" type. find the next one that exists
-                inline for (@typeInfo(T).Struct.fields) |field, field_index| {
-                    if (field.field_type == EntityId) continue;
-                    if (field_index == best_field_index) {
-                        const ComponentType = UnpackComponentType(field.field_type);
-
-                        comptime var found_component_type = false;
-
-                        // find the component list in the GBE session
-                        inline for (@typeInfo(SessionType.ComponentListsType).Struct.fields) |c_field, c_field_index| {
-                            if (c_field.field_type.ComponentType == ComponentType) {
-                                found_component_type = true;
-
-                                const list = &@field(self.gs.components, c_field.name);
-
-                                // for the best component type, we are iterating through the
-                                // component array using self.index...
-                                for (list.id[self.index..list.count]) |id, i| {
-                                    // i can't do `if (id == 0) continue;` here. the compiler thinks
-                                    // i'm mixing up runtime and compile-time control flow, which is not true.
-                                    if (id != 0) {
-                                        @field(result, field.name) = &list.data[self.index + i];
-                                        entity_id = id;
-                                        self.index += i + 1;
-                                        break;
-                                    }
-                                } else {
-                                    // hit the end of the component list - nothing left
-                                    self.index = list.count;
-                                    return null;
-                                }
-                            }
-                        }
-
-                        if (!found_component_type) {
-                            @compileError("iterator struct has field (" ++ field.name ++ ") " ++
-                                "that isn't a recognized component type (" ++ @typeName(ComponentType) ++ ")");
-                        }
-                    }
-                }
-
-                // go through other component types in the struct. look for components with the same
-                // entity_id as we found from the best entry above.
-                // if the field is not optional, and a component is not found, clear the result and we'll try again.
-                inline for (@typeInfo(T).Struct.fields) |field, field_index| {
-                    if (field.field_type == EntityId) continue; // will fill this in later
-
-                    if (field_index == best_field_index) {
-                        // already handled this one above
-                    } else if (nope) {
-                        // keep going till we get out of the loop (not allowed to break out of an
-                        // inline loop using a runtime condition)
-                    } else {
-                        const ComponentType = UnpackComponentType(field.field_type);
-
-                        comptime var found_component_type = false;
-
-                        inline for (@typeInfo(SessionType.ComponentListsType).Struct.fields) |c_field, c_field_index| {
-                            if (nope) {
-                                // keep going till we get out of the loop (not allowed to break out
-                                // of an inline loop using a runtime condition)
-                            } if (c_field.field_type.ComponentType == ComponentType) {
-                                // this component array corresponds to the field in the iterator struct...
-                                found_component_type = true;
-
-                                const list = &@field(self.gs.components, c_field.name);
-
-                                // look for a component with an entity_id matching the entity we're currently looking at.
-                                for (list.id[0..list.count]) |id, i| {
-                                    if (id == entity_id) {
-                                        @field(result, field.name) = &list.data[i];
-                                        break;
-                                    }
-                                } else {
-                                    // requested component not present in this entity.
-                                    if (@typeId(field.field_type) == .Optional) {
-                                        @field(result, field.name) = null;
-                                    } else {
-                                        // it was required. break out of the inline loops. we'll try again with a
-                                        // new first component
-                                        nope = true;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!found_component_type) {
-                            @compileError("iterator struct has field (" ++ field.name ++ ") " ++
-                                "that isn't a recognized component type (" ++ @typeName(ComponentType) ++ ")");
-                        }
-                    }
-                }
-
-                if (!nope) {
-                    // if there's an entity id field, fill it in now
-                    inline for (@typeInfo(T).Struct.fields) |field| {
-                        if (comptime field.field_type == EntityId) {
-                            @field(result, field.name) = .{ .id = entity_id };
-                        }
-                    }
-
+            while (self.nextMainComponent(&result)) |entity_id| {
+                if (self.fillOtherComponents(&result, entity_id)) {
                     if (maybe_out_id) |out_id| {
                         out_id.* = .{ .id = entity_id };
                     }
-
                     return result;
                 }
             }
+
+            return null;
+        }
+
+        // get the next instance of the "best" component type. if found,
+        // set the field in `result` and return the entity id.
+        fn nextMainComponent(self: *@This(), result: *T) ?u64 {
+            const best_field_index = self.best_field_index orelse return null;
+
+            // go through the components of the "best" type. find the next one that exists
+            inline for (@typeInfo(T).Struct.fields) |field, field_index| {
+                if (field.field_type == EntityId) continue;
+                if (field_index == best_field_index) {
+                    const ComponentType = UnpackComponentType(field.field_type);
+
+                    comptime var found_component_type = false;
+
+                    // find the component list in the GBE session
+                    inline for (@typeInfo(SessionType.ComponentListsType).Struct.fields) |c_field, c_field_index| {
+                        if (c_field.field_type.ComponentType == ComponentType) {
+                            found_component_type = true;
+
+                            const list = &@field(self.gs.components, c_field.name);
+
+                            // for the best component type, we are iterating through the
+                            // component array using self.index...
+                            for (list.id[self.index..list.count]) |id, i| {
+                                // i can't do `if (id == 0) continue;` here. the compiler thinks
+                                // i'm mixing up runtime and compile-time control flow, which is not true.
+                                if (id != 0) {
+                                    @field(result, field.name) = &list.data[self.index + i];
+                                    self.index += i + 1;
+                                    return id;
+                                }
+                            } else {
+                                // hit the end of the component list - nothing left
+                                self.index = list.count;
+                                return null;
+                            }
+                        }
+                    }
+
+                    if (!found_component_type) {
+                        @compileError("iterator struct has field (" ++ field.name ++ ") " ++
+                            "that isn't a recognized component type (" ++ @typeName(ComponentType) ++ ")");
+                    }
+                }
+            }
+
+            unreachable;
+        }
+
+        fn fillOtherComponents(self: *@This(), result: *T, entity_id: u64) bool {
+            const best_field_index = self.best_field_index.?;
+
+            // go through other component types in the struct. look for components with the same
+            // entity_id as we found from the best entry above.
+            // if the field is not optional, and a component is not found, clear the result and we'll try again.
+            inline for (@typeInfo(T).Struct.fields) |field, field_index| {
+                if (field.field_type == EntityId) {
+                    @field(result, field.name) = .{ .id = entity_id };
+                    continue;
+                }
+
+                if (field_index != best_field_index) {
+                    const ComponentType = UnpackComponentType(field.field_type);
+
+                    comptime var found_component_type = false;
+
+                    inline for (@typeInfo(SessionType.ComponentListsType).Struct.fields) |c_field, c_field_index| {
+                        if (c_field.field_type.ComponentType == ComponentType) {
+                            // this component array corresponds to the field in the iterator struct...
+                            found_component_type = true;
+
+                            const list = &@field(self.gs.components, c_field.name);
+
+                            // look for a component with an entity_id matching the entity we're currently looking at.
+                            for (list.id[0..list.count]) |id, i| {
+                                if (id == entity_id) {
+                                    @field(result, field.name) = &list.data[i];
+                                    break;
+                                }
+                            } else {
+                                // requested component not present in this entity.
+                                if (@typeId(field.field_type) == .Optional) {
+                                    @field(result, field.name) = null;
+                                } else {
+                                    // it was required. so much for this entity. we'll try again with a
+                                    // new first component
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!found_component_type) {
+                        @compileError("iterator struct has field (" ++ field.name ++ ") " ++
+                            "that isn't a recognized component type (" ++ @typeName(ComponentType) ++ ")");
+                    }
+                }
+            }
+
+            return true;
         }
     };
 }
