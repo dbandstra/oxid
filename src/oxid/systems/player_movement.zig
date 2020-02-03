@@ -14,15 +14,23 @@ const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
-    creature: *const c.Creature,
     phys: *c.PhysObject,
     player: *c.Player,
+    creature: *const c.Creature,
     transform: *c.Transform,
 };
 
 pub const run = gbe.buildSystemWithContext(GameSession, SystemData, GameFrameContext, think);
 
 fn think(gs: *GameSession, self: SystemData, context: GameFrameContext) gbe.ThinkResult {
+    // this is crashing - self.player is some invalid address
+    std.debug.warn("self.id        {}\n", .{self.id.id});
+    std.debug.warn("self.phys      {}\n", .{@ptrToInt(self.phys)}); // invalid, as are the following two. all have same garbage address
+    std.debug.warn("self.player    {}\n", .{@ptrToInt(self.player)});
+    std.debug.warn("self.creature  {}\n", .{@ptrToInt(self.creature)}); // valid
+    std.debug.warn("self.transform {}\n", .{@ptrToInt(self.transform)});
+    std.debug.warn("god_mode: {}\n", .{self.creature.god_mode});
+    std.debug.warn("flags: {}\n", .{self.phys.flags}); // this crashes
     if (self.player.spawn_anim_y_remaining > 0) {
         const dy = std.math.min(Constants.player_spawn_arise_speed, self.player.spawn_anim_y_remaining);
         self.transform.pos.y -= @as(i32, dy);

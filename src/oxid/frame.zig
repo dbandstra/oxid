@@ -24,7 +24,9 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
             @import("systems/animation.zig").run(gs);
+            gbe.spam = true;
             @import("systems/player_movement.zig").run(gs, context);
+            gbe.spam = false;
             @import("systems/monster_movement.zig").run(gs);
             @import("systems/bullet.zig").run(gs);
             @import("systems/creature.zig").run(gs);

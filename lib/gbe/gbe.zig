@@ -5,6 +5,8 @@ const std = @import("std");
 
 pub const max_removals_per_frame: usize = 1000;
 
+pub var spam = false;
+
 pub const EntityId = struct {
     id: u64,
 
@@ -310,6 +312,12 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     continue;
                 }
                 comptime const field_type = UnpackComponentType(field.field_type);
+                if (spam) {
+                    std.debug.warn("{} count: {}\n", .{
+                        field.name,
+                        @field(&self.gs.components, @typeName(field_type)).count,
+                    });
+                }
                 if (@field(&self.gs.components, @typeName(field_type)).count < best) {
                     best = @field(&self.gs.components, @typeName(field_type)).count;
                     maybe_which = i;
@@ -320,6 +328,15 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                 // no valid component?
                 return null;
             };
+
+            if (spam) {
+                inline for (@typeInfo(T).Struct.fields) |field, i| {
+                    if (field.field_type == EntityId) continue;
+                    if (i == best_field_index) {
+                        std.debug.warn("best: {}\n", .{field.name});
+                    }
+                }
+            }
 
             while (true) {
                 var nope = false;
@@ -369,18 +386,36 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     }
                 }
 
+                // everything up to this point is fine... the problem happens in below code.
+
                 // go through other component types in the struct. look for components with the same
                 // entity_id as we found from the best entry above.
                 // if the field is not optional, and a component is not found, clear the result and we'll try again.
                 inline for (@typeInfo(T).Struct.fields) |field, field_index| {
+                    if (spam) {
+                        std.debug.warn("- {}\n", .{field.name});
+                    }
                     if (field_index == best_field_index) {
                         // already handled this one above
+                        if (spam) {
+                            std.debug.warn("  already handled (best)\n", .{});
+                        }
                     } else if (nope) {
                         // keep going till we get out of the loop (not allowed to break out of an
                         // inline loop using a runtime condition)
+                        if (spam) {
+                            std.debug.warn("  nope\n", .{});
+                        }
                     } else if (comptime field.field_type == EntityId) {
                         // entity id (special field), will fill in later.
+                        if (spam) {
+                            std.debug.warn("  is EntityId\n", .{});
+                        }
                     } else {
+                        if (spam) {
+                            std.debug.warn("  ok...\n", .{});
+                        }
+
                         const ComponentType = UnpackComponentType(field.field_type);
 
                         comptime var found_component_type = false;
@@ -419,6 +454,16 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                                 "that isn't a recognized component type (" ++ @typeName(ComponentType) ++ ")");
                         }
                     }
+
+                    if (spam) {
+                        std.debug.warn("  end of inline for iteration\n", .{});
+                    }
+
+                    // the loop is not continuing for some reason?
+                }
+
+                if (spam) {
+                    std.debug.warn("  outside the loop\n", .{});
                 }
 
                 if (!nope) {

@@ -67,9 +67,14 @@ test "EntityIterator only players" {
     std.testing.expect(it.next() == null);
 }
 
+// i don't think optionals is the only thing hitting it. the crash in game code didn't have any optionals.
+// one of the components was being set to weird garbage
 test "EntityIterator test with optionals and id field" {
     var gs: MockGameSession = undefined;
     try prepareGs(&gs);
+
+    gbe.spam = true;
+    defer gbe.spam = false;
 
     var it = gs.entityIter(struct {
         id: gbe.EntityId,
@@ -79,11 +84,12 @@ test "EntityIterator test with optionals and id field" {
         transform: *Transform,
     });
     var i: usize = 0; while (i < 16) : (i += 1) {
+        std.debug.warn("{}\n", .{i});
         const entry = it.next().?;
         std.testing.expect(entry.id.id == i + 1);
         if (i < 8) {
             std.testing.expect(entry.monster != null);
-            std.testing.expect(entry.player == null);
+            std.testing.expect(entry.player == null); // this is failing at i=0
         } else {
             std.testing.expect(entry.monster == null);
             std.testing.expect(entry.player != null);
