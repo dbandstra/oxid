@@ -373,13 +373,13 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                 // entity_id as we found from the best entry above.
                 // if the field is not optional, and a component is not found, clear the result and we'll try again.
                 inline for (@typeInfo(T).Struct.fields) |field, field_index| {
+                    if (field.field_type == EntityId) continue; // will fill this in later
+
                     if (field_index == best_field_index) {
                         // already handled this one above
                     } else if (nope) {
                         // keep going till we get out of the loop (not allowed to break out of an
                         // inline loop using a runtime condition)
-                    } else if (comptime field.field_type == EntityId) {
-                        // entity id (special field), will fill in later.
                     } else {
                         const ComponentType = UnpackComponentType(field.field_type);
 
