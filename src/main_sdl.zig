@@ -51,8 +51,8 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
     const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{dir_path, filename});
 
     return switch (mode) {
-        .Read => std.fs.File.openRead(file_path),
-        .Write => std.fs.File.openWrite(file_path),
+        .Read => std.fs.cwd().openFile(file_path, .{}),
+        .Write => std.fs.cwd().openFile(file_path, .{ .read = false, .write = true }),
     };
 }
 

@@ -81,7 +81,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
             filename,
         });
 
-        const file = try std.fs.File.openRead(file_path);
+        const file = try std.fs.cwd().openFile(file_path, .{});
         var fis = file.inStream();
         const stream = &fis.stream;
 
