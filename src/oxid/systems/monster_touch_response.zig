@@ -10,13 +10,21 @@ const SystemData = struct {
     monster: *const c.Monster,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, monsterCollide);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn monsterCollide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
+    while (it.next()) |self| {
+        monsterCollide(gs, self);
+    }
+}
+
+fn monsterCollide(gs: *GameSession, self: SystemData) void {
     var hit_wall = false;
     var hit_creature = false;
 
-    var it = gs.eventIter(c.EventCollide, "self_id", self.id); while (it.next()) |event| {
+    var it = gs.eventIter(c.EventCollide, "self_id", self.id);
+
+    while (it.next()) |event| {
         if (gbe.EntityId.isZero(event.other_id)) {
             hit_wall = true;
             continue;
@@ -46,6 +54,4 @@ fn monsterCollide(gs: *GameSession, self: SystemData) gbe.ThinkResult {
         // reverse direction
         self.phys.facing = math.Direction.invert(self.phys.facing);
     }
-
-    return .Remain;
 }

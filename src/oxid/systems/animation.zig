@@ -4,20 +4,22 @@ const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 const c = @import("../components.zig");
 const util = @import("../util.zig");
 
-const SystemData = struct {
-    animation: *c.Animation,
-};
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(struct {
+        id: gbe.EntityId,
+        animation: *c.Animation,
+    });
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+    while (it.next()) |self| {
+        const animcfg = getSimpleAnim(self.animation.simple_anim);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    const animcfg = getSimpleAnim(self.animation.simple_anim);
-    if (util.decrementTimer(&self.animation.frame_timer)) {
-        if (self.animation.frame_index >= animcfg.frames.len - 1) {
-            return .RemoveSelf;
+        if (util.decrementTimer(&self.animation.frame_timer)) {
+            if (self.animation.frame_index >= animcfg.frames.len - 1) {
+                gs.markEntityForRemoval(self.id);
+                continue;
+            }
+            self.animation.frame_index += 1;
+            self.animation.frame_timer = animcfg.ticks_per_frame;
         }
-        self.animation.frame_index += 1;
-        self.animation.frame_timer = animcfg.ticks_per_frame;
     }
-    return .Remain;
 }

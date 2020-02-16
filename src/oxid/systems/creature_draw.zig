@@ -1,12 +1,10 @@
-const gbe = @import("gbe");
-const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
 const Constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const GameUtil = @import("../util.zig");
+const util = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 
 const SystemData = struct{
@@ -18,9 +16,15 @@ const SystemData = struct{
     web: ?*const c.Web,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
+    while (it.next()) |self| {
+        think(gs, self);
+    }
+}
+
+fn think(gs: *GameSession, self: SystemData) void {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
             //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
@@ -49,7 +53,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                 .z_index = Constants.z_index_player,
             });
         }
-        return .Remain;
+        return;
     }
 
     if (self.monster) |monster| {
@@ -99,7 +103,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                 },
             });
         }
-        return .Remain;
+        return;
     }
 
     if (self.web) |web| {
@@ -110,10 +114,10 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             .rotates = false,
             .z_index = Constants.z_index_web,
         });
-        return .Remain;
+        return;
     }
 
-    return .Remain;
+    return;
 }
 
 ///////////////////////////////////////
@@ -152,7 +156,7 @@ fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) 
         .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,
         .transform =
             if (params.rotates)
-                GameUtil.getDirTransform(self.phys.facing)
+                util.getDirTransform(self.phys.facing)
             else
                 .Identity,
         .z_index = params.z_index,

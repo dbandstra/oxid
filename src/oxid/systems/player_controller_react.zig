@@ -9,26 +9,35 @@ const SystemData = struct {
     pc: *c.PlayerController,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    var it = gs.eventIter(c.EventPlayerDied, "player_controller_id", self.id); while (it.next()) |_| {
-        if (self.pc.lives > 0) {
-            self.pc.lives -= 1;
+    while (it.next()) |self| {
+        var event_it = gs.eventIter(c.EventPlayerDied,
+            "player_controller_id", self.id);
+        while (event_it.next()) |_| {
             if (self.pc.lives > 0) {
-                self.pc.respawn_timer = Constants.player_respawn_time;
-            } else {
-                _ = p.EventPlayerOutOfLives.spawn(gs, .{
-                    .player_controller_id = self.id,
-                }) catch undefined;
+                self.pc.lives -= 1;
+                if (self.pc.lives > 0) {
+                    self.pc.respawn_timer = Constants.player_respawn_time;
+                } else {
+                    _ = p.EventPlayerOutOfLives.spawn(gs, .{
+                        .player_controller_id = self.id,
+                    }) catch undefined;
+                }
             }
         }
+
+        var event_it2 = gs.eventIter(c.EventAwardPoints,
+            "player_controller_id", self.id);
+        while (event_it2.next()) |event| {
+            self.pc.score += event.points;
+        }
+
+        var event_it3 = gs.eventIter(c.EventAwardLife,
+            "player_controller_id", self.id);
+        while (event_it3.next()) |event| {
+            self.pc.lives += 1;
+        }
     }
-    var it2 = gs.eventIter(c.EventAwardPoints, "player_controller_id", self.id); while (it2.next()) |event| {
-        self.pc.score += event.points;
-    }
-    var it3 = gs.eventIter(c.EventAwardLife, "player_controller_id", self.id); while (it3.next()) |event| {
-        self.pc.lives += 1;
-    }
-    return .Remain;
 }

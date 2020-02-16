@@ -1,15 +1,13 @@
-const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
-const GameUtil = @import("../util.zig");
+const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
-const util = @import("../util.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -19,21 +17,22 @@ const SystemData = struct {
     transform: *const c.Transform,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    if (GameUtil.decrementTimer(&self.monster.spawning_timer)) {
-        self.creature.hit_points = self.monster.full_hit_points;
-    } else if (self.monster.spawning_timer > 0) {
-        self.phys.speed = 0;
-        self.phys.push_dir = null;
-    } else {
-        monsterMove(gs, self);
-        if (self.monster.can_shoot or self.monster.can_drop_webs) {
-            monsterAttack(gs, self);
+    while (it.next()) |self| {
+        if (util.decrementTimer(&self.monster.spawning_timer)) {
+            self.creature.hit_points = self.monster.full_hit_points;
+        } else if (self.monster.spawning_timer > 0) {
+            self.phys.speed = 0;
+            self.phys.push_dir = null;
+        } else {
+            monsterMove(gs, self);
+            if (self.monster.can_shoot or self.monster.can_drop_webs) {
+                monsterAttack(gs, self);
+            }
         }
     }
-    return .Remain;
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {
@@ -192,7 +191,7 @@ fn chooseTurn(
     const left = math.Direction.rotateCcw(facing);
     const right = math.Direction.rotateCw(facing);
 
-    var choices = GameUtil.Choices.init();
+    var choices = util.Choices.init();
 
     if (personality == .Chase) {
         if (getChaseTarget(gs, pos)) |target_pos| {

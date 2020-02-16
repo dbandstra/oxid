@@ -1,16 +1,14 @@
-const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 const util = @import("../util.zig");
 
-const SystemData = struct {
-    creature: *c.Creature,
-};
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(struct {
+        creature: *c.Creature,
+    });
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
-
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    _ = util.decrementTimer(&self.creature.invulnerability_timer);
-    _ = util.decrementTimer(&self.creature.flinch_timer);
-    return .Remain;
+    while (it.next()) |self| {
+        _ = util.decrementTimer(&self.creature.invulnerability_timer);
+        _ = util.decrementTimer(&self.creature.flinch_timer);
+    }
 }

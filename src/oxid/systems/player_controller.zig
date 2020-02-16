@@ -11,13 +11,14 @@ const SystemData = struct {
     pc: *c.PlayerController,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    if (util.decrementTimer(&self.pc.respawn_timer)) {
-        spawnPlayer(gs, self);
+    while (it.next()) |self| {
+        if (util.decrementTimer(&self.pc.respawn_timer)) {
+            spawnPlayer(gs, self);
+        }
     }
-    return .Remain;
 }
 
 fn spawnPlayer(gs: *GameSession, self: SystemData) void {

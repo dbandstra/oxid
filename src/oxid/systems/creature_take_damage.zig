@@ -1,6 +1,5 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const ConstantTypes = @import("../constant_types.zig");
 const Constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -14,14 +13,20 @@ const SystemData = struct {
     player: ?*c.Player,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
+    while (it.next()) |self| {
+        think(gs, self);
+    }
+}
+
+fn think(gs: *GameSession, self: SystemData) void {
     if (self.creature.invulnerability_timer > 0) {
-        return .Remain;
+        return;
     }
     if (self.creature.god_mode) {
-        return .Remain;
+        return;
     }
     var it = gs.eventIter(c.EventTakeDamage, "self_id", self.id); while (it.next()) |event| {
         const amount = event.amount;
@@ -45,7 +50,7 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                         .pickup_type = pickup_type,
                     }) catch undefined;
                 }
-                return .Remain;
+                return;
             } else {
                 // something other than a player died
                 if (self.monster) |self_monster| {
@@ -72,9 +77,9 @@ fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
                     .simple_anim = .Explosion,
                     .z_index = Constants.z_index_explosion,
                 }) catch undefined;
-                return .RemoveSelf;
+                gs.markEntityForRemoval(self.id);
+                return;
             }
         }
     }
-    return .Remain;
 }

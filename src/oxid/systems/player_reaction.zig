@@ -13,10 +13,18 @@ const SystemData = struct {
     transform: *const c.Transform,
 };
 
-pub const run = gbe.buildSystem(GameSession, SystemData, playerReact);
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(SystemData);
 
-fn playerReact(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    var it = gs.eventIter(c.EventConferBonus, "recipient_id", self.id); while (it.next()) |event| {
+    while (it.next()) |self| {
+        playerReact(gs, self);
+    }
+}
+
+fn playerReact(gs: *GameSession, self: SystemData) void {
+    var it = gs.eventIter(c.EventConferBonus, "recipient_id", self.id);
+    
+    while (it.next()) |event| {
         switch (event.pickup_type) {
             .PowerUp => {
                 p.playSample(gs, .PowerUp);
@@ -47,5 +55,4 @@ fn playerReact(gs: *GameSession, self: SystemData) gbe.ThinkResult {
             },
         }
     }
-    return .Remain;
 }

@@ -5,7 +5,7 @@ const Constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
 const GameFrameContext = @import("../frame.zig").GameFrameContext;
 const GameSession = @import("../game.zig").GameSession;
-const GameUtil = @import("../util.zig");
+const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const c = @import("../components.zig");
@@ -20,33 +20,44 @@ const SystemData = struct {
     transform: *c.Transform,
 };
 
-pub const run = gbe.buildSystemWithContext(GameSession, SystemData, GameFrameContext, think);
+pub fn run(gs: *GameSession, context: GameFrameContext) void {
+    var it = gs.entityIter(SystemData);
 
-fn think(gs: *GameSession, self: SystemData, context: GameFrameContext) gbe.ThinkResult {
-    if (self.player.spawn_anim_y_remaining > 0) {
-        const dy = std.math.min(Constants.player_spawn_arise_speed, self.player.spawn_anim_y_remaining);
-        self.transform.pos.y -= @as(i32, dy);
-        self.player.spawn_anim_y_remaining -= dy;
-        return .Remain;
-    } else if (GameUtil.decrementTimer(&self.player.dying_timer)) {
-        _ = p.PlayerCorpse.spawn(gs, .{
-            .pos = self.transform.pos,
-        }) catch undefined;
-        return .RemoveSelf;
-    } else if (self.player.dying_timer > 0) {
-        if (self.player.dying_timer == Constants.duration60(30)) { // yeesh
-            p.playSample(gs, .PlayerCrumble);
+    while (it.next()) |self| {
+        if (self.player.spawn_anim_y_remaining > 0) {
+            const dy = std.math.min(
+                Constants.player_spawn_arise_speed,
+                self.player.spawn_anim_y_remaining,
+            );
+            self.transform.pos.y -= @as(i32, dy);
+            self.player.spawn_anim_y_remaining -= dy;
+            continue;
         }
-        self.phys.speed = 0;
-        self.phys.push_dir = null;
-        self.player.line_of_fire = null;
-    } else {
+       
+        if (util.decrementTimer(&self.player.dying_timer)) {
+            _ = p.PlayerCorpse.spawn(gs, .{
+                .pos = self.transform.pos,
+            }) catch undefined;
+
+            gs.markEntityForRemoval(self.id);
+            continue;
+        }
+        
+        if (self.player.dying_timer > 0) {
+            if (self.player.dying_timer == Constants.duration60(30)) { // yeesh
+                p.playSample(gs, .PlayerCrumble);
+            }
+            self.phys.speed = 0;
+            self.phys.push_dir = null;
+            self.player.line_of_fire = null;
+            continue;
+        }
+
         playerUpdate(gs, self);
         playerMove(gs, self);
         playerShoot(gs, self, context);
         playerUpdateLineOfFire(gs, self);
     }
-    return .Remain;
 }
 
 fn playerUpdate(gs: *GameSession, self: SystemData) void {

@@ -3,15 +3,15 @@ const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 const util = @import("../util.zig");
 
-const SystemData = struct {
-    remove_timer: *c.RemoveTimer,
-};
+pub fn run(gs: *GameSession) void {
+    var it = gs.entityIter(struct {
+        id: gbe.EntityId,
+        remove_timer: *c.RemoveTimer,
+    });
 
-pub const run = gbe.buildSystem(GameSession, SystemData, think);
-
-fn think(gs: *GameSession, self: SystemData) gbe.ThinkResult {
-    if (util.decrementTimer(&self.remove_timer.timer)) {
-        return .RemoveSelf;
+    while (it.next()) |self| {
+        if (util.decrementTimer(&self.remove_timer.timer)) {
+            gs.markEntityForRemoval(self.id);
+        }
     }
-    return .Remain;
 }
