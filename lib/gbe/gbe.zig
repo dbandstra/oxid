@@ -59,7 +59,7 @@ pub fn Session(comptime ComponentLists: type) type {
             self.next_entity_id = 1;
             self.num_removals = 0;
             inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-                @field(&self.components, field.name).count = 0;
+                @field(self.components, field.name).count = 0;
             }
         }
 
@@ -82,7 +82,7 @@ pub fn Session(comptime ComponentLists: type) type {
             self: *@This(),
             comptime T: type,
         ) ComponentIterator(T, getCapacity(T)) {
-            const list = &@field(&self.components, @typeName(T));
+            const list = &@field(self.components, @typeName(T));
             return ComponentIterator(T, comptime getCapacity(T)).init(list);
         }
 
@@ -99,7 +99,7 @@ pub fn Session(comptime ComponentLists: type) type {
             comptime id_field: []const u8,
             comptime T: type,
         ) EventIterator(EventComponent, id_field, T) {
-            const list = &@field(&self.components, @typeName(EventComponent));
+            const list = &@field(self.components, @typeName(EventComponent));
             return EventIterator(EventComponent, id_field, T).init(self, list);
         }
 
@@ -321,63 +321,100 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
     };
 }
 
-// `T` is a struct containing pointers to components
+// `T` is a struct where each field is one of the following:
+// - EntityId
+// - (possibly optional) pointer to a component
 pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
+    // validate `T`
+    comptime var all_fields_optional = true;
+
+    inline for (@typeInfo(T).Struct.fields) |field, i| {
+        if (field.field_type == EntityId) {
+            continue;
+        }
+
+        if (@typeInfo(field.field_type) == .Pointer) {
+            all_fields_optional = false;
+        }
+
+        const ft = switch (@typeInfo(field.field_type)) {
+            .Optional => |o| o.child,
+            else => field.field_type,
+        };
+
+        switch (@typeInfo(ft)) {
+            .Pointer => |p| {
+                const ComponentType = p.child;
+
+                comptime var found_component_type = false;
+
+                const ti = @typeInfo(SessionType.ComponentListsType);
+                inline for (ti.Struct.fields) |c_field, c_field_index| {
+                    if (c_field.field_type.ComponentType == ComponentType) {
+                        found_component_type = true;
+                    }
+                }
+
+                if (!found_component_type) {
+                    @compileError("iterator struct has field (" ++
+                        field.name ++ ") " ++ "that isn't a recognized" ++
+                        " component type (" ++ @typeName(ComponentType) ++
+                        ")");
+                }
+            },
+            else => {
+                @compileError("invalid field " ++ field.name);
+            }
+        }
+    }
+
+    if (all_fields_optional) {
+        @compileError("all fields cannot be optional");
+    }
+
     return struct {
         gs: *SessionType,
 
         // which component type we are iterating through
-        best_field_index: ?usize, 
+        best_field_index: usize,
 
         // current position within the "best" component type's slot array
         index: usize,
 
         pub fn init(gs: *SessionType) @This() {
-            // choose the best field
-            // only if all fields are optional will we consider optional
-            // fields when determining the best component type
-            comptime var all_fields_optional = true;
-
-            inline for (@typeInfo(T).Struct.fields) |field| {
-                if (field.field_type == EntityId) continue;
-                if (@typeId(field.field_type) != .Optional) {
-                    all_fields_optional = false;
-                }
-            }
-
-            if (all_fields_optional) {
-                @compileError("all fields cannot be optional");
-            }
-
-            // go through the fields in the SystemType struct (where each field
-            // is either an EntityId or a pointer to a component). decide which
-            // component type to do the outermost iteration over. choose the
-            // component type with the lowest amount of active entities.
-            var best: usize = std.math.maxInt(usize);
-            var maybe_which: ?usize = null;
+            // go through the fields in the `T` struct. decide which component
+            // type to do the outermost iteration over. choose the component
+            // type with the lowest amount of active entities.
+            const Best = struct {
+                field_index: usize,
+                count: usize,
+            };
+            var best: ?Best = null;
 
             inline for (@typeInfo(T).Struct.fields) |field, i| {
-                if (field.field_type == EntityId) {
-                    continue;
-                }
+                const ComponentType = switch (@typeInfo(field.field_type)) {
+                    .Pointer => |p| p.child,
+                    else => continue,
+                };
 
-                // skip optional fields, unless all fields are optional
-                if (@typeId(field.field_type) == .Optional and
-                        !all_fields_optional) {
-                    continue;
-                }
-
-                const field_type = UnpackComponentType(field.field_type);
-                const list = @field(&gs.components, @typeName(field_type));
-                if (list.count < best) {
-                    best = list.count;
-                    maybe_which = i;
+                const ti = @typeInfo(SessionType.ComponentListsType);
+                inline for (ti.Struct.fields) |c_field, c_field_index| {
+                    if (c_field.field_type.ComponentType != ComponentType) {
+                        continue;
+                    }
+                    const list = &@field(gs.components, c_field.name);
+                    if (best == null or list.count < best.?.count) {
+                        best = .{
+                            .field_index = i,
+                            .count = list.count,
+                        };
+                    }
                 }
             }
 
             return .{
                 .gs = gs,
-                .best_field_index = maybe_which,
+                .best_field_index = best.?.field_index,
                 .index = 0,
             };
         }
@@ -404,27 +441,21 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
         // get the next instance of the "best" component type. if found,
         // set the field in `result` and return the entity id.
         fn nextMainComponent(self: *@This(), result: *T) ?u64 {
-            const best_field_index = self.best_field_index orelse return null;
-
             // go through the components of the "best" type. find the next one
             // that exists
             inline for (@typeInfo(T).Struct.fields) |field, field_index| {
-                if (field.field_type == EntityId) {
-                    continue;
-                }
-                if (field_index == best_field_index) {
-                    const ComponentType = UnpackComponentType(field.field_type);
+                const ComponentType = switch (@typeInfo(field.field_type)) {
+                    .Pointer => |p| p.child,
+                    else => continue,
+                };
 
-                    comptime var found_component_type = false;
-
+                if (field_index == self.best_field_index) {
                     // find the component list in the GBE session
-                    const TI = @typeInfo(SessionType.ComponentListsType);
-                    inline for (TI.Struct.fields) |c_field, c_field_index| {
+                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    inline for (ti.Struct.fields) |c_field, c_field_index| {
                         if (c_field.field_type.ComponentType != ComponentType) {
                             continue;
                         }
-
-                        found_component_type = true;
 
                         const list = &@field(self.gs.components, c_field.name);
 
@@ -446,13 +477,6 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                             return null;
                         }
                     }
-
-                    if (!found_component_type) {
-                        @compileError("iterator struct has field (" ++
-                            field.name ++ ") " ++ "that isn't a recognized" ++
-                            " component type (" ++ @typeName(ComponentType) ++
-                            ")");
-                    }
                 }
             }
 
@@ -460,8 +484,6 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
         }
 
         fn fillOtherComponents(self: *@This(), result: *T, entity_id: u64) bool {
-            const best_field_index = self.best_field_index.?;
-
             // go through other component types in the struct. look for
             // components with the same entity_id as we found from the best
             // entry above. if the field is not optional, and a component is
@@ -472,20 +494,26 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     continue;
                 }
 
-                if (field_index != best_field_index) {
-                    const ComponentType = UnpackComponentType(field.field_type);
+                comptime var ft = field.field_type;
+                comptime var is_optional = false;
+                switch (@typeInfo(ft)) {
+                    .Optional => |o| {
+                        ft = o.child;
+                        is_optional = true;
+                    },
+                    else => {},
+                }
+                const ComponentType = switch (@typeInfo(ft)) {
+                    .Pointer => |p| p.child,
+                    else => unreachable,
+                };
 
-                    comptime var found_component_type = false;
-
-                    const TI = @typeInfo(SessionType.ComponentListsType);
-                    inline for (TI.Struct.fields) |c_field, c_field_index| {
+                if (field_index != self.best_field_index) {
+                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    inline for (ti.Struct.fields) |c_field, c_field_index| {
                         if (c_field.field_type.ComponentType != ComponentType) {
                             continue;
                         }
-
-                        // this component array corresponds to the field in
-                        // the iterator struct...
-                        found_component_type = true;
 
                         const list = &@field(self.gs.components, c_field.name);
 
@@ -498,7 +526,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                             }
                         } else {
                             // requested component not present in this entity.
-                            if (@typeId(field.field_type) == .Optional) {
+                            if (is_optional) {
                                 @field(result, field.name) = null;
                             } else {
                                 // it was required. so much for this entity.
@@ -507,30 +535,10 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                             }
                         }
                     }
-
-                    if (!found_component_type) {
-                        @compileError("iterator struct has field (" ++
-                            field.name ++ ") that isn't a recognized" ++
-                            " component type (" ++
-                            @typeName(ComponentType) ++ ")");
-                    }
                 }
             }
 
             return true;
         }
     };
-}
-
-fn UnpackComponentType(comptime field_type: type) type {
-    comptime var ft = field_type;
-    if (@typeId(ft) == .Optional) {
-        ft = @typeInfo(ft).Optional.child;
-    }
-    if (@typeId(ft) != .Pointer) {
-        @compileError("field must be a pointer");
-        unreachable;
-    }
-    ft = @typeInfo(ft).Pointer.child;
-    return ft;
 }
