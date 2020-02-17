@@ -172,23 +172,6 @@ pub fn Session(comptime ComponentLists: type) type {
             list.data[slot_index] = data;
         }
 
-        // not convinced of the need for this method?
-        // i think this introduces a dependency on component order which i
-        // don't want.
-        // instead of this, event iterator should be expanded to consolidate
-        // all events that point to the same subject and return them at once
-        pub fn isMarkedForRemoval(
-            self: *const @This(),
-            entity_id: EntityId,
-        ) bool {
-            for (self.removals[0..self.num_removals]) |id| {
-                if (EntityId.eql(id, entity_id)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
             if (self.num_removals >= max_removals_per_frame) {
                 @panic("markEntityForRemoval: no removal slots available");
