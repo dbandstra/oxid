@@ -93,16 +93,6 @@ pub fn Session(comptime ComponentLists: type) type {
             return EntityIterator(@This(), T).init(self);
         }
 
-        pub fn eventIter(
-            self: *@This(),
-            comptime EventComponent: type,
-            comptime id_field: []const u8,
-            comptime T: type,
-        ) EventIterator(EventComponent, id_field, T) {
-            const list = &@field(self.components, @typeName(EventComponent));
-            return EventIterator(EventComponent, id_field, T).init(self, list);
-        }
-
         pub fn find(
             self: *@This(),
             entity_id: EntityId,
@@ -233,57 +223,6 @@ pub fn Session(comptime ComponentLists: type) type {
                 }
             }
         }
-
-        const ThisSession = @This();
-
-        pub fn EventIterator(
-            comptime EventComponent: type,
-            comptime id_field: []const u8,
-            comptime T: type,
-        ) type {
-            return struct {
-                pub const Result = struct {
-                    event: EventComponent,
-                    subject: T,
-                };
-
-                const capacity = getCapacity(EventComponent);
-
-                session: *ThisSession,
-                list: *ComponentList(EventComponent, capacity),
-                index: usize,
-
-                pub inline fn init(
-                    session: *ThisSession,
-                    list: *ComponentList(EventComponent, capacity),
-                ) @This() {
-                    return .{
-                        .session = session,
-                        .list = list,
-                        .index = 0,
-                    };
-                }
-
-                pub fn next(self: *@This()) ?Result {
-                    for (self.list.id[self.index..self.list.count]) |id, i| {
-                        if (id == 0) {
-                            continue;
-                        }
-                        const data = &self.list.data[self.index + i];
-                        const subject_id = @field(data, id_field);
-                        if (self.session.findEntity(subject_id, T)) |subject| {
-                            self.index += i + 1;
-                            return Result {
-                                .event = data.*,
-                                .subject = subject,
-                            };
-                        }
-                    }
-                    self.index = self.list.count;
-                    return null;
-                }
-            };
-        }
     };
 }
 
@@ -321,9 +260,24 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
     };
 }
 
+// used in iteration
+pub fn Inbox(
+    comptime ComponentType_: type,
+    comptime id_field_: []const u8,
+) type {
+    return struct {
+        pub const is_inbox = true;
+        pub const ComponentType = ComponentType_;
+        pub const id_field = id_field_;
+
+        head: ?*const ComponentType, // TODO should be a slice
+    };
+}
+
 // `T` is a struct where each field is one of the following:
 // - EntityId
 // - (possibly optional) pointer to a component
+// - (possibly optional) Events
 pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
     // validate `T`
     comptime var all_fields_optional = true;
@@ -362,8 +316,13 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                         ")");
                 }
             },
+            .Struct => {
+                if (!ft.is_inbox) {
+                    @compileError("invalid field (" ++ field.name ++ ")");
+                }
+            },
             else => {
-                @compileError("invalid field " ++ field.name);
+                @compileError("invalid field (" ++ field.name ++ ")");
             }
         }
     }
@@ -371,6 +330,9 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
     if (all_fields_optional) {
         @compileError("all fields cannot be optional");
     }
+
+    // TODO - as an optimization, if one of the fields is an Inbox, we should
+    // iterate over the events instead of over the "self" entity components.
 
     return struct {
         gs: *SessionType,
@@ -494,6 +456,37 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     continue;
                 }
 
+                if (@typeInfo(field.field_type) == .Struct and
+                        field.field_type.is_inbox) {
+                    const EventComponentType = field.field_type.ComponentType;
+
+                    @field(result, field.name).head = null;
+
+                    // look for an event pointing to this entity. we'll only
+                    // take the first match.
+                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    inline for (ti.Struct.fields) |c_field, c_field_index| {
+                        if (c_field.field_type.ComponentType
+                                != EventComponentType) {
+                            continue;
+                        }
+
+                        const list = &@field(self.gs.components, c_field.name);
+
+                        for (list.id[0..list.count]) |id, i| {
+                            const event = &list.data[i];
+                            if (@field(event, field.field_type.id_field).id
+                                    == entity_id) {
+                                @field(result, field.name).head = event;
+                                break;
+                            }
+                        }
+                    }
+
+                    continue;
+                }
+
+                // it's a regular component field (may be optional)
                 comptime var ft = field.field_type;
                 comptime var is_optional = false;
                 switch (@typeInfo(ft)) {

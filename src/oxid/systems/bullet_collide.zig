@@ -5,19 +5,15 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.eventIter(c.EventCollide, "self_id", struct {
+    var it = gs.entityIter(struct {
         id: gbe.EntityId,
         bullet: *const c.Bullet,
         transform: *const c.Transform,
+        inbox_collide: gbe.Inbox(c.EventCollide, "self_id"),
     });
 
-    while (it.next()) |entry| {
-        const self = entry.subject;
-        const event = entry.event;
-
-        if (gs.isMarkedForRemoval(self.id)) {
-            continue;
-        }
+    while (it.next()) |self| {
+        const event = self.inbox_collide.head orelse continue;
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,

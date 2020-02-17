@@ -6,17 +6,17 @@ const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.eventIter(c.EventTakeDamage, "self_id", struct {
+    var it = gs.entityIter(struct {
         id: gbe.EntityId,
         creature: *c.Creature,
         transform: *const c.Transform,
         monster: ?*const c.Monster,
         player: ?*c.Player,
+        inbox_take_damage: gbe.Inbox(c.EventTakeDamage, "self_id"),
     });
 
-    while (it.next()) |entry| {
-        const self = entry.subject;
-        const event = entry.event;
+    while (it.next()) |self| {
+        const event = self.inbox_take_damage.head orelse continue;
 
         if (self.creature.invulnerability_timer > 0) {
             continue;
