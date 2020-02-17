@@ -78,12 +78,18 @@ pub fn Session(comptime ComponentLists: type) type {
             return capacity;
         }
 
-        pub fn iter(self: *@This(), comptime T: type) ComponentIterator(T, getCapacity(T)) {
+        pub fn iter(
+            self: *@This(),
+            comptime T: type,
+        ) ComponentIterator(T, getCapacity(T)) {
             const list = &@field(&self.components, @typeName(T));
             return ComponentIterator(T, comptime getCapacity(T)).init(list);
         }
 
-        pub fn entityIter(self: *@This(), comptime T: type) EntityIterator(@This(), T) {
+        pub fn entityIter(
+            self: *@This(),
+            comptime T: type,
+        ) EntityIterator(@This(), T) {
             return EntityIterator(@This(), T).init(self);
         }
 
@@ -97,7 +103,11 @@ pub fn Session(comptime ComponentLists: type) type {
             return EventIterator(EventComponent, id_field, T).init(self, list);
         }
 
-        pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
+        pub fn find(
+            self: *@This(),
+            entity_id: EntityId,
+            comptime T: type,
+        ) ?*T {
             var id: EntityId = undefined;
             var it = self.iter(T);
             while (it.nextWithId(&id)) |object| {
@@ -108,7 +118,11 @@ pub fn Session(comptime ComponentLists: type) type {
             return null;
         }
 
-        pub fn findEntity(self: *@This(), entity_id: EntityId, comptime T: type) ?T {
+        pub fn findEntity(
+            self: *@This(),
+            entity_id: EntityId,
+            comptime T: type,
+        ) ?T {
             var entry_id: EntityId = undefined;
             var it = self.entityIter(T);
             while (it.nextWithId(&entry_id)) |entry| {
@@ -135,13 +149,19 @@ pub fn Session(comptime ComponentLists: type) type {
             self.freeEntity(entity_id);
         }
 
-        // `data` must be a struct object, and it must be one of the structs in ComponentLists.
-        // FIXME - is there any way to make this fail (at compile time!) if you try to add the same
-        // component to an entity twice?
+        // `data` must be a struct object, and it must be one of the structs
+        // in ComponentLists.
+        // FIXME - is there any way to make this fail (at compile time!) if
+        // you try to add the same component to an entity twice?
         // TODO - optional LRU reuse (whether this is used would be up to the
-        // ComponentStorage config, per component type. obviously, kicking out old
-        // entities to make room for new ones is not always the right choice)
-        pub fn addComponent(self: *@This(), entity_id: EntityId, data: var) !void {
+        // ComponentStorage config, per component type. obviously, kicking out
+        // old entities to make room for new ones is not always the right
+        // choice)
+        pub fn addComponent(
+            self: *@This(),
+            entity_id: EntityId,
+            data: var,
+        ) !void {
             var list = &@field(self.components, @typeName(@TypeOf(data)));
             const slot_index = blk: {
                 var i: usize = 0;
@@ -201,8 +221,11 @@ pub fn Session(comptime ComponentLists: type) type {
             }
             // FIXME - this implementation is not good. it's going through
             // every slot of every component type, for each removal.
-            inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
-                const list = &@field(self.components, @typeName(field.field_type.ComponentType));
+            inline for (@typeInfo(ComponentLists).Struct.fields)
+                       |field, field_index| {
+                const list = &@field(self.components,
+                    @typeName(field.field_type.ComponentType));
+
                 for (list.id[0..list.count]) |*id| {
                     if (id.* == entity_id.id) {
                         id.* = 0;
