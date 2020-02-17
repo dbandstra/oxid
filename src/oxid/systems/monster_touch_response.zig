@@ -22,9 +22,13 @@ fn monsterCollide(gs: *GameSession, self: SystemData) void {
     var hit_wall = false;
     var hit_creature = false;
 
-    var it = gs.eventIter(c.EventCollide, "self_id", self.id);
+    var it = gs.iter(c.EventCollide);
 
     while (it.next()) |event| {
+        if (!gbe.EntityId.eql(event.self_id, self.id)) {
+            continue;
+        }
+
         if (gbe.EntityId.isZero(event.other_id)) {
             hit_wall = true;
             continue;

@@ -87,9 +87,14 @@ pub fn Session(comptime ComponentLists: type) type {
             return EntityIterator(@This(), T).init(self);
         }
 
-        pub fn eventIter(self: *@This(), comptime T: type, comptime field: []const u8, entity_id: EntityId) EventIterator(T, getCapacity(T), field) {
-            const list = &@field(&self.components, @typeName(T));
-            return EventIterator(T, comptime getCapacity(T), field).init(list, entity_id);
+        pub fn eventIter(
+            self: *@This(),
+            comptime EventComponent: type,
+            comptime id_field: []const u8,
+            comptime T: type,
+        ) EventIterator(EventComponent, id_field, T) {
+            const list = &@field(&self.components, @typeName(EventComponent));
+            return EventIterator(EventComponent, id_field, T).init(self, list);
         }
 
         pub fn find(self: *@This(), entity_id: EntityId, comptime T: type) ?*T {
@@ -157,6 +162,23 @@ pub fn Session(comptime ComponentLists: type) type {
             list.data[slot_index] = data;
         }
 
+        // not convinced of the need for this method?
+        // i think this introduces a dependency on component order which i
+        // don't want.
+        // instead of this, event iterator should be expanded to consolidate
+        // all events that point to the same subject and return them at once
+        pub fn isMarkedForRemoval(
+            self: *const @This(),
+            entity_id: EntityId,
+        ) bool {
+            for (self.removals[0..self.num_removals]) |id| {
+                if (EntityId.eql(id, entity_id)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
             if (self.num_removals >= max_removals_per_frame) {
                 @panic("markEntityForRemoval: no removal slots available");
@@ -188,6 +210,57 @@ pub fn Session(comptime ComponentLists: type) type {
                 }
             }
         }
+
+        const ThisSession = @This();
+
+        pub fn EventIterator(
+            comptime EventComponent: type,
+            comptime id_field: []const u8,
+            comptime T: type,
+        ) type {
+            return struct {
+                pub const Result = struct {
+                    event: EventComponent,
+                    subject: T,
+                };
+
+                const capacity = getCapacity(EventComponent);
+
+                session: *ThisSession,
+                list: *ComponentList(EventComponent, capacity),
+                index: usize,
+
+                pub inline fn init(
+                    session: *ThisSession,
+                    list: *ComponentList(EventComponent, capacity),
+                ) @This() {
+                    return .{
+                        .session = session,
+                        .list = list,
+                        .index = 0,
+                    };
+                }
+
+                pub fn next(self: *@This()) ?Result {
+                    for (self.list.id[self.index..self.list.count]) |id, i| {
+                        if (id == 0) {
+                            continue;
+                        }
+                        const data = &self.list.data[self.index + i];
+                        const subject_id = @field(data, id_field);
+                        if (self.session.findEntity(subject_id, T)) |subject| {
+                            self.index += i + 1;
+                            return Result {
+                                .event = data.*,
+                                .subject = subject,
+                            };
+                        }
+                    }
+                    self.index = self.list.count;
+                    return null;
+                }
+            };
+        }
     };
 }
 
@@ -216,43 +289,6 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
                     out_id.* = .{ .id = id };
                 }
                 const data = &self.list.data[self.index + i];
-                self.index += i + 1;
-                return data;
-            }
-            self.index = self.list.count;
-            return null;
-        }
-    };
-}
-
-// EventIterator takes a field name (compile-time) and an entity id (run-time),
-// and only yields events where event.field_name == entity_id
-pub fn EventIterator(comptime T: type, comptime capacity: usize, comptime field_name: []const u8) type {
-    return struct {
-        list: *ComponentList(T, capacity),
-        entity_id: EntityId,
-        index: usize,
-
-        pub fn init(list: *ComponentList(T, capacity), entity_id: EntityId) @This() {
-            return .{
-                .list = list,
-                .entity_id = entity_id,
-                .index = 0,
-            };
-        }
-
-        pub fn next(self: *@This()) ?*T {
-            if (EntityId.isZero(self.entity_id)) {
-                return null;
-            }
-            for (self.list.id[self.index..self.list.count]) |id, i| {
-                if (id == 0) {
-                    continue;
-                }
-                const data = &self.list.data[self.index + i];
-                if (!EntityId.eql(@field(data, field_name), self.entity_id)) {
-                    continue;
-                }
                 self.index += i + 1;
                 return data;
             }

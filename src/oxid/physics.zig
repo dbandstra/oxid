@@ -269,12 +269,24 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
     }
 }
 
-fn findCollisionEvent(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) ?*c.EventCollide {
-    var it = gs.eventIter(c.EventCollide, "self_id", self_id); while (it.next()) |event| {
-        if (gbe.EntityId.eql(event.other_id, other_id)) {
-            return event;
+fn findCollisionEvent(
+    gs: *GameSession,
+    self_id: gbe.EntityId,
+    other_id: gbe.EntityId,
+) ?*c.EventCollide {
+    var it = gs.iter(c.EventCollide);
+    
+    while (it.next()) |event| {
+        if (!gbe.EntityId.eql(event.self_id, self_id)) {
+            continue;
         }
+        if (!gbe.EntityId.eql(event.other_id, other_id)) {
+            continue;
+        }
+
+        return event;
     }
+
     return null;
 }
 

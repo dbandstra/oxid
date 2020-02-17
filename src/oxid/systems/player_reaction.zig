@@ -1,30 +1,22 @@
 const gbe = @import("gbe");
-const ConstantTypes = @import("../constant_types.zig");
 const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
-const SystemData = struct {
-    id: gbe.EntityId,
-    creature: *const c.Creature,
-    phys: *const c.PhysObject,
-    player: *c.Player,
-    transform: *const c.Transform,
-};
-
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(SystemData);
+    var it = gs.eventIter(c.EventConferBonus, "recipient_id", struct {
+        id: gbe.EntityId,
+        creature: *const c.Creature,
+        phys: *const c.PhysObject,
+        player: *c.Player,
+        transform: *const c.Transform,
+    });
 
-    while (it.next()) |self| {
-        playerReact(gs, self);
-    }
-}
+    while (it.next()) |entry| {
+        const self = entry.subject;
+        const event = entry.event;
 
-fn playerReact(gs: *GameSession, self: SystemData) void {
-    var it = gs.eventIter(c.EventConferBonus, "recipient_id", self.id);
-    
-    while (it.next()) |event| {
         switch (event.pickup_type) {
             .PowerUp => {
                 p.playSample(gs, .PowerUp);
@@ -32,7 +24,7 @@ fn playerReact(gs: *GameSession, self: SystemData) void {
                     .One => c.Player.AttackLevel.Two,
                     else => c.Player.AttackLevel.Three,
                 };
-                self.player.last_pickup = ConstantTypes.PickupType.PowerUp;
+                self.player.last_pickup = .PowerUp;
             },
             .SpeedUp => {
                 p.playSample(gs, .PowerUp);
@@ -40,7 +32,7 @@ fn playerReact(gs: *GameSession, self: SystemData) void {
                     .One => c.Player.SpeedLevel.Two,
                     else => c.Player.SpeedLevel.Three,
                 };
-                self.player.last_pickup = ConstantTypes.PickupType.SpeedUp;
+                self.player.last_pickup = .SpeedUp;
             },
             .LifeUp => {
                 p.playSample(gs, .ExtraLife);
