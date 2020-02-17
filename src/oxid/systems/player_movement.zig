@@ -33,7 +33,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
             self.player.spawn_anim_y_remaining -= dy;
             continue;
         }
-       
+
         if (util.decrementTimer(&self.player.dying_timer)) {
             _ = p.PlayerCorpse.spawn(gs, .{
                 .pos = self.transform.pos,
@@ -42,7 +42,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
             gs.markEntityForRemoval(self.id);
             continue;
         }
-        
+
         if (self.player.dying_timer > 0) {
             if (self.player.dying_timer == Constants.duration60(30)) { // yeesh
                 p.playSample(gs, .PlayerCrumble);

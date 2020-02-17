@@ -9,7 +9,7 @@ pub fn run(gs: *GameSession) void {
 
     while (it.next()) |self| {
         var event_it = gs.iter(c.EventGameInput);
-        
+
         while (event_it.next()) |event| {
             if (event.player_number != self.player.player_number) {
                 continue;

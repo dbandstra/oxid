@@ -275,7 +275,7 @@ fn findCollisionEvent(
     other_id: gbe.EntityId,
 ) ?*c.EventCollide {
     var it = gs.iter(c.EventCollide);
-    
+
     while (it.next()) |event| {
         if (!gbe.EntityId.eql(event.self_id, self_id)) {
             continue;

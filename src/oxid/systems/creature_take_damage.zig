@@ -34,7 +34,7 @@ pub fn run(gs: *GameSession) void {
             self.creature.flinch_timer = Constants.duration60(4);
             continue;
         }
-        
+
         self.creature.hit_points = 0;
 
         if (self.player) |self_player| {
