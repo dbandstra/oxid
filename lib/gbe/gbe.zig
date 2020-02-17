@@ -263,7 +263,7 @@ pub fn Inbox(
         // sometimes, you only want an event to take effect once. current this
         // just holds the first one we hit in iteration
         // TODO - randomize
-        one: ?*const ComponentType,
+        one: *const ComponentType,
 
         // this tracks the total number of events encountered, even beyond the
         // inbox's capacity.
@@ -491,16 +491,13 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                         }
                     }
 
-                    @field(result, field.name).all = array[0..count];
-
-                    if (count > 0) {
-                        @field(result, field.name).one = array[0];
-                    } else {
-                        @field(result, field.name).one = null;
+                    if (count == 0) {
+                        return false;
                     }
 
+                    @field(result, field.name).all = array[0..count];
+                    @field(result, field.name).one = array[0];
                     @field(result, field.name).total = total;
-
                     continue;
                 }
 

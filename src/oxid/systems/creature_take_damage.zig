@@ -12,7 +12,7 @@ pub fn run(gs: *GameSession) void {
         transform: *const c.Transform,
         monster: ?*const c.Monster,
         player: ?*c.Player,
-        inbox_take_damage: gbe.Inbox(8, c.EventTakeDamage, "self_id"),
+        inbox: gbe.Inbox(8, c.EventTakeDamage, "self_id"),
     });
 
     while (it.next()) |self| {
@@ -28,7 +28,7 @@ pub fn run(gs: *GameSession) void {
 
         const total_damage = blk: {
             var n: u32 = 0;
-            for (self.inbox_take_damage.all) |event| {
+            for (self.inbox.all) |event| {
                 n += event.amount;
             }
             break :blk n;
@@ -76,13 +76,12 @@ pub fn run(gs: *GameSession) void {
 
             // in the case that multiple players shot this monster at the same
             // time, pick one of them at random to award the kill to
-            if (self.inbox_take_damage.one) |event| {
-                if (event.inflictor_player_controller_id) |player_controller_id| {
-                    _ = p.EventAwardPoints.spawn(gs, .{
-                        .player_controller_id = player_controller_id,
-                        .points = self_monster.kill_points,
-                    }) catch undefined;
-                }
+            if (self.inbox.one.inflictor_player_controller_id)
+                    |player_controller_id| {
+                _ = p.EventAwardPoints.spawn(gs, .{
+                    .player_controller_id = player_controller_id,
+                    .points = self_monster.kill_points,
+                }) catch undefined;
             }
 
             if (self_monster.has_coin) {

@@ -112,19 +112,12 @@ test "EntityIterator test with Events" {
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, "self_id"),
     });
-    var i: usize = 0; while (i < 8) : (i += 1) {
+    var i: usize = 0; while (i < 2) : (i += 1) {
         var entry = it.next().?;
-        if (i < 2) {
-            std.testing.expect(entry.inbox.all.len == 1);
-            std.testing.expect(entry.inbox.all[0].num == i);
-            std.testing.expect(entry.inbox.one != null);
-            std.testing.expect(entry.inbox.one.?.num == i);
-            std.testing.expect(entry.inbox.total == 1);
-        } else {
-            std.testing.expect(entry.inbox.all.len == 0);
-            std.testing.expect(entry.inbox.one == null);
-            std.testing.expect(entry.inbox.total == 0);
-        }
+        std.testing.expect(entry.inbox.all.len == 1);
+        std.testing.expect(entry.inbox.all[0].num == i);
+        std.testing.expect(entry.inbox.one.num == i);
+        std.testing.expect(entry.inbox.total == 1);
     }
     std.testing.expect(it.next() == null);
 }

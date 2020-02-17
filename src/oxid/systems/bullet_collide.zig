@@ -9,11 +9,11 @@ pub fn run(gs: *GameSession) void {
         id: gbe.EntityId,
         bullet: *const c.Bullet,
         transform: *const c.Transform,
-        inbox_collide: gbe.Inbox(1, c.EventCollide, "self_id"),
+        inbox: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
 
     while (it.next()) |self| {
-        const event = self.inbox_collide.one orelse continue;
+        const event = self.inbox.one;
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
