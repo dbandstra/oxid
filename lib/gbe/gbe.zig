@@ -243,8 +243,8 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
     };
 }
 
-// used in iteration
 pub fn Inbox(
+    comptime capacity: usize,
     comptime ComponentType_: type,
     comptime id_field_: []const u8,
 ) type {
@@ -253,7 +253,23 @@ pub fn Inbox(
         pub const ComponentType = ComponentType_;
         pub const id_field = id_field_;
 
-        head: ?*const ComponentType, // TODO should be a slice
+        // internal use only
+        array: [capacity]*const ComponentType,
+
+        // will track up to `capacity` event instances
+        // TODO - randomize
+        all: []*const ComponentType,
+
+        // sometimes, you only want an event to take effect once. current this
+        // just holds the first one we hit in iteration
+        // TODO - randomize
+        one: ?*const ComponentType,
+
+        // this tracks the total number of events encountered, even beyond the
+        // inbox's capacity.
+        // this is probably pretty useless right now. it could come in handy
+        // though when i implement randomization of `all` and `one`
+        total: usize,
     };
 }
 
@@ -443,7 +459,9 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                         field.field_type.is_inbox) {
                     const EventComponentType = field.field_type.ComponentType;
 
-                    @field(result, field.name).head = null;
+                    var array = &@field(result, field.name).array;
+                    var count: usize = 0;
+                    var total: usize = 0;
 
                     // look for an event pointing to this entity. we'll only
                     // take the first match.
@@ -457,14 +475,31 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                         const list = &@field(self.gs.components, c_field.name);
 
                         for (list.id[0..list.count]) |id, i| {
+                            if (id == 0) {
+                                continue;
+                            }
                             const event = &list.data[i];
                             if (@field(event, field.field_type.id_field).id
                                     == entity_id) {
-                                @field(result, field.name).head = event;
-                                break;
+                                // if the inbox is full, silently drop events
+                                if (count < array.len) {
+                                    array[count] = event;
+                                    count += 1;
+                                }
+                                total += 1;
                             }
                         }
                     }
+
+                    @field(result, field.name).all = array[0..count];
+
+                    if (count > 0) {
+                        @field(result, field.name).one = array[0];
+                    } else {
+                        @field(result, field.name).one = null;
+                    }
+
+                    @field(result, field.name).total = total;
 
                     continue;
                 }

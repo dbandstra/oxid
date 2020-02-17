@@ -7,11 +7,11 @@ pub fn run(gs: *GameSession) void {
     var it = gs.entityIter(struct {
         id: gbe.EntityId,
         pickup: *const c.Pickup,
-        inbox_collide: gbe.Inbox(c.EventCollide, "self_id"),
+        inbox_collide: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
 
     while (it.next()) |self| {
-        const event = self.inbox_collide.head orelse continue;
+        const event = self.inbox_collide.one orelse continue;
 
         const player = gs.find(event.other_id, c.Player) orelse continue;
 
