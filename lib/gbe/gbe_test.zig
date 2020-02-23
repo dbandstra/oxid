@@ -7,16 +7,16 @@ const Player = struct { attack_level: u32 };
 const Transform = struct { x: i32, y: i32 };
 const EventDie = struct { self_id: gbe.EntityId, num: usize };
 
-const MockECS = gbe.ECS(struct {
-    Creature: gbe.ComponentList(Creature, 50),
-    Monster: gbe.ComponentList(Monster, 50),
-    Player: gbe.ComponentList(Player, 50),
-    Transform: gbe.ComponentList(Transform, 50),
-    EventDie: gbe.ComponentList(EventDie, 50),
+const MockECS = gbe.ECS(&[_]gbe.ComponentDef {
+    .{ .Type = Creature, .capacity = 50 },
+    .{ .Type = Monster, .capacity = 50 },
+    .{ .Type = Player, .capacity = 50 },
+    .{ .Type = Transform, .capacity = 50 },
+    .{ .Type = EventDie, .capacity = 50 },
 });
 
-fn initECS(ecs: *MockECS) !void {
-    ecs.init();
+fn initECS(ecs: *MockECS, allocator: *std.mem.Allocator) !void {
+    try MockECS.init(ecs, allocator);
 
     var i: usize = undefined;
 
@@ -41,11 +41,14 @@ fn initECS(ecs: *MockECS) !void {
             .num = i,
         });
     }
+
+    ecs.settle();
 }
 
 test "EntityIterator basic test" {
     var ecs: MockECS = undefined;
-    try initECS(&ecs);
+    try initECS(&ecs, std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var it = ecs.iter(struct {
         creature: *Creature,
@@ -66,7 +69,8 @@ test "EntityIterator basic test" {
 
 test "EntityIterator only players" {
     var ecs: MockECS = undefined;
-    try initECS(&ecs);
+    try initECS(&ecs, std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var it = ecs.iter(struct {
         player: *Player,
@@ -80,7 +84,8 @@ test "EntityIterator only players" {
 
 test "EntityIterator test with optionals and id field" {
     var ecs: MockECS = undefined;
-    try initECS(&ecs);
+    try initECS(&ecs, std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var it = ecs.iter(struct {
         id: gbe.EntityId,
@@ -105,7 +110,8 @@ test "EntityIterator test with optionals and id field" {
 
 test "EntityIterator test with inbox" {
     var ecs: MockECS = undefined;
-    try initECS(&ecs);
+    try initECS(&ecs, std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var it = ecs.iter(struct {
         id: gbe.EntityId,
@@ -123,7 +129,8 @@ test "EntityIterator test with inbox" {
 
 test "EntityIterator test with inbox with null id_field" {
     var ecs: MockECS = undefined;
-    try initECS(&ecs);
+    try initECS(&ecs, std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var it = ecs.iter(struct {
         id: gbe.EntityId,
@@ -145,17 +152,19 @@ test "EntityIterator test with inbox with null id_field" {
 //test "EntityIterator test with inbox referring to 0-bit component" {
 //    const NotEmpty = struct { field: u32 };
 //    const Empty = struct {};
-//    var ecs: gbe.ECS(struct {
-//        NotEmpty: gbe.ComponentList(NotEmpty, 5),
-//        Empty: gbe.ComponentList(Empty, 5),
+//    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+//        .{ .Type = NotEmpty, .capacity = 5 },
+//        .{ .Type = Empty, .capacity = 5 },
 //    }) = undefined;
-//    ecs.init();
+//    try ecs.init(std.heap.page_allocator);
+//    defer ecs.deinit(std.heap.page_allocator);
 //
 //    try ecs.addComponent(ecs.spawn(), NotEmpty { .field = 0 });
 //    try ecs.addComponent(ecs.spawn(), NotEmpty { .field = 1 });
 //    try ecs.addComponent(ecs.spawn(), Empty {});
 //    try ecs.addComponent(ecs.spawn(), Empty {});
 //    try ecs.addComponent(ecs.spawn(), Empty {});
+//    ecs.settle();
 //
 //    var it = ecs.iter(struct {
 //        id: gbe.EntityId,
@@ -177,18 +186,21 @@ test "EntityIterator where \"main\" component type is zero-sized" {
     const NotEmpty = struct { field: u32 };
     const Empty = struct {};
 
-    var ecs: gbe.ECS(struct {
-        NotEmpty: gbe.ComponentList(NotEmpty, 5),
-        Empty: gbe.ComponentList(Empty, 4), // less capacity = best
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = NotEmpty, .capacity = 5 },
+        .{ .Type = Empty, .capacity = 4 }, // less capacity = best
     }) = undefined;
 
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var i: u32 = 0; while (i < 2) : (i += 1) {
         const entity_id = ecs.spawn();
         try ecs.addComponent(entity_id, NotEmpty { .field = i });
         try ecs.addComponent(entity_id, Empty {});
     }
+
+    ecs.settle();
 
     var it = ecs.iter(struct {
         not_empty: *NotEmpty,
@@ -207,12 +219,13 @@ test "EntityIterator with an optional zero-size component" {
     const NotEmpty = struct { field: u32 };
     const Empty = struct {};
 
-    var ecs: gbe.ECS(struct {
-        NotEmpty: gbe.ComponentList(NotEmpty, 5),
-        Empty: gbe.ComponentList(Empty, 5),
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = NotEmpty, .capacity = 5 },
+        .{ .Type = Empty, .capacity = 5 },
     }) = undefined;
 
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var entity_id = ecs.spawn();
     try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
@@ -220,6 +233,8 @@ test "EntityIterator with an optional zero-size component" {
 
     entity_id = ecs.spawn();
     try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+
+    ecs.settle();
 
     var it = ecs.iter(struct {
         not_empty: *NotEmpty,
@@ -241,13 +256,14 @@ test "EntityIterator with a 0-size component" {
     const NotEmpty = struct { field: u32 };
     const Empty = struct {};
 
-    const ECS = gbe.ECS(struct {
-        NotEmpty: gbe.ComponentList(NotEmpty, 5),
-        Empty: gbe.ComponentList(Empty, 5),
+    const ECS = gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = NotEmpty, .capacity = 5 },
+        .{ .Type = Empty, .capacity = 5 },
     });
 
     var ecs: ECS = undefined;
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     var entity_id = ecs.spawn();
     try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
@@ -255,6 +271,8 @@ test "EntityIterator with a 0-size component" {
 
     entity_id = ecs.spawn();
     try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+
+    ecs.settle();
 
     var it = ecs.iter(struct {
         not_empty: *NotEmpty,
@@ -269,13 +287,16 @@ test "EntityIterator with a 0-size component" {
 
 test "ComponentIterator with a non-empty struct component" {
     const NonEmpty = struct { field: u32 };
-    var ecs: gbe.ECS(struct {
-        NonEmpty: gbe.ComponentList(NonEmpty, 5),
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = NonEmpty, .capacity = 5 },
     }) = undefined;
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 1 });
     try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 2 });
+    ecs.settle();
+    try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 3 });
 
     var it = ecs.componentIter(NonEmpty);
     std.testing.expect(it.next().?.field == 1);
@@ -284,13 +305,16 @@ test "ComponentIterator with a non-empty struct component" {
 }
 
 test "ComponentIterator with a non-struct component" {
-    var ecs: gbe.ECS(struct {
-        f32: gbe.ComponentList(f32, 5),
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = f32, .capacity = 5 },
     }) = undefined;
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     try ecs.addComponent(ecs.spawn(), @as(f32, 1.0));
     try ecs.addComponent(ecs.spawn(), @as(f32, 2.0));
+    ecs.settle();
+    try ecs.addComponent(ecs.spawn(), @as(f32, 3.0));
 
     var it = ecs.componentIter(f32);
     std.testing.expect(it.next() != null);
@@ -300,12 +324,15 @@ test "ComponentIterator with a non-struct component" {
 
 test "ComponentIterator with an empty struct component" {
     const Empty = struct {};
-    var ecs: gbe.ECS(struct {
-        Empty: gbe.ComponentList(Empty, 5),
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = Empty, .capacity = 5 },
     }) = undefined;
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     try ecs.addComponent(ecs.spawn(), Empty {});
+    try ecs.addComponent(ecs.spawn(), Empty {});
+    ecs.settle();
     try ecs.addComponent(ecs.spawn(), Empty {});
 
     var it = ecs.componentIter(Empty);
@@ -315,12 +342,15 @@ test "ComponentIterator with an empty struct component" {
 }
 
 test "ComponentIterator with a 0-size non-struct component" {
-    var ecs: gbe.ECS(struct {
-        u0: gbe.ComponentList(u0, 5),
+    var ecs: gbe.ECS(&[_]gbe.ComponentDef {
+        .{ .Type = u0, .capacity = 5 },
     }) = undefined;
-    ecs.init();
+    try ecs.init(std.heap.page_allocator);
+    defer ecs.deinit(std.heap.page_allocator);
 
     try ecs.addComponent(ecs.spawn(), @as(u0, 0));
+    try ecs.addComponent(ecs.spawn(), @as(u0, 0));
+    ecs.settle();
     try ecs.addComponent(ecs.spawn(), @as(u0, 0));
 
     var it = ecs.componentIter(u0);

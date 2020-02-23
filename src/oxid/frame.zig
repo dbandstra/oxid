@@ -1,6 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
-const ComponentLists = @import("game.zig").ComponentLists;
+const component_defs = @import("game.zig").component_defs;
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
@@ -26,6 +26,9 @@ fn runSystem(
     } else {
         func(gs);
     }
+
+    // apply spawns and removals
+    gs.ecs.settle();
 }
 
 // run before "middleware" (rendering, sound, etc)
@@ -51,6 +54,7 @@ pub fn gameFrame(
             runSystem(gs, ctx, "remove_timer");
 
             physicsFrame(gs);
+            gs.ecs.settle();
 
             // pickups react to event_collide, spawn event_confer_bonus
             runSystem(gs, ctx, "pickup_collide");
@@ -71,8 +75,6 @@ pub fn gameFrame(
         }
     }
 
-    gs.ecs.applyRemovals();
-
     if (draw) {
         // send draw commands (as events)
         runSystem(gs, ctx, "animation_draw");
@@ -92,13 +94,12 @@ pub fn gameFrame(
 // run after "middleware" (rendering, sound, etc)
 pub fn gameFrameCleanup(gs: *GameSession) void {
     // mark all events for removal
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        const ComponentType = field.field_type.ComponentType;
-        if (comptime !std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+    inline for (component_defs) |cdef| {
+        if (comptime !std.mem.startsWith(u8, @typeName(cdef.Type), "Event")) {
             continue;
         }
-        gs.ecs.markAllForRemoval(ComponentType);
+        gs.ecs.markAllForRemoval(cdef.Type);
     }
 
-    gs.ecs.applyRemovals();
+    gs.ecs.settle();
 }

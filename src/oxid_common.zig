@@ -13,7 +13,7 @@ const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const Constants = @import("oxid/constants.zig");
-const ComponentLists = @import("oxid/game.zig").ComponentLists;
+const component_defs = @import("oxid/game.zig").component_defs;
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const input = @import("oxid/input.zig");
@@ -74,6 +74,7 @@ pub const InitParams = struct {
     sound_enabled: bool,
 };
 
+// why don't i use `!void` as the return type here?
 pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.hunk = params.hunk;
 
@@ -110,9 +111,18 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         break :blk cfg;
     };
 
-    self.session.init(params.random_seed);
+    // make sure the session.deinit call uses the same hunk side!
+    self.session.init(
+        &self.hunk.low().allocator,
+        params.random_seed,
+    ) catch |err| {
+        warn("Failed to init GameSession: {}\n", .{err});
+        return false;
+    };
+
     gameInit(&self.session) catch |err| {
         warn("Failed to initialize game: {}\n", .{err});
+        self.session.deinit(&self.hunk.low().allocator);
         return false;
     };
 
@@ -124,10 +134,12 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         .virtual_window_height = virtual_window_height,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", .{err});
+        self.session.deinit(&self.hunk.low().allocator);
         return false;
     };
     // note: if any failure conditions are added to this function below this
-    // point, platform_draw.deinit will need to be called
+    // point, platform_draw.deinit (and self.session.deinit) will need to be
+    // called
 
     self.game_over = false;
     self.new_high_score = false;
@@ -150,6 +162,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
 
 pub fn deinit(self: *MainState) void {
     platform_draw.deinit(&self.draw_state);
+    self.session.deinit(&self.hunk.low().allocator);
 }
 
 pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
@@ -187,9 +200,7 @@ pub fn inputEvent(
         const maybe_menu_command =
             for (main_state.cfg.menu_bindings) |maybe_source, i| {
                 const s = maybe_source orelse continue;
-
                 if (!areInputSourcesEqual(s, source)) continue;
-
                 break @intToEnum(
                     input.MenuCommand,
                     @intCast(@TagType(input.MenuCommand), i),
@@ -316,10 +327,11 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
 // in progress, restart it
 pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
-        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
+    inline for (component_defs) |cdef| {
+        if (cdef.Type == c.MainController) continue;
+        gs.ecs.markAllForRemoval(cdef.Type);
     }
+    gs.ecs.settle();
 
     // update MainController (note: this entity was spawned right when the
     // program was launched)
@@ -339,6 +351,8 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
             .player_number = n,
         }) catch undefined;
     }
+
+    gs.ecs.settle();
 }
 
 // called when "end game" is selected in the menu
@@ -346,10 +360,11 @@ pub fn abortGame(gs: *GameSession) void {
     gs.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
 
     // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
-        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
+    inline for (component_defs) |cdef| {
+        if (cdef.Type == c.MainController) continue;
+        gs.ecs.markAllForRemoval(cdef.Type);
     }
+    gs.ecs.settle();
 }
 
 pub fn handleGameOver(self: *MainState, comptime ns: var) void {

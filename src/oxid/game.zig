@@ -2,46 +2,54 @@ const std = @import("std");
 const gbe = @import("gbe");
 const c = @import("components.zig");
 
-pub const ComponentLists = struct {
-    Animation: gbe.ComponentList(c.Animation, 10),
-    Bullet: gbe.ComponentList(c.Bullet, 10),
-    Creature: gbe.ComponentList(c.Creature, 100),
-    GameController: gbe.ComponentList(c.GameController, 2),
-    MainController: gbe.ComponentList(c.MainController, 1),
-    Monster: gbe.ComponentList(c.Monster, 50),
-    PhysObject: gbe.ComponentList(c.PhysObject, 100),
-    Pickup: gbe.ComponentList(c.Pickup, 10),
-    Player: gbe.ComponentList(c.Player, 50),
-    PlayerController: gbe.ComponentList(c.PlayerController, 4),
-    RemoveTimer: gbe.ComponentList(c.RemoveTimer, 50),
-    SimpleGraphic: gbe.ComponentList(c.SimpleGraphic, 50),
-    Transform: gbe.ComponentList(c.Transform, 100),
-    Voice: gbe.ComponentList(c.Voice, 100),
-    Web: gbe.ComponentList(c.Web, 100),
-    EventAwardLife: gbe.ComponentList(c.EventAwardLife, 20),
-    EventAwardPoints: gbe.ComponentList(c.EventAwardPoints, 20),
-    EventCollide: gbe.ComponentList(c.EventCollide, 50),
-    EventConferBonus: gbe.ComponentList(c.EventConferBonus, 5),
-    EventDraw: gbe.ComponentList(c.EventDraw, 100),
-    EventDrawBox: gbe.ComponentList(c.EventDrawBox, 100),
-    EventGameInput: gbe.ComponentList(c.EventGameInput, 20),
-    EventGameOver: gbe.ComponentList(c.EventGameOver, 20),
-    EventMonsterDied: gbe.ComponentList(c.EventMonsterDied, 20),
-    EventPlayerDied: gbe.ComponentList(c.EventPlayerDied, 20),
-    EventPlayerOutOfLives: gbe.ComponentList(c.EventPlayerOutOfLives, 20),
-    EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
-    EventTakeDamage: gbe.ComponentList(c.EventTakeDamage, 20),
+pub const component_defs = [_]gbe.ComponentDef {
+    .{ .Type = c.Animation, .capacity = 10 },
+    .{ .Type = c.Bullet, .capacity = 10 },
+    .{ .Type = c.Creature, .capacity = 100 },
+    .{ .Type = c.GameController, .capacity = 2 },
+    .{ .Type = c.MainController, .capacity = 1 },
+    .{ .Type = c.Monster, .capacity = 50 },
+    .{ .Type = c.PhysObject, .capacity = 100 },
+    .{ .Type = c.Pickup, .capacity = 10 },
+    .{ .Type = c.Player, .capacity = 50 },
+    .{ .Type = c.PlayerController, .capacity = 4 },
+    .{ .Type = c.RemoveTimer, .capacity = 50 },
+    .{ .Type = c.SimpleGraphic, .capacity = 50 },
+    .{ .Type = c.Transform, .capacity = 100 },
+    .{ .Type = c.Voice, .capacity = 100 },
+    .{ .Type = c.Web, .capacity = 100 },
+    .{ .Type = c.EventAwardLife, .capacity = 20 },
+    .{ .Type = c.EventAwardPoints, .capacity = 20 },
+    .{ .Type = c.EventCollide, .capacity = 50 },
+    .{ .Type = c.EventConferBonus, .capacity = 5 },
+    .{ .Type = c.EventDraw, .capacity = 100 },
+    .{ .Type = c.EventDrawBox, .capacity = 100 },
+    .{ .Type = c.EventGameInput, .capacity = 20 },
+    .{ .Type = c.EventGameOver, .capacity = 20 },
+    .{ .Type = c.EventMonsterDied, .capacity = 20 },
+    .{ .Type = c.EventPlayerDied, .capacity = 20 },
+    .{ .Type = c.EventPlayerOutOfLives, .capacity = 20 },
+    .{ .Type = c.EventShowMessage, .capacity = 5 },
+    .{ .Type = c.EventTakeDamage, .capacity = 20 },
 };
 
-pub const ECS = gbe.ECS(ComponentLists);
+pub const ECS = gbe.ECS(&component_defs);
 
 pub const GameSession = struct {
     ecs: ECS,
     prng: std.rand.DefaultPrng,
 
-    pub fn init(self: *GameSession, rand_seed: u32) void {
-        self.ecs.init();
+    pub fn init(
+        self: *GameSession,
+        allocator: *std.mem.Allocator,
+        rand_seed: u32,
+    ) !void {
+        try self.ecs.init(allocator);
         self.prng = std.rand.DefaultPrng.init(rand_seed);
+    }
+
+    pub fn deinit(self: *GameSession, allocator: *std.mem.Allocator) void {
+        self.ecs.deinit(allocator);
     }
 
     pub fn getRand(self: *GameSession) *std.rand.Random {
