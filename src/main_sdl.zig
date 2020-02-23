@@ -249,7 +249,7 @@ const Options = struct {
 // the memory buffer
 const audio_assets_size = 320700;
 
-var main_memory: [@sizeOf(Main) + 200*1024 + audio_assets_size]u8 = undefined;
+var main_memory: [@sizeOf(Main) + 400*1024 + audio_assets_size]u8 = undefined;
 
 pub fn main() u8 {
     var hunk = Hunk.init(main_memory[0..]);
