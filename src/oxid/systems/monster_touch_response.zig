@@ -12,7 +12,6 @@ const SystemData = struct {
 
 pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(SystemData);
-
     while (it.next()) |self| {
         monsterCollide(gs, self);
     }

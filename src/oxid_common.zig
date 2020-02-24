@@ -300,10 +300,13 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 
+    // update MainController (note: this entity was spawned right when the
+    // program was launched)
     gs.ecs.findFirstComponent(c.MainController).?.game_running_state = .{
         .render_move_boxes = false,
     };
 
+    // spawn GameController and PlayerControllers
     const num_players: u32 = if (is_multiplayer) 2 else 1;
 
     _ = p.GameController.spawn(gs, .{

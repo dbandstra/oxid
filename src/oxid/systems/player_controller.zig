@@ -13,7 +13,6 @@ const SystemData = struct {
 
 pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(SystemData);
-
     while (it.next()) |self| {
         if (util.decrementTimer(&self.pc.respawn_timer)) {
             spawnPlayer(gs, self);

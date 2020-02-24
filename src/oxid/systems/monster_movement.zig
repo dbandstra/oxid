@@ -19,7 +19,6 @@ const SystemData = struct {
 
 pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(SystemData);
-
     while (it.next()) |self| {
         if (util.decrementTimer(&self.monster.spawning_timer)) {
             self.creature.hit_points = self.monster.full_hit_points;

@@ -10,6 +10,7 @@ pub fn run(gs: *GameSession) void {
     });
     while (it.next()) |self| {
         for (self.inbox.all()) |event| {
+            // TODO is it possible to have the event point right to the player id?
             if (event.player_number != self.player.player_number) {
                 continue;
             }

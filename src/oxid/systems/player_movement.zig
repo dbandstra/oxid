@@ -21,9 +21,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession, context: GameFrameContext) void {
-    var it = gs.ecs.iter(SystemData);
-
-    while (it.next()) |self| {
+    var it = gs.ecs.iter(SystemData); while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
             const dy = std.math.min(
                 Constants.player_spawn_arise_speed,

@@ -14,41 +14,60 @@ pub fn gameInit(gs: *GameSession) !void {
     _ = try p.MainController.spawn(gs);
 }
 
+fn runSystem(
+    gs: *GameSession,
+    context: GameFrameContext,
+    comptime name: []const u8,
+) void {
+    const func = @import("systems/" ++ name ++ ".zig").run;
+
+    if (@typeInfo(@TypeOf(func)).Fn.args.len == 2) {
+        func(gs, context);
+    } else {
+        func(gs);
+    }
+}
+
 // run before "middleware" (rendering, sound, etc)
-pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused: bool) void {
-    @import("systems/main_controller_input.zig").run(gs);
-    @import("systems/game_controller_input.zig").run(gs);
-    @import("systems/player_input.zig").run(gs);
+pub fn gameFrame(
+    gs: *GameSession,
+    ctx: GameFrameContext,
+    draw: bool,
+    paused: bool,
+) void {
+    runSystem(gs, ctx, "main_controller_input");
+    runSystem(gs, ctx, "game_controller_input");
+    runSystem(gs, ctx, "player_input");
 
     if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
         if (!paused) {
-            @import("systems/game_controller.zig").run(gs);
-            @import("systems/player_controller.zig").run(gs);
-            @import("systems/animation.zig").run(gs);
-            @import("systems/player_movement.zig").run(gs, context);
-            @import("systems/monster_movement.zig").run(gs);
-            @import("systems/bullet.zig").run(gs);
-            @import("systems/creature.zig").run(gs);
-            @import("systems/remove_timer.zig").run(gs);
+            runSystem(gs, ctx, "game_controller");
+            runSystem(gs, ctx, "player_controller");
+            runSystem(gs, ctx, "animation");
+            runSystem(gs, ctx, "player_movement");
+            runSystem(gs, ctx, "monster_movement");
+            runSystem(gs, ctx, "bullet");
+            runSystem(gs, ctx, "creature");
+            runSystem(gs, ctx, "remove_timer");
 
             physicsFrame(gs);
 
             // pickups react to event_collide, spawn event_confer_bonus
-            @import("systems/pickup_collide.zig").run(gs);
+            runSystem(gs, ctx, "pickup_collide");
             // bullets react to event_collide, spawn event_take_damage
-            @import("systems/bullet_collide.zig").run(gs);
+            runSystem(gs, ctx, "bullet_collide");
             // monsters react to event_collide, damage others
-            @import("systems/monster_touch_response.zig").run(gs);
+            runSystem(gs, ctx, "monster_touch_response");
             // player reacts to event_confer_bonus, gets bonus effect
-            @import("systems/player_reaction.zig").run(gs);
+            runSystem(gs, ctx, "player_reaction");
 
             // creatures react to event_take_damage, die
-            @import("systems/creature_take_damage.zig").run(gs);
+            runSystem(gs, ctx, "creature_take_damage");
 
             // player controller reacts to 'player died' event
-            @import("systems/player_controller_react.zig").run(gs);
+            runSystem(gs, ctx, "player_controller_react");
             // game controller reacts to 'player died' / 'player out of lives' event
-            @import("systems/game_controller_react.zig").run(gs);
+            runSystem(gs, ctx, "game_controller_react");
         }
     }
 
@@ -56,15 +75,15 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
 
     if (draw) {
         // send draw commands (as events)
-        @import("systems/animation_draw.zig").run(gs);
-        @import("systems/creature_draw.zig").run(gs);
-        @import("systems/simple_graphic_draw.zig").run(gs);
+        runSystem(gs, ctx, "animation_draw");
+        runSystem(gs, ctx, "creature_draw");
+        runSystem(gs, ctx, "simple_graphic_draw");
 
         if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
             if (grs.render_move_boxes) {
-                @import("systems/bullet_draw_box.zig").run(gs);
-                @import("systems/physobject_draw_box.zig").run(gs);
-                @import("systems/player_draw_box.zig").run(gs);
+                runSystem(gs, ctx, "bullet_draw_box");
+                runSystem(gs, ctx, "physobject_draw_box");
+                runSystem(gs, ctx, "player_draw_box");
             }
         }
     }

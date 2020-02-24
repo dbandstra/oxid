@@ -11,8 +11,9 @@ pub fn run(gs: *GameSession) void {
     });
     while (it.next()) |self| {
         const event = self.inbox.one();
-        const player = gs.ecs.findComponentById(event.other_id, c.Player)
-            orelse continue;
+        const other = gs.ecs.findById(event.other_id, struct {
+            player: *const c.Player,
+        }) orelse continue;
 
         _ = p.EventConferBonus.spawn(gs, .{
             .recipient_id = event.other_id,
@@ -20,7 +21,7 @@ pub fn run(gs: *GameSession) void {
         }) catch undefined;
 
         _ = p.EventAwardPoints.spawn(gs, .{
-            .player_controller_id = player.player_controller_id,
+            .player_controller_id = other.player.player_controller_id,
             .points = self.pickup.get_points,
         }) catch undefined;
 

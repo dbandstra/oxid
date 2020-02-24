@@ -26,11 +26,11 @@ pub fn killAllMonsters(gs: *GameSession) void {
         id: gbe.EntityId,
         monster: *const c.Monster,
     });
-    while (it.next()) |entry| {
-        if (!entry.monster.persistent) {
+    while (it.next()) |self| {
+        if (!self.monster.persistent) {
             continue;
         }
-        gs.ecs.markForRemoval(entry.id);
+        gs.ecs.markForRemoval(self.id);
     }
 
     if (gs.ecs.findFirstComponent(c.GameController)) |gc| {

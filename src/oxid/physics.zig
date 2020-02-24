@@ -192,11 +192,15 @@ pub fn physicsFrame(gs: *GameSession) void {
 
             if (lowest) |m| {
                 // try to move this guy one subpixel
-                const transform = gs.ecs.findComponentById(m.entity_id, c.Transform).?;
-                var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
+                const transform =
+                    gs.ecs.findComponentById(m.entity_id, c.Transform).?;
+                var new_pos =
+                    math.Vec2.add(transform.pos,
+                                  math.Direction.normal(m.phys.facing));
 
-                // if push_dir differs from velocity direction, and we can move in that
-                // direction, redirect velocity to go in that direction
+                // if push_dir differs from velocity direction, and we can
+                // move in that direction, redirect velocity to go in that
+                // direction
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
                         const new_pos2 = math.Vec2.add(transform.pos, math.Direction.normal(push_dir));
@@ -220,8 +224,11 @@ pub fn physicsFrame(gs: *GameSession) void {
 
                 var other: ?*MoveGroupMember = move_group.head;
                 while (other) |o| : (other = o.next) {
-                    if (couldObjectsCollide(m.entity_id, m.phys, o.entity_id, o.phys)) {
-                        const other_transform = gs.ecs.findComponentById(o.entity_id, c.Transform).?;
+                    if (couldObjectsCollide(m.entity_id, m.phys,
+                                            o.entity_id, o.phys)) {
+                        const other_transform =
+                            gs.ecs.findComponentById(o.entity_id, c.Transform).?;
+
                         if (math.boxesOverlap(
                             new_pos, m.phys.entity_bbox,
                             other_transform.pos, o.phys.entity_bbox,
@@ -276,18 +283,11 @@ fn findCollisionEvent(
     other_id: gbe.EntityId,
 ) ?*c.EventCollide {
     var it = gs.ecs.componentIter(c.EventCollide);
-
     while (it.next()) |event| {
-        if (!gbe.EntityId.eql(event.self_id, self_id)) {
-            continue;
-        }
-        if (!gbe.EntityId.eql(event.other_id, other_id)) {
-            continue;
-        }
-
+        if (!gbe.EntityId.eql(event.self_id, self_id)) continue;
+        if (!gbe.EntityId.eql(event.other_id, other_id)) continue;
         return event;
     }
-
     return null;
 }
 

@@ -140,3 +140,191 @@ test "EntityIterator test with inbox with null id_field" {
     }
     std.testing.expect(it.next() == null);
 }
+
+// TODO blocked on https://github.com/ziglang/zig/issues/4539
+//test "EntityIterator test with inbox referring to 0-bit component" {
+//    const NotEmpty = struct { field: u32 };
+//    const Empty = struct {};
+//    var ecs: gbe.ECS(struct {
+//        NotEmpty: gbe.ComponentList(NotEmpty, 5),
+//        Empty: gbe.ComponentList(Empty, 5),
+//    }) = undefined;
+//    ecs.init();
+//
+//    try ecs.addComponent(ecs.spawn(), NotEmpty { .field = 0 });
+//    try ecs.addComponent(ecs.spawn(), NotEmpty { .field = 1 });
+//    try ecs.addComponent(ecs.spawn(), Empty {});
+//    try ecs.addComponent(ecs.spawn(), Empty {});
+//    try ecs.addComponent(ecs.spawn(), Empty {});
+//
+//    var it = ecs.iter(struct {
+//        id: gbe.EntityId,
+//        not_empty: *NotEmpty,
+//        inbox: gbe.Inbox(10, Empty, null),
+//    });
+//    var entry = it.next().?;
+//    std.testing.expect(entry.not_empty.field == 0);
+//    std.testing.expect(entry.inbox.all().len == 3);
+//    entry = it.next().?;
+//    std.testing.expect(entry.not_empty.field == 1);
+//    std.testing.expect(entry.inbox.all().len == 3);
+//    std.testing.expect(it.next() == null);
+//}
+
+test "EntityIterator where \"main\" component type is zero-sized" {
+    // make sure the "next main component" function supports zero sized
+    // components
+    const NotEmpty = struct { field: u32 };
+    const Empty = struct {};
+
+    var ecs: gbe.ECS(struct {
+        NotEmpty: gbe.ComponentList(NotEmpty, 5),
+        Empty: gbe.ComponentList(Empty, 4), // less capacity = best
+    }) = undefined;
+
+    ecs.init();
+
+    var i: u32 = 0; while (i < 2) : (i += 1) {
+        const entity_id = ecs.spawn();
+        try ecs.addComponent(entity_id, NotEmpty { .field = i });
+        try ecs.addComponent(entity_id, Empty {});
+    }
+
+    var it = ecs.iter(struct {
+        not_empty: *NotEmpty,
+        empty: *Empty,
+    });
+
+    i = 0; while (i < 2) : (i += 1) {
+        const entry = it.next().?;
+        std.testing.expect(entry.not_empty.field == i);
+    }
+
+    std.testing.expect(it.next() == null);
+}
+
+test "EntityIterator with an optional zero-size component" {
+    const NotEmpty = struct { field: u32 };
+    const Empty = struct {};
+
+    var ecs: gbe.ECS(struct {
+        NotEmpty: gbe.ComponentList(NotEmpty, 5),
+        Empty: gbe.ComponentList(Empty, 5),
+    }) = undefined;
+
+    ecs.init();
+
+    var entity_id = ecs.spawn();
+    try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
+    try ecs.addComponent(entity_id, Empty {});
+
+    entity_id = ecs.spawn();
+    try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+
+    var it = ecs.iter(struct {
+        not_empty: *NotEmpty,
+        empty: ?*Empty,
+    });
+
+    var entry = it.next().?;
+    std.testing.expect(entry.not_empty.field == 1);
+    std.testing.expect(entry.empty != null);
+
+    entry = it.next().?;
+    std.testing.expect(entry.not_empty.field == 2);
+    std.testing.expect(entry.empty == null);
+
+    std.testing.expect(it.next() == null);
+}
+
+test "EntityIterator with a 0-size component" {
+    const NotEmpty = struct { field: u32 };
+    const Empty = struct {};
+
+    const ECS = gbe.ECS(struct {
+        NotEmpty: gbe.ComponentList(NotEmpty, 5),
+        Empty: gbe.ComponentList(Empty, 5),
+    });
+
+    var ecs: ECS = undefined;
+    ecs.init();
+
+    var entity_id = ecs.spawn();
+    try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
+    try ecs.addComponent(entity_id, Empty {});
+
+    entity_id = ecs.spawn();
+    try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+
+    var it = ecs.iter(struct {
+        not_empty: *NotEmpty,
+        empty: *Empty,
+    });
+
+    const entry = it.next().?;
+    std.testing.expect(entry.not_empty.field == 1);
+
+    std.testing.expect(it.next() == null);
+}
+
+test "ComponentIterator with a non-empty struct component" {
+    const NonEmpty = struct { field: u32 };
+    var ecs: gbe.ECS(struct {
+        NonEmpty: gbe.ComponentList(NonEmpty, 5),
+    }) = undefined;
+    ecs.init();
+
+    try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 1 });
+    try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 2 });
+
+    var it = ecs.componentIter(NonEmpty);
+    std.testing.expect(it.next().?.field == 1);
+    std.testing.expect(it.next().?.field == 2);
+    std.testing.expect(it.next() == null);
+}
+
+test "ComponentIterator with a non-struct component" {
+    var ecs: gbe.ECS(struct {
+        f32: gbe.ComponentList(f32, 5),
+    }) = undefined;
+    ecs.init();
+
+    try ecs.addComponent(ecs.spawn(), @as(f32, 1.0));
+    try ecs.addComponent(ecs.spawn(), @as(f32, 2.0));
+
+    var it = ecs.componentIter(f32);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() == null);
+}
+
+test "ComponentIterator with an empty struct component" {
+    const Empty = struct {};
+    var ecs: gbe.ECS(struct {
+        Empty: gbe.ComponentList(Empty, 5),
+    }) = undefined;
+    ecs.init();
+
+    try ecs.addComponent(ecs.spawn(), Empty {});
+    try ecs.addComponent(ecs.spawn(), Empty {});
+
+    var it = ecs.componentIter(Empty);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() == null);
+}
+
+test "ComponentIterator with a 0-size non-struct component" {
+    var ecs: gbe.ECS(struct {
+        u0: gbe.ComponentList(u0, 5),
+    }) = undefined;
+    ecs.init();
+
+    try ecs.addComponent(ecs.spawn(), @as(u0, 0));
+    try ecs.addComponent(ecs.spawn(), @as(u0, 0));
+
+    var it = ecs.componentIter(u0);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() != null);
+    std.testing.expect(it.next() == null);
+}
