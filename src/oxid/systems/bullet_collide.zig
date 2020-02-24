@@ -12,7 +12,7 @@ pub fn run(gs: *GameSession) void {
         inbox: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
     while (it.next()) |self| {
-        const event = self.inbox.one;
+        const event = self.inbox.one();
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,

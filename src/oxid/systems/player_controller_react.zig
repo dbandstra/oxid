@@ -16,7 +16,7 @@ fn handleAwardPoints(gs: *GameSession) void {
         inbox: gbe.Inbox(8, c.EventAwardPoints, "player_controller_id"),
     });
     while (it.next()) |self| {
-        for (self.inbox.all) |event| {
+        for (self.inbox.all()) |event| {
             self.pc.score += event.points;
         }
     }
@@ -29,7 +29,7 @@ fn handleAwardLife(gs: *GameSession) void {
     });
 
     while (it.next()) |self| {
-        for (self.inbox.all) |_| {
+        for (self.inbox.all()) |_| {
             self.pc.lives += 1;
         }
     }

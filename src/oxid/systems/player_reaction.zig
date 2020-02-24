@@ -10,7 +10,7 @@ pub fn run(gs: *GameSession) void {
         inbox: gbe.Inbox(8, c.EventConferBonus, "recipient_id"),
     });
     while (it.next()) |self| {
-        for (self.inbox.all) |event| {
+        for (self.inbox.all()) |event| {
             switch (event.pickup_type) {
                 .PowerUp => {
                     p.playSample(gs, .PowerUp);

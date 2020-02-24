@@ -255,28 +255,29 @@ pub fn Inbox(
     comptime ComponentType_: type,
     comptime id_field_: []const u8,
 ) type {
+    std.debug.assert(capacity > 0);
+
     return struct {
         pub const is_inbox = true;
         pub const ComponentType = ComponentType_;
         pub const id_field = id_field_;
 
-        // internal use only
         array: [capacity]*const ComponentType,
+        count: usize,
 
-        // will track up to `capacity` event instances
-        // TODO - randomize
-        all: []*const ComponentType,
+        // return all of the matches (up to the inbox's capacity), in an
+        // arbitrary order.
+        pub inline fn all(self: *const @This()) []*const ComponentType {
+            return self.array[0..self.count];
+        }
 
-        // sometimes, you only want an event to take effect once. current this
-        // just holds the first one we hit in iteration
-        // TODO - randomize
-        one: *const ComponentType,
-
-        // this tracks the total number of events encountered, even beyond the
-        // inbox's capacity.
-        // this is probably pretty useless right now. it could come in handy
-        // though when i implement randomization of `all` and `one`
-        total: usize,
+        // sometimes, you only want an event to take effect once. this will
+        // return an arbitrary one of the matching events. it's guaranteed to
+        // always return something because iteration with an inbox will not
+        // have yielded a result at all if the inbox had no matches.
+        pub inline fn one(self: *const @This()) *const ComponentType {
+            return self.array[0];
+        }
     };
 }
 
@@ -468,7 +469,6 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
 
                     var array = &@field(result, field.name).array;
                     var count: usize = 0;
-                    var total: usize = 0;
 
                     // look for an event pointing to this entity. we'll only
                     // take the first match.
@@ -493,7 +493,6 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                                     array[count] = event;
                                     count += 1;
                                 }
-                                total += 1;
                             }
                         }
                     }
@@ -502,9 +501,7 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                         return false;
                     }
 
-                    @field(result, field.name).all = array[0..count];
-                    @field(result, field.name).one = array[0];
-                    @field(result, field.name).total = total;
+                    @field(result, field.name).count = count;
                     continue;
                 }
 

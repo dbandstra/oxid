@@ -114,10 +114,9 @@ test "EntityIterator test with Events" {
     });
     var i: usize = 0; while (i < 2) : (i += 1) {
         var entry = it.next().?;
-        std.testing.expect(entry.inbox.all.len == 1);
-        std.testing.expect(entry.inbox.all[0].num == i);
-        std.testing.expect(entry.inbox.one.num == i);
-        std.testing.expect(entry.inbox.total == 1);
+        std.testing.expect(entry.inbox.all().len == 1);
+        std.testing.expect(entry.inbox.all()[0].num == i);
+        std.testing.expect(entry.inbox.one().num == i);
     }
     std.testing.expect(it.next() == null);
 }

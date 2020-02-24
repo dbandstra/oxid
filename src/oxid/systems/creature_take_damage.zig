@@ -27,7 +27,7 @@ pub fn run(gs: *GameSession) void {
 
         const total_damage = blk: {
             var n: u32 = 0;
-            for (self.inbox.all) |event| {
+            for (self.inbox.all()) |event| {
                 n += event.amount;
             }
             break :blk n;
@@ -75,7 +75,7 @@ pub fn run(gs: *GameSession) void {
 
             // in the case that multiple players shot this monster at the same
             // time, pick one of them at random to award the kill to
-            if (self.inbox.one.inflictor_player_controller_id)
+            if (self.inbox.one().inflictor_player_controller_id)
                     |player_controller_id| {
                 _ = p.EventAwardPoints.spawn(gs, .{
                     .player_controller_id = player_controller_id,

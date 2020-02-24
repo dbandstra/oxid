@@ -10,7 +10,7 @@ pub fn run(gs: *GameSession) void {
         inbox: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
     while (it.next()) |self| {
-        const event = self.inbox.one;
+        const event = self.inbox.one();
         const player = gs.ecs.findComponentById(event.other_id, c.Player)
             orelse continue;
 
