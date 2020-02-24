@@ -12,7 +12,7 @@ const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         gc: *c.GameController,
     });
 
@@ -69,7 +69,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
     // threshold (so two players does not mean 2x the extra life bonuses)
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         pc: *const c.PlayerController,
     });
     while (it.next()) |entry| {
@@ -85,7 +85,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
 
 fn countNonPersistentMonsters(gs: *GameSession) u32 {
     var count: u32 = 0;
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         monster: *const c.Monster,
     });
     while (it.next()) |entry| {

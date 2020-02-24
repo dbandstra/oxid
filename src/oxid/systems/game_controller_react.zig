@@ -8,7 +8,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(SystemData);
+    var it = gs.ecs.entityIter(SystemData);
 
     while (it.next()) |self| {
         think(gs, self);
@@ -16,10 +16,10 @@ pub fn run(gs: *GameSession) void {
 }
 
 fn think(gs: *GameSession, self: SystemData) void {
-    if (gs.findFirst(c.EventPlayerDied) != null) {
+    if (gs.ecs.findFirst(c.EventPlayerDied) != null) {
         self.gc.freeze_monsters_timer = Constants.monster_freeze_time;
     }
-    var it = gs.iter(c.EventPlayerOutOfLives); while (it.next() != null) {
+    var it = gs.ecs.iter(c.EventPlayerOutOfLives); while (it.next() != null) {
         if (self.gc.num_players_remaining > 0) {
             self.gc.num_players_remaining -= 1;
             if (self.gc.num_players_remaining == 0) {
@@ -27,7 +27,7 @@ fn think(gs: *GameSession, self: SystemData) void {
             }
         }
     }
-    var it2 = gs.iter(c.EventMonsterDied); while (it2.next() != null) {
+    var it2 = gs.ecs.iter(c.EventMonsterDied); while (it2.next() != null) {
         if (self.gc.monster_count > 0) {
             self.gc.monster_count -= 1;
             if (self.gc.monster_count == 4 and self.gc.enemy_speed_level < 1) {
@@ -44,7 +44,7 @@ fn think(gs: *GameSession, self: SystemData) void {
             }
         }
     }
-    var it3 = gs.iter(c.EventShowMessage); while (it3.next()) |event| {
+    var it3 = gs.ecs.iter(c.EventShowMessage); while (it3.next()) |event| {
         self.gc.wave_message = event.message;
         self.gc.wave_message_timer = Constants.duration60(180);
     }

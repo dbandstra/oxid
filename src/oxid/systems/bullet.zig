@@ -3,7 +3,7 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 const c = @import("../components.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
         bullet: *c.Bullet,

@@ -5,7 +5,7 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         id: gbe.EntityId,
         bullet: *const c.Bullet,
         transform: *const c.Transform,
@@ -30,6 +30,6 @@ pub fn run(gs: *GameSession) void {
             }) catch undefined;
         }
 
-        gs.markEntityForRemoval(self.id);
+        gs.ecs.markEntityForRemoval(self.id);
     }
 }

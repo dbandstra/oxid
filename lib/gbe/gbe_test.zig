@@ -7,7 +7,7 @@ const Player = struct { attack_level: u32 };
 const Transform = struct { x: i32, y: i32 };
 const EventDie = struct { self_id: gbe.EntityId, num: usize };
 
-const MockGameSession = gbe.Session(struct {
+const MockECS = gbe.ECS(struct {
     Creature: gbe.ComponentList(Creature, 50),
     Monster: gbe.ComponentList(Monster, 50),
     Player: gbe.ComponentList(Player, 50),
@@ -15,28 +15,28 @@ const MockGameSession = gbe.Session(struct {
     EventDie: gbe.ComponentList(EventDie, 50),
 });
 
-fn prepareGs(gs: *MockGameSession) !void {
-    gs.init(0);
+fn initECS(ecs: *MockECS) !void {
+    ecs.init();
 
     var i: usize = undefined;
 
     i = 0; while (i < 8) : (i += 1) {
-        const entity_id = gs.spawn();
-        try gs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
-        try gs.addComponent(entity_id, Creature { .hit_points = 8 });
-        try gs.addComponent(entity_id, Monster { .chasing = true });
+        const entity_id = ecs.spawn();
+        try ecs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
+        try ecs.addComponent(entity_id, Creature { .hit_points = 8 });
+        try ecs.addComponent(entity_id, Monster { .chasing = true });
     }
     var player_ids: [8]gbe.EntityId = undefined;
     i = 0; while (i < 8) : (i += 1) {
-        const entity_id = gs.spawn();
-        try gs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
-        try gs.addComponent(entity_id, Creature { .hit_points = 16 });
-        try gs.addComponent(entity_id, Player { .attack_level = 0 });
+        const entity_id = ecs.spawn();
+        try ecs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
+        try ecs.addComponent(entity_id, Creature { .hit_points = 16 });
+        try ecs.addComponent(entity_id, Player { .attack_level = 0 });
         player_ids[i] = entity_id;
     }
     i = 0; while (i < 2) : (i += 1) {
-        const entity_id = gs.spawn();
-        try gs.addComponent(entity_id, EventDie {
+        const entity_id = ecs.spawn();
+        try ecs.addComponent(entity_id, EventDie {
             .self_id = player_ids[i],
             .num = i,
         });
@@ -44,10 +44,10 @@ fn prepareGs(gs: *MockGameSession) !void {
 }
 
 test "EntityIterator basic test" {
-    var gs: MockGameSession = undefined;
-    try prepareGs(&gs);
+    var ecs: MockECS = undefined;
+    try initECS(&ecs);
 
-    var it = gs.entityIter(struct {
+    var it = ecs.entityIter(struct {
         creature: *Creature,
         transform: *Transform,
     });
@@ -65,10 +65,10 @@ test "EntityIterator basic test" {
 }
 
 test "EntityIterator only players" {
-    var gs: MockGameSession = undefined;
-    try prepareGs(&gs);
+    var ecs: MockECS = undefined;
+    try initECS(&ecs);
 
-    var it = gs.entityIter(struct {
+    var it = ecs.entityIter(struct {
         player: *Player,
     });
     var i: usize = 0; while (i < 8) : (i += 1) {
@@ -79,10 +79,10 @@ test "EntityIterator only players" {
 }
 
 test "EntityIterator test with optionals and id field" {
-    var gs: MockGameSession = undefined;
-    try prepareGs(&gs);
+    var ecs: MockECS = undefined;
+    try initECS(&ecs);
 
-    var it = gs.entityIter(struct {
+    var it = ecs.entityIter(struct {
         id: gbe.EntityId,
         monster: ?*Monster,
         player: ?*Player,
@@ -104,10 +104,10 @@ test "EntityIterator test with optionals and id field" {
 }
 
 test "EntityIterator test with Events" {
-    var gs: MockGameSession = undefined;
-    try prepareGs(&gs);
+    var ecs: MockECS = undefined;
+    try initECS(&ecs);
 
-    var it = gs.entityIter(struct {
+    var it = ecs.entityIter(struct {
         id: gbe.EntityId,
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, "self_id"),

@@ -18,7 +18,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(SystemData);
+    var it = gs.ecs.entityIter(SystemData);
 
     while (it.next()) |self| {
         if (util.decrementTimer(&self.monster.spawning_timer)) {
@@ -36,7 +36,7 @@ pub fn run(gs: *GameSession) void {
 }
 
 fn monsterMove(gs: *GameSession, self: SystemData) void {
-    const gc = gs.findFirst(c.GameController).?;
+    const gc = gs.ecs.findFirst(c.GameController).?;
 
     self.phys.push_dir = null;
 
@@ -122,7 +122,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
 }
 
 fn monsterAttack(gs: *GameSession, self: SystemData) void {
-    const gc = gs.findFirst(c.GameController).?;
+    const gc = gs.ecs.findFirst(c.GameController).?;
     if (gc.freeze_monsters_timer > 0) {
         return;
     }
@@ -165,7 +165,7 @@ fn getChaseTarget(gs: *GameSession, self_pos: math.Vec2) ?math.Vec2 {
     // choose the nearest player
     var nearest: ?math.Vec2 = null;
     var nearest_dist: u32 = 0;
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         player: *const c.Player,
         transform: *const c.Transform,
     });
@@ -263,7 +263,7 @@ fn chooseTurn(
 fn isInLineOfFire(gs: *GameSession, self: SystemData) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         player: *const c.Player,
         phys: *const c.PhysObject,
     });
@@ -273,7 +273,7 @@ fn isInLineOfFire(gs: *GameSession, self: SystemData) ?math.Direction {
         return entry.phys.facing;
     }
 
-    var it2 = gs.entityIter(struct {
+    var it2 = gs.ecs.entityIter(struct {
         bullet: *const c.Bullet,
         phys: *const c.PhysObject,
     });

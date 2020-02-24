@@ -5,7 +5,7 @@ const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         player: *c.Player,
         inbox: gbe.Inbox(8, c.EventConferBonus, "recipient_id"),
     });

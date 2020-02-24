@@ -17,7 +17,7 @@ const SystemData = struct{
 };
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(SystemData);
+    var it = gs.ecs.entityIter(SystemData);
 
     while (it.next()) |self| {
         think(gs, self);

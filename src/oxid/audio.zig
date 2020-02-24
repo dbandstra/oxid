@@ -199,7 +199,7 @@ pub const MainModule = struct {
         self.paintWrapper(span, &self.menu_blip, sample_rate);
         self.paintWrapper(span, &self.menu_ding, sample_rate);
 
-        var it = gs.iter(c.Voice); while (it.next()) |voice| {
+        var it = gs.ecs.iter(c.Voice); while (it.next()) |voice| {
             switch (voice.wrapper) {
                 .Accelerate => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
@@ -287,7 +287,7 @@ pub const MainModule = struct {
 
     // called in the main thread
     pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
-        var it = gs.iter(c.Voice); while (it.next()) |object| {
+        var it = gs.ecs.iter(c.Voice); while (it.next()) |object| {
             switch (object.wrapper) {
                 .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
                 .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),

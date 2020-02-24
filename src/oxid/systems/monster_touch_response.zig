@@ -11,7 +11,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(SystemData);
+    var it = gs.ecs.entityIter(SystemData);
 
     while (it.next()) |self| {
         monsterCollide(gs, self);
@@ -22,7 +22,7 @@ fn monsterCollide(gs: *GameSession, self: SystemData) void {
     var hit_wall = false;
     var hit_creature = false;
 
-    var it = gs.iter(c.EventCollide);
+    var it = gs.ecs.iter(c.EventCollide);
 
     while (it.next()) |event| {
         if (!gbe.EntityId.eql(event.self_id, self.id)) {
@@ -34,7 +34,7 @@ fn monsterCollide(gs: *GameSession, self: SystemData) void {
             continue;
         }
 
-        const other = gs.findEntity(event.other_id, struct {
+        const other = gs.ecs.findEntity(event.other_id, struct {
             creature: *const c.Creature,
             phys: *const c.PhysObject,
             player: ?*const c.Player,

@@ -3,7 +3,7 @@ const c = @import("../components.zig");
 const util = @import("../util.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         creature: *c.Creature,
     });
 

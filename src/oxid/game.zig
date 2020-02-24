@@ -1,7 +1,8 @@
+const std = @import("std");
 const gbe = @import("gbe");
 const c = @import("components.zig");
 
-pub const GameSession = gbe.Session(struct {
+pub const ComponentLists = struct {
     Animation: gbe.ComponentList(c.Animation, 10),
     Bullet: gbe.ComponentList(c.Bullet, 10),
     Creature: gbe.ComponentList(c.Creature, 100),
@@ -30,4 +31,20 @@ pub const GameSession = gbe.Session(struct {
     EventPlayerOutOfLives: gbe.ComponentList(c.EventPlayerOutOfLives, 20),
     EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
     EventTakeDamage: gbe.ComponentList(c.EventTakeDamage, 20),
-});
+};
+
+pub const ECS = gbe.ECS(ComponentLists);
+
+pub const GameSession = struct {
+    ecs: ECS,
+    prng: std.rand.DefaultPrng,
+
+    pub fn init(self: *GameSession, rand_seed: u32) void {
+        self.ecs.init();
+        self.prng = std.rand.DefaultPrng.init(rand_seed);
+    }
+
+    pub fn getRand(self: *GameSession) *std.rand.Random {
+        return &self.prng.random;
+    }
+};

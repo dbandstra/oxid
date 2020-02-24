@@ -1,5 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
+const ComponentLists = @import("game.zig").ComponentLists;
 const GameSession = @import("game.zig").GameSession;
 const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
@@ -19,7 +20,7 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
     @import("systems/game_controller_input.zig").run(gs);
     @import("systems/player_input.zig").run(gs);
 
-    if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
+    if (gs.ecs.findFirst(c.MainController).?.game_running_state) |grs| {
         if (!paused) {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
@@ -51,7 +52,7 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
         }
     }
 
-    gs.applyRemovals();
+    gs.ecs.applyRemovals();
 
     if (draw) {
         // send draw commands (as events)
@@ -59,7 +60,7 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
         @import("systems/creature_draw.zig").run(gs);
         @import("systems/simple_graphic_draw.zig").run(gs);
 
-        if (gs.findFirst(c.MainController).?.game_running_state) |grs| {
+        if (gs.ecs.findFirst(c.MainController).?.game_running_state) |grs| {
             if (grs.render_move_boxes) {
                 @import("systems/bullet_draw_box.zig").run(gs);
                 @import("systems/physobject_draw_box.zig").run(gs);
@@ -72,17 +73,17 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
 // run after "middleware" (rendering, sound, etc)
 pub fn gameFrameCleanup(gs: *GameSession) void {
     // mark all events for removal
-    inline for (@typeInfo(GameSession.ComponentListsType).Struct.fields) |field| {
+    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
 
         if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
             var id: gbe.EntityId = undefined;
-            var it = gs.iter(ComponentType);
+            var it = gs.ecs.iter(ComponentType);
             while (it.nextWithId(&id) != null) {
-                gs.markEntityForRemoval(id);
+                gs.ecs.markEntityForRemoval(id);
             }
         }
     }
 
-    gs.applyRemovals();
+    gs.ecs.applyRemovals();
 }

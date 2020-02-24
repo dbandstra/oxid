@@ -6,7 +6,7 @@ const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         id: gbe.EntityId,
         creature: *c.Creature,
         transform: *const c.Transform,
@@ -103,6 +103,6 @@ pub fn run(gs: *GameSession) void {
             .z_index = Constants.z_index_explosion,
         }) catch undefined;
 
-        gs.markEntityForRemoval(self.id);
+        gs.ecs.markEntityForRemoval(self.id);
     }
 }

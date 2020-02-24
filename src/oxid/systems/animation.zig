@@ -5,7 +5,7 @@ const c = @import("../components.zig");
 const util = @import("../util.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         id: gbe.EntityId,
         animation: *c.Animation,
     });
@@ -15,7 +15,7 @@ pub fn run(gs: *GameSession) void {
 
         if (util.decrementTimer(&self.animation.frame_timer)) {
             if (self.animation.frame_index >= animcfg.frames.len - 1) {
-                gs.markEntityForRemoval(self.id);
+                gs.ecs.markEntityForRemoval(self.id);
                 continue;
             }
             self.animation.frame_index += 1;

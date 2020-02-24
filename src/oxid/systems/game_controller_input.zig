@@ -3,12 +3,12 @@ const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         gc: *c.GameController,
     });
 
     while (it.next()) |self| {
-        var event_it = gs.iter(c.EventGameInput);
+        var event_it = gs.ecs.iter(c.EventGameInput);
 
         while (event_it.next()) |event| {
             switch (event.command) {
@@ -24,7 +24,7 @@ pub fn run(gs: *GameSession) void {
 }
 
 pub fn killAllMonsters(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         id: gbe.EntityId,
         monster: *const c.Monster,
     });
@@ -33,10 +33,10 @@ pub fn killAllMonsters(gs: *GameSession) void {
         if (!entry.monster.persistent) {
             continue;
         }
-        gs.markEntityForRemoval(entry.id);
+        gs.ecs.markEntityForRemoval(entry.id);
     }
 
-    if (gs.findFirst(c.GameController)) |gc| {
+    if (gs.ecs.findFirst(c.GameController)) |gc| {
         gc.next_wave_timer = 1;
     }
 }

@@ -4,7 +4,7 @@ const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.entityIter(struct {
+    var it = gs.ecs.entityIter(struct {
         transform: *const c.Transform,
         phys: ?*const c.PhysObject,
         simple_graphic: *const c.SimpleGraphic,

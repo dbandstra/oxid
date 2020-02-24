@@ -1,19 +1,25 @@
-// (g)ame (b)ack (e)nd
-// an entity component system for zig
-
 const std = @import("std");
 
 pub const max_removals_per_frame: usize = 1000;
 
+/// Boxed entity ID. This is wrapped in a struct for two reason:
+/// 1. Can't accidentally mix up entity ID with other int values in function
+///    calls,
+/// 2. Identifies a field in `T` structs (in various ECS
+///    functions / iterators) to be filled in with the entity ID.
 pub const EntityId = struct {
     id: u64,
 
-    pub fn eql(a: EntityId, b: EntityId) bool {
-        return a.id == b.id;
+    pub const zero = EntityId {
+        .id = 0,
+    };
+
+    pub inline fn isZero(a: EntityId) bool {
+        return a.id == 0;
     }
 
-    pub fn isZero(a: EntityId) bool {
-        return a.id == 0;
+    pub inline fn eql(a: EntityId, b: EntityId) bool {
+        return a.id == b.id;
     }
 };
 
@@ -31,7 +37,7 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
     };
 }
 
-pub fn Session(comptime ComponentLists: type) type {
+pub fn ECS(comptime ComponentLists: type) type {
     std.debug.assert(@typeId(ComponentLists) == .Struct);
     //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
     //    // ?! is it possible to assert that a type == ComponentList(X)?
@@ -45,8 +51,6 @@ pub fn Session(comptime ComponentLists: type) type {
     return struct {
         pub const ComponentListsType = ComponentLists;
 
-        prng: std.rand.DefaultPrng,
-
         next_entity_id: usize,
 
         removals: [max_removals_per_frame]EntityId,
@@ -54,17 +58,12 @@ pub fn Session(comptime ComponentLists: type) type {
 
         components: ComponentLists,
 
-        pub fn init(self: *@This(), rand_seed: u32) void {
-            self.prng = std.rand.DefaultPrng.init(rand_seed);
+        pub fn init(self: *@This()) void {
             self.next_entity_id = 1;
             self.num_removals = 0;
             inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
                 @field(self.components, field.name).count = 0;
             }
-        }
-
-        pub fn getRand(self: *@This()) *std.rand.Random {
-            return &self.prng.random;
         }
 
         pub fn getCapacity(comptime T: type) usize {
@@ -277,7 +276,7 @@ pub fn Inbox(
 // - EntityId
 // - (possibly optional) pointer to a component
 // - (possibly optional) Events
-pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
+pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
     // validate `T`
     comptime var all_fields_optional = true;
 
@@ -301,7 +300,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
 
                 comptime var found_component_type = false;
 
-                const ti = @typeInfo(SessionType.ComponentListsType);
+                const ti = @typeInfo(ECSType.ComponentListsType);
                 inline for (ti.Struct.fields) |c_field, c_field_index| {
                     if (c_field.field_type.ComponentType == ComponentType) {
                         found_component_type = true;
@@ -334,7 +333,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
     // iterate over the events instead of over the "self" entity components.
 
     return struct {
-        gs: *SessionType,
+        ecs: *ECSType,
 
         // which component type we are iterating through
         best_field_index: usize,
@@ -342,7 +341,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
         // current position within the "best" component type's slot array
         index: usize,
 
-        pub fn init(gs: *SessionType) @This() {
+        pub fn init(ecs: *ECSType) @This() {
             // go through the fields in the `T` struct. decide which component
             // type to do the outermost iteration over. choose the component
             // type with the lowest amount of active entities.
@@ -358,12 +357,12 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                     else => continue,
                 };
 
-                const ti = @typeInfo(SessionType.ComponentListsType);
+                const ti = @typeInfo(ECSType.ComponentListsType);
                 inline for (ti.Struct.fields) |c_field, c_field_index| {
                     if (c_field.field_type.ComponentType != ComponentType) {
                         continue;
                     }
-                    const list = &@field(gs.components, c_field.name);
+                    const list = &@field(ecs.components, c_field.name);
                     if (best == null or list.count < best.?.count) {
                         best = .{
                             .field_index = i,
@@ -374,7 +373,7 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
             }
 
             return .{
-                .gs = gs,
+                .ecs = ecs,
                 .best_field_index = best.?.field_index,
                 .index = 0,
             };
@@ -411,14 +410,14 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                 };
 
                 if (field_index == self.best_field_index) {
-                    // find the component list in the GBE session
-                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    // find the component list in the ECS
+                    const ti = @typeInfo(ECSType.ComponentListsType);
                     inline for (ti.Struct.fields) |c_field, c_field_index| {
                         if (c_field.field_type.ComponentType != ComponentType) {
                             continue;
                         }
 
-                        const list = &@field(self.gs.components, c_field.name);
+                        const list = &@field(self.ecs.components, c_field.name);
 
                         // for the best component type, we are iterating
                         // through the component array using self.index...
@@ -465,14 +464,14 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
 
                     // look for an event pointing to this entity. we'll only
                     // take the first match.
-                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    const ti = @typeInfo(ECSType.ComponentListsType);
                     inline for (ti.Struct.fields) |c_field, c_field_index| {
                         if (c_field.field_type.ComponentType
                                 != EventComponentType) {
                             continue;
                         }
 
-                        const list = &@field(self.gs.components, c_field.name);
+                        const list = &@field(self.ecs.components, c_field.name);
 
                         for (list.id[0..list.count]) |id, i| {
                             if (id == 0) {
@@ -517,13 +516,13 @@ pub fn EntityIterator(comptime SessionType: type, comptime T: type) type {
                 };
 
                 if (field_index != self.best_field_index) {
-                    const ti = @typeInfo(SessionType.ComponentListsType);
+                    const ti = @typeInfo(ECSType.ComponentListsType);
                     inline for (ti.Struct.fields) |c_field, c_field_index| {
                         if (c_field.field_type.ComponentType != ComponentType) {
                             continue;
                         }
 
-                        const list = &@field(self.gs.components, c_field.name);
+                        const list = &@field(self.ecs.components, c_field.name);
 
                         // look for a component with an entity_id matching the
                         // entity we're currently looking at.

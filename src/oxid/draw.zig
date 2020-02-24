@@ -6,6 +6,7 @@ const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
 const common = @import("../oxid_common.zig");
 const Constants = @import("constants.zig");
+const ECS = @import("game.zig").ECS;
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
 const getGraphicTile = @import("graphics.zig").getGraphicTile;
@@ -21,10 +22,10 @@ const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
 pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, cfg: config.Config, high_score: u32) void {
-    const mc = gs.findFirst(c.MainController) orelse return;
+    const mc = gs.ecs.findFirst(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
-        const max_drawables = comptime GameSession.getCapacity(c.EventDraw);
+        const max_drawables = comptime ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
 
@@ -52,7 +53,7 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
     defer perf.end(.DrawSort);
 
     var num_drawables: usize = 0;
-    var it = gs.iter(c.EventDraw); while (it.next()) |event| {
+    var it = gs.ecs.iter(c.EventDraw); while (it.next()) |event| {
         sort_buffer[num_drawables] = event;
         num_drawables += 1;
     }
@@ -134,7 +135,7 @@ fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_d
 }
 
 fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
-    var it = gs.iter(c.EventDrawBox); while (it.next()) |event| {
+    var it = gs.ecs.iter(c.EventDrawBox); while (it.next()) |event| {
         const abs_bbox = event.box;
         const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
         const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
@@ -171,8 +172,8 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
 
-    const mc = gs.findFirst(c.MainController).?;
-    const gc_maybe = gs.findFirst(c.GameController);
+    const mc = gs.ecs.findFirst(c.MainController).?;
+    const gc_maybe = gs.ecs.findFirst(c.GameController);
 
     pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
@@ -194,7 +195,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
 
         var player_number: u31 = 0; while (player_number < 2) : (player_number += 1) {
             const pc_maybe = blk: {
-                var it = gs.iter(c.PlayerController); while (it.next()) |pc| {
+                var it = gs.ecs.iter(c.PlayerController); while (it.next()) |pc| {
                     if (pc.player_number == player_number) {
                         break :blk pc;
                     }
@@ -223,7 +224,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
 
                 const maybe_player_creature =
                     if (pc.player_id) |player_id|
-                        gs.find(player_id, c.Creature)
+                        gs.ecs.find(player_id, c.Creature)
                     else
                         null;
 
