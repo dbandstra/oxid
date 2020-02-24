@@ -5,17 +5,16 @@ const c = @import("../components.zig");
 const util = @import("../util.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         animation: *c.Animation,
     });
-
     while (it.next()) |self| {
         const animcfg = getSimpleAnim(self.animation.simple_anim);
 
         if (util.decrementTimer(&self.animation.frame_timer)) {
             if (self.animation.frame_index >= animcfg.frames.len - 1) {
-                gs.ecs.markEntityForRemoval(self.id);
+                gs.ecs.markForRemoval(self.id);
                 continue;
             }
             self.animation.frame_index += 1;

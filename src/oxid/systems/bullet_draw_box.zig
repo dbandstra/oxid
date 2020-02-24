@@ -4,10 +4,9 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         bullet: *const c.Bullet,
     });
-
     while (it.next()) |self| {
         if (self.bullet.line_of_fire) |box| {
             _ = p.EventDrawBox.spawn(gs, .{

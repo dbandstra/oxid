@@ -34,7 +34,7 @@ var move_groups: [max_phys_objects]MoveGroup = undefined;
 
 pub fn physicsFrame(gs: *GameSession) void {
     // calculate move bboxes
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         phys: *c.PhysObject,
         transform: *const c.Transform,
@@ -69,7 +69,7 @@ pub fn physicsFrame(gs: *GameSession) void {
     // group intersecting moves
     var num_move_groups: usize = 0;
     var i: usize = 0;
-    var it2 = gs.ecs.entityIter(struct {
+    var it2 = gs.ecs.iter(struct {
         id: gbe.EntityId,
         phys: *c.PhysObject,
     });
@@ -192,7 +192,7 @@ pub fn physicsFrame(gs: *GameSession) void {
 
             if (lowest) |m| {
                 // try to move this guy one subpixel
-                const transform = gs.ecs.find(m.entity_id, c.Transform).?;
+                const transform = gs.ecs.findComponentById(m.entity_id, c.Transform).?;
                 var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
 
                 // if push_dir differs from velocity direction, and we can move in that
@@ -221,7 +221,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 var other: ?*MoveGroupMember = move_group.head;
                 while (other) |o| : (other = o.next) {
                     if (couldObjectsCollide(m.entity_id, m.phys, o.entity_id, o.phys)) {
-                        const other_transform = gs.ecs.find(o.entity_id, c.Transform).?;
+                        const other_transform = gs.ecs.findComponentById(o.entity_id, c.Transform).?;
                         if (math.boxesOverlap(
                             new_pos, m.phys.entity_bbox,
                             other_transform.pos, o.phys.entity_bbox,
@@ -275,7 +275,7 @@ fn findCollisionEvent(
     self_id: gbe.EntityId,
     other_id: gbe.EntityId,
 ) ?*c.EventCollide {
-    var it = gs.ecs.iter(c.EventCollide);
+    var it = gs.ecs.componentIter(c.EventCollide);
 
     while (it.next()) |event| {
         if (!gbe.EntityId.eql(event.self_id, self_id)) {
@@ -352,11 +352,11 @@ fn assertNoOverlaps(gs: *GameSession) void {
         phys: *const c.PhysObject,
         transform: *const c.Transform,
     };
-    var it = gs.ecs.entityIter(T); while (it.next()) |self| {
+    var it = gs.ecs.iter(T); while (it.next()) |self| {
         if (self.phys.illusory) {
             continue;
         }
-        var it2 = gs.ecs.entityIter(T); while (it2.next()) |other| {
+        var it2 = gs.ecs.iter(T); while (it2.next()) |other| {
             if (other.phys.illusory) {
                 continue;
             }

@@ -25,7 +25,7 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
 
     // also, don't spawn anything within 16 screen pixels of any "object of
     // interest"
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
         creature: ?*const c.Creature,

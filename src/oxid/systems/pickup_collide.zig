@@ -4,15 +4,15 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         pickup: *const c.Pickup,
         inbox: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
-
     while (it.next()) |self| {
         const event = self.inbox.one;
-        const player = gs.ecs.find(event.other_id, c.Player) orelse continue;
+        const player = gs.ecs.findComponentById(event.other_id, c.Player)
+            orelse continue;
 
         _ = p.EventConferBonus.spawn(gs, .{
             .recipient_id = event.other_id,
@@ -30,6 +30,6 @@ pub fn run(gs: *GameSession) void {
             }) catch undefined;
         }
 
-        gs.ecs.markEntityForRemoval(self.id);
+        gs.ecs.markForRemoval(self.id);
     }
 }

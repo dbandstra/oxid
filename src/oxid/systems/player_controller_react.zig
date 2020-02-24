@@ -11,11 +11,10 @@ pub fn run(gs: *GameSession) void {
 }
 
 fn handleAwardPoints(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(8, c.EventAwardPoints, "player_controller_id"),
     });
-
     while (it.next()) |self| {
         for (self.inbox.all) |event| {
             self.pc.score += event.points;
@@ -24,7 +23,7 @@ fn handleAwardPoints(gs: *GameSession) void {
 }
 
 fn handleAwardLife(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(8, c.EventAwardLife, "player_controller_id"),
     });
@@ -37,7 +36,7 @@ fn handleAwardLife(gs: *GameSession) void {
 }
 
 fn handlePlayerDied(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         pc: *c.PlayerController,
         inbox: gbe.Inbox(1, c.EventPlayerDied, "player_controller_id"),

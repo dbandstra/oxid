@@ -4,12 +4,11 @@ const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: ?*const c.PhysObject,
         simple_graphic: *const c.SimpleGraphic,
     });
-
     while (it.next()) |self| {
         _ = p.EventDraw.spawn(gs, .{
             .pos = self.transform.pos,

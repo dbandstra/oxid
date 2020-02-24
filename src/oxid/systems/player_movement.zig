@@ -21,7 +21,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession, context: GameFrameContext) void {
-    var it = gs.ecs.entityIter(SystemData);
+    var it = gs.ecs.iter(SystemData);
 
     while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
@@ -39,7 +39,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
                 .pos = self.transform.pos,
             }) catch undefined;
 
-            gs.ecs.markEntityForRemoval(self.id);
+            gs.ecs.markForRemoval(self.id);
             continue;
         }
 
@@ -75,7 +75,7 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
             // non-existent entity (old bullet is gone)
             if (for (self.player.bullets) |*slot| {
                 if (slot.*) |bullet_id| {
-                    if (gs.ecs.find(bullet_id, c.Bullet) == null) {
+                    if (gs.ecs.findComponentById(bullet_id, c.Bullet) == null) {
                         break slot;
                     }
                 } else {
@@ -117,7 +117,7 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
 }
 
 fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
         web: *const c.Web,

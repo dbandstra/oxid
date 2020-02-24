@@ -47,7 +47,7 @@ test "EntityIterator basic test" {
     var ecs: MockECS = undefined;
     try initECS(&ecs);
 
-    var it = ecs.entityIter(struct {
+    var it = ecs.iter(struct {
         creature: *Creature,
         transform: *Transform,
     });
@@ -68,7 +68,7 @@ test "EntityIterator only players" {
     var ecs: MockECS = undefined;
     try initECS(&ecs);
 
-    var it = ecs.entityIter(struct {
+    var it = ecs.iter(struct {
         player: *Player,
     });
     var i: usize = 0; while (i < 8) : (i += 1) {
@@ -82,7 +82,7 @@ test "EntityIterator test with optionals and id field" {
     var ecs: MockECS = undefined;
     try initECS(&ecs);
 
-    var it = ecs.entityIter(struct {
+    var it = ecs.iter(struct {
         id: gbe.EntityId,
         monster: ?*Monster,
         player: ?*Player,
@@ -107,7 +107,7 @@ test "EntityIterator test with Events" {
     var ecs: MockECS = undefined;
     try initECS(&ecs);
 
-    var it = ecs.entityIter(struct {
+    var it = ecs.iter(struct {
         id: gbe.EntityId,
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, "self_id"),

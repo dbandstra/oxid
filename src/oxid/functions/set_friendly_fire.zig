@@ -2,7 +2,7 @@ const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 
 pub fn setFriendlyFire(gs: *GameSession, friendly_fire: bool) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         bullet: *const c.Bullet,
         phys: *c.PhysObject,
     });

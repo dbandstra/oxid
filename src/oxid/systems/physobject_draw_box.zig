@@ -3,10 +3,9 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         phys: *const c.PhysObject,
     });
-
     while (it.next()) |self| {
         const int = self.phys.internal;
 

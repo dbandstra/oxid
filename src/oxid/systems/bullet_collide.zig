@@ -5,13 +5,12 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         bullet: *const c.Bullet,
         transform: *const c.Transform,
         inbox: gbe.Inbox(1, c.EventCollide, "self_id"),
     });
-
     while (it.next()) |self| {
         const event = self.inbox.one;
 
@@ -30,6 +29,6 @@ pub fn run(gs: *GameSession) void {
             }) catch undefined;
         }
 
-        gs.ecs.markEntityForRemoval(self.id);
+        gs.ecs.markForRemoval(self.id);
     }
 }

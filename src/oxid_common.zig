@@ -294,41 +294,39 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
 // i feel like this functions are too heavy to be done inline by this system.
 // they should be created as events and handled by middleware?
 pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
-    const mc = gs.ecs.findFirst(c.MainController).?;
-
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         switch (field.field_type.ComponentType) {
             c.MainController => {},
             else => |ComponentType| {
                 var id: gbe.EntityId = undefined;
-                var it = gs.ecs.iter(ComponentType);
+                var it = gs.ecs.componentIter(ComponentType);
                 while (it.nextWithId(&id) != null) {
-                    gs.ecs.markEntityForRemoval(id);
+                    gs.ecs.markForRemoval(id);
                 }
             },
         }
     }
 
-    mc.game_running_state = .{
+    gs.ecs.findFirstComponent(c.MainController).?.game_running_state = .{
         .render_move_boxes = false,
     };
 
     const num_players: u32 = if (is_multiplayer) 2 else 1;
 
-    _ = p.GameController.spawn(gs, .{ .num_players = num_players }) catch undefined;
+    _ = p.GameController.spawn(gs, .{
+        .num_players = num_players,
+    }) catch undefined;
 
-    var player_number: u32 = 0; while (player_number < num_players) : (player_number += 1) {
+    var n: u32 = 0; while (n < num_players) : (n += 1) {
         _ = p.PlayerController.spawn(gs, .{
-            .player_number = player_number,
+            .player_number = n,
         }) catch undefined;
     }
 }
 
 pub fn abortGame(gs: *GameSession) void {
-    const mc = gs.ecs.findFirst(c.MainController).?;
-
-    mc.game_running_state = null;
+    gs.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
 
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
@@ -336,9 +334,9 @@ pub fn abortGame(gs: *GameSession) void {
             c.MainController => {},
             else => |ComponentType| {
                 var id: gbe.EntityId = undefined;
-                var it = gs.ecs.iter(ComponentType);
+                var it = gs.ecs.componentIter(ComponentType);
                 while (it.nextWithId(&id) != null) {
-                    gs.ecs.markEntityForRemoval(id);
+                    gs.ecs.markForRemoval(id);
                 }
             },
         }
@@ -346,7 +344,7 @@ pub fn abortGame(gs: *GameSession) void {
 }
 
 pub fn handleGameOver(self: *MainState, comptime ns: var) void {
-    if (self.session.ecs.findFirst(c.EventGameOver) != null) {
+    if (self.session.ecs.findFirstComponent(c.EventGameOver) != null) {
         finalizeGame(self, ns);
         self.menu_stack.push(.{
             .GameOverMenu = menus.GameOverMenu.init(),
@@ -361,7 +359,8 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
     var save_high_scores = true;
 
     // get players' scores
-    var it = self.session.ecs.iter(c.PlayerController); while (it.next()) |pc| {
+    var it = self.session.ecs.componentIter(c.PlayerController);
+    while (it.next()) |pc| {
         // insert the score somewhere in the high score list
         const new_score = pc.score;
 

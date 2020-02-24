@@ -5,11 +5,10 @@ const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         player: *c.Player,
         inbox: gbe.Inbox(8, c.EventConferBonus, "recipient_id"),
     });
-
     while (it.next()) |self| {
         for (self.inbox.all) |event| {
             switch (event.pickup_type) {

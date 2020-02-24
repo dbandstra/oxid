@@ -20,7 +20,7 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
     @import("systems/game_controller_input.zig").run(gs);
     @import("systems/player_input.zig").run(gs);
 
-    if (gs.ecs.findFirst(c.MainController).?.game_running_state) |grs| {
+    if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
         if (!paused) {
             @import("systems/game_controller.zig").run(gs);
             @import("systems/player_controller.zig").run(gs);
@@ -60,7 +60,7 @@ pub fn gameFrame(gs: *GameSession, context: GameFrameContext, draw: bool, paused
         @import("systems/creature_draw.zig").run(gs);
         @import("systems/simple_graphic_draw.zig").run(gs);
 
-        if (gs.ecs.findFirst(c.MainController).?.game_running_state) |grs| {
+        if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
             if (grs.render_move_boxes) {
                 @import("systems/bullet_draw_box.zig").run(gs);
                 @import("systems/physobject_draw_box.zig").run(gs);
@@ -78,9 +78,9 @@ pub fn gameFrameCleanup(gs: *GameSession) void {
 
         if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
             var id: gbe.EntityId = undefined;
-            var it = gs.ecs.iter(ComponentType);
+            var it = gs.ecs.componentIter(ComponentType);
             while (it.nextWithId(&id) != null) {
-                gs.ecs.markEntityForRemoval(id);
+                gs.ecs.markForRemoval(id);
             }
         }
     }

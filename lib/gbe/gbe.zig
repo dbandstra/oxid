@@ -80,40 +80,25 @@ pub fn ECS(comptime ComponentLists: type) type {
         pub fn iter(
             self: *@This(),
             comptime T: type,
+        ) EntityIterator(@This(), T) {
+            return EntityIterator(@This(), T).init(self);
+        }
+
+        pub fn componentIter(
+            self: *@This(),
+            comptime T: type,
         ) ComponentIterator(T, getCapacity(T)) {
             const list = &@field(self.components, @typeName(T));
             return ComponentIterator(T, comptime getCapacity(T)).init(list);
         }
 
-        pub fn entityIter(
-            self: *@This(),
-            comptime T: type,
-        ) EntityIterator(@This(), T) {
-            return EntityIterator(@This(), T).init(self);
-        }
-
-        pub fn find(
-            self: *@This(),
-            entity_id: EntityId,
-            comptime T: type,
-        ) ?*T {
-            var id: EntityId = undefined;
-            var it = self.iter(T);
-            while (it.nextWithId(&id)) |object| {
-                if (EntityId.eql(id, entity_id)) {
-                    return object;
-                }
-            }
-            return null;
-        }
-
-        pub fn findEntity(
+        pub fn findById(
             self: *@This(),
             entity_id: EntityId,
             comptime T: type,
         ) ?T {
             var entry_id: EntityId = undefined;
-            var it = self.entityIter(T);
+            var it = self.iter(T);
             while (it.nextWithId(&entry_id)) |entry| {
                 if (EntityId.eql(entry_id, entity_id)) {
                     return entry;
@@ -122,8 +107,23 @@ pub fn ECS(comptime ComponentLists: type) type {
             return null;
         }
 
-        pub fn findFirst(self: *@This(), comptime T: type) ?*T {
-            return self.iter(T).next();
+        pub fn findComponentById(
+            self: *@This(),
+            entity_id: EntityId,
+            comptime T: type,
+        ) ?*T {
+            var id: EntityId = undefined;
+            var it = self.componentIter(T);
+            while (it.nextWithId(&id)) |object| {
+                if (EntityId.eql(id, entity_id)) {
+                    return object;
+                }
+            }
+            return null;
+        }
+
+        pub fn findFirstComponent(self: *@This(), comptime T: type) ?*T {
+            return self.componentIter(T).next();
         }
 
         pub fn spawn(self: *@This()) EntityId {
@@ -171,7 +171,7 @@ pub fn ECS(comptime ComponentLists: type) type {
             list.data[slot_index] = data;
         }
 
-        pub fn markEntityForRemoval(self: *@This(), entity_id: EntityId) void {
+        pub fn markForRemoval(self: *@This(), entity_id: EntityId) void {
             if (self.num_removals >= max_removals_per_frame) {
                 @panic("markEntityForRemoval: no removal slots available");
             }

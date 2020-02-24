@@ -7,7 +7,7 @@ const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 const Graphic = @import("../graphics.zig").Graphic;
 
-const SystemData = struct{
+const SystemData = struct {
     transform: *const c.Transform,
     phys: *const c.PhysObject,
     creature: *const c.Creature,
@@ -17,8 +17,7 @@ const SystemData = struct{
 };
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(SystemData);
-
+    var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         think(gs, self);
     }

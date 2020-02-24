@@ -5,11 +5,10 @@ const p = @import("../prototypes.zig");
 const getSimpleAnim = @import("../graphics.zig").getSimpleAnim;
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         animation: *const c.Animation,
     });
-
     while (it.next()) |self| {
         const animcfg = getSimpleAnim(self.animation.simple_anim);
 

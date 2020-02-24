@@ -6,7 +6,7 @@ const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.entityIter(struct {
+    var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         creature: *c.Creature,
         transform: *const c.Transform,
@@ -14,7 +14,6 @@ pub fn run(gs: *GameSession) void {
         player: ?*c.Player,
         inbox: gbe.Inbox(8, c.EventTakeDamage, "self_id"),
     });
-
     while (it.next()) |self| {
         if (self.creature.invulnerability_timer > 0) {
             continue;
@@ -103,6 +102,6 @@ pub fn run(gs: *GameSession) void {
             .z_index = Constants.z_index_explosion,
         }) catch undefined;
 
-        gs.ecs.markEntityForRemoval(self.id);
+        gs.ecs.markForRemoval(self.id);
     }
 }
