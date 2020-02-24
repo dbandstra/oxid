@@ -1,3 +1,4 @@
+const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
 const c = @import("../components.zig");
 
@@ -5,11 +6,10 @@ pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(struct {
         player: *c.Player,
         creature: *c.Creature,
+        inbox: gbe.Inbox(16, c.EventGameInput, null),
     });
     while (it.next()) |self| {
-        var event_it = gs.ecs.componentIter(c.EventGameInput);
-
-        while (event_it.next()) |event| {
+        for (self.inbox.all()) |event| {
             if (event.player_number != self.player.player_number) {
                 continue;
             }

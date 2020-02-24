@@ -253,9 +253,14 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
 pub fn Inbox(
     comptime capacity: usize,
     comptime ComponentType_: type,
-    comptime id_field_: []const u8,
+    comptime id_field_: ?[]const u8,
 ) type {
     std.debug.assert(capacity > 0);
+
+    if (@sizeOf(ComponentType_) == 0) {
+        // TODO blocked on https://github.com/ziglang/zig/issues/4539
+        @compileError("Inbox does not support zero-sized structs");
+    }
 
     return struct {
         pub const is_inbox = true;
@@ -486,13 +491,16 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                                 continue;
                             }
                             const event = &list.data[i];
-                            if (@field(event, field.field_type.id_field).id
-                                    == entity_id) {
-                                // if the inbox is full, silently drop events
-                                if (count < array.len) {
-                                    array[count] = event;
-                                    count += 1;
+                            if (field.field_type.id_field) |id_field| {
+                                if (@field(event, id_field).id != entity_id) {
+                                    continue;
                                 }
+                            }
+                            array[count] = event;
+                            count += 1;
+                            // if the inbox is full, silently drop events
+                            if (count == array.len) {
+                                break;
                             }
                         }
                     }

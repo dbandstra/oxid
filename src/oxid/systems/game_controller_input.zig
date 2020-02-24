@@ -5,11 +5,10 @@ const c = @import("../components.zig");
 pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(struct {
         gc: *c.GameController,
+        inbox: gbe.Inbox(16, c.EventGameInput, null),
     });
     while (it.next()) |self| {
-        var event_it = gs.ecs.componentIter(c.EventGameInput);
-
-        while (event_it.next()) |event| {
+        for (self.inbox.all()) |event| {
             switch (event.command) {
                 .KillAllMonsters => {
                     if (event.down) {

@@ -103,7 +103,7 @@ test "EntityIterator test with optionals and id field" {
     std.testing.expect(it.next() == null);
 }
 
-test "EntityIterator test with Events" {
+test "EntityIterator test with inbox" {
     var ecs: MockECS = undefined;
     try initECS(&ecs);
 
@@ -117,6 +117,26 @@ test "EntityIterator test with Events" {
         std.testing.expect(entry.inbox.all().len == 1);
         std.testing.expect(entry.inbox.all()[0].num == i);
         std.testing.expect(entry.inbox.one().num == i);
+    }
+    std.testing.expect(it.next() == null);
+}
+
+test "EntityIterator test with inbox with null id_field" {
+    var ecs: MockECS = undefined;
+    try initECS(&ecs);
+
+    var it = ecs.iter(struct {
+        id: gbe.EntityId,
+        player: *Player,
+        inbox: gbe.Inbox(10, EventDie, null),
+    });
+    var i: usize = 0; while (i < 8) : (i += 1) {
+        var entry = it.next().?;
+        const all = entry.inbox.all();
+        std.testing.expect(all.len == 2);
+        var j: usize = 0; while (j < 2) : (j += 1) {
+            std.testing.expect(all[j].num == j);
+        }
     }
     std.testing.expect(it.next() == null);
 }
