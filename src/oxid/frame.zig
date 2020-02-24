@@ -75,14 +75,10 @@ pub fn gameFrameCleanup(gs: *GameSession) void {
     // mark all events for removal
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
-
-        if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
-            var id: gbe.EntityId = undefined;
-            var it = gs.ecs.componentIter(ComponentType);
-            while (it.nextWithId(&id) != null) {
-                gs.ecs.markForRemoval(id);
-            }
+        if (comptime !std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+            continue;
         }
+        gs.ecs.markAllForRemoval(ComponentType);
     }
 
     gs.ecs.applyRemovals();

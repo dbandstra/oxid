@@ -179,6 +179,14 @@ pub fn ECS(comptime ComponentLists: type) type {
             self.num_removals += 1;
         }
 
+        pub fn markAllForRemoval(self: *@This(), comptime T: type) void {
+            var id: EntityId = undefined;
+            var it = self.componentIter(T);
+            while (it.nextWithId(&id) != null) {
+                self.markForRemoval(id);
+            }
+        }
+
         pub fn applyRemovals(self: *@This()) void {
             for (self.removals[0..self.num_removals]) |entity_id| {
                 self.freeEntity(entity_id);

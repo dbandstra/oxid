@@ -296,16 +296,8 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
 pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        switch (field.field_type.ComponentType) {
-            c.MainController => {},
-            else => |ComponentType| {
-                var id: gbe.EntityId = undefined;
-                var it = gs.ecs.componentIter(ComponentType);
-                while (it.nextWithId(&id) != null) {
-                    gs.ecs.markForRemoval(id);
-                }
-            },
-        }
+        if (field.field_type.ComponentType == c.MainController) continue;
+        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 
     gs.ecs.findFirstComponent(c.MainController).?.game_running_state = .{
@@ -330,16 +322,8 @@ pub fn abortGame(gs: *GameSession) void {
 
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        switch (field.field_type.ComponentType) {
-            c.MainController => {},
-            else => |ComponentType| {
-                var id: gbe.EntityId = undefined;
-                var it = gs.ecs.componentIter(ComponentType);
-                while (it.nextWithId(&id) != null) {
-                    gs.ecs.markForRemoval(id);
-                }
-            },
-        }
+        if (field.field_type.ComponentType == c.MainController) continue;
+        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 }
 
