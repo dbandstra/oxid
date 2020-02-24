@@ -34,7 +34,11 @@ const datadir = "Oxid";
 const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
 
-fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, Write }) !std.fs.File {
+fn openDataFile(
+    hunk_side: *HunkSide,
+    filename: []const u8,
+    mode: enum { Read, Write },
+) !std.fs.File {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -48,11 +52,14 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { Read, W
         };
     }
 
-    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{dir_path, filename});
+    const file_path = try std.fs.path.join(
+        &hunk_side.allocator,
+        &[_][]const u8 { dir_path, filename },
+    );
 
     return switch (mode) {
         .Read => std.fs.cwd().openFile(file_path, .{}),
-        .Write => std.fs.cwd().openFile(file_path, .{ .read = false, .write = true }),
+        .Write => std.fs.cwd().createFile(file_path, .{}),
     };
 }
 
@@ -66,14 +73,23 @@ pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     defer file.close();
 
     const size = try std.math.cast(usize, try file.getEndPos());
-    return try config.read(std.fs.File.InStream.Error, &std.fs.File.inStream(file).stream, size, hunk_side);
+    return try config.read(
+        std.fs.File.InStream.Error,
+        &std.fs.File.inStream(file).stream,
+        size,
+        hunk_side,
+    );
 }
 
 pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
     const file = try openDataFile(hunk_side, config_filename, .Write);
     defer file.close();
 
-    return try config.write(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, cfg);
+    return try config.write(
+        std.fs.File.OutStream.Error,
+        &std.fs.File.outStream(file).stream,
+        cfg,
+    );
 }
 
 pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
@@ -91,14 +107,24 @@ pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
     };
     defer file.close();
 
-    return datafile.readHighScores(std.fs.File.InStream.Error, &std.fs.File.inStream(file).stream);
+    return datafile.readHighScores(
+        std.fs.File.InStream.Error,
+        &std.fs.File.inStream(file).stream,
+    );
 }
 
-pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
+pub fn saveHighScores(
+    hunk_side: *HunkSide,
+    high_scores: [Constants.num_high_scores]u32,
+) !void {
     const file = try openDataFile(hunk_side, highscores_filename, .Write);
     defer file.close();
 
-    try datafile.writeHighScores(std.fs.File.OutStream.Error, &std.fs.File.outStream(file).stream, high_scores);
+    try datafile.writeHighScores(
+        std.fs.File.OutStream.Error,
+        &std.fs.File.outStream(file).stream,
+        high_scores,
+    );
 }
 
 const WindowDims = struct {
