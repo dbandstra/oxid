@@ -4,7 +4,7 @@ const audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const levels = @import("../levels.zig");
 const ConstantTypes = @import("../constant_types.zig");
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
@@ -23,7 +23,7 @@ pub fn run(gs: *GameSession) void {
 fn think(gs: *GameSession, gc: *c.GameController) void {
     // if all non-persistent monsters are dead, prepare next wave
     if (gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
-        gc.next_wave_timer = Constants.next_wave_time;
+        gc.next_wave_timer = constants.next_wave_time;
     }
     _ = util.decrementTimer(&gc.wave_message_timer);
     if (util.decrementTimer(&gc.next_wave_timer)) {
@@ -31,9 +31,9 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
             .unused = false,
         });
         gc.wave_number += 1;
-        gc.wave_message_timer = Constants.duration60(180);
+        gc.wave_message_timer = constants.duration60(180);
         gc.enemy_speed_level = 0;
-        gc.enemy_speed_timer = Constants.enemy_speed_ticks;
+        gc.enemy_speed_timer = constants.enemy_speed_ticks;
         const wave = createWave(gs, gc);
         spawnWave(gs, gc.wave_number, &wave);
         gc.enemy_speed_level = wave.speed;
@@ -41,7 +41,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         gc.wave_message = wave.message;
     }
     if (util.decrementTimer(&gc.enemy_speed_timer)) {
-        if (gc.enemy_speed_level < Constants.max_enemy_speed_level) {
+        if (gc.enemy_speed_level < constants.max_enemy_speed_level) {
             gc.enemy_speed_level += 1;
             p.playSynth(gs, "Accelerate", audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (gc.enemy_speed_level) {
@@ -52,7 +52,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
                 },
             });
         }
-        gc.enemy_speed_timer = Constants.enemy_speed_ticks;
+        gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&gc.next_pickup_timer)) {
         const pickup_type =
@@ -61,7 +61,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
             else
                 ConstantTypes.PickupType.PowerUp;
         spawnPickup(gs, pickup_type);
-        gc.next_pickup_timer = Constants.pickup_spawn_time;
+        gc.next_pickup_timer = constants.pickup_spawn_time;
     }
     _ = util.decrementTimer(&gc.freeze_monsters_timer);
 
@@ -72,8 +72,8 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         pc: *const c.PlayerController,
     });
     while (it.next()) |entry| {
-        if (gc.extra_lives_spawned < Constants.extra_life_score_thresholds.len) {
-            const threshold = Constants.extra_life_score_thresholds[gc.extra_lives_spawned];
+        if (gc.extra_lives_spawned < constants.extra_life_score_thresholds.len) {
+            const threshold = constants.extra_life_score_thresholds[gc.extra_lives_spawned];
             if (entry.pc.score >= threshold) {
                 spawnPickup(gs, .LifeUp);
                 gc.extra_lives_spawned += 1;

@@ -12,7 +12,7 @@ const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const Constants = @import("oxid/constants.zig");
+const constants = @import("oxid/constants.zig");
 const ComponentLists = @import("oxid/game.zig").ComponentLists;
 const GameSession = @import("oxid/game.zig").GameSession;
 const gameInit = @import("oxid/frame.zig").gameInit;
@@ -48,7 +48,7 @@ pub const MainState = struct {
     session: GameSession,
     game_over: bool,
     new_high_score: bool,
-    high_scores: [Constants.num_high_scores]u32,
+    high_scores: [constants.num_high_scores]u32,
     menu_anim_time: u32,
     menu_stack: menus.MenuStack,
     fullscreen: bool,
@@ -374,12 +374,12 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
         const new_score = pc.score;
 
         // the list is always sorted highest to lowest
-        var i: usize = 0; while (i < Constants.num_high_scores) : (i += 1) {
+        var i: usize = 0; while (i < constants.num_high_scores) : (i += 1) {
             if (new_score > self.high_scores[i]) {
                 // insert the new score here
                 std.mem.copyBackwards(u32,
-                    self.high_scores[i + 1..Constants.num_high_scores],
-                    self.high_scores[i..Constants.num_high_scores - 1]
+                    self.high_scores[i + 1..constants.num_high_scores],
+                    self.high_scores[i..constants.num_high_scores - 1]
                 );
 
                 self.high_scores[i] = new_score;

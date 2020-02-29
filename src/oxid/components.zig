@@ -3,7 +3,7 @@ const gbe = @import("gbe");
 const Math = @import("../common/math.zig");
 const Draw = @import("../common/draw.zig");
 const ConstantTypes = @import("constant_types.zig");
-const Constants = @import("constants.zig");
+const constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
 const input = @import("input.zig");
@@ -169,7 +169,7 @@ pub const Player = struct {
     player_number: u32,
     player_controller_id: gbe.EntityId,
     trigger_released: bool,
-    bullets: [Constants.player_max_bullets]?gbe.EntityId,
+    bullets: [constants.player_max_bullets]?gbe.EntityId,
     attack_level: AttackLevel,
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,

@@ -1,7 +1,7 @@
 const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
 const GameFrameContext = @import("../frame.zig").GameFrameContext;
 const GameSession = @import("../game.zig").GameSession;
@@ -24,7 +24,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
     var it = gs.ecs.iter(SystemData); while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
             const dy = std.math.min(
-                Constants.player_spawn_arise_speed,
+                constants.player_spawn_arise_speed,
                 self.player.spawn_anim_y_remaining,
             );
             self.transform.pos.y -= @as(i32, dy);
@@ -42,7 +42,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
         }
 
         if (self.player.dying_timer > 0) {
-            if (self.player.dying_timer == Constants.duration60(30)) { // yeesh
+            if (self.player.dying_timer == constants.duration60(30)) { // yeesh
                 p.playSample(gs, .PlayerCrumble);
             }
             self.phys.speed = 0;
@@ -133,9 +133,9 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
 
 fn playerMove(gs: *GameSession, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
-        .One => Constants.player_move_speed[0],
-        .Two => Constants.player_move_speed[1],
-        .Three => Constants.player_move_speed[2],
+        .One => constants.player_move_speed[0],
+        .Two => constants.player_move_speed[1],
+        .Three => constants.player_move_speed[2],
     };
 
     if (isTouchingWeb(gs, self)) {
@@ -199,7 +199,7 @@ fn tryPush(
     var slip_dir: ?math.Direction = null;
 
     var i: i32 = 1;
-    while (i < Constants.player_slip_threshold) : (i += 1) {
+    while (i < constants.player_slip_threshold) : (i += 1) {
         if (dir == .W or dir == .E) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
                 slip_dir = .N;

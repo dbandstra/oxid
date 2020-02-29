@@ -1,6 +1,6 @@
 const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const ConstantTypes = @import("../constant_types.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -30,26 +30,26 @@ fn think(gs: *GameSession, self: SystemData) void {
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
-                    if (player.dying_timer > Constants.duration60(30))
-                        if (alternation(u32, player.dying_timer, Constants.duration60(2)))
+                    if (player.dying_timer > constants.duration60(30))
+                        if (alternation(u32, player.dying_timer, constants.duration60(2)))
                             Graphic.ManDying1
                         else
                             Graphic.ManDying2
-                    else if (player.dying_timer > Constants.duration60(20))
+                    else if (player.dying_timer > constants.duration60(20))
                         Graphic.ManDying3
-                    else if (player.dying_timer > Constants.duration60(10))
+                    else if (player.dying_timer > constants.duration60(10))
                         Graphic.ManDying4
                     else
                         Graphic.ManDying5,
                 .transform = .Identity,
-                .z_index = Constants.z_index_player,
+                .z_index = constants.z_index_player,
             }) catch undefined;
         } else {
             drawCreature(gs, self, .{
                 .graphic1 = if (player.player_number == 0) .Man1Walk1 else .Man2Walk1,
                 .graphic2 = if (player.player_number == 0) .Man1Walk2 else .Man2Walk2,
                 .rotates = true,
-                .z_index = Constants.z_index_player,
+                .z_index = constants.z_index_player,
             });
         }
         return;
@@ -61,12 +61,12 @@ fn think(gs: *GameSession, self: SystemData) void {
             _ = p.EventDraw.spawn(gs, c.EventDraw {
                 .pos = self.transform.pos,
                 .graphic =
-                    if (alternation(u32, monster.spawning_timer, Constants.duration60(8)))
+                    if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
                         Graphic.Spawn1
                     else
                         Graphic.Spawn2,
                 .transform = .Identity,
-                .z_index = Constants.z_index_enemy,
+                .z_index = constants.z_index_enemy,
             }) catch undefined;
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
@@ -74,31 +74,31 @@ fn think(gs: *GameSession, self: SystemData) void {
                     .graphic1 = .Spider1,
                     .graphic2 = .Spider2,
                     .rotates = true,
-                    .z_index = Constants.z_index_enemy,
+                    .z_index = constants.z_index_enemy,
                 },
                 ConstantTypes.MonsterType.Knight => DrawCreatureParams {
                     .graphic1 = .Knight1,
                     .graphic2 = .Knight2,
                     .rotates = true,
-                    .z_index = Constants.z_index_enemy,
+                    .z_index = constants.z_index_enemy,
                 },
                 ConstantTypes.MonsterType.FastBug => DrawCreatureParams {
                     .graphic1 = .FastBug1,
                     .graphic2 = .FastBug2,
                     .rotates = true,
-                    .z_index = Constants.z_index_enemy,
+                    .z_index = constants.z_index_enemy,
                 },
                 ConstantTypes.MonsterType.Squid => DrawCreatureParams {
                     .graphic1 = .Squid1,
                     .graphic2 = .Squid2,
                     .rotates = true,
-                    .z_index = Constants.z_index_enemy,
+                    .z_index = constants.z_index_enemy,
                 },
                 ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams {
                     .graphic1 = .Juggernaut,
                     .graphic2 = .Juggernaut,
                     .rotates = false,
-                    .z_index = Constants.z_index_enemy,
+                    .z_index = constants.z_index_enemy,
                 },
             });
         }
@@ -111,7 +111,7 @@ fn think(gs: *GameSession, self: SystemData) void {
             .graphic1 = graphic,
             .graphic2 = graphic,
             .rotates = false,
-            .z_index = Constants.z_index_web,
+            .z_index = constants.z_index_web,
         });
         return;
     }
@@ -138,7 +138,7 @@ const DrawCreatureParams = struct{
 fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) void {
     // blink during invulnerability
     if (self.creature.invulnerability_timer > 0) {
-        if (alternation(u32, self.creature.invulnerability_timer, Constants.duration60(2))) {
+        if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
             return;
         }
     }

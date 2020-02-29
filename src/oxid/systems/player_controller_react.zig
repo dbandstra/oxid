@@ -1,6 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -44,7 +44,7 @@ fn handlePlayerDied(gs: *GameSession) void {
         if (self.pc.lives > 0) {
             self.pc.lives -= 1;
             if (self.pc.lives > 0) {
-                self.pc.respawn_timer = Constants.player_respawn_time;
+                self.pc.respawn_timer = constants.player_respawn_time;
             } else {
                 _ = p.EventPlayerOutOfLives.spawn(gs, .{
                     .player_controller_id = self.id,

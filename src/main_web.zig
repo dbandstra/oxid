@@ -8,7 +8,7 @@ const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const levels = @import("oxid/levels.zig");
-const Constants = @import("oxid/constants.zig");
+const constants = @import("oxid/constants.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
 const gameInit = @import("oxid/frame.zig").gameInit;
@@ -51,20 +51,20 @@ pub fn saveConfig(cfg: config.Config) !void {
     web.setLocalStorage(config_storagekey, dest.getWritten());
 }
 
-pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
+pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
     var buffer: [1000]u8 = undefined;
     const bytes_read = web.getLocalStorage(highscores_storagekey, buffer[0..]) catch |err| {
         // the high scores exist but there was an error loading them. just
         // continue with an empty high scores list, even though that might mean
         // that the user's legitimate high scores might get wiped out (FIXME?)
         warn("Failed to load high scores from local storage: {}\n", .{err});
-        return [1]u32{0} ** Constants.num_high_scores;
+        return [1]u32{0} ** constants.num_high_scores;
     };
     var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
     return datafile.readHighScores(std.io.SliceInStream.Error, &sis.stream);
 }
 
-pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [Constants.num_high_scores]u32) !void {
+pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
     var buffer: [1000]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
     try datafile.writeHighScores(std.io.SliceOutStream.Error, &dest.stream, high_scores);
@@ -292,7 +292,7 @@ export fn onAnimationFrame(now: c_int) void {
     const refresh_rate = 1000 / delta;
 
     const num_frames_to_simulate = blk: {
-        t += Constants.ticks_per_second; // gameplay update rate
+        t += constants.ticks_per_second; // gameplay update rate
         var n: usize = 0;
         while (t >= refresh_rate) {
             t -= refresh_rate;

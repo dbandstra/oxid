@@ -7,7 +7,7 @@ const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
 const levels = @import("levels.zig");
 const ConstantTypes = @import("constant_types.zig");
-const Constants = @import("constants.zig");
+const constants = @import("constants.zig");
 const c = @import("components.zig");
 const audio = @import("audio.zig");
 
@@ -65,10 +65,10 @@ pub const GameController = struct {
         try gs.ecs.addComponent(entity_id, c.GameController {
             .monster_count = 0,
             .enemy_speed_level = 0,
-            .enemy_speed_timer = Constants.enemy_speed_ticks,
+            .enemy_speed_timer = constants.enemy_speed_ticks,
             .wave_number = 0,
-            .next_wave_timer = Constants.duration60(90),
-            .next_pickup_timer = Constants.duration60(15*60),
+            .next_wave_timer = constants.duration60(90),
+            .next_pickup_timer = constants.duration60(15*60),
             .freeze_monsters_timer = 0,
             .extra_lives_spawned = 0,
             .wave_message = null,
@@ -92,7 +92,7 @@ pub const PlayerController = struct {
         try gs.ecs.addComponent(entity_id, c.PlayerController {
             .player_number = params.player_number,
             .player_id = null,
-            .lives = Constants.player_num_lives,
+            .lives = constants.player_num_lives,
             .score = 0,
             .respawn_timer = 1,
         });
@@ -130,7 +130,7 @@ pub const Player = struct {
         });
 
         try gs.ecs.addComponent(entity_id, c.Creature {
-            .invulnerability_timer = Constants.invulnerability_time,
+            .invulnerability_timer = constants.invulnerability_time,
             .hit_points = 1,
             .flinch_timer = 0,
             .god_mode = false,
@@ -140,7 +140,7 @@ pub const Player = struct {
             .player_number = params.player_number,
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
-            .bullets = [_]?gbe.EntityId{null} ** Constants.player_max_bullets,
+            .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
             .attack_level = .One,
             .speed_level = .One,
             .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
@@ -173,7 +173,7 @@ pub const PlayerCorpse = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = .ManDying6,
-            .z_index = Constants.z_index_corpse,
+            .z_index = constants.z_index_corpse,
             .directional = false,
         });
 
@@ -190,7 +190,7 @@ pub const Monster = struct {
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
-        const monster_values = Constants.getMonsterValues(params.monster_type);
+        const monster_values = constants.getMonsterValues(params.monster_type);
 
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
@@ -227,7 +227,7 @@ pub const Monster = struct {
 
         try gs.ecs.addComponent(entity_id, c.Monster {
             .monster_type = params.monster_type,
-            .spawning_timer = Constants.monster_spawn_time,
+            .spawning_timer = constants.monster_spawn_time,
             .full_hit_points = monster_values.hit_points,
             .personality =
                 if (params.monster_type == ConstantTypes.MonsterType.Juggernaut)
@@ -242,7 +242,7 @@ pub const Monster = struct {
             .can_drop_webs = monster_values.can_drop_webs,
             .next_attack_timer =
                 if (can_shoot or monster_values.can_drop_webs)
-                    Constants.duration60(gs.getRand().range(u31, 75, 400))
+                    constants.duration60(gs.getRand().range(u31, 75, 400))
                 else
                     0,
             .has_coin = params.has_coin,
@@ -317,8 +317,8 @@ pub const Bullet = struct {
             .entity_bbox = bullet_bbox,
             .facing = params.facing,
             .speed = switch (params.bullet_type) {
-                .MonsterBullet => Constants.monster_bullet_speed,
-                .PlayerBullet => Constants.player_bullet_speed,
+                .MonsterBullet => constants.monster_bullet_speed,
+                .PlayerBullet => constants.player_bullet_speed,
             },
             .push_dir = null,
             .owner_id = params.owner_id,
@@ -351,7 +351,7 @@ pub const Bullet = struct {
                     else => Graphic.PlaBullet3,
                 },
             },
-            .z_index = Constants.z_index_bullet,
+            .z_index = constants.z_index_bullet,
             .directional = true,
         });
 
@@ -392,7 +392,7 @@ pub const Pickup = struct {
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
-        const pickup_values = Constants.getPickupValues(params.pickup_type);
+        const pickup_values = constants.getPickupValues(params.pickup_type);
 
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
@@ -408,7 +408,7 @@ pub const Pickup = struct {
                 .LifeUp => Graphic.LifeUp,
                 .Coin => Graphic.Coin,
             },
-            .z_index = Constants.z_index_pickup,
+            .z_index = constants.z_index_pickup,
             .directional = false,
         });
 
@@ -456,7 +456,7 @@ pub const Sound = struct {
         // FIXME!!! this timer will be paused when you're in the menu, but we
         // use sounds in the menu too!
         try gs.ecs.addComponent(entity_id, c.RemoveTimer {
-            .timer = @floatToInt(u32, params.duration * @as(f32, Constants.ticks_per_second)),
+            .timer = @floatToInt(u32, params.duration * @as(f32, constants.ticks_per_second)),
         });
 
         return entity_id;

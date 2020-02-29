@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const Constants = @import("constants.zig");
+const constants = @import("constants.zig");
 const config = @import("config.zig");
 const input = @import("input.zig");
 const Key = @import("../common/key.zig").Key;
@@ -21,7 +21,7 @@ pub const MenuContext = struct {
     sound_enabled: bool,
     fullscreen: bool,
     cfg: config.Config,
-    high_scores: [Constants.num_high_scores]u32,
+    high_scores: [constants.num_high_scores]u32,
     new_high_score: bool,
     game_over: bool,
     anim_time: u32,

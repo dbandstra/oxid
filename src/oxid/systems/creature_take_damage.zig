@@ -1,6 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
@@ -41,7 +41,7 @@ pub fn run(gs: *GameSession) void {
             // hurt but not killed
             p.playSample(gs, .MonsterImpact);
             self.creature.hit_points -= total_damage;
-            self.creature.flinch_timer = Constants.duration60(4);
+            self.creature.flinch_timer = constants.duration60(4);
             continue;
         }
 
@@ -53,7 +53,7 @@ pub fn run(gs: *GameSession) void {
             p.playSample(gs, .PlayerScream);
             p.playSample(gs, .PlayerDeath);
 
-            self_player.dying_timer = Constants.player_death_anim_time;
+            self_player.dying_timer = constants.player_death_anim_time;
 
             _ = p.EventPlayerDied.spawn(gs, .{
                 .player_controller_id = self_player.player_controller_id,
@@ -99,7 +99,7 @@ pub fn run(gs: *GameSession) void {
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
             .simple_anim = .Explosion,
-            .z_index = Constants.z_index_explosion,
+            .z_index = constants.z_index_explosion,
         }) catch undefined;
 
         gs.ecs.markForRemoval(self.id);

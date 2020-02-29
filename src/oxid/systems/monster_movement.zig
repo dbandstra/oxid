@@ -4,7 +4,7 @@ const levels = @import("../levels.zig");
 const GameSession = @import("../game.zig").GameSession;
 const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
@@ -48,7 +48,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
         self.monster.personality = c.Monster.Personality.Chase;
     }
 
-    const monster_values = Constants.getMonsterValues(self.monster.monster_type);
+    const monster_values = constants.getMonsterValues(self.monster.monster_type);
     const move_speed =
         if (gc.enemy_speed_level < monster_values.move_speed.len)
             monster_values.move_speed[gc.enemy_speed_level]
@@ -155,7 +155,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .pos = self.transform.pos,
             }) catch undefined;
         }
-        self.monster.next_attack_timer = Constants.duration60(gs.getRand().range(u31, 75, 400));
+        self.monster.next_attack_timer = constants.duration60(gs.getRand().range(u31, 75, 400));
     }
 }
 

@@ -1,5 +1,5 @@
 const GameSession = @import("../game.zig").GameSession;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -16,7 +16,7 @@ pub fn run(gs: *GameSession) void {
 
 fn think(gs: *GameSession, self: SystemData) void {
     if (gs.ecs.findFirstComponent(c.EventPlayerDied) != null) {
-        self.gc.freeze_monsters_timer = Constants.monster_freeze_time;
+        self.gc.freeze_monsters_timer = constants.monster_freeze_time;
     }
     var it = gs.ecs.componentIter(c.EventPlayerOutOfLives);
     while (it.next() != null) {
@@ -48,6 +48,6 @@ fn think(gs: *GameSession, self: SystemData) void {
     var it3 = gs.ecs.componentIter(c.EventShowMessage);
     while (it3.next()) |event| {
         self.gc.wave_message = event.message;
-        self.gc.wave_message_timer = Constants.duration60(180);
+        self.gc.wave_message_timer = constants.duration60(180);
     }
 }

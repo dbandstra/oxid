@@ -1,6 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
-const Constants = @import("../constants.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -17,7 +17,7 @@ pub fn run(gs: *GameSession) void {
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
             .simple_anim = .PlaSparks,
-            .z_index = Constants.z_index_sparks,
+            .z_index = constants.z_index_sparks,
         }) catch undefined;
 
         if (!gbe.EntityId.isZero(event.other_id)) {

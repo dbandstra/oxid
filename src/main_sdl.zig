@@ -16,7 +16,7 @@ const JoyAxis = @import("common/key.zig").JoyAxis;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
-const Constants = @import("oxid/constants.zig");
+const constants = @import("oxid/constants.zig");
 const menus = @import("oxid/menus.zig");
 const GameSession = @import("oxid/game.zig").GameSession;
 const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
@@ -92,7 +92,7 @@ pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
     );
 }
 
-pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
+pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
     const file = openDataFile(hunk_side, highscores_filename, .Read) catch |err| {
         if (err == error.FileNotFound) {
             // this is a normal situation (e.g. game is being played for the
@@ -103,7 +103,7 @@ pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
             // the user's legitimate high scores might get wiped out (FIXME?)
             std.debug.warn("Failed to load high scores file: {}\n", .{err});
         }
-        return [1]u32{0} ** Constants.num_high_scores;
+        return [1]u32{0} ** constants.num_high_scores;
     };
     defer file.close();
 
@@ -115,7 +115,7 @@ pub fn loadHighScores(hunk_side: *HunkSide) [Constants.num_high_scores]u32 {
 
 pub fn saveHighScores(
     hunk_side: *HunkSide,
-    high_scores: [Constants.num_high_scores]u32,
+    high_scores: [constants.num_high_scores]u32,
 ) !void {
     const file = try openDataFile(hunk_side, highscores_filename, .Write);
     defer file.close();
@@ -311,7 +311,7 @@ pub fn main() u8 {
                     break;
                 }
 
-                const threshold = 1000000 / (2 * Constants.ticks_per_second);
+                const threshold = 1000000 / (2 * constants.ticks_per_second);
                 if (delta_microseconds < threshold) {
                     // try to ease up on cpu usage in case the computer is
                     // capable of running far quicker than the desired
@@ -642,7 +642,7 @@ fn deinit(self: *Main) void {
 // this is run once per monitor frame
 fn tick(self: *Main, refresh_rate: u64) void {
     const num_frames_to_simulate = blk: {
-        self.t += Constants.ticks_per_second; // gameplay update rate
+        self.t += constants.ticks_per_second; // gameplay update rate
         var n: u32 = 0;
         while (self.t >= refresh_rate) {
             self.t -= refresh_rate;

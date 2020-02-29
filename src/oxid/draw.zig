@@ -5,7 +5,6 @@ const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fontDrawString = @import("../common/font.zig").fontDrawString;
 const common = @import("../oxid_common.zig");
-const Constants = @import("constants.zig");
 const ECS = @import("game.zig").ECS;
 const GameSession = @import("game.zig").GameSession;
 const Graphic = @import("graphics.zig").Graphic;
