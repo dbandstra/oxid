@@ -172,7 +172,7 @@ pub const PlayerCorpse = struct {
         });
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
-            .graphic = .ManDying6,
+            .graphic = .man_dying6,
             .z_index = constants.z_index_corpse,
             .directional = false,
         });
@@ -347,11 +347,11 @@ pub const Bullet = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.bullet_type) {
-                .monster_bullet => Graphic.MonBullet,
+                .monster_bullet => Graphic.mon_bullet,
                 .player_bullet => switch (params.cluster_size) {
-                    1 => Graphic.PlaBullet,
-                    2 => Graphic.PlaBullet2,
-                    else => Graphic.PlaBullet3,
+                    1 => Graphic.pla_bullet,
+                    2 => Graphic.pla_bullet2,
+                    else => Graphic.pla_bullet3,
                 },
             },
             .z_index = constants.z_index_bullet,
@@ -406,10 +406,10 @@ pub const Pickup = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.pickup_type) {
-                .power_up => .PowerUp,
-                .speed_up => .SpeedUp,
-                .life_up => .LifeUp,
-                .coin => .Coin,
+                .power_up => .power_up,
+                .speed_up => .speed_up,
+                .life_up => .life_up,
+                .coin => .coin,
             },
             .z_index = constants.z_index_pickup,
             .directional = false,

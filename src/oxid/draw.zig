@@ -1,4 +1,3 @@
-const builtin = @import("builtin");
 const std = @import("std");
 const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
@@ -20,7 +19,13 @@ const primary_font_color_index = 15; // near-white
 const heart_font_color_index = 6; // red
 const skull_font_color_index = 10; // light grey
 
-pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, cfg: config.Config, high_score: u32) void {
+pub fn drawGame(
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    gs: *GameSession,
+    cfg: config.Config,
+    high_score: u32,
+) void {
     const mc = gs.ecs.findFirstComponent(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
@@ -47,7 +52,10 @@ pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *Gam
 
 ///////////////////////////////////////
 
-fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
+fn getSortedDrawables(
+    gs: *GameSession,
+    sort_buffer: []*const c.EventDraw,
+) []*const c.EventDraw {
     perf.begin(.draw_sort);
     defer perf.end(.draw_sort);
 
@@ -65,17 +73,22 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
     return sorted_drawables;
 }
 
-fn drawMapTile(ds: *pdraw.DrawState, static: *const common.GameStatic, x: u31, y: u31) void {
+fn drawMapTile(
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    x: u31,
+    y: u31,
+) void {
     const gridpos = math.Vec2.init(x, y);
     if (switch (levels.level1.getGridValue(gridpos).?) {
-        0x00 => Graphic.Floor,
-        0x80 => Graphic.Wall,
-        0x81 => Graphic.Wall2,
-        0x82 => Graphic.Pit,
-        0x83 => Graphic.EvilWallTL,
-        0x84 => Graphic.EvilWallTR,
-        0x85 => Graphic.EvilWallBL,
-        0x86 => Graphic.EvilWallBR,
+        0x00 => Graphic.floor,
+        0x80 => Graphic.wall,
+        0x81 => Graphic.wall2,
+        0x82 => Graphic.pit,
+        0x83 => Graphic.evilwall_tl,
+        0x84 => Graphic.evilwall_tr,
+        0x85 => Graphic.evilwall_bl,
+        0x86 => Graphic.evilwall_br,
         else => null,
     }) |graphic| {
         const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
@@ -192,7 +205,10 @@ fn drawHud(
         ds,
         ds.blank_tileset,
         .{ .tx = 0, .ty = 0 },
-        0, 0, @intToFloat(f32, common.virtual_window_width), @intToFloat(f32, common.hud_height),
+        0,
+        0,
+        @intToFloat(f32, common.virtual_window_width),
+        @intToFloat(f32, common.hud_height),
         .identity,
     );
     pdraw.end(ds);
@@ -227,7 +243,7 @@ fn drawHud(
                     pdraw.tile(
                         ds,
                         static.tileset,
-                        getGraphicTile(.ManIcons),
+                        getGraphicTile(.man_icons),
                         6*8-2, -1, 16, 16,
                         .identity,
                     );

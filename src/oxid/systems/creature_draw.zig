@@ -32,22 +32,24 @@ fn think(gs: *GameSession, self: SystemData) void {
                 .graphic =
                     if (player.dying_timer > constants.duration60(30))
                         if (alternation(u32, player.dying_timer, constants.duration60(2)))
-                            Graphic.ManDying1
+                            Graphic.man_dying1
                         else
-                            Graphic.ManDying2
+                            Graphic.man_dying2
                     else if (player.dying_timer > constants.duration60(20))
-                        Graphic.ManDying3
+                        Graphic.man_dying3
                     else if (player.dying_timer > constants.duration60(10))
-                        Graphic.ManDying4
+                        Graphic.man_dying4
                     else
-                        Graphic.ManDying5,
+                        Graphic.man_dying5,
                 .transform = .identity,
                 .z_index = constants.z_index_player,
             }) catch undefined;
         } else {
             drawCreature(gs, self, .{
-                .graphic1 = if (player.player_number == 0) .Man1Walk1 else .Man2Walk1,
-                .graphic2 = if (player.player_number == 0) .Man1Walk2 else .Man2Walk2,
+                .graphic1 =
+                    if (player.player_number == 0) .man1_walk1 else .man2_walk1,
+                .graphic2 =
+                    if (player.player_number == 0) .man1_walk2 else .man2_walk2,
                 .rotates = true,
                 .z_index = constants.z_index_player,
             });
@@ -62,41 +64,41 @@ fn think(gs: *GameSession, self: SystemData) void {
                 .pos = self.transform.pos,
                 .graphic =
                     if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
-                        .Spawn1
+                        .spawn1
                     else
-                        .Spawn2,
+                        .spawn2,
                 .transform = .identity,
                 .z_index = constants.z_index_enemy,
             }) catch undefined;
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
                 .spider => .{
-                    .graphic1 = .Spider1,
-                    .graphic2 = .Spider2,
+                    .graphic1 = .spider1,
+                    .graphic2 = .spider2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
                 .knight => .{
-                    .graphic1 = .Knight1,
-                    .graphic2 = .Knight2,
+                    .graphic1 = .knight1,
+                    .graphic2 = .knight2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
                 .fast_bug => .{
-                    .graphic1 = .FastBug1,
-                    .graphic2 = .FastBug2,
+                    .graphic1 = .fast_bug1,
+                    .graphic2 = .fast_bug2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
                 .squid => .{
-                    .graphic1 = .Squid1,
-                    .graphic2 = .Squid2,
+                    .graphic1 = .squid1,
+                    .graphic2 = .squid2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
                 .juggernaut => .{
-                    .graphic1 = .Juggernaut,
-                    .graphic2 = .Juggernaut,
+                    .graphic1 = .juggernaut,
+                    .graphic2 = .juggernaut,
                     .rotates = false,
                     .z_index = constants.z_index_enemy,
                 },
@@ -107,7 +109,7 @@ fn think(gs: *GameSession, self: SystemData) void {
 
     if (self.web) |web| {
         const graphic: Graphic =
-            if (self.creature.flinch_timer > 0) .Web2 else .Web1;
+            if (self.creature.flinch_timer > 0) .web2 else .web1;
         drawCreature(gs, self, .{
             .graphic1 = graphic,
             .graphic2 = graphic,

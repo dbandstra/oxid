@@ -98,7 +98,7 @@ pub fn run(gs: *GameSession) void {
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
-            .simple_anim = .Explosion,
+            .simple_anim = .explosion,
             .z_index = constants.z_index_explosion,
         }) catch undefined;
 

@@ -26,35 +26,35 @@ pub fn getDefault() Config {
     inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
         const value = @intToEnum(input.MenuCommand, field.value);
         cfg.menu_bindings[field.value] = switch (value) {
-            .left => .{ .Key = .Left },
-            .right => .{ .Key = .Right },
-            .up => .{ .Key = .Up },
-            .down => .{ .Key = .Down },
-            .escape => .{ .Key = .Escape },
-            .enter => .{ .Key = .Return },
-            .yes => .{ .Key = .Y },
-            .no => .{ .Key = .N },
+            .left => .{ .Key = .left },
+            .right => .{ .Key = .right },
+            .up => .{ .Key = .up },
+            .down => .{ .Key = .down },
+            .escape => .{ .Key = .escape },
+            .enter => .{ .Key = .@"return" },
+            .yes => .{ .Key = .y },
+            .no => .{ .Key = .n },
         };
     }
     inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
         const value = @intToEnum(input.GameCommand, field.value);
         cfg.game_bindings[0][field.value] = switch (value) {
-            .up => .{ .Key = .Up },
-            .down => .{ .Key = .Down },
-            .left => .{ .Key = .Left },
-            .right => .{ .Key = .Right },
-            .shoot => .{ .Key = .Space },
-            .kill_all_monsters => .{ .Key = .Backspace },
-            .toggle_draw_boxes => .{ .Key = .F2 },
-            .toggle_god_mode => .{ .Key = .F3 },
-            .escape => .{ .Key = .Escape },
+            .up => .{ .Key = .up },
+            .down => .{ .Key = .down },
+            .left => .{ .Key = .left },
+            .right => .{ .Key = .right },
+            .shoot => .{ .Key = .space },
+            .kill_all_monsters => .{ .Key = .backspace },
+            .toggle_draw_boxes => .{ .Key = .f2 },
+            .toggle_god_mode => .{ .Key = .f3 },
+            .escape => .{ .Key = .escape },
         };
         cfg.game_bindings[1][field.value] = switch (value) {
-            .up => .{ .Key = .W },
-            .down => .{ .Key = .S },
-            .left => .{ .Key = .A },
-            .right => .{ .Key = .D },
-            .shoot => .{ .Key = .F },
+            .up => .{ .Key = .w },
+            .down => .{ .Key = .s },
+            .left => .{ .Key = .a },
+            .right => .{ .Key = .d },
+            .shoot => .{ .Key = .f },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
             .toggle_god_mode => null,

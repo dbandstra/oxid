@@ -16,7 +16,7 @@ pub fn run(gs: *GameSession) void {
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,
-            .simple_anim = .PlaSparks,
+            .simple_anim = .pla_sparks,
             .z_index = constants.z_index_sparks,
         }) catch undefined;
 
