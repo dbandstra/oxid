@@ -12,7 +12,7 @@ pub fn run(gs: *GameSession) void {
 
         for (self.inbox.all()) |event| {
             switch (event.command) {
-                .ToggleDrawBoxes => {
+                .toggle_draw_boxes => {
                     if (event.down) {
                         grs.render_move_boxes = !grs.render_move_boxes;
                     }

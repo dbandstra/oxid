@@ -19,32 +19,32 @@ const MenuInputContext = struct {
     pub fn label(self: *@This(), comptime fmt: []const u8, args: ...) void {}
     pub fn vspacer(self: *@This()) void {}
 
-    const OptionInnerResult = enum { Left, Right, Enter };
+    const OptionInnerResult = enum { left, right, enter };
     fn optionInner(self: *@This(), is_slider: bool, comptime fmt: []const u8, args: ...) ?OptionInnerResult {
         defer self.option_index += 1;
 
         if (self.option_index == self.cursor_pos) {
             if (self.command) |command| {
                 switch (command) {
-                    .Enter => {
-                        return .Enter;
+                    .enter => {
+                        return .enter;
                     },
-                    .Left => {
-                        return .Left;
+                    .left => {
+                        return .left;
                     },
-                    .Right => {
-                        return .Right;
+                    .right => {
+                        return .right;
                     },
-                    .Up => {
-                        self.setSound(.Blip);
+                    .up => {
+                        self.setSound(.blip);
                         self.new_cursor_pos =
                             if (self.cursor_pos > 0)
                                 self.cursor_pos - 1
                             else
                                 self.num_options - 1;
                     },
-                    .Down => {
-                        self.setSound(.Blip);
+                    .down => {
+                        self.setSound(.blip);
                         self.new_cursor_pos =
                             if (self.cursor_pos < self.num_options - 1)
                                 self.cursor_pos + 1
@@ -61,7 +61,7 @@ const MenuInputContext = struct {
 
     pub fn option(self: *@This(), comptime fmt: []const u8, args: var) bool {
         // for "buttons", only enter key works
-        return if (self.optionInner(false, fmt, args)) |result| result == .Enter else false;
+        return if (self.optionInner(false, fmt, args)) |result| result == .enter else false;
     }
 
     pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: var) bool {
@@ -72,8 +72,8 @@ const MenuInputContext = struct {
     pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: var) ?menus.OptionSliderResult {
         return if (self.optionInner(true, fmt, args)) |result|
             switch (result) {
-                .Left => menus.OptionSliderResult.Left,
-                .Right => menus.OptionSliderResult.Right,
+                .left => menus.OptionSliderResult.left,
+                .right => menus.OptionSliderResult.right,
                 else => null,
             }
         else null;

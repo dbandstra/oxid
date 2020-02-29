@@ -48,8 +48,8 @@ pub fn drawGame(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *Gam
 ///////////////////////////////////////
 
 fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*const c.EventDraw {
-    perf.begin(.DrawSort);
-    defer perf.end(.DrawSort);
+    perf.begin(.draw_sort);
+    defer perf.end(.draw_sort);
 
     var num_drawables: usize = 0;
     var it = gs.ecs.componentIter(c.EventDraw); while (it.next()) |event| {
@@ -57,7 +57,11 @@ fn getSortedDrawables(gs: *GameSession, sort_buffer: []*const c.EventDraw) []*co
         num_drawables += 1;
     }
     var sorted_drawables = sort_buffer[0..num_drawables];
-    std.sort.sort(*const c.EventDraw, sorted_drawables, util.lessThanField(*const c.EventDraw, "z_index"));
+    std.sort.sort(
+        *const c.EventDraw,
+        sorted_drawables,
+        util.lessThanField(*const c.EventDraw, "z_index"),
+    );
     return sorted_drawables;
 }
 
@@ -84,14 +88,14 @@ fn drawMapTile(ds: *pdraw.DrawState, static: *const common.GameStatic, x: u31, y
             static.tileset,
             getGraphicTile(graphic),
             dx, dy, dw, dh,
-            .Identity,
+            .identity,
         );
     }
 }
 
 fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    perf.begin(.DrawMap);
-    defer perf.end(.DrawMap);
+    perf.begin(.draw_map);
+    defer perf.end(.draw_map);
 
     var y: u31 = 0; while (y < levels.height) : (y += 1) {
         var x: u31 = 0; while (x < levels.width) : (x += 1) {
@@ -104,8 +108,8 @@ fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
 fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
-    perf.begin(.DrawMapForeground);
-    defer perf.end(.DrawMapForeground);
+    perf.begin(.draw_map_foreground);
+    defer perf.end(.draw_map_foreground);
 
     var y: u31 = 6; while (y < 8) : (y += 1) {
         var x: u31 = 9; while (x < 11) : (x += 1) {
@@ -114,9 +118,13 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) voi
     }
 }
 
-fn drawEntities(ds: *pdraw.DrawState, static: *const common.GameStatic, sorted_drawables: []*const c.EventDraw) void {
-    perf.begin(.DrawEntities);
-    defer perf.end(.DrawEntities);
+fn drawEntities(
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    sorted_drawables: []*const c.EventDraw,
+) void {
+    perf.begin(.draw_entities);
+    defer perf.end(.draw_entities);
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
@@ -146,9 +154,9 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
         pdraw.tile(
             ds,
             ds.blank_tileset,
-            .{.tx = 0, .ty = 0},
+            .{ .tx = 0, .ty = 0 },
             x0, y0, w, h,
-            .Identity,
+            .identity,
         );
         pdraw.end(ds);
     }
@@ -164,9 +172,14 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
     };
 }
 
-fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSession, high_score: u32) void {
-    perf.begin(.DrawHud);
-    defer perf.end(.DrawHud);
+fn drawHud(
+    ds: *pdraw.DrawState,
+    static: *const common.GameStatic,
+    gs: *GameSession,
+    high_score: u32,
+) void {
+    perf.begin(.draw_hud);
+    defer perf.end(.draw_hud);
 
     var buffer: [40]u8 = undefined;
     var dest = std.io.SliceOutStream.init(buffer[0..]);
@@ -178,9 +191,9 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
     pdraw.tile(
         ds,
         ds.blank_tileset,
-        .{.tx = 0, .ty = 0},
+        .{ .tx = 0, .ty = 0 },
         0, 0, @intToFloat(f32, common.virtual_window_width), @intToFloat(f32, common.hud_height),
-        .Identity,
+        .identity,
     );
     pdraw.end(ds);
 
@@ -216,7 +229,7 @@ fn drawHud(ds: *pdraw.DrawState, static: *const common.GameStatic, gs: *GameSess
                         static.tileset,
                         getGraphicTile(.ManIcons),
                         6*8-2, -1, 16, 16,
-                        .Identity,
+                        .identity,
                     );
                     pdraw.end(ds);
                     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);

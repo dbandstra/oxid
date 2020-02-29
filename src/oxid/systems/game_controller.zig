@@ -55,11 +55,11 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&gc.next_pickup_timer)) {
-        const pickup_type =
+        const pickup_type: ConstantTypes.PickupType =
             if ((gs.getRand().scalar(u32) & 1) == 0)
-                ConstantTypes.PickupType.SpeedUp
+                .speed_up
             else
-                ConstantTypes.PickupType.PowerUp;
+                .power_up;
         spawnPickup(gs, pickup_type);
         gc.next_pickup_timer = constants.pickup_spawn_time;
     }
@@ -75,7 +75,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         if (gc.extra_lives_spawned < constants.extra_life_score_thresholds.len) {
             const threshold = constants.extra_life_score_thresholds[gc.extra_lives_spawned];
             if (entry.pc.score >= threshold) {
-                spawnPickup(gs, .LifeUp);
+                spawnPickup(gs, .life_up);
                 gc.extra_lives_spawned += 1;
             }
         }
@@ -94,7 +94,11 @@ fn countNonPersistentMonsters(gs: *GameSession) u32 {
     return count;
 }
 
-fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave) void {
+fn spawnWave(
+    gs: *GameSession,
+    wave_number: u32,
+    wave: *const ConstantTypes.Wave,
+) void {
     const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
     const coins = (wave.spiders + wave.knights) / 3;
     std.debug.assert(count <= 100);
@@ -107,15 +111,15 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const ConstantTypes.Wave
             .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
             .monster_type =
                 if (i < wave.spiders)
-                    ConstantTypes.MonsterType.Spider
+                    ConstantTypes.MonsterType.spider
                 else if (i < wave.spiders + wave.knights)
-                    ConstantTypes.MonsterType.Knight
+                    ConstantTypes.MonsterType.knight
                 else if (i < wave.spiders + wave.knights + wave.fastbugs)
-                    ConstantTypes.MonsterType.FastBug
+                    ConstantTypes.MonsterType.fast_bug
                 else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
-                    ConstantTypes.MonsterType.Squid
+                    ConstantTypes.MonsterType.squid
                 else
-                    ConstantTypes.MonsterType.Juggernaut,
+                    ConstantTypes.MonsterType.juggernaut,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
         }) catch undefined;

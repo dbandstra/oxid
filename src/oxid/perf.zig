@@ -1,14 +1,14 @@
 const builtin = @import("builtin");
 
 pub const Entry = enum {
-    Frame,
-    Draw,
-    DrawSort,
-    DrawMap,
-    DrawMapForeground,
-    DrawHud,
-    DrawEntities,
-    WholeDraw
+    frame,
+    draw,
+    draw_sort,
+    draw_map,
+    draw_map_foreground,
+    draw_hud,
+    draw_entities,
+    whole_draw,
 };
 
 pub usingnamespace if (builtin.arch == .wasm32)
@@ -96,14 +96,14 @@ else
             global_cursor = (global_cursor + 1) % num_samples;
             if (global_cursor != 0) return;
             warn(".\n", .{});
-            displayOne("`-Frame ......... ", .Frame);
-            displayOne("`-WholeDraw ..... ", .WholeDraw);
-            displayOne("  `-Draw ........ ", .Draw);
-            displayOne("    `-DrawSort .. ", .DrawSort);
-            displayOne("    `-DrawMap ... ", .DrawMap);
-            displayOne("    `-DrawEnts .. ", .DrawEntities);
-            displayOne("    `-DrawMapFg . ", .DrawMapForeground);
-            displayOne("    `-DrawHud ... ", .DrawHud);
+            displayOne("`-Frame ......... ", .frame);
+            displayOne("`-WholeDraw ..... ", .whole_draw);
+            displayOne("  `-Draw ........ ", .draw);
+            displayOne("    `-DrawSort .. ", .draw_sort);
+            displayOne("    `-DrawMap ... ", .draw_map);
+            displayOne("    `-DrawEnts .. ", .draw_entities);
+            displayOne("    `-DrawMapFg . ", .draw_map_foreground);
+            displayOne("    `-DrawHud ... ", .draw_hud);
         }
 
         fn displayOne(label: []const u8, entry: Entry) void {

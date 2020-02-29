@@ -39,7 +39,7 @@ pub const player_num_lives: u32 = 3;
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
     return switch (monster_type) {
-        .Spider => .{
+        .spider => .{
             .hit_points = 1,
             .move_speed = .{
                 speed60(6),
@@ -52,7 +52,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .Knight => .{
+        .knight => .{
             .hit_points = 2,
             .move_speed = .{
                 speed60(6),
@@ -65,7 +65,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .FastBug => .{
+        .fast_bug => .{
             .hit_points = 1,
             .move_speed = .{
                 speed60(12),
@@ -78,7 +78,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = false,
             .persistent = false,
         },
-        .Squid => .{
+        .squid => .{
             .hit_points = 5,
             .move_speed = .{
                 speed60(3),
@@ -91,7 +91,7 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
             .can_drop_webs = true,
             .persistent = false,
         },
-        .Juggernaut => .{
+        .juggernaut => .{
             .hit_points = 9999,
             .move_speed = .{
                 speed60(4),
@@ -109,22 +109,22 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
 
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     return switch (pickup_type) {
-        .Coin => .{
+        .coin => .{
             .lifetime = duration60(6*60),
             .get_points = 20,
             .message = null,
         },
-        .LifeUp => .{
+        .life_up => .{
             .lifetime = duration60(15*60),
             .get_points = 0,
             .message = "Life up!",
         },
-        .PowerUp => .{
+        .power_up => .{
             .lifetime = duration60(12*60),
             .get_points = 0,
             .message = "Power up!",
         },
-        .SpeedUp => .{
+        .speed_up => .{
             .lifetime = duration60(12*60),
             .get_points = 0,
             .message = "Speed up!",

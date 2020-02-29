@@ -10,7 +10,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;
 
-pub const GLSLVersion = enum { V120, V130, WebGL };
+pub const GLSLVersion = enum { v120, v130, webgl };
 
 pub const ShaderSource = struct {
     vertex: []const u8,

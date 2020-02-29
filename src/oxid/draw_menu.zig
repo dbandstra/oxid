@@ -51,16 +51,16 @@ pub const DrawMenuContext = struct {
         const w = blk: {
             const base_w = @intCast(u31, s.len) * font_char_width;
             break :blk switch (alignment) {
-                .Left => base_w + 32, // pad both sides
-                .Center => base_w,
+                .left => base_w + 32, // pad both sides
+                .center => base_w,
             };
         };
 
         self.h += self.bottom_margin;
         if (self.draw) {
             const x = switch (alignment) {
-                .Left => self.box_x + 16,
-                .Center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
+                .left => self.box_x + 16,
+                .center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
             };
             const font_color = getColor(self.static, primary_font_color_index);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
@@ -82,7 +82,7 @@ pub const DrawMenuContext = struct {
         _ = dest.stream.print(fmt, args) catch {};
         const s = dest.getWritten();
 
-        self.textHelper(.Left, s);
+        self.textHelper(.left, s);
         self.bottom_margin = 2;
     }
 
@@ -179,9 +179,9 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     pdraw.tile(
         params.ds,
         params.ds.blank_tileset,
-        .{.tx = 0, .ty = 0},
+        .{ .tx = 0, .ty = 0 },
         box_x, box_y, box_w, box_h,
-        .Identity,
+        .identity,
     );
     pdraw.end(params.ds);
 

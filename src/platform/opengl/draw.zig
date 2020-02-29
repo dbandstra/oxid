@@ -14,9 +14,9 @@ const shader_textured = @import("shader_textured.zig");
 const draw = @import("../../common/draw.zig");
 
 pub const GlitchMode = enum {
-    Normal,
-    QuadStrips,
-    WholeTilesets,
+    normal,
+    quad_strips,
+    whole_tilesets,
 };
 
 pub const Texture = struct {
@@ -78,20 +78,22 @@ pub const InitError = error {
 
 fn detectGLSLVersion() InitError!shaders.GLSLVersion {
     if (builtin.arch == .wasm32) {
-        return .WebGL;
+        return .webgl;
     } else {
         const v = glGetString(GL_VERSION);
 
         if (v != 0) { // null check
             if (v[1] == '.') {
                 if (v[0] == '2' and v[2] != '0') {
-                    return .V120;
+                    return .v120;
                 } else if (v[0] >= '3' and v[0] <= '9') {
-                    return .V130;
+                    return .v130;
                 }
             }
 
-            warn("Unsupported OpenGL version: {}\n", .{std.mem.toSliceConst(u8, v)});
+            warn("Unsupported OpenGL version: {}\n", .{
+                std.mem.toSliceConst(u8, v),
+            });
         } else {
             warn("Failed to get OpenGL version.\n", .{});
         }
@@ -140,7 +142,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
         .ytiles = 1,
     };
 
-    ds.glitch_mode = GlitchMode.Normal;
+    ds.glitch_mode = .normal;
     ds.clear_screen = true;
 }
 
@@ -295,7 +297,7 @@ pub fn tile(
     var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    if (ds.glitch_mode == .WholeTilesets) {
+    if (ds.glitch_mode == .whole_tilesets) {
         // draw the whole tileset scaled down. with transparency this leads to
         // smearing. it's interesting how the level itself is "hidden" to begin
         // with
@@ -314,8 +316,10 @@ pub fn tile(
     const num_vertices = ds.draw_buffer.num_vertices;
     std.debug.assert(num_vertices + verts_per_tile <= buffer_vertices);
 
-    const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2..(num_vertices + verts_per_tile) * 2];
-    const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2..(num_vertices + verts_per_tile) * 2];
+    const vertex2f = ds.draw_buffer.vertex2f
+        [num_vertices * 2..(num_vertices + verts_per_tile) * 2];
+    const texcoord2f = ds.draw_buffer.texcoord2f
+        [num_vertices * 2..(num_vertices + verts_per_tile) * 2];
 
     if (builtin.arch == .wasm32) {
         // top left, bottom left, bottom right
@@ -354,21 +358,21 @@ pub fn tile(
         GLfloat,
         texcoord2f,
         switch (transform) {
-            .Identity =>
+            .identity =>
                 &[8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
-            .FlipVertical =>
+            .flip_vert =>
                 &[8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
-            .FlipHorizontal =>
+            .flip_horz =>
                 &[8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
-            .RotateClockwise =>
+            .rotate_cw =>
                 &[8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
-            .RotateCounterClockwise =>
+            .rotate_ccw =>
                 &[8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
         },
     );
     }
 
-    if (ds.glitch_mode == .QuadStrips and builtin.arch != .wasm32) {
+    if (ds.glitch_mode == .quad_strips and builtin.arch != .wasm32) {
         // swap last two vertices so that the order becomes top left, bottom left,
         // top right, bottom right (suitable for quad strips rather than individual
         // quads)
@@ -402,12 +406,15 @@ fn flush(ds: *DrawState) void {
     glDrawArrays(
         if (builtin.arch == .wasm32)
             @as(GLenum, GL_TRIANGLES)
-        else if (ds.glitch_mode == .QuadStrips)
+        else if (ds.glitch_mode == .quad_strips)
             @as(GLenum, GL_QUAD_STRIP)
         else
             @as(GLenum, GL_QUADS),
         0,
-        @intCast(if (builtin.arch == .wasm32) c_uint else c_int, ds.draw_buffer.num_vertices),
+        @intCast(
+            if (builtin.arch == .wasm32) c_uint else c_int,
+            ds.draw_buffer.num_vertices,
+        ),
     );
 
     if (builtin.arch != .wasm32) {

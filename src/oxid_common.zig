@@ -215,34 +215,46 @@ pub fn inputEvent(
 
         // menu is not open, but should we open it?
         if (maybe_menu_command) |menu_command| {
-            if (menu_command == .Escape) {
+            if (menu_command == .escape) {
                 // assuming that if the menu isn't open, we must be in game
-                main_state.audio_module.playMenuSound(.Backoff);
+                main_state.audio_module.playMenuSound(.backoff);
 
-                return applyMenuEffect(outer_self, ns, menus.Effect { .Push = menus.Menu { .InGameMenu = menus.InGameMenu.init() } });
+                return applyMenuEffect(outer_self, ns, menus.Effect {
+                    .Push = menus.Menu {
+                        .InGameMenu = menus.InGameMenu.init(),
+                    },
+                });
             }
         }
     }
 
     // game command?
-    var player_number: u32 = 0; while (player_number < config.num_players) : (player_number += 1) {
+    var player_number: u32 = 0;
+    while (player_number < config.num_players) : (player_number += 1) {
         for (main_state.cfg.game_bindings[player_number]) |maybe_source, i| {
-            if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
-                _ = p.EventGameInput.spawn(&main_state.session, .{
-                    .player_number = player_number,
-                    .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
-                    .down = down,
-                }) catch undefined;
+            const s = maybe_source orelse continue;
 
-                return InputSpecial { .NoOp = {} };
-            }
+            if (!areInputSourcesEqual(s, source)) continue;
+
+            _ = p.EventGameInput.spawn(&main_state.session, .{
+                .player_number = player_number,
+                .command = @intToEnum(input.GameCommand,
+                    @intCast(@TagType(input.GameCommand), i)),
+                .down = down,
+            }) catch undefined;
+
+            return InputSpecial { .NoOp = {} };
         }
     }
 
     return null;
 }
 
-fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?InputSpecial {
+fn applyMenuEffect(
+    outer_self: var,
+    comptime ns: var,
+    effect: menus.Effect,
+) ?InputSpecial {
     const self = &outer_self.main_state;
 
     switch (effect) {
@@ -289,14 +301,16 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
             const command_index = @enumToInt(payload.command);
             const in_use =
                 if (payload.source) |new_source|
-                    for (self.cfg.game_bindings[payload.player_number]) |maybe_source| {
-                        if (if (maybe_source) |source| areInputSourcesEqual(source, new_source) else false) {
-                            break true;
-                        }
+                    for (self.cfg.game_bindings[payload.player_number])
+                                                            |maybe_source| {
+                        const source = maybe_source orelse continue;
+                        if (!areInputSourcesEqual(source, new_source)) continue;
+                        break true;
                     } else false
                 else false;
             if (!in_use) {
-                self.cfg.game_bindings[payload.player_number][command_index] = payload.source;
+                self.cfg.game_bindings[payload.player_number][command_index] =
+                    payload.source;
             }
         },
         .ResetAnimTime => {

@@ -86,12 +86,12 @@ pub const Shader = struct {
 
 fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
     const first_line = switch (version) {
-        .V120 => "#version 120\n",
-        .V130 => "#version 130\n",
-        .WebGL => "precision mediump float;\n",
+        .v120 => "#version 120\n",
+        .v130 => "#version 130\n",
+        .webgl => "precision mediump float;\n",
     };
 
-    const old = version == .V120 or version == .WebGL;
+    const old = version == .v120 or version == .webgl;
 
     return shaders.ShaderSource {
         .vertex =
@@ -134,13 +134,16 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
 
 fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
     return switch (version) {
-        .V120 => getSourceComptime(.V120),
-        .V130 => getSourceComptime(.V130),
-        .WebGL => getSourceComptime(.WebGL),
+        .v120 => getSourceComptime(.v120),
+        .v130 => getSourceComptime(.v130),
+        .webgl => getSourceComptime(.webgl),
     };
 }
 
-pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
+pub fn create(
+    hunk_side: *HunkSide,
+    glsl_version: shaders.GLSLVersion,
+) shaders.InitError!Shader {
     errdefer warn("Failed to create textured shader program.\n", .{});
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));

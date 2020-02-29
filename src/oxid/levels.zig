@@ -6,15 +6,15 @@ pub const pixels_per_tile = 16;
 pub const subpixels_per_tile = pixels_per_tile * subpixels_per_pixel;
 
 pub const TerrainType = enum {
-    Floor,
-    Wall,
+    floor,
+    wall,
 };
 
 pub fn getTerrainType(value: u8) TerrainType {
     if ((value & 0x80) != 0) {
-        return .Wall;
+        return .wall;
     } else {
-        return .Floor;
+        return .floor;
     }
 }
 
@@ -61,7 +61,7 @@ pub const Level = struct {
             while (gx <= gx1) : (gx += 1) {
                 if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
                     const tt = getTerrainType(value);
-                    if (tt == .Wall) {
+                    if (tt == .wall) {
                         return true;
                     }
                 }
@@ -92,7 +92,7 @@ pub const Level = struct {
         if (self.getGridValue(pos)) |value| {
             return getTerrainType(value);
         } else {
-            return .Wall;
+            return .wall;
         }
     }
 };

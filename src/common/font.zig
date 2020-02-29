@@ -28,7 +28,13 @@ pub fn loadFont(hunk_side: *HunkSide, font: *Font) pcx_helper.LoadPcxError!void 
     };
 }
 
-pub fn fontDrawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, string: []const u8) void {
+pub fn fontDrawString(
+    ds: *pdraw.DrawState,
+    font: *const Font,
+    x: i32,
+    y: i32,
+    string: []const u8,
+) void {
     var ix = x;
     const w = font_char_width;
     const h = font_char_height;
@@ -37,7 +43,7 @@ pub fn fontDrawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, s
             .tx = char % font_num_cols,
             .ty = char / font_num_cols,
         };
-        pdraw.tile(ds, font.tileset, tile, ix, y, w, h, .Identity);
+        pdraw.tile(ds, font.tileset, tile, ix, y, w, h, .identity);
         ix += font_char_width;
     }
 }

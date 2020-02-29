@@ -120,10 +120,10 @@ pub const Player = struct {
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
-            .facing = .E,
+            .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = .{.id = 0},
+            .owner_id = gbe.EntityId.zero,
             .flags = c.PhysObject.FLAG_PLAYER,
             .ignore_flags = c.PhysObject.FLAG_PLAYER,
             .internal = undefined,
@@ -141,8 +141,8 @@ pub const Player = struct {
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
-            .attack_level = .One,
-            .speed_level = .One,
+            .attack_level = .one,
+            .speed_level = .one,
             .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
             .dying_timer = 0,
             .last_pickup = null,
@@ -203,10 +203,10 @@ pub const Monster = struct {
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
-            .facing = .E,
+            .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = .{.id = 0},
+            .owner_id = gbe.EntityId.zero,
             .flags = c.PhysObject.FLAG_MONSTER,
             .ignore_flags = 0,
             .internal = undefined,
@@ -230,12 +230,12 @@ pub const Monster = struct {
             .spawning_timer = constants.monster_spawn_time,
             .full_hit_points = monster_values.hit_points,
             .personality =
-                if (params.monster_type == ConstantTypes.MonsterType.Juggernaut)
-                    c.Monster.Personality.Chase
+                if (params.monster_type == .juggernaut)
+                    c.Monster.Personality.chase
                 else
                     switch (gs.getRand().range(u32, 0, 2)) {
-                        0 => c.Monster.Personality.Chase,
-                        else => c.Monster.Personality.Wander,
+                        0 => c.Monster.Personality.chase,
+                        else => c.Monster.Personality.wander,
                     },
             .kill_points = monster_values.kill_points,
             .can_shoot = can_shoot,
@@ -270,10 +270,10 @@ pub const Web = struct {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
-            .facing = .E,
+            .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = .{.id = 0},
+            .owner_id = gbe.EntityId.zero,
             .flags = c.PhysObject.FLAG_WEB,
             .ignore_flags = 0,
             .internal = undefined,
@@ -317,20 +317,23 @@ pub const Bullet = struct {
             .entity_bbox = bullet_bbox,
             .facing = params.facing,
             .speed = switch (params.bullet_type) {
-                .MonsterBullet => constants.monster_bullet_speed,
-                .PlayerBullet => constants.player_bullet_speed,
+                .monster_bullet => constants.monster_bullet_speed,
+                .player_bullet => constants.player_bullet_speed,
             },
             .push_dir = null,
             .owner_id = params.owner_id,
             .flags = c.PhysObject.FLAG_BULLET,
             .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
                 // monster bullets ignore all monsters and webs
-                .MonsterBullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
-                // player bullets ignore only the player that shot it (via `owner_id`),
-                // unless friendly fire is disabled.
-                // see also src/oxid/set_friendly_fire.zig, where this value is changed
-                // (called when user toggles friendly fire in the menu)
-                .PlayerBullet => if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
+                .monster_bullet =>
+                    c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
+                // player bullets ignore only the player that shot it (via
+                // `owner_id`), unless friendly fire is disabled.
+                // see also src/oxid/set_friendly_fire.zig, where this value
+                // is changed (called when user toggles friendly fire in the
+                // menu)
+                .player_bullet =>
+                    if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
             },
             .internal = undefined,
         });
@@ -344,8 +347,8 @@ pub const Bullet = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.bullet_type) {
-                .MonsterBullet => Graphic.MonBullet,
-                .PlayerBullet => switch (params.cluster_size) {
+                .monster_bullet => Graphic.MonBullet,
+                .player_bullet => switch (params.cluster_size) {
                     1 => Graphic.PlaBullet,
                     2 => Graphic.PlaBullet2,
                     else => Graphic.PlaBullet3,
@@ -403,10 +406,10 @@ pub const Pickup = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
             .graphic = switch (params.pickup_type) {
-                .PowerUp => Graphic.PowerUp,
-                .SpeedUp => Graphic.SpeedUp,
-                .LifeUp => Graphic.LifeUp,
-                .Coin => Graphic.Coin,
+                .power_up => .PowerUp,
+                .speed_up => .SpeedUp,
+                .life_up => .LifeUp,
+                .coin => .Coin,
             },
             .z_index = constants.z_index_pickup,
             .directional = false,
@@ -416,10 +419,10 @@ pub const Pickup = struct {
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
-            .facing = .E,
+            .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = .{.id = 0},
+            .owner_id = gbe.EntityId.zero,
             .flags = 0,
             .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,

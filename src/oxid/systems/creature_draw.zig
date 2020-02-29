@@ -41,7 +41,7 @@ fn think(gs: *GameSession, self: SystemData) void {
                         Graphic.ManDying4
                     else
                         Graphic.ManDying5,
-                .transform = .Identity,
+                .transform = .identity,
                 .z_index = constants.z_index_player,
             }) catch undefined;
         } else {
@@ -62,39 +62,39 @@ fn think(gs: *GameSession, self: SystemData) void {
                 .pos = self.transform.pos,
                 .graphic =
                     if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
-                        Graphic.Spawn1
+                        .Spawn1
                     else
-                        Graphic.Spawn2,
-                .transform = .Identity,
+                        .Spawn2,
+                .transform = .identity,
                 .z_index = constants.z_index_enemy,
             }) catch undefined;
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
-                .Spider => DrawCreatureParams {
+                .spider => .{
                     .graphic1 = .Spider1,
                     .graphic2 = .Spider2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
-                ConstantTypes.MonsterType.Knight => DrawCreatureParams {
+                .knight => .{
                     .graphic1 = .Knight1,
                     .graphic2 = .Knight2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
-                ConstantTypes.MonsterType.FastBug => DrawCreatureParams {
+                .fast_bug => .{
                     .graphic1 = .FastBug1,
                     .graphic2 = .FastBug2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
-                ConstantTypes.MonsterType.Squid => DrawCreatureParams {
+                .squid => .{
                     .graphic1 = .Squid1,
                     .graphic2 = .Squid2,
                     .rotates = true,
                     .z_index = constants.z_index_enemy,
                 },
-                ConstantTypes.MonsterType.Juggernaut => DrawCreatureParams {
+                .juggernaut => .{
                     .graphic1 = .Juggernaut,
                     .graphic2 = .Juggernaut,
                     .rotates = false,
@@ -106,7 +106,8 @@ fn think(gs: *GameSession, self: SystemData) void {
     }
 
     if (self.web) |web| {
-        const graphic = if (self.creature.flinch_timer > 0) Graphic.Web2 else Graphic.Web1;
+        const graphic: Graphic =
+            if (self.creature.flinch_timer > 0) .Web2 else .Web1;
         drawCreature(gs, self, .{
             .graphic1 = graphic,
             .graphic2 = graphic,
@@ -128,36 +129,45 @@ fn alternation(comptime T: type, variable: T, half_period: T) bool {
     return @mod(@divFloor(variable, half_period), 2) == 0;
 }
 
-const DrawCreatureParams = struct{
+const DrawCreatureParams = struct {
     graphic1: Graphic,
     graphic2: Graphic,
     rotates: bool,
     z_index: u32,
 };
 
-fn drawCreature(gs: *GameSession, self: SystemData, params: DrawCreatureParams) void {
+fn drawCreature(
+    gs: *GameSession,
+    self: SystemData,
+    params: DrawCreatureParams,
+) void {
     // blink during invulnerability
     if (self.creature.invulnerability_timer > 0) {
-        if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
+        if (alternation(u32, self.creature.invulnerability_timer,
+                        constants.duration60(2))) {
             return;
         }
     }
 
     const xpos = switch (self.phys.facing) {
-        .W, .E => self.transform.pos.x,
-        .N, .S => self.transform.pos.y,
+        .w, .e => self.transform.pos.x,
+        .n, .s => self.transform.pos.y,
     };
     const sxpos = @divFloor(xpos, levels.subpixels_per_pixel);
 
     _ = p.EventDraw.spawn(gs, .{
         .pos = self.transform.pos,
-        // animate legs every 6 screen pixels
-        .graphic = if (alternation(i32, sxpos, 6)) params.graphic1 else params.graphic2,
+        .graphic =
+            // animate legs every 6 screen pixels
+            if (alternation(i32, sxpos, 6))
+                params.graphic1
+            else
+                params.graphic2,
         .transform =
             if (params.rotates)
                 util.getDirTransform(self.phys.facing)
             else
-                .Identity,
+                .identity,
         .z_index = params.z_index,
     }) catch undefined;
 }

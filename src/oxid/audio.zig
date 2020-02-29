@@ -19,13 +19,13 @@ pub const LaserVoice = @import("audio/laser.zig").LaserVoice;
 pub const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
 
 pub const Sample = enum {
-    DropWeb,
-    ExtraLife,
-    PlayerScream,
-    PlayerDeath,
-    PlayerCrumble,
-    PowerUp,
-    MonsterImpact,
+    drop_web,
+    extra_life,
+    player_scream,
+    player_death,
+    player_crumble,
+    power_up,
+    monster_impact,
 };
 
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
@@ -266,14 +266,14 @@ pub const MainModule = struct {
     // called in the main thread
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
-            .Backoff => {
+            .backoff => {
                 self.menu_backoff.push(.{.unused = undefined});
             },
-            .Blip => {
+            .blip => {
                 const rand = &self.prng.random;
                 self.menu_blip.push(.{.freq_mul = 0.95 + 0.1 * rand.float(f32)});
             },
-            .Ding => {
+            .ding => {
                 self.menu_ding.push(.{.unused = undefined});
             },
         }
@@ -304,13 +304,13 @@ pub const MainModule = struct {
                             .loop = false,
                             .channel = 0,
                             .sample = switch (sample) {
-                                .DropWeb => self.drop_web,
-                                .ExtraLife => self.extra_life,
-                                .PlayerScream => self.player_scream,
-                                .PlayerDeath => self.player_death,
-                                .PlayerCrumble => self.player_crumble,
-                                .PowerUp => self.power_up,
-                                .MonsterImpact => self.monster_impact,
+                                .drop_web => self.drop_web,
+                                .extra_life => self.extra_life,
+                                .player_scream => self.player_scream,
+                                .player_death => self.player_death,
+                                .player_crumble => self.player_crumble,
+                                .power_up => self.power_up,
+                                .monster_impact => self.monster_impact,
                             },
                         });
                     }

@@ -43,7 +43,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
 
         if (self.player.dying_timer > 0) {
             if (self.player.dying_timer == constants.duration60(30)) { // yeesh
-                p.playSample(gs, .PlayerCrumble);
+                p.playSample(gs, .player_crumble);
             }
             self.phys.speed = 0;
             self.phys.push_dir = null;
@@ -96,11 +96,11 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
                     .owner_id = self.id,
                     .pos = bullet_pos,
                     .facing = self.phys.facing,
-                    .bullet_type = .PlayerBullet,
+                    .bullet_type = .player_bullet,
                     .cluster_size = switch (self.player.attack_level) {
-                        .One => 1,
-                        .Two => 2,
-                        .Three => 3,
+                        .one => 1,
+                        .two => 2,
+                        .three => 3,
                     },
                     .friendly_fire = context.friendly_fire,
                 })) |bullet_entity_id| {
@@ -133,9 +133,9 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
 
 fn playerMove(gs: *GameSession, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
-        .One => constants.player_move_speed[0],
-        .Two => constants.player_move_speed[1],
-        .Three => constants.player_move_speed[2],
+        .one => constants.player_move_speed[0],
+        .two => constants.player_move_speed[1],
+        .three => constants.player_move_speed[2],
     };
 
     if (isTouchingWeb(gs, self)) {
@@ -155,14 +155,14 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
     const pos = self.transform.pos;
 
     if (xmove != 0) {
-        const dir: math.Direction = if (xmove < 0) .W else .E;
+        const dir: math.Direction = if (xmove < 0) .w else .e;
 
         if (ymove == 0) {
             // only moving along x axis. try to slip around corners
             tryPush(pos, dir, move_speed, self.phys);
         } else {
             // trying to move diagonally.
-            const secondary_dir: math.Direction = if (ymove < 0) .N else .S;
+            const secondary_dir: math.Direction = if (ymove < 0) .n else .s;
 
             // prefer to move on the x axis (arbitrary, but i had to pick something)
             if (!physInWall(self.phys, math.Vec2.add(pos, math.Direction.normal(dir)))) {
@@ -175,7 +175,7 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
         }
     } else if (ymove != 0) {
         // only moving along y axis. try to slip around corners
-        const dir: math.Direction = if (ymove < 0) .N else .S;
+        const dir: math.Direction = if (ymove < 0) .n else .s;
 
         tryPush(pos, dir, move_speed, self.phys);
     }
@@ -200,23 +200,23 @@ fn tryPush(
 
     var i: i32 = 1;
     while (i < constants.player_slip_threshold) : (i += 1) {
-        if (dir == .W or dir == .E) {
+        if (dir == .w or dir == .e) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
-                slip_dir = .N;
+                slip_dir = .n;
                 break;
             }
             if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y + i))) {
-                slip_dir = .S;
+                slip_dir = .s;
                 break;
             }
         }
-        if (dir == .N or dir == .S) {
+        if (dir == .n or dir == .s) {
             if (!physInWall(self_phys, math.Vec2.init(pos1.x - i, pos1.y))) {
-                slip_dir = .W;
+                slip_dir = .w;
                 break;
             }
             if (!physInWall(self_phys, math.Vec2.init(pos1.x + i, pos1.y))) {
-                slip_dir = .E;
+                slip_dir = .e;
                 break;
             }
         }

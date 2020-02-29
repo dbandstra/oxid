@@ -18,9 +18,9 @@ pub fn run(gs: *GameSession) void {
                     if (self.phys) |phys|
                         util.getDirTransform(phys.facing)
                     else
-                        .Identity
+                        .identity
                 else
-                    .Identity,
+                    .identity,
             .z_index = self.simple_graphic.z_index,
         }) catch undefined;
     }

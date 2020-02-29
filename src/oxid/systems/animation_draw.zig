@@ -17,7 +17,7 @@ pub fn run(gs: *GameSession) void {
         _ = p.EventDraw.spawn(gs, .{
             .pos = self.transform.pos,
             .graphic = animcfg.frames[self.animation.frame_index],
-            .transform = .Identity,
+            .transform = .identity,
             .z_index = self.animation.z_index,
         }) catch undefined;
     }

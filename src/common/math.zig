@@ -1,44 +1,44 @@
 const std = @import("std");
 
 pub const Direction = enum {
-    N,
-    E,
-    S,
-    W,
+    n,
+    e,
+    s,
+    w,
 
     pub fn normal(direction: Direction) Vec2 {
         return switch (direction) {
-            .N => Vec2.init(0, -1),
-            .E => Vec2.init(1, 0),
-            .S => Vec2.init(0, 1),
-            .W => Vec2.init(-1, 0),
+            .n => Vec2.init(0, -1),
+            .e => Vec2.init(1, 0),
+            .s => Vec2.init(0, 1),
+            .w => Vec2.init(-1, 0),
         };
     }
 
     pub fn invert(direction: Direction) Direction {
         return switch (direction) {
-            .N => .S,
-            .E => .W,
-            .S => .N,
-            .W => .E,
+            .n => .s,
+            .e => .w,
+            .s => .n,
+            .w => .e,
         };
     }
 
     pub fn rotateCw(direction: Direction) Direction {
         return switch (direction) {
-            .N => .E,
-            .E => .S,
-            .S => .W,
-            .W => .N,
+            .n => .e,
+            .e => .s,
+            .s => .w,
+            .w => .n,
         };
     }
 
     pub fn rotateCcw(direction: Direction) Direction {
         return switch (direction) {
-            .N => .W,
-            .E => .N,
-            .S => .E,
-            .W => .S,
+            .n => .w,
+            .e => .n,
+            .s => .e,
+            .w => .s,
         };
     }
 };

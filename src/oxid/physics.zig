@@ -40,25 +40,33 @@ pub fn physicsFrame(gs: *GameSession) void {
         transform: *const c.Transform,
     });
     while (it.next()) |self| {
-        self.phys.internal.move_bbox.mins = math.Vec2.add(self.transform.pos, self.phys.entity_bbox.mins);
-        self.phys.internal.move_bbox.maxs = math.Vec2.add(self.transform.pos, self.phys.entity_bbox.maxs);
-        if (self.phys.speed != 0) {
-            switch (self.phys.facing) {
-                .W => self.phys.internal.move_bbox.mins.x -= @as(i32, self.phys.speed),
-                .E => self.phys.internal.move_bbox.maxs.x += @as(i32, self.phys.speed),
-                .N => self.phys.internal.move_bbox.mins.y -= @as(i32, self.phys.speed),
-                .S => self.phys.internal.move_bbox.maxs.y += @as(i32, self.phys.speed),
-            }
-            // push_dir represents the possibility of changing direction in mid-move,
-            // so factor that into the move box as well
-            if (self.phys.push_dir) |push_dir| {
-                if (push_dir != self.phys.facing) {
-                    switch (push_dir) {
-                        .W => self.phys.internal.move_bbox.mins.x -= @as(i32, self.phys.speed),
-                        .E => self.phys.internal.move_bbox.maxs.x += @as(i32, self.phys.speed),
-                        .N => self.phys.internal.move_bbox.mins.y -= @as(i32, self.phys.speed),
-                        .S => self.phys.internal.move_bbox.maxs.y += @as(i32, self.phys.speed),
-                    }
+        self.phys.internal.move_bbox.mins =
+            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.mins);
+        self.phys.internal.move_bbox.maxs =
+            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.maxs);
+
+        if (self.phys.speed == 0) {
+            continue;
+        }
+
+        const speed: i32 = self.phys.speed;
+
+        switch (self.phys.facing) {
+            .w => self.phys.internal.move_bbox.mins.x -= speed,
+            .e => self.phys.internal.move_bbox.maxs.x += speed,
+            .n => self.phys.internal.move_bbox.mins.y -= speed,
+            .s => self.phys.internal.move_bbox.maxs.y += speed,
+        }
+
+        // push_dir represents the possibility of changing direction in mid-move,
+        // so factor that into the move box as well
+        if (self.phys.push_dir) |push_dir| {
+            if (push_dir != self.phys.facing) {
+                switch (push_dir) {
+                    .w => self.phys.internal.move_bbox.mins.x -= speed,
+                    .e => self.phys.internal.move_bbox.maxs.x += speed,
+                    .n => self.phys.internal.move_bbox.mins.y -= speed,
+                    .s => self.phys.internal.move_bbox.maxs.y += speed,
                 }
             }
         }

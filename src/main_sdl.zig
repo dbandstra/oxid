@@ -37,14 +37,14 @@ const highscores_filename = "highscore.dat";
 fn openDataFile(
     hunk_side: *HunkSide,
     filename: []const u8,
-    mode: enum { Read, Write },
+    mode: enum { read, write },
 ) !std.fs.File {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
     const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
 
-    if (mode == .Write) {
+    if (mode == .write) {
         std.fs.makeDir(dir_path) catch |err| {
             if (err != error.PathAlreadyExists) {
                 return err;
@@ -58,13 +58,13 @@ fn openDataFile(
     );
 
     return switch (mode) {
-        .Read => std.fs.cwd().openFile(file_path, .{}),
-        .Write => std.fs.cwd().createFile(file_path, .{}),
+        .read => std.fs.cwd().openFile(file_path, .{}),
+        .write => std.fs.cwd().createFile(file_path, .{}),
     };
 }
 
 pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
-    const file = openDataFile(hunk_side, config_filename, .Read) catch |err| {
+    const file = openDataFile(hunk_side, config_filename, .read) catch |err| {
         if (err == error.FileNotFound) {
             return config.default;
         }
@@ -82,7 +82,7 @@ pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
 }
 
 pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
-    const file = try openDataFile(hunk_side, config_filename, .Write);
+    const file = try openDataFile(hunk_side, config_filename, .write);
     defer file.close();
 
     return try config.write(
@@ -93,7 +93,7 @@ pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
 }
 
 pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
-    const file = openDataFile(hunk_side, highscores_filename, .Read) catch |err| {
+    const file = openDataFile(hunk_side, highscores_filename, .read) catch |err| {
         if (err == error.FileNotFound) {
             // this is a normal situation (e.g. game is being played for the
             // first time)
@@ -117,7 +117,7 @@ pub fn saveHighScores(
     hunk_side: *HunkSide,
     high_scores: [constants.num_high_scores]u32,
 ) !void {
-    const file = try openDataFile(hunk_side, highscores_filename, .Write);
+    const file = try openDataFile(hunk_side, highscores_filename, .write);
     defer file.close();
 
     try datafile.writeHighScores(
@@ -142,8 +142,10 @@ const NativeScreenSize = struct {
 
 fn getFullscreenDims(native_screen_size: NativeScreenSize) WindowDims {
     // scale the game view up as far as possible, maintaining the aspect ratio
-    const scaled_w = native_screen_size.height * common.virtual_window_width / common.virtual_window_height;
-    const scaled_h = native_screen_size.width * common.virtual_window_height / common.virtual_window_width;
+    const scaled_w = native_screen_size.height *
+        common.virtual_window_width / common.virtual_window_height;
+    const scaled_h = native_screen_size.width *
+        common.virtual_window_height / common.virtual_window_width;
 
     return .{
         .window_width = native_screen_size.width,
@@ -671,17 +673,19 @@ fn tick(self: *Main, refresh_rate: u64) void {
         // when fast forwarding, we'll simulate 4 frames and draw them blended
         // together. we'll also speed up the sound playback rate by 4x
         const num_frames: u32 = if (self.fast_forward) 4 else 1;
-        var frame_index: u32 = 0; while (frame_index < num_frames) : (frame_index += 1) {
+        var frame_index: u32 = 0;
+        while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
             // need to actually draw for the last one of them
             const draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
-            const paused = self.main_state.menu_stack.len > 0 and !self.main_state.game_over;
+            const paused = self.main_state.menu_stack.len > 0
+                            and !self.main_state.game_over;
 
-            perf.begin(.Frame);
+            perf.begin(.frame);
             gameFrame(&self.main_state.session, frame_context, draw, paused);
-            perf.end(.Frame);
+            perf.end(.frame);
 
             // middleware response to certain events
             common.handleGameOver(&self.main_state, @This());
@@ -875,17 +879,22 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
         break :blk self.windowed_dims.blit_rect;
     };
 
-    perf.begin(.WholeDraw);
+    perf.begin(.whole_draw);
 
     platform_framebuffer.preDraw(&self.framebuffer_state);
 
-    perf.begin(.Draw);
+    perf.begin(.draw);
     common.drawMain(&self.main_state);
-    perf.end(.Draw);
+    perf.end(.draw);
 
-    platform_framebuffer.postDraw(&self.framebuffer_state, &self.main_state.draw_state, blit_rect, blit_alpha);
+    platform_framebuffer.postDraw(
+        &self.framebuffer_state,
+        &self.main_state.draw_state,
+        blit_rect,
+        blit_alpha,
+    );
 
-    perf.end(.WholeDraw);
+    perf.end(.whole_draw);
 }
 
 fn translateKey(sym: SDL_Keycode) ?Key {

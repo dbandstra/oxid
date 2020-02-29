@@ -10,7 +10,7 @@ pub fn run(gs: *GameSession) void {
     while (it.next()) |self| {
         for (self.inbox.all()) |event| {
             switch (event.command) {
-                .KillAllMonsters => {
+                .kill_all_monsters => {
                     if (event.down) {
                         killAllMonsters(gs);
                     }

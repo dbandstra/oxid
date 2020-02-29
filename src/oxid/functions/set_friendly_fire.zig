@@ -7,7 +7,7 @@ pub fn setFriendlyFire(gs: *GameSession, friendly_fire: bool) void {
         phys: *c.PhysObject,
     });
     while (it.next()) |self| {
-        if (self.bullet.bullet_type == .PlayerBullet) {
+        if (self.bullet.bullet_type == .player_bullet) {
             if (friendly_fire) {
                 self.phys.ignore_flags &= ~c.PhysObject.FLAG_PLAYER;
             } else {

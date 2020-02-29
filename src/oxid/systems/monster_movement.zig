@@ -45,7 +45,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     }
 
     if (gc.monster_count < 5) {
-        self.monster.personality = c.Monster.Personality.Chase;
+        self.monster.personality = .chase;
     }
 
     const monster_values = constants.getMonsterValues(self.monster.monster_type);
@@ -92,12 +92,12 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     // if monster is in a player's line of fire, try to get out of the way
     if (isInLineOfFire(gs, self)) |bullet_dir| {
         const bullet_x_axis = switch (bullet_dir) {
-            .N, .S => false,
-            .W, .E => true,
+            .n, .s => false,
+            .w, .e => true,
         };
         const self_x_axis = switch (self.phys.facing) {
-            .N, .S => false,
-            .W, .E => true,
+            .n, .s => false,
+            .w, .e => true,
         };
         if (bullet_x_axis == self_x_axis) {
             // bullet is travelling along the same axis as me. prefer to make a turn
@@ -145,17 +145,18 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .owner_id = self.id,
                 .pos = bullet_pos,
                 .facing = self.phys.facing,
-                .bullet_type = .MonsterBullet,
+                .bullet_type = .monster_bullet,
                 .cluster_size = 1,
                 .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
-            p.playSample(gs, .DropWeb);
+            p.playSample(gs, .drop_web);
             _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;
         }
-        self.monster.next_attack_timer = constants.duration60(gs.getRand().range(u31, 75, 400));
+        self.monster.next_attack_timer =
+            constants.duration60(gs.getRand().range(u31, 75, 400));
     }
 }
 
@@ -192,7 +193,7 @@ fn chooseTurn(
 
     var choices = util.Choices.init();
 
-    if (personality == .Chase) {
+    if (personality == .chase) {
         if (getChaseTarget(gs, pos)) |target_pos| {
             const fwd = math.Direction.normal(facing);
             const left_normal = math.Direction.normal(left);

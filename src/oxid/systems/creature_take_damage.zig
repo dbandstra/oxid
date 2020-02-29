@@ -39,7 +39,7 @@ pub fn run(gs: *GameSession) void {
 
         if (self.creature.hit_points > total_damage) {
             // hurt but not killed
-            p.playSample(gs, .MonsterImpact);
+            p.playSample(gs, .monster_impact);
             self.creature.hit_points -= total_damage;
             self.creature.flinch_timer = constants.duration60(4);
             continue;
@@ -50,8 +50,8 @@ pub fn run(gs: *GameSession) void {
 
         if (self.player) |self_player| {
             // player died
-            p.playSample(gs, .PlayerScream);
-            p.playSample(gs, .PlayerDeath);
+            p.playSample(gs, .player_scream);
+            p.playSample(gs, .player_death);
 
             self_player.dying_timer = constants.player_death_anim_time;
 
@@ -86,12 +86,12 @@ pub fn run(gs: *GameSession) void {
             if (self_monster.has_coin) {
                 _ = p.Pickup.spawn(gs, .{
                     .pos = self.transform.pos,
-                    .pickup_type = .Coin,
+                    .pickup_type = .coin,
                 }) catch undefined;
             }
         }
 
-        p.playSample(gs, .MonsterImpact);
+        p.playSample(gs, .monster_impact);
         p.playSynth(gs, "Explosion", audio.ExplosionVoice.NoteParams {
             .unused = false,
         });

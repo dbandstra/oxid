@@ -1,9 +1,9 @@
 pub const MonsterType = enum {
-    Spider,
-    Knight,
-    FastBug,
-    Squid,
-    Juggernaut,
+    spider,
+    knight,
+    fast_bug,
+    squid,
+    juggernaut,
 };
 
 pub const MonsterValues = struct {
@@ -16,10 +16,10 @@ pub const MonsterValues = struct {
 };
 
 pub const PickupType = enum {
-    Coin,
-    LifeUp,
-    PowerUp,
-    SpeedUp,
+    coin,
+    life_up,
+    power_up,
+    speed_up,
 };
 
 pub const PickupValues = struct {

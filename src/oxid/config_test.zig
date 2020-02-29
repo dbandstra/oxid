@@ -15,42 +15,42 @@ fn getFixtureConfig() config.Config {
 
     for (cfg.menu_bindings) |*binding, i| {
         binding.* = switch (@intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i))) {
-            .Left => .{.Key = .Left},
-            .Right => .{.Key = .Right},
-            .Up => .{.Key = .Up},
-            .Down => .{.Key = .Down},
-            .Escape => .{.Key = .Escape},
-            .Enter => .{.Key = .Return},
-            .Yes => .{.Key = .Y},
-            .No => .{.Key = .N},
+            .left => .{ .Key = .Left },
+            .right => .{ .Key = .Right },
+            .up => .{ .Key = .Up },
+            .down => .{ .Key = .Down },
+            .escape => .{ .Key = .Escape },
+            .enter => .{ .Key = .Return },
+            .yes => .{ .Key = .Y },
+            .no => .{ .Key = .N },
         };
     }
 
     for (cfg.game_bindings[0]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => .{.JoyAxisNeg = .{.which = 0, .axis = 1}},
-            .Down => .{.JoyAxisPos = .{.which = 0, .axis = 1}},
-            .Left => .{.JoyAxisNeg = .{.which = 0, .axis = 0}},
-            .Right => .{.JoyAxisPos = .{.which = 0, .axis = 0}},
-            .Shoot => .{.JoyButton = .{.which = 0, .button = 1}},
-            .KillAllMonsters => null,
-            .ToggleDrawBoxes => null,
-            .ToggleGodMode => null,
-            .Escape => .{.Key = .Escape},
+            .up => .{ .JoyAxisNeg = .{ .which = 0, .axis = 1 } },
+            .down => .{ .JoyAxisPos = .{ .which = 0, .axis = 1 } },
+            .left => .{ .JoyAxisNeg = .{ .which = 0, .axis = 0 } },
+            .right => .{ .JoyAxisPos = .{ .which = 0, .axis = 0 } },
+            .shoot => .{ .JoyButton = .{ .which = 0, .button = 1 } },
+            .kill_all_monsters => null,
+            .toggle_draw_boxes => null,
+            .toggle_god_mode => null,
+            .escape => .{ .Key = .Escape },
         };
     }
 
     for (cfg.game_bindings[1]) |*binding, i| {
         binding.* = switch (@intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i))) {
-            .Up => .{.Key = .W},
-            .Down => .{.Key = .S},
-            .Left => .{.Key = .A},
-            .Right => .{.Key = .D},
-            .Shoot => .{.Key = .F},
-            .KillAllMonsters => null,
-            .ToggleDrawBoxes => null,
-            .ToggleGodMode => null,
-            .Escape => null,
+            .up => .{ .Key = .W },
+            .down => .{ .Key = .S },
+            .left => .{ .Key = .A },
+            .right => .{ .Key = .D },
+            .shoot => .{ .Key = .F },
+            .kill_all_monsters => null,
+            .toggle_draw_boxes => null,
+            .toggle_god_mode => null,
+            .escape => null,
         };
     }
 
@@ -61,36 +61,36 @@ const fixture_json =
 \\{
 \\    "volume": 100,
 \\    "menu_bindings": {
-\\        "Left": {"type": "key", "key": "Left"},
-\\        "Right": {"type": "key", "key": "Right"},
-\\        "Up": {"type": "key", "key": "Up"},
-\\        "Down": {"type": "key", "key": "Down"},
-\\        "Escape": {"type": "key", "key": "Escape"},
-\\        "Enter": {"type": "key", "key": "Return"},
-\\        "Yes": {"type": "key", "key": "Y"},
-\\        "No": {"type": "key", "key": "N"}
+\\        "left": {"type": "key", "key": "Left"},
+\\        "right": {"type": "key", "key": "Right"},
+\\        "up": {"type": "key", "key": "Up"},
+\\        "down": {"type": "key", "key": "Down"},
+\\        "escape": {"type": "key", "key": "Escape"},
+\\        "enter": {"type": "key", "key": "Return"},
+\\        "yes": {"type": "key", "key": "Y"},
+\\        "no": {"type": "key", "key": "N"}
 \\    },
 \\    "game_bindings": {
-\\        "Left": {"type": "joy_axis_neg", "axis": 0},
-\\        "Right": {"type": "joy_axis_pos", "axis": 0},
-\\        "Up": {"type": "joy_axis_neg", "axis": 1},
-\\        "Down": {"type": "joy_axis_pos", "axis": 1},
-\\        "Shoot": {"type": "joy_button", "button": 1},
-\\        "ToggleGodMode": null,
-\\        "ToggleDrawBoxes": null,
-\\        "KillAllMonsters": null,
-\\        "Escape": {"type": "key", "key": "Escape"}
+\\        "left": {"type": "joy_axis_neg", "axis": 0},
+\\        "right": {"type": "joy_axis_pos", "axis": 0},
+\\        "up": {"type": "joy_axis_neg", "axis": 1},
+\\        "down": {"type": "joy_axis_pos", "axis": 1},
+\\        "shoot": {"type": "joy_button", "button": 1},
+\\        "toggle_god_mode": null,
+\\        "toggle_draw_boxes": null,
+\\        "kill_all_monsters": null,
+\\        "escape": {"type": "key", "key": "Escape"}
 \\    },
 \\    "game_bindings2": {
-\\        "Left": {"type": "key", "key": "A"},
-\\        "Right": {"type": "key", "key": "D"},
-\\        "Up": {"type": "key", "key": "W"},
-\\        "Down": {"type": "key", "key": "S"},
-\\        "Shoot": {"type": "key", "key": "F"},
-\\        "ToggleGodMode": null,
-\\        "ToggleDrawBoxes": null,
-\\        "KillAllMonsters": null,
-\\        "Escape": null
+\\        "left": {"type": "key", "key": "A"},
+\\        "right": {"type": "key", "key": "D"},
+\\        "up": {"type": "key", "key": "W"},
+\\        "down": {"type": "key", "key": "S"},
+\\        "shoot": {"type": "key", "key": "F"},
+\\        "toggle_god_mode": null,
+\\        "toggle_draw_boxes": null,
+\\        "kill_all_monsters": null,
+\\        "escape": null
 \\    }
 \\}
 \\

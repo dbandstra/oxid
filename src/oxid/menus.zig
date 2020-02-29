@@ -8,13 +8,13 @@ const InputSource = @import("../common/key.zig").InputSource;
 const key_names = @import("../common/key.zig").key_names;
 
 pub const TextAlignment = enum {
-    Left,
-    Center,
+    left,
+    center,
 };
 
 pub const OptionSliderResult = enum {
-    Left,
-    Right,
+    left,
+    right,
 };
 
 pub const MenuContext = struct {
@@ -53,9 +53,9 @@ pub const BindGameCommand = struct {
 };
 
 pub const Sound = enum {
-    Blip,
-    Ding,
-    Backoff,
+    blip,
+    ding,
+    backoff,
 };
 
 pub const Result = struct {
@@ -73,16 +73,29 @@ pub const Menu = union(enum) {
     KeyBindingsMenu: KeyBindingsMenu,
     HighScoresMenu: HighScoresMenu,
 
-    pub fn dispatch(self: *Menu, comptime Params: type, params: Params, comptime func: var) ?Result {
+    pub fn dispatch(
+        self: *Menu,
+        comptime Params: type,
+        params: Params,
+        comptime func: var,
+    ) ?Result {
         return switch (self.*) {
-            .MainMenu          => |*menu_state| func(MainMenu         , menu_state, params),
-            .InGameMenu        => |*menu_state| func(InGameMenu       , menu_state, params),
-            .GameOverMenu      => |*menu_state| func(GameOverMenu     , menu_state, params),
-            .ReallyEndGameMenu => |*menu_state| func(ReallyEndGameMenu, menu_state, params),
-            .OptionsMenu       => |*menu_state| func(OptionsMenu      , menu_state, params),
-            .GameSettingsMenu  => |*menu_state| func(GameSettingsMenu , menu_state, params),
-            .KeyBindingsMenu   => |*menu_state| func(KeyBindingsMenu  , menu_state, params),
-            .HighScoresMenu    => |*menu_state| func(HighScoresMenu   , menu_state, params),
+            .MainMenu => |*menu_state|
+                func(MainMenu, menu_state, params),
+            .InGameMenu => |*menu_state|
+                func(InGameMenu, menu_state, params),
+            .GameOverMenu => |*menu_state|
+                func(GameOverMenu, menu_state, params),
+            .ReallyEndGameMenu => |*menu_state|
+                func(ReallyEndGameMenu, menu_state, params),
+            .OptionsMenu => |*menu_state|
+                func(OptionsMenu, menu_state, params),
+            .GameSettingsMenu => |*menu_state|
+                func(GameSettingsMenu, menu_state, params),
+            .KeyBindingsMenu => |*menu_state|
+                func(KeyBindingsMenu, menu_state, params),
+            .HighScoresMenu => |*menu_state|
+                func(HighScoresMenu, menu_state, params),
         };
     }
 };
@@ -123,28 +136,28 @@ pub const MainMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
-            ctx.setSound(.Backoff);
+        if (if (ctx.command) |command| command == .escape else false) {
+            ctx.setSound(.backoff);
             return;
         }
 
-        ctx.title(.Left, "OXID");
+        ctx.title(.left, "OXID");
 
         if (ctx.option("New game", .{})) {
-            ctx.setEffect(.{.StartNewGame = false});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .StartNewGame = false });
+            ctx.setSound(.ding);
         }
         if (ctx.option("Multiplayer", .{})) {
-            ctx.setEffect(.{.StartNewGame = true});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .StartNewGame = true });
+            ctx.setSound(.ding);
         }
         if (ctx.option("Options", .{})) {
-            ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .OptionsMenu = OptionsMenu.init() } });
+            ctx.setSound(.ding);
         }
         if (ctx.option("High scores", .{})) {
-            ctx.setEffect(.{.Push = .{.HighScoresMenu = HighScoresMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .HighScoresMenu = HighScoresMenu.init() } });
+            ctx.setSound(.ding);
         }
         // quit button is removed in web build
         if (builtin.arch != .wasm32) {
@@ -165,25 +178,25 @@ pub const InGameMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
+        if (if (ctx.command) |command| command == .escape else false) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Backoff);
+            ctx.setSound(.backoff);
             return;
         }
 
-        ctx.title(.Left, "GAME PAUSED");
+        ctx.title(.left, "GAME PAUSED");
 
         if (ctx.option("Continue game", .{})) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
         if (ctx.option("Options", .{})) {
-            ctx.setEffect(.{.Push = .{.OptionsMenu = OptionsMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .OptionsMenu = OptionsMenu.init() } });
+            ctx.setSound(.ding);
         }
         if (ctx.option("End game", .{})) {
-            ctx.setEffect(.{.Push = .{.ReallyEndGameMenu = ReallyEndGameMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .ReallyEndGameMenu = ReallyEndGameMenu.init() } });
+            ctx.setSound(.ding);
         }
     }
 };
@@ -199,18 +212,18 @@ pub const GameOverMenu = struct {
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (ctx.command) |command| {
-            if (command == .Escape) {
-                ctx.setEffect(.{.Push = .{.MainMenu = MainMenu.init()}});
-                ctx.setSound(.Backoff);
+            if (command == .escape) {
+                ctx.setEffect(.{ .Push = .{ .MainMenu = MainMenu.init() } });
+                ctx.setSound(.backoff);
                 return;
             }
         }
 
         ctx.setPositionTop();
-        ctx.title(.Center, "GAME OVER");
+        ctx.title(.center, "GAME OVER");
         if (ctx.menu_context.new_high_score) {
             ctx.vspacer();
-            ctx.title(.Center, "New high score!");
+            ctx.title(.center, "New high score!");
         }
     }
 };
@@ -227,22 +240,22 @@ pub const ReallyEndGameMenu = struct {
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (ctx.command) |command| {
             switch (command) {
-                .Yes => {
+                .yes => {
                     ctx.setEffect(.EndGame);
-                    ctx.setSound(.Ding);
+                    ctx.setSound(.ding);
                     return;
                 },
-                .No,
-                .Escape => {
+                .no,
+                .escape => {
                     ctx.setEffect(.Pop);
-                    ctx.setSound(.Backoff);
+                    ctx.setSound(.backoff);
                     return;
                 },
                 else => {},
             }
         }
 
-        ctx.title(.Center, "Really end game? [Y/N]");
+        ctx.title(.center, "Really end game? [Y/N]");
     }
 };
 
@@ -256,69 +269,77 @@ pub const OptionsMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
+        if (if (ctx.command) |command| command == .escape else false) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Backoff);
+            ctx.setSound(.backoff);
             return;
         }
 
-        ctx.title(.Left, "OPTIONS");
+        ctx.title(.left, "OPTIONS");
 
         if (builtin.arch == .wasm32) {
-            const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
-            if (ctx.optionToggle("Sound: {}", .{sound_str})) {
+            // https://github.com/ziglang/zig/issues/3882
+            const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF";
+            if (ctx.optionToggle("Sound: {}", .{ sound_str })) {
                 ctx.setEffect(.ToggleSound);
-                // don't play sound because the sound init/deinit may not be done in time to pick the new sound up
+                // don't play sound because the sound init/deinit may not be
+                // done in time to pick the new sound up
             }
         }
         const volume = ctx.menu_context.cfg.volume;
-        if (ctx.optionSlider("Volume: {}%", .{volume})) |direction| {
+        if (ctx.optionSlider("Volume: {}%", .{ volume })) |direction| {
             switch (direction) {
-                .Left => {
+                .left => {
                     if (volume > 0) {
-                        ctx.setEffect(.{.SetVolume = if (volume > 10) volume - 10 else 0});
+                        ctx.setEffect(.{
+                            .SetVolume = if (volume > 10) volume - 10 else 0,
+                        });
                     }
                 },
-                .Right => {
+                .right => {
                     if (volume < 100) {
-                        ctx.setEffect(.{.SetVolume = if (volume < 90) volume + 10 else 100});
+                        ctx.setEffect(.{
+                            .SetVolume = if (volume < 90) volume + 10 else 100,
+                        });
                     }
                 },
             }
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
         const canvas_scale = ctx.menu_context.canvas_scale;
-        if (ctx.optionSlider("Canvas scale: {}x", .{ctx.menu_context.canvas_scale})) |direction| {
+        if (ctx.optionSlider("Canvas scale: {}x", .{ ctx.menu_context.canvas_scale })) |direction| {
             switch (direction) {
-                .Left => {
+                .left => {
                     if (canvas_scale > 1) {
-                        ctx.setEffect(.{.SetCanvasScale = canvas_scale - 1});
+                        ctx.setEffect(.{ .SetCanvasScale = canvas_scale - 1 });
                     }
                 },
-                .Right => {
+                .right => {
                     if (canvas_scale < ctx.menu_context.max_canvas_scale) {
-                        ctx.setEffect(.{.SetCanvasScale = canvas_scale + 1});
+                        ctx.setEffect(.{ .SetCanvasScale = canvas_scale + 1 });
                     }
                 },
             }
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
-        const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
-        if (ctx.optionToggle("Fullscreen: {}", .{fullscreen_str})) {
+        // https://github.com/ziglang/zig/issues/3882
+        const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF";
+        if (ctx.optionToggle("Fullscreen: {}", .{ fullscreen_str })) {
             ctx.setEffect(.ToggleFullscreen);
-            // don't play a sound because the fullscreen transition might mess with playback
+            // don't play a sound because the fullscreen transition might mess
+            // with playback
         }
         if (ctx.option("Game settings", .{})) {
-            ctx.setEffect(.{.Push = .{.GameSettingsMenu = GameSettingsMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .GameSettingsMenu = GameSettingsMenu.init() } });
+            ctx.setSound(.ding);
         }
         if (ctx.option("Key bindings", .{})) {
-            ctx.setEffect(.{.Push = .{.KeyBindingsMenu = KeyBindingsMenu.init()}});
-            ctx.setSound(.Ding);
+            ctx.setEffect(.{ .Push = .{ .KeyBindingsMenu = KeyBindingsMenu.init() } });
+            ctx.setSound(.ding);
         }
         if (ctx.option("Back", .{})) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
     }
 };
@@ -333,22 +354,24 @@ pub const GameSettingsMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
+        if (if (ctx.command) |command| command == .escape else false) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Backoff);
+            ctx.setSound(.backoff);
             return;
         }
 
-        ctx.title(.Left, "GAME SETTINGS");
+        ctx.title(.left, "GAME SETTINGS");
 
-        const friendly_fire_str = if (ctx.menu_context.friendly_fire) "ON" else "OFF"; // https://github.com/ziglang/zig/issues/3882
-        if (ctx.optionToggle("Friendly fire: {}", .{friendly_fire_str})) {
+        // https://github.com/ziglang/zig/issues/3882
+        const friendly_fire_str =
+            if (ctx.menu_context.friendly_fire) "ON" else "OFF";
+        if (ctx.optionToggle("Friendly fire: {}", .{ friendly_fire_str })) {
             ctx.setEffect(.ToggleFriendlyFire);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
         if (ctx.option("Back", .{})) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
     }
 };
@@ -367,13 +390,13 @@ pub const KeyBindingsMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
+        if (if (ctx.command) |command| command == .escape else false) {
             if (self.rebinding != null) {
                 self.rebinding = null;
             } else {
                 ctx.setEffect(.Pop);
             }
-            ctx.setSound(.Backoff);
+            ctx.setSound(.backoff);
             return;
         }
 
@@ -386,13 +409,13 @@ pub const KeyBindingsMenu = struct {
                         .source = source,
                     },
                 });
-                ctx.setSound(.Ding);
+                ctx.setSound(.ding);
                 self.rebinding = null;
                 return;
             }
         }
 
-        const commands = [_]input.GameCommand { .Up, .Down, .Left, .Right, .Shoot };
+        const commands = [_]input.GameCommand { .up, .down, .left, .right, .shoot };
 
         const longest_command_name = comptime blk: {
             var longest: usize = 0;
@@ -402,20 +425,21 @@ pub const KeyBindingsMenu = struct {
             break :blk longest;
         };
 
-        ctx.title(.Left, "KEY BINDINGS");
+        ctx.title(.left, "KEY BINDINGS");
 
-        if (ctx.optionToggle("For player: {}", .{self.for_player + 1})) {
+        if (ctx.optionToggle("For player: {}", .{ self.for_player + 1 })) {
             self.for_player += 1;
             if (self.for_player == config.num_players) {
                 self.for_player = 0;
             }
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
 
         ctx.vspacer();
 
         inline for (commands) |command, i| {
-            const command_name = @tagName(command) ++ ":" ++ " " ** (longest_command_name - @tagName(command).len);
+            const command_name = @tagName(command) ++ ":" ++
+                " " ** (longest_command_name - @tagName(command).len);
             self.keyBindingOption(Ctx, ctx, self.for_player, command, command_name);
         }
 
@@ -423,11 +447,18 @@ pub const KeyBindingsMenu = struct {
 
         if (ctx.option("Close", .{})) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
     }
 
-    fn keyBindingOption(self: *@This(), comptime Ctx: type, ctx: *Ctx, for_player: u32, command: input.GameCommand, command_name: []const u8) void {
+    fn keyBindingOption(
+        self: *@This(),
+        comptime Ctx: type,
+        ctx: *Ctx,
+        for_player: u32,
+        command: input.GameCommand,
+        command_name: []const u8,
+    ) void {
         const result =
             if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) blk: {
                 // https://github.com/ziglang/zig/issues/3882
@@ -437,26 +468,26 @@ pub const KeyBindingsMenu = struct {
                     2 => "...",
                     else => "",
                 };
-                break :blk ctx.option("{} {}", .{command_name, dots});
+                break :blk ctx.option("{} {}", .{ command_name, dots });
             } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
                 switch (source) {
                     .Key => |key|
-                        ctx.option("{} {}", .{command_name, key_names[@enumToInt(key)]}),
+                        ctx.option("{} {}", .{ command_name, key_names[@enumToInt(key)] }),
                     .JoyButton => |j|
-                        ctx.option("{} Joy{}Button{}", .{command_name, j.which, j.button}),
+                        ctx.option("{} Joy{}Button{}", .{ command_name, j.which, j.button }),
                     .JoyAxisPos => |j|
-                        ctx.option("{} Joy{}Axis{}+", .{command_name, j.which, j.axis}),
+                        ctx.option("{} Joy{}Axis{}+", .{ command_name, j.which, j.axis }),
                     .JoyAxisNeg => |j|
-                        ctx.option("{} Joy{}Axis{}-", .{command_name, j.which, j.axis}),
+                        ctx.option("{} Joy{}Axis{}-", .{ command_name, j.which, j.axis }),
                 }
             ) else (
-                ctx.option("{}", .{command_name})
+                ctx.option("{}", .{ command_name })
             );
 
         if (result) {
             self.rebinding = command;
             ctx.setEffect(.ResetAnimTime);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
     }
 };
@@ -471,23 +502,23 @@ pub const HighScoresMenu = struct {
     }
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
-        if (if (ctx.command) |command| command == .Escape else false) {
+        if (if (ctx.command) |command| command == .escape else false) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Backoff);
+            ctx.setSound(.backoff);
             return;
         }
 
-        ctx.title(.Left, "HIGH SCORES");
+        ctx.title(.left, "HIGH SCORES");
 
         for (ctx.menu_context.high_scores) |score, i| {
-            ctx.label("{:3}. {}", .{i + 1, score});
+            ctx.label("{:3}. {}", .{ i + 1, score });
         }
 
         ctx.vspacer();
 
         if (ctx.option("Close", .{})) {
             ctx.setEffect(.Pop);
-            ctx.setSound(.Ding);
+            ctx.setSound(.ding);
         }
     }
 };

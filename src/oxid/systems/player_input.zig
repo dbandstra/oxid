@@ -15,22 +15,22 @@ pub fn run(gs: *GameSession) void {
                 continue;
             }
             switch (event.command) {
-                .Up => {
+                .up => {
                     self.player.in_up = event.down;
                 },
-                .Down => {
+                .down => {
                     self.player.in_down = event.down;
                 },
-                .Left => {
+                .left => {
                     self.player.in_left = event.down;
                 },
-                .Right => {
+                .right => {
                     self.player.in_right = event.down;
                 },
-                .Shoot => {
+                .shoot => {
                     self.player.in_shoot = event.down;
                 },
-                .ToggleGodMode => {
+                .toggle_god_mode => {
                     if (event.down) {
                         self.creature.god_mode = !self.creature.god_mode;
                     }

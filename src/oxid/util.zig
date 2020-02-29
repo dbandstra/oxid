@@ -28,10 +28,10 @@ pub fn decrementTimer(timer: *u32) bool {
 
 pub fn getDirTransform(direction: math.Direction) draw.Transform {
     return switch (direction) {
-        .N => .RotateCounterClockwise,
-        .E => .Identity,
-        .S => .RotateClockwise,
-        .W => .FlipHorizontal,
+        .n => .rotate_ccw,
+        .e => .identity,
+        .s => .rotate_cw,
+        .w => .flip_horz,
     };
 }
 
@@ -62,7 +62,11 @@ pub const Choices = struct {
     pub fn choose(self: *Choices) ?math.Direction {
         if (self.num_choices > 0) {
             // TODO - use random if there is a tie.
-            std.sort.sort(Choice, self.choices[0..self.num_choices], lessThanField(Choice, "score"));
+            std.sort.sort(
+                Choice,
+                self.choices[0..self.num_choices],
+                lessThanField(Choice, "score"),
+            );
             return self.choices[0].direction;
         } else {
             return null;

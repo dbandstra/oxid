@@ -19,8 +19,8 @@ pub const MainController = struct {
 
 pub const Bullet = struct {
     pub const Type = enum {
-        MonsterBullet,
-        PlayerBullet,
+        monster_bullet,
+        player_bullet,
     };
 
     bullet_type: Type,
@@ -38,8 +38,8 @@ pub const Creature = struct {
 
 pub const Monster = struct {
     pub const Personality = enum {
-        Chase,
-        Wander,
+        chase,
+        wander,
     };
 
     monster_type: ConstantTypes.MonsterType,
@@ -154,17 +154,8 @@ pub const Pickup = struct {
 };
 
 pub const Player = struct {
-    pub const AttackLevel = enum {
-        One,
-        Two,
-        Three,
-    };
-
-    pub const SpeedLevel = enum {
-        One,
-        Two,
-        Three,
-    };
+    pub const AttackLevel = enum { one, two, three };
+    pub const SpeedLevel = enum { one, two, three };
 
     player_number: u32,
     player_controller_id: gbe.EntityId,

@@ -12,11 +12,11 @@ pub const Tile = struct {
 };
 
 pub const Transform = enum {
-    Identity,
-    FlipHorizontal,
-    FlipVertical,
-    RotateClockwise,
-    RotateCounterClockwise,
+    identity,
+    flip_horz,
+    flip_vert,
+    rotate_cw,
+    rotate_ccw,
 };
 
 // FIXME - use the palette!
