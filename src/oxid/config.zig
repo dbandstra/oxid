@@ -16,73 +16,53 @@ pub const Config = struct {
         [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
 };
 
-pub const default = Config {
-    .volume = 100,
-    .menu_bindings = blk: {
-        var bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]
-                            ?InputSource = undefined;
-        for (bindings) |*binding, i| {
-            binding.* = switch (
-                @intToEnum(input.MenuCommand,
-                    @intCast(@TagType(input.MenuCommand), i))
-            ) {
-                .left => .{ .Key = .Left },
-                .right => .{ .Key = .Right },
-                .up => .{ .Key = .Up },
-                .down => .{ .Key = .Down },
-                .escape => .{ .Key = .Escape },
-                .enter => .{ .Key = .Return },
-                .yes => .{ .Key = .Y },
-                .no => .{ .Key = .N },
-            };
-        }
-        break :blk bindings;
-    },
-    .game_bindings = .{
-        blk: {
-            var bindings: [@typeInfo(input.GameCommand).Enum.fields.len]
-                                ?InputSource = undefined;
-            for (bindings) |*binding, i| {
-                binding.* = switch (
-                    @intToEnum(input.GameCommand,
-                        @intCast(@TagType(input.GameCommand), i))
-                ) {
-                    .up => .{ .Key = .Up },
-                    .down => .{ .Key = .Down },
-                    .left => .{ .Key = .Left },
-                    .right => .{ .Key = .Right },
-                    .shoot => .{ .Key = .Space },
-                    .kill_all_monsters => .{ .Key = .Backspace },
-                    .toggle_draw_boxes => .{ .Key = .F2 },
-                    .toggle_god_mode => .{ .Key = .F3 },
-                    .escape => .{ .Key = .Escape },
-                };
-            }
-            break :blk bindings;
-        },
-        blk: {
-            var bindings: [@typeInfo(input.GameCommand).Enum.fields.len]
-                                ?InputSource = undefined;
-            for (bindings) |*binding, i| {
-                binding.* = switch (
-                    @intToEnum(input.GameCommand,
-                        @intCast(@TagType(input.GameCommand), i))
-                ) {
-                    .up => .{ .Key = .W },
-                    .down => .{ .Key = .S },
-                    .left => .{ .Key = .A },
-                    .right => .{ .Key = .D },
-                    .shoot => .{ .Key = .F },
-                    .kill_all_monsters => null,
-                    .toggle_draw_boxes => null,
-                    .toggle_god_mode => null,
-                    .escape => null,
-                };
-            }
-            break :blk bindings;
-        },
-    },
-};
+// this can't be a global constant because of a compiler bug
+pub fn getDefault() Config {
+    var cfg: Config = .{
+        .volume = 100,
+        .menu_bindings = undefined,
+        .game_bindings = undefined,
+    };
+    inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
+        const value = @intToEnum(input.MenuCommand, field.value);
+        cfg.menu_bindings[field.value] = switch (value) {
+            .left => .{ .Key = .Left },
+            .right => .{ .Key = .Right },
+            .up => .{ .Key = .Up },
+            .down => .{ .Key = .Down },
+            .escape => .{ .Key = .Escape },
+            .enter => .{ .Key = .Return },
+            .yes => .{ .Key = .Y },
+            .no => .{ .Key = .N },
+        };
+    }
+    inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
+        const value = @intToEnum(input.GameCommand, field.value);
+        cfg.game_bindings[0][field.value] = switch (value) {
+            .up => .{ .Key = .Up },
+            .down => .{ .Key = .Down },
+            .left => .{ .Key = .Left },
+            .right => .{ .Key = .Right },
+            .shoot => .{ .Key = .Space },
+            .kill_all_monsters => .{ .Key = .Backspace },
+            .toggle_draw_boxes => .{ .Key = .F2 },
+            .toggle_god_mode => .{ .Key = .F3 },
+            .escape => .{ .Key = .Escape },
+        };
+        cfg.game_bindings[1][field.value] = switch (value) {
+            .up => .{ .Key = .W },
+            .down => .{ .Key = .S },
+            .left => .{ .Key = .A },
+            .right => .{ .Key = .D },
+            .shoot => .{ .Key = .F },
+            .kill_all_monsters => null,
+            .toggle_draw_boxes => null,
+            .toggle_god_mode => null,
+            .escape => null,
+        };
+    }
+    return cfg;
+}
 
 ///////////////////////////////////////////////////////////
 
@@ -108,7 +88,7 @@ pub fn read(
 
     // start with the default config. any property that isn't set in the
     // config file will remain with its default value
-    var cfg = default;
+    var cfg = getDefault();
 
     switch (tree.root) {
         .Object => |map| {

@@ -66,7 +66,7 @@ fn openDataFile(
 pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     const file = openDataFile(hunk_side, config_filename, .read) catch |err| {
         if (err == error.FileNotFound) {
-            return config.default;
+            return config.getDefault();
         }
         return err;
     };

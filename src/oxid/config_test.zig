@@ -97,11 +97,17 @@ const fixture_json =
 ;
 
 test "config.read" {
-    var hunk_buf: [50000]u8 = undefined; // json decoder seems to require a lot of memory...
+    // json decoder seems to require a lot of memory...
+    var hunk_buf: [50000]u8 = undefined;
     var hunk = Hunk.init(hunk_buf[0..]);
 
     var sis = std.io.SliceInStream.init(fixture_json);
-    const cfg = try config.read(std.io.SliceInStream.Error, &sis.stream, fixture_json.len, &hunk.low());
+    const cfg = try config.read(
+        std.io.SliceInStream.Error,
+        &sis.stream,
+        fixture_json.len,
+        &hunk.low(),
+    );
     std.testing.expect(std.meta.eql(getFixtureConfig(), cfg));
 }
 

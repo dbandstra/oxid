@@ -38,7 +38,7 @@ pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     var buffer: [5000]u8 = undefined;
     const bytes_read = try web.getLocalStorage(config_storagekey, buffer[0..]);
     if (bytes_read == 0) {
-        return config.default;
+        return config.getDefault();
     }
     var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
     return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
