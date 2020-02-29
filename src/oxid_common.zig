@@ -27,7 +27,8 @@ const audio = @import("oxid/audio.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
-const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
+const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig")
+                            .setFriendlyFire;
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -35,7 +36,8 @@ pub const hud_height = 16;
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
 pub const virtual_window_width = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height = levels.height * levels.pixels_per_tile + hud_height; // 240
+pub const virtual_window_height = levels.height * levels.pixels_per_tile
+                                        + hud_height; // 240
 
 pub const MainState = struct {
     hunk: *Hunk,
@@ -82,12 +84,19 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    loadTileset(&self.hunk.low(), &self.static.tileset, self.static.palette[0..]) catch |err| {
+    loadTileset(
+        &self.hunk.low(),
+        &self.static.tileset,
+        self.static.palette[0..],
+    ) catch |err| {
         warn("Failed to load tileset: {}\n", .{err});
         return false;
     };
 
-    self.audio_module = audio.MainModule.init(self.hunk, params.audio_buffer_size) catch |err| {
+    self.audio_module = audio.MainModule.init(
+        self.hunk,
+        params.audio_buffer_size,
+    ) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
@@ -166,15 +175,25 @@ pub const InputSpecial = union(enum) {
     SetCanvasScale: u31,
 };
 
-pub fn inputEvent(outer_self: var, comptime ns: type, source: InputSource, down: bool) ?InputSpecial {
+pub fn inputEvent(
+    outer_self: var,
+    comptime ns: type,
+    source: InputSource,
+    down: bool,
+) ?InputSpecial {
     const main_state: *MainState = &outer_self.main_state;
 
     if (down) {
         const maybe_menu_command =
             for (main_state.cfg.menu_bindings) |maybe_source, i| {
-                if (if (maybe_source) |s| areInputSourcesEqual(s, source) else false) {
-                    break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
-                }
+                const s = maybe_source orelse continue;
+
+                if (!areInputSourcesEqual(s, source)) continue;
+
+                break @intToEnum(
+                    input.MenuCommand,
+                    @intCast(@TagType(input.MenuCommand), i),
+                );
             } else null;
 
         // if menu is open, input goes to it
@@ -291,8 +310,10 @@ fn applyMenuEffect(outer_self: var, comptime ns: var, effect: menus.Effect) ?Inp
     return InputSpecial { .NoOp = {} };
 }
 
-// i feel like this functions are too heavy to be done inline by this system.
+// i feel like these functions are too heavy to be done inline by this system.
 // they should be created as events and handled by middleware?
+// called when "start new game" is selected in the menu. if a game is already
+// in progress, restart it
 pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
@@ -320,6 +341,7 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     }
 }
 
+// called when "end game" is selected in the menu
 pub fn abortGame(gs: *GameSession) void {
     gs.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
 
@@ -380,7 +402,15 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
 
 pub fn drawMain(self: *MainState) void {
     platform_draw.prepare(&self.draw_state);
-    drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
+
+    drawGame(
+        &self.draw_state,
+        &self.static,
+        &self.session,
+        self.cfg,
+        self.high_scores[0],
+    );
+
     drawMenu(&self.menu_stack, .{
         .ds = &self.draw_state,
         .static = &self.static,

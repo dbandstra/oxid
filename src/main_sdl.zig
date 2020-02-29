@@ -583,7 +583,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         }
     }
 
-    // FIXME - this one crashes the compiler if i try to use an anonymous struct literal
+    // FIXME - can't use an anonymous literal here. the compiler says
+    // "TODO: type coercion of an anon struct literal to struct"
     if (!common.init(&self.main_state, @This(), common.InitParams {
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),

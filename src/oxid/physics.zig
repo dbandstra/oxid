@@ -203,7 +203,9 @@ pub fn physicsFrame(gs: *GameSession) void {
                 // direction
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
-                        const new_pos2 = math.Vec2.add(transform.pos, math.Direction.normal(push_dir));
+                        const new_pos2 =
+                            math.Vec2.add(transform.pos,
+                                          math.Direction.normal(push_dir));
                         if (!physInWall(m.phys, new_pos2)) {
                             m.phys.facing = push_dir;
                             new_pos = new_pos2;

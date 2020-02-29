@@ -27,7 +27,6 @@ fn handleAwardLife(gs: *GameSession) void {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(8, c.EventAwardLife, "player_controller_id"),
     });
-
     while (it.next()) |self| {
         for (self.inbox.all()) |_| {
             self.pc.lives += 1;
@@ -41,7 +40,6 @@ fn handlePlayerDied(gs: *GameSession) void {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(1, c.EventPlayerDied, "player_controller_id"),
     });
-
     while (it.next()) |self| {
         if (self.pc.lives > 0) {
             self.pc.lives -= 1;

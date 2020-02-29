@@ -155,14 +155,14 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
     const pos = self.transform.pos;
 
     if (xmove != 0) {
-        const dir = if (xmove < 0) math.Direction.W else math.Direction.E;
+        const dir: math.Direction = if (xmove < 0) .W else .E;
 
         if (ymove == 0) {
             // only moving along x axis. try to slip around corners
             tryPush(pos, dir, move_speed, self.phys);
         } else {
             // trying to move diagonally.
-            const secondary_dir = if (ymove < 0) math.Direction.N else math.Direction.S;
+            const secondary_dir: math.Direction = if (ymove < 0) .N else .S;
 
             // prefer to move on the x axis (arbitrary, but i had to pick something)
             if (!physInWall(self.phys, math.Vec2.add(pos, math.Direction.normal(dir)))) {
@@ -175,13 +175,18 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
         }
     } else if (ymove != 0) {
         // only moving along y axis. try to slip around corners
-        const dir = if (ymove < 0) math.Direction.N else math.Direction.S;
+        const dir: math.Direction = if (ymove < 0) .N else .S;
 
         tryPush(pos, dir, move_speed, self.phys);
     }
 }
 
-fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysObject) void {
+fn tryPush(
+    pos: math.Vec2,
+    dir: math.Direction,
+    speed: u31,
+    self_phys: *c.PhysObject,
+) void {
     const pos1 = math.Vec2.add(pos, math.Direction.normal(dir));
 
     if (!physInWall(self_phys, pos1)) {
@@ -236,5 +241,6 @@ fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
     const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
     const bullet_pos = math.Vec2.add(pos, ofs);
 
-    self.player.line_of_fire = getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);
+    self.player.line_of_fire =
+        getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);
 }
