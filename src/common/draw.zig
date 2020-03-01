@@ -38,6 +38,6 @@ pub const OutlineParams = struct {
 };
 
 pub const RectStyle = union(enum) {
-    Solid: SolidParams,
-    Outline: OutlineParams,
+    solid: SolidParams,
+    outline: OutlineParams,
 };

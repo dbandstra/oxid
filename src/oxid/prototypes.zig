@@ -497,7 +497,7 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
     _ = Sound.spawn(gs, .{
         .duration = 2.0,
         .wrapper = .{
-            .Sample = .{
+            .sample = .{
                 .initial_params = null,
                 .initial_sample = sample,
                 .iq = zang.Notes(audio.SamplerNoteParams).ImpulseQueue.init(),
@@ -509,9 +509,12 @@ pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
     }) catch undefined;
 }
 
-pub fn playSynth(gs: *GameSession, comptime name: []const u8, params: @field(audio, name ++ "Voice").NoteParams) void {
-    const VoiceType = @field(audio, name ++ "Voice");
-
+pub fn playSynth(
+    gs: *GameSession,
+    comptime name: []const u8,
+    comptime VoiceType: type,
+    params: VoiceType.NoteParams,
+) void {
     _ = Sound.spawn(gs, .{
         .duration = VoiceType.sound_duration,
         .wrapper = @unionInit(c.Voice.WrapperU, name, .{

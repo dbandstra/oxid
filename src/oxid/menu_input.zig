@@ -101,7 +101,11 @@ pub fn menuInput(menu_stack: *menus.MenuStack, params: MenuInputParams) ?menus.R
     return menu_stack.array[menu_stack.len - 1].dispatch(MenuInputParams, params, menuInputInner);
 }
 
-fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.Result {
+fn menuInputInner(
+    comptime T: type,
+    state: *T,
+    params: MenuInputParams,
+) ?menus.Result {
     var ctx: MenuInputContext = .{
         .source = null,
         .command = null,
@@ -140,7 +144,7 @@ fn menuInputInner(comptime T: type, state: *T, params: MenuInputParams) ?menus.R
         // FIXME - can't use anonymous struct literal here (for menus.Result)
         // file an issue?
         return menus.Result {
-            .effect = ctx.effect orelse .NoOp,
+            .effect = ctx.effect orelse .noop,
             .sound = ctx.sound,
         };
     }

@@ -80,7 +80,7 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
                     break slot;
                 }
             } else null) |slot| {
-                p.playSynth(gs, "Laser", audio.LaserVoice.NoteParams {
+                p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams {
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,

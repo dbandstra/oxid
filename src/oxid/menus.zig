@@ -31,19 +31,19 @@ pub const MenuContext = struct {
 };
 
 pub const Effect = union(enum) {
-    NoOp,
-    Push: Menu,
-    Pop,
-    StartNewGame: bool,
-    EndGame,
-    ToggleSound,
-    SetVolume: u32,
-    SetCanvasScale: u31,
-    ToggleFullscreen,
-    ToggleFriendlyFire,
-    BindGameCommand: BindGameCommand,
-    ResetAnimTime,
-    Quit,
+    noop,
+    push: Menu,
+    pop,
+    start_new_game: bool,
+    end_game,
+    toggle_sound,
+    set_volume: u32,
+    set_canvas_scale: u31,
+    toggle_fullscreen,
+    toggle_friendly_fire,
+    bind_game_command: BindGameCommand,
+    reset_anim_time,
+    quit,
 };
 
 pub const BindGameCommand = struct {
@@ -64,14 +64,14 @@ pub const Result = struct {
 };
 
 pub const Menu = union(enum) {
-    MainMenu: MainMenu,
-    InGameMenu: InGameMenu,
-    GameOverMenu: GameOverMenu,
-    ReallyEndGameMenu: ReallyEndGameMenu,
-    OptionsMenu: OptionsMenu,
-    GameSettingsMenu: GameSettingsMenu,
-    KeyBindingsMenu: KeyBindingsMenu,
-    HighScoresMenu: HighScoresMenu,
+    main_menu: MainMenu,
+    in_game_menu: InGameMenu,
+    game_over_menu: GameOverMenu,
+    really_end_game_menu: ReallyEndGameMenu,
+    options_menu: OptionsMenu,
+    game_settings_menu: GameSettingsMenu,
+    key_bindings_menu: KeyBindingsMenu,
+    high_scores_menu: HighScoresMenu,
 
     pub fn dispatch(
         self: *Menu,
@@ -80,21 +80,21 @@ pub const Menu = union(enum) {
         comptime func: var,
     ) ?Result {
         return switch (self.*) {
-            .MainMenu => |*menu_state|
+            .main_menu => |*menu_state|
                 func(MainMenu, menu_state, params),
-            .InGameMenu => |*menu_state|
+            .in_game_menu => |*menu_state|
                 func(InGameMenu, menu_state, params),
-            .GameOverMenu => |*menu_state|
+            .game_over_menu => |*menu_state|
                 func(GameOverMenu, menu_state, params),
-            .ReallyEndGameMenu => |*menu_state|
+            .really_end_game_menu => |*menu_state|
                 func(ReallyEndGameMenu, menu_state, params),
-            .OptionsMenu => |*menu_state|
+            .options_menu => |*menu_state|
                 func(OptionsMenu, menu_state, params),
-            .GameSettingsMenu => |*menu_state|
+            .game_settings_menu => |*menu_state|
                 func(GameSettingsMenu, menu_state, params),
-            .KeyBindingsMenu => |*menu_state|
+            .key_bindings_menu => |*menu_state|
                 func(KeyBindingsMenu, menu_state, params),
-            .HighScoresMenu => |*menu_state|
+            .high_scores_menu => |*menu_state|
                 func(HighScoresMenu, menu_state, params),
         };
     }
@@ -144,25 +144,25 @@ pub const MainMenu = struct {
         ctx.title(.left, "OXID");
 
         if (ctx.option("New game", .{})) {
-            ctx.setEffect(.{ .StartNewGame = false });
+            ctx.setEffect(.{ .start_new_game = false });
             ctx.setSound(.ding);
         }
         if (ctx.option("Multiplayer", .{})) {
-            ctx.setEffect(.{ .StartNewGame = true });
+            ctx.setEffect(.{ .start_new_game = true });
             ctx.setSound(.ding);
         }
         if (ctx.option("Options", .{})) {
-            ctx.setEffect(.{ .Push = .{ .OptionsMenu = OptionsMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .options_menu = OptionsMenu.init() } });
             ctx.setSound(.ding);
         }
         if (ctx.option("High scores", .{})) {
-            ctx.setEffect(.{ .Push = .{ .HighScoresMenu = HighScoresMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .high_scores_menu = HighScoresMenu.init() } });
             ctx.setSound(.ding);
         }
         // quit button is removed in web build
         if (builtin.arch != .wasm32) {
             if (ctx.option("Quit", .{})) {
-                ctx.setEffect(.Quit);
+                ctx.setEffect(.quit);
             }
         }
     }
@@ -179,7 +179,7 @@ pub const InGameMenu = struct {
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .escape else false) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.backoff);
             return;
         }
@@ -187,15 +187,15 @@ pub const InGameMenu = struct {
         ctx.title(.left, "GAME PAUSED");
 
         if (ctx.option("Continue game", .{})) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.ding);
         }
         if (ctx.option("Options", .{})) {
-            ctx.setEffect(.{ .Push = .{ .OptionsMenu = OptionsMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .options_menu = OptionsMenu.init() } });
             ctx.setSound(.ding);
         }
         if (ctx.option("End game", .{})) {
-            ctx.setEffect(.{ .Push = .{ .ReallyEndGameMenu = ReallyEndGameMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .really_end_game_menu = ReallyEndGameMenu.init() } });
             ctx.setSound(.ding);
         }
     }
@@ -213,7 +213,7 @@ pub const GameOverMenu = struct {
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (ctx.command) |command| {
             if (command == .escape) {
-                ctx.setEffect(.{ .Push = .{ .MainMenu = MainMenu.init() } });
+                ctx.setEffect(.{ .push = .{ .main_menu = MainMenu.init() } });
                 ctx.setSound(.backoff);
                 return;
             }
@@ -241,13 +241,13 @@ pub const ReallyEndGameMenu = struct {
         if (ctx.command) |command| {
             switch (command) {
                 .yes => {
-                    ctx.setEffect(.EndGame);
+                    ctx.setEffect(.end_game);
                     ctx.setSound(.ding);
                     return;
                 },
                 .no,
                 .escape => {
-                    ctx.setEffect(.Pop);
+                    ctx.setEffect(.pop);
                     ctx.setSound(.backoff);
                     return;
                 },
@@ -270,7 +270,7 @@ pub const OptionsMenu = struct {
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .escape else false) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.backoff);
             return;
         }
@@ -281,7 +281,7 @@ pub const OptionsMenu = struct {
             // https://github.com/ziglang/zig/issues/3882
             const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF";
             if (ctx.optionToggle("Sound: {}", .{ sound_str })) {
-                ctx.setEffect(.ToggleSound);
+                ctx.setEffect(.toggle_sound);
                 // don't play sound because the sound init/deinit may not be
                 // done in time to pick the new sound up
             }
@@ -292,14 +292,14 @@ pub const OptionsMenu = struct {
                 .left => {
                     if (volume > 0) {
                         ctx.setEffect(.{
-                            .SetVolume = if (volume > 10) volume - 10 else 0,
+                            .set_volume = if (volume > 10) volume - 10 else 0,
                         });
                     }
                 },
                 .right => {
                     if (volume < 100) {
                         ctx.setEffect(.{
-                            .SetVolume = if (volume < 90) volume + 10 else 100,
+                            .set_volume = if (volume < 90) volume + 10 else 100,
                         });
                     }
                 },
@@ -311,12 +311,12 @@ pub const OptionsMenu = struct {
             switch (direction) {
                 .left => {
                     if (canvas_scale > 1) {
-                        ctx.setEffect(.{ .SetCanvasScale = canvas_scale - 1 });
+                        ctx.setEffect(.{ .set_canvas_scale = canvas_scale - 1 });
                     }
                 },
                 .right => {
                     if (canvas_scale < ctx.menu_context.max_canvas_scale) {
-                        ctx.setEffect(.{ .SetCanvasScale = canvas_scale + 1 });
+                        ctx.setEffect(.{ .set_canvas_scale = canvas_scale + 1 });
                     }
                 },
             }
@@ -325,20 +325,20 @@ pub const OptionsMenu = struct {
         // https://github.com/ziglang/zig/issues/3882
         const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF";
         if (ctx.optionToggle("Fullscreen: {}", .{ fullscreen_str })) {
-            ctx.setEffect(.ToggleFullscreen);
+            ctx.setEffect(.toggle_fullscreen);
             // don't play a sound because the fullscreen transition might mess
             // with playback
         }
         if (ctx.option("Game settings", .{})) {
-            ctx.setEffect(.{ .Push = .{ .GameSettingsMenu = GameSettingsMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .game_settings_menu = GameSettingsMenu.init() } });
             ctx.setSound(.ding);
         }
         if (ctx.option("Key bindings", .{})) {
-            ctx.setEffect(.{ .Push = .{ .KeyBindingsMenu = KeyBindingsMenu.init() } });
+            ctx.setEffect(.{ .push = .{ .key_bindings_menu = KeyBindingsMenu.init() } });
             ctx.setSound(.ding);
         }
         if (ctx.option("Back", .{})) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.ding);
         }
     }
@@ -355,7 +355,7 @@ pub const GameSettingsMenu = struct {
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .escape else false) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.backoff);
             return;
         }
@@ -366,11 +366,11 @@ pub const GameSettingsMenu = struct {
         const friendly_fire_str =
             if (ctx.menu_context.friendly_fire) "ON" else "OFF";
         if (ctx.optionToggle("Friendly fire: {}", .{ friendly_fire_str })) {
-            ctx.setEffect(.ToggleFriendlyFire);
+            ctx.setEffect(.toggle_friendly_fire);
             ctx.setSound(.ding);
         }
         if (ctx.option("Back", .{})) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.ding);
         }
     }
@@ -394,7 +394,7 @@ pub const KeyBindingsMenu = struct {
             if (self.rebinding != null) {
                 self.rebinding = null;
             } else {
-                ctx.setEffect(.Pop);
+                ctx.setEffect(.pop);
             }
             ctx.setSound(.backoff);
             return;
@@ -403,7 +403,7 @@ pub const KeyBindingsMenu = struct {
         if (self.rebinding) |command| {
             if (ctx.source) |source| {
                 ctx.setEffect(.{
-                    .BindGameCommand = .{
+                    .bind_game_command = .{
                         .player_number = self.for_player,
                         .command = command,
                         .source = source,
@@ -446,7 +446,7 @@ pub const KeyBindingsMenu = struct {
         ctx.vspacer();
 
         if (ctx.option("Close", .{})) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.ding);
         }
     }
@@ -471,13 +471,13 @@ pub const KeyBindingsMenu = struct {
                 break :blk ctx.option("{} {}", .{ command_name, dots });
             } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
                 switch (source) {
-                    .Key => |key|
+                    .key => |key|
                         ctx.option("{} {}", .{ command_name, key_names[@enumToInt(key)] }),
-                    .JoyButton => |j|
+                    .joy_button => |j|
                         ctx.option("{} Joy{}Button{}", .{ command_name, j.which, j.button }),
-                    .JoyAxisPos => |j|
+                    .joy_axis_pos => |j|
                         ctx.option("{} Joy{}Axis{}+", .{ command_name, j.which, j.axis }),
-                    .JoyAxisNeg => |j|
+                    .joy_axis_neg => |j|
                         ctx.option("{} Joy{}Axis{}-", .{ command_name, j.which, j.axis }),
                 }
             ) else (
@@ -486,7 +486,7 @@ pub const KeyBindingsMenu = struct {
 
         if (result) {
             self.rebinding = command;
-            ctx.setEffect(.ResetAnimTime);
+            ctx.setEffect(.reset_anim_time);
             ctx.setSound(.ding);
         }
     }
@@ -503,7 +503,7 @@ pub const HighScoresMenu = struct {
 
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (if (ctx.command) |command| command == .escape else false) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.backoff);
             return;
         }
@@ -517,7 +517,7 @@ pub const HighScoresMenu = struct {
         ctx.vspacer();
 
         if (ctx.option("Close", .{})) {
-            ctx.setEffect(.Pop);
+            ctx.setEffect(.pop);
             ctx.setSound(.ding);
         }
     }

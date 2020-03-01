@@ -7,7 +7,8 @@ const ConstantTypes = @import("../constant_types.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
+const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig")
+    .pickSpawnLocations;
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
 
@@ -27,7 +28,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     }
     _ = util.decrementTimer(&gc.wave_message_timer);
     if (util.decrementTimer(&gc.next_wave_timer)) {
-        p.playSynth(gs, "WaveBegin", audio.WaveBeginVoice.NoteParams {
+        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams {
             .unused = false,
         });
         gc.wave_number += 1;
@@ -43,7 +44,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     if (util.decrementTimer(&gc.enemy_speed_timer)) {
         if (gc.enemy_speed_level < constants.max_enemy_speed_level) {
             gc.enemy_speed_level += 1;
-            p.playSynth(gs, "Accelerate", audio.AccelerateVoice.NoteParams {
+            p.playSynth(gs, "accelerate", audio.AccelerateVoice, audio.AccelerateVoice.NoteParams {
                 .playback_speed = switch (gc.enemy_speed_level) {
                     1 => 1.25,
                     2 => 1.5,

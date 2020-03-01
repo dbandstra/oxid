@@ -201,12 +201,18 @@ pub const MainModule = struct {
 
         var it = gs.ecs.componentIter(c.Voice); while (it.next()) |voice| {
             switch (voice.wrapper) {
-                .Accelerate => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .Coin =>       |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .Explosion =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .Laser =>      |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .Sample =>     |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .WaveBegin =>  |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .accelerate => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
+                .coin => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
+                .explosion => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
+                .laser => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
+                .sample => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
+                .wave_begin => |*wrapper|
+                    self.paintWrapper(span, wrapper, sample_rate),
                 else => {},
             }
         }
@@ -289,12 +295,12 @@ pub const MainModule = struct {
     pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
         var it = gs.ecs.componentIter(c.Voice); while (it.next()) |object| {
             switch (object.wrapper) {
-                .Accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .Coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
-                .Explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
-                .Laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
-                .WaveBegin =>  |*wrapper| updateVoice(wrapper, impulse_frame),
-                .Sample =>     |*wrapper| {
+                .accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
+                .coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
+                .explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
+                .laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
+                .wave_begin => |*wrapper| updateVoice(wrapper, impulse_frame),
+                .sample =>     |*wrapper| {
                     if (wrapper.initial_sample) |sample_alias| {
                         // https://github.com/ziglang/zig/issues/2915
                         const sample = sample_alias;

@@ -3,8 +3,6 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../warn.zig").warn;
 const Key = @import("../common/key.zig").Key;
 const InputSource = @import("../common/key.zig").InputSource;
-const JoyButton = @import("../common/key.zig").JoyButton;
-const JoyAxis = @import("../common/key.zig").JoyAxis;
 const input = @import("input.zig");
 
 pub const num_players = 2; // hardcoded for now
@@ -26,35 +24,35 @@ pub fn getDefault() Config {
     inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
         const value = @intToEnum(input.MenuCommand, field.value);
         cfg.menu_bindings[field.value] = switch (value) {
-            .left => .{ .Key = .left },
-            .right => .{ .Key = .right },
-            .up => .{ .Key = .up },
-            .down => .{ .Key = .down },
-            .escape => .{ .Key = .escape },
-            .enter => .{ .Key = .@"return" },
-            .yes => .{ .Key = .y },
-            .no => .{ .Key = .n },
+            .left => .{ .key = .left },
+            .right => .{ .key = .right },
+            .up => .{ .key = .up },
+            .down => .{ .key = .down },
+            .escape => .{ .key = .escape },
+            .enter => .{ .key = .@"return" },
+            .yes => .{ .key = .y },
+            .no => .{ .key = .n },
         };
     }
     inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
         const value = @intToEnum(input.GameCommand, field.value);
         cfg.game_bindings[0][field.value] = switch (value) {
-            .up => .{ .Key = .up },
-            .down => .{ .Key = .down },
-            .left => .{ .Key = .left },
-            .right => .{ .Key = .right },
-            .shoot => .{ .Key = .space },
-            .kill_all_monsters => .{ .Key = .backspace },
-            .toggle_draw_boxes => .{ .Key = .f2 },
-            .toggle_god_mode => .{ .Key = .f3 },
-            .escape => .{ .Key = .escape },
+            .up => .{ .key = .up },
+            .down => .{ .key = .down },
+            .left => .{ .key = .left },
+            .right => .{ .key = .right },
+            .shoot => .{ .key = .space },
+            .kill_all_monsters => .{ .key = .backspace },
+            .toggle_draw_boxes => .{ .key = .f2 },
+            .toggle_god_mode => .{ .key = .f3 },
+            .escape => .{ .key = .escape },
         };
         cfg.game_bindings[1][field.value] = switch (value) {
-            .up => .{ .Key = .w },
-            .down => .{ .Key = .s },
-            .left => .{ .Key = .a },
-            .right => .{ .Key = .d },
-            .shoot => .{ .Key = .f },
+            .up => .{ .key = .w },
+            .down => .{ .key = .s },
+            .left => .{ .key = .a },
+            .right => .{ .key = .d },
+            .shoot => .{ .key = .f },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
             .toggle_god_mode => null,
@@ -180,7 +178,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 };
                 inline for (@typeInfo(Key).Enum.fields) |field| {
                     if (std.mem.eql(u8, key_name, field.name)) {
-                        return InputSource { .Key = @intToEnum(Key, field.value) };
+                        return InputSource { .key = @intToEnum(Key, field.value) };
                     }
                 } else {
                     return error.Failed;
@@ -196,7 +194,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // also doesn't feel right to save which joystick in the
                 // config file?
                 return InputSource {
-                    .JoyButton = JoyButton { .which = 0, .button = button },
+                    .joy_button = .{ .which = 0, .button = button },
                 };
             } else if (std.mem.eql(u8, source_type, "joy_axis_neg") or
                        std.mem.eql(u8, source_type, "joy_axis_pos")) {
@@ -210,11 +208,11 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // config file?
                 if (std.mem.eql(u8, source_type, "joy_axis_neg")) {
                     return InputSource {
-                        .JoyAxisNeg = JoyAxis { .which = 0, .axis = axis },
+                        .joy_axis_neg = .{ .which = 0, .axis = axis },
                     };
                 } else {
                     return InputSource {
-                        .JoyAxisPos = JoyAxis { .which = 0, .axis = axis },
+                        .joy_axis_pos = .{ .which = 0, .axis = axis },
                     };
                 }
             } else {
@@ -288,19 +286,19 @@ fn writeBindings(
         try stream.print("        \"{}\": ", .{command_name});
         if (maybe_source) |source| {
             switch (source) {
-                .Key => |key| {
+                .key => |key| {
                     try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}",
                         .{ getEnumValueName(Key, key) });
                 },
-                .JoyButton => |j| {
+                .joy_button => |j| {
                     try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}",
                         .{ j.button });
                 },
-                .JoyAxisNeg => |j| {
+                .joy_axis_neg => |j| {
                     try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}",
                         .{ j.axis });
                 },
-                .JoyAxisPos => |j| {
+                .joy_axis_pos => |j| {
                     try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}",
                         .{ j.axis });
                 },

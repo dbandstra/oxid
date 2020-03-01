@@ -265,12 +265,12 @@ pub const Voice = struct {
     }
 
     pub const WrapperU = union(enum) {
-        Accelerate: Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams),
-        Coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
-        Explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
-        Laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
-        Sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
-        WaveBegin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
+        accelerate: Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams),
+        coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
+        explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
+        laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
+        sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
+        wave_begin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
     };
 
     wrapper: WrapperU,

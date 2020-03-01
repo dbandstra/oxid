@@ -137,7 +137,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         .len = 1,
     };
     self.menu_stack.array[0] = .{
-        .MainMenu = menus.MainMenu.init(),
+        .main_menu = menus.MainMenu.init(),
     };
     self.fullscreen = params.fullscreen;
     self.canvas_scale = params.canvas_scale;
@@ -168,11 +168,11 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
 }
 
 pub const InputSpecial = union(enum) {
-    NoOp,
-    Quit,
-    ToggleSound,
-    ToggleFullscreen,
-    SetCanvasScale: u31,
+    noop,
+    quit,
+    toggle_sound,
+    toggle_fullscreen,
+    set_canvas_scale: u31,
 };
 
 pub fn inputEvent(
@@ -220,9 +220,7 @@ pub fn inputEvent(
                 main_state.audio_module.playMenuSound(.backoff);
 
                 return applyMenuEffect(outer_self, ns, menus.Effect {
-                    .Push = menus.Menu {
-                        .InGameMenu = menus.InGameMenu.init(),
-                    },
+                    .push = .{ .in_game_menu = menus.InGameMenu.init() },
                 });
             }
         }
@@ -243,7 +241,7 @@ pub fn inputEvent(
                 .down = down,
             }) catch undefined;
 
-            return InputSpecial { .NoOp = {} };
+            return InputSpecial { .noop = {} };
         }
     }
 
@@ -258,46 +256,46 @@ fn applyMenuEffect(
     const self = &outer_self.main_state;
 
     switch (effect) {
-        .NoOp => {},
-        .Push => |new_menu| {
+        .noop => {},
+        .push => |new_menu| {
             self.menu_stack.push(new_menu);
         },
-        .Pop => {
+        .pop => {
             self.menu_stack.pop();
         },
-        .StartNewGame => |is_multiplayer| {
+        .start_new_game => |is_multiplayer| {
             self.menu_stack.clear();
             startGame(&self.session, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
         },
-        .EndGame => {
+        .end_game => {
             finalizeGame(self, ns);
             abortGame(&self.session);
 
             self.menu_stack.clear();
             self.menu_stack.push(.{
-                .MainMenu = menus.MainMenu.init(),
+                .main_menu = menus.MainMenu.init(),
             });
         },
-        .ToggleSound => {
-            return InputSpecial { .ToggleSound = {} };
+        .toggle_sound => {
+            return InputSpecial { .toggle_sound = {} };
         },
-        .SetVolume => |value| {
+        .set_volume => |value| {
             self.cfg.volume = value;
         },
-        .SetCanvasScale => |value| {
-            return InputSpecial { .SetCanvasScale = value };
+        .set_canvas_scale => |value| {
+            return InputSpecial { .set_canvas_scale = value };
         },
-        .ToggleFullscreen => {
-            return InputSpecial { .ToggleFullscreen = {} };
+        .toggle_fullscreen => {
+            return InputSpecial { .toggle_fullscreen = {} };
         },
-        .ToggleFriendlyFire => {
+        .toggle_friendly_fire => {
             self.friendly_fire = !self.friendly_fire;
             // update existing bullets
             setFriendlyFire(&self.session, self.friendly_fire);
         },
-        .BindGameCommand => |payload| {
+        .bind_game_command => |payload| {
             const command_index = @enumToInt(payload.command);
             const in_use =
                 if (payload.source) |new_source|
@@ -313,15 +311,15 @@ fn applyMenuEffect(
                     payload.source;
             }
         },
-        .ResetAnimTime => {
+        .reset_anim_time => {
             self.menu_anim_time = 0;
         },
-        .Quit => {
-            return InputSpecial { .Quit = {} };
+        .quit => {
+            return .quit;
         },
     }
 
-    return InputSpecial { .NoOp = {} };
+    return .noop;
 }
 
 // i feel like these functions are too heavy to be done inline by this system.
@@ -370,7 +368,7 @@ pub fn handleGameOver(self: *MainState, comptime ns: var) void {
     if (self.session.ecs.findFirstComponent(c.EventGameOver) != null) {
         finalizeGame(self, ns);
         self.menu_stack.push(.{
-            .GameOverMenu = menus.GameOverMenu.init(),
+            .game_over_menu = menus.GameOverMenu.init(),
         });
     }
 }

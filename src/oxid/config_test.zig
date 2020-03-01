@@ -15,35 +15,35 @@ fn getFixtureConfig() config.Config {
     inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
         const value = @intToEnum(input.MenuCommand, field.value);
         cfg.menu_bindings[field.value] = switch (value) {
-            .left => .{ .Key = .left },
-            .right => .{ .Key = .right },
-            .up => .{ .Key = .up },
-            .down => .{ .Key = .down },
-            .escape => .{ .Key = .escape },
-            .enter => .{ .Key = .@"return" },
-            .yes => .{ .Key = .y },
-            .no => .{ .Key = .n },
+            .left => .{ .key = .left },
+            .right => .{ .key = .right },
+            .up => .{ .key = .up },
+            .down => .{ .key = .down },
+            .escape => .{ .key = .escape },
+            .enter => .{ .key = .@"return" },
+            .yes => .{ .key = .y },
+            .no => .{ .key = .n },
         };
     }
     inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
         const value = @intToEnum(input.GameCommand, field.value);
         cfg.game_bindings[0][field.value] = switch (value) {
-            .up => .{ .JoyAxisNeg = .{ .which = 0, .axis = 1 } },
-            .down => .{ .JoyAxisPos = .{ .which = 0, .axis = 1 } },
-            .left => .{ .JoyAxisNeg = .{ .which = 0, .axis = 0 } },
-            .right => .{ .JoyAxisPos = .{ .which = 0, .axis = 0 } },
-            .shoot => .{ .JoyButton = .{ .which = 0, .button = 1 } },
+            .up => .{ .joy_axis_neg = .{ .which = 0, .axis = 1 } },
+            .down => .{ .joy_axis_pos = .{ .which = 0, .axis = 1 } },
+            .left => .{ .joy_axis_neg = .{ .which = 0, .axis = 0 } },
+            .right => .{ .joy_axis_pos = .{ .which = 0, .axis = 0 } },
+            .shoot => .{ .joy_button = .{ .which = 0, .button = 1 } },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
             .toggle_god_mode => null,
-            .escape => .{ .Key = .escape },
+            .escape => .{ .key = .escape },
         };
         cfg.game_bindings[1][field.value] = switch (value) {
-            .up => .{ .Key = .w },
-            .down => .{ .Key = .s },
-            .left => .{ .Key = .a },
-            .right => .{ .Key = .d },
-            .shoot => .{ .Key = .f },
+            .up => .{ .key = .w },
+            .down => .{ .key = .s },
+            .left => .{ .key = .a },
+            .right => .{ .key = .d },
+            .shoot => .{ .key = .f },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
             .toggle_god_mode => null,

@@ -212,10 +212,11 @@ fn getWindowedDims(scale: u31) WindowDims {
 }
 
 const FramerateScheme = union(enum) {
-    // fixed: assume that tick function is called at this rate. don't even look at delta time
-    Fixed: usize,
+    // fixed: assume that tick function is called at this rate. don't even
+    // look at delta time
+    fixed: usize,
     // free: adapt to delta time
-    Free,
+    free,
 };
 
 const Main = struct {
@@ -269,12 +270,12 @@ pub fn main() u8 {
     };
 
     switch (self.framerate_scheme) {
-        .Fixed => |refresh_rate| {
+        .fixed => |refresh_rate| {
             while (!self.quit) {
                 tick(self, refresh_rate);
             }
         },
-        .Free => {
+        .free => {
             const freq: u64 = SDL_GetPerformanceFrequency();
             var maybe_prev: ?u64 = null;
             while (true) {
@@ -298,8 +299,8 @@ pub fn main() u8 {
                 }
 
                 const refresh_rate = switch (self.framerate_scheme) {
-                    .Fixed => |rate| rate,
-                    .Free => 1000000 / delta_microseconds,
+                    .fixed => |rate| rate,
+                    .free => 1000000 / delta_microseconds,
                 };
 
                 if (refresh_rate == 0) {
@@ -371,10 +372,10 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     }
     if (args.option("--refreshrate")) |value| {
         if (std.mem.eql(u8, value, "free")) {
-            options.framerate_scheme = .Free;
+            options.framerate_scheme = .free;
         } else {
             options.framerate_scheme = .{
-                .Fixed = try std.fmt.parseInt(usize, value, 10),
+                .fixed = try std.fmt.parseInt(usize, value, 10),
             };
         }
     }
@@ -385,23 +386,27 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     return options;
 }
 
-fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?FramerateScheme) !FramerateScheme {
+fn getFramerateScheme(
+    window: *SDL_Window,
+    vsync: bool,
+    maybe_scheme: ?FramerateScheme,
+) !FramerateScheme {
     if (!vsync) {
         // if vsync isn't enabled, a fixed framerate scheme never makes sense
-        return FramerateScheme { .Free = {} };
+        return .free;
     }
 
     if (maybe_scheme) |scheme| {
         // explicit scheme was supplied via command line option. override any
         // auto-detection.
         switch (scheme) {
-            .Fixed => |rate| {
+            .fixed => |rate| {
                 if (rate < 1 or rate > 300) {
                     std.debug.warn("Invalid refresh rate: {}\n", .{rate});
                     return error.Failed;
                 }
             },
-            .Free => {},
+            .free => {},
         }
         return scheme;
     }
@@ -411,17 +416,20 @@ fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?Framerate
     const display_index = SDL_GetWindowDisplayIndex(window);
     var mode: SDL_DisplayMode = undefined;
     if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
-        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n", .{});
-        return FramerateScheme { .Free = {} };
+        std.debug.warn(
+            "Failed to get refresh rate, defaulting to free framerate.\n", .{});
+        return .free;
     }
     if (mode.refresh_rate <= 0) {
-        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", .{mode.refresh_rate});
-        return FramerateScheme { .Free = {} };
+        std.debug.warn(
+            "Refresh rate reported as {}, defaulting to free framerate.\n",
+            .{ mode.refresh_rate });
+        return .free;
     }
     // TODO - do i need to update this when the window moves (possibly to
     // another monitor with a different refresh rate)?
     return FramerateScheme {
-        .Fixed = @intCast(usize, mode.refresh_rate),
+        .fixed = @intCast(usize, mode.refresh_rate),
     };
 }
 
@@ -559,16 +567,26 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     // vsync). i don't really get what adaptive vsync is but it seems like it
     // should be classed with vsync.
     const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
-    const vsync_str = if (vsync_enabled) "enabled" else "disabled"; // https://github.com/ziglang/zig/issues/3882
-    std.debug.warn("Vsync is {}.\n", .{vsync_str});
+    // https://github.com/ziglang/zig/issues/3882
+    const vsync_str = if (vsync_enabled) "enabled" else "disabled";
+    std.debug.warn("Vsync is {}.\n", .{ vsync_str });
 
-    const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
+    const framerate_scheme = try getFramerateScheme(
+        window,
+        vsync_enabled,
+        options.framerate_scheme,
+    );
     switch (framerate_scheme) {
-        .Fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
-        .Free => std.debug.warn("Framerate scheme: free\n", .{}),
+        .fixed => |refresh_rate|
+            std.debug.warn("Framerate scheme: fixed {}hz\n", .{ refresh_rate }),
+        .free => std.debug.warn("Framerate scheme: free\n", .{}),
     }
 
-    if (!platform_framebuffer.init(&self.framebuffer_state, common.virtual_window_width, common.virtual_window_height)) {
+    if (!platform_framebuffer.init(
+        &self.framebuffer_state,
+        common.virtual_window_width,
+        common.virtual_window_height,
+    )) {
         std.debug.warn("platform_framebuffer.init failed\n", .{});
         return error.Failed;
     }
@@ -774,11 +792,11 @@ fn toggleFullscreen(self: *Main) void {
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
     if (common.inputEvent(self, @This(), source, down)) |special| {
         switch (special) {
-            .NoOp => {},
-            .Quit => self.quit = true,
-            .ToggleSound => {}, // unused in SDL build
-            .ToggleFullscreen => toggleFullscreen(self),
-            .SetCanvasScale => |value| setCanvasScale(self, value),
+            .noop => {},
+            .quit => self.quit = true,
+            .toggle_sound => {}, // unused in SDL build
+            .toggle_fullscreen => toggleFullscreen(self),
+            .set_canvas_scale => |value| setCanvasScale(self, value),
         }
     }
 }
@@ -788,7 +806,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    inputEvent(self, .{ .Key = key }, true);
+                    inputEvent(self, .{ .key = key }, true);
 
                     switch (key) {
                         .backquote => {
@@ -809,7 +827,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                inputEvent(self, .{ .Key = key }, false);
+                inputEvent(self, .{ .key = key }, false);
 
                 switch (key) {
                     .backquote => {
@@ -826,14 +844,14 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 .axis = evt.jaxis.axis,
             };
             if (evt.jaxis.value < -threshold) {
-                inputEvent(self, .{ .JoyAxisNeg = joy_axis }, true);
-                inputEvent(self, .{ .JoyAxisPos = joy_axis }, false);
+                inputEvent(self, .{ .joy_axis_neg = joy_axis }, true);
+                inputEvent(self, .{ .joy_axis_pos = joy_axis }, false);
             } else if (evt.jaxis.value > threshold) {
-                inputEvent(self, .{ .JoyAxisPos = joy_axis }, true);
-                inputEvent(self, .{ .JoyAxisNeg = joy_axis }, false);
+                inputEvent(self, .{ .joy_axis_pos = joy_axis }, true);
+                inputEvent(self, .{ .joy_axis_neg = joy_axis }, false);
             } else {
-                inputEvent(self, .{ .JoyAxisPos = joy_axis }, false);
-                inputEvent(self, .{ .JoyAxisNeg = joy_axis }, false);
+                inputEvent(self, .{ .joy_axis_pos = joy_axis }, false);
+                inputEvent(self, .{ .joy_axis_neg = joy_axis }, false);
             }
         },
         SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
@@ -843,7 +861,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
             };
             inputEvent(
                 self,
-                .{ .JoyButton = joy_button },
+                .{ .joy_button = joy_button },
                 evt.type == SDL_JOYBUTTONDOWN,
             );
         },

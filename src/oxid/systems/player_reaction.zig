@@ -35,7 +35,7 @@ pub fn run(gs: *GameSession) void {
                     }) catch undefined;
                 },
                 .coin => {
-                    p.playSynth(gs, "Coin", audio.CoinVoice.NoteParams {
+                    p.playSynth(gs, "coin", audio.CoinVoice, audio.CoinVoice.NoteParams {
                         .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
                     });
                 },

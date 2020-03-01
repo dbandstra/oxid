@@ -92,7 +92,7 @@ pub fn run(gs: *GameSession) void {
         }
 
         p.playSample(gs, .monster_impact);
-        p.playSynth(gs, "Explosion", audio.ExplosionVoice.NoteParams {
+        p.playSynth(gs, "explosion", audio.ExplosionVoice, audio.ExplosionVoice.NoteParams {
             .unused = false,
         });
 

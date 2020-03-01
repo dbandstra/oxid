@@ -259,36 +259,36 @@ pub const JoyAxis = struct {
 };
 
 pub const InputSource = union(enum) {
-    Key: Key,
-    JoyButton: JoyButton,
-    JoyAxisNeg: JoyAxis,
-    JoyAxisPos: JoyAxis,
+    key: Key,
+    joy_button: JoyButton,
+    joy_axis_neg: JoyAxis,
+    joy_axis_pos: JoyAxis,
 };
 
 pub fn areInputSourcesEqual(a: InputSource, b: InputSource) bool {
     // TODO - use std.meta.eql?
     return switch (a) {
-        .Key => |a_i|
+        .key => |a_i|
             switch (b) {
-                .Key => |b_i| a_i == b_i,
+                .key => |b_i| a_i == b_i,
                 else => false,
             },
-        .JoyButton => |a_i|
+        .joy_button => |a_i|
             switch (b) {
-                .JoyButton => |b_i| a_i.which == b_i.which and
-                                    a_i.button == b_i.button,
+                .joy_button => |b_i| a_i.which == b_i.which and
+                                     a_i.button == b_i.button,
                 else => false,
             },
-        .JoyAxisNeg => |a_i|
+        .joy_axis_neg => |a_i|
             switch (b) {
-                .JoyAxisNeg => |b_i| a_i.which == b_i.which and
-                                     a_i.axis == b_i.axis,
+                .joy_axis_neg => |b_i| a_i.which == b_i.which and
+                                       a_i.axis == b_i.axis,
                 else => false,
             },
-        .JoyAxisPos => |a_i|
+        .joy_axis_pos => |a_i|
             switch (b) {
-                .JoyAxisPos => |b_i| a_i.which == b_i.which and
-                                     a_i.axis == b_i.axis,
+                .joy_axis_pos => |b_i| a_i.which == b_i.which and
+                                       a_i.axis == b_i.axis,
                 else => false,
             },
     };
