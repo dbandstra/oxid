@@ -203,7 +203,7 @@ pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
 
 pub fn cycleGlitchMode(ds: *DrawState) void {
     const i = @enumToInt(ds.glitch_mode);
-    const count = @memberCount(GlitchMode);
+    const count = @typeInfo(GlitchMode).Enum.fields.len;
     ds.glitch_mode =
         if (i + 1 < count)
             @intToEnum(GlitchMode, i + 1)

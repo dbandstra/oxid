@@ -38,7 +38,7 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
 }
 
 pub fn ECS(comptime ComponentLists: type) type {
-    std.debug.assert(@typeId(ComponentLists) == .Struct);
+    std.debug.assert(@typeInfo(ComponentLists) == .Struct);
     //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
     //    // ?! is it possible to assert that a type == ComponentList(X)?
 
@@ -272,7 +272,7 @@ pub fn Inbox(
 
         // return all of the matches (up to the inbox's capacity), in an
         // arbitrary order.
-        pub inline fn all(self: *const @This()) []*const ComponentType {
+        pub inline fn all(self: *const @This()) []const *const ComponentType {
             return self.array[0..self.count];
         }
 

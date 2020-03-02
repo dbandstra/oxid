@@ -18,7 +18,11 @@ pub fn build(b: *std.build.Builder) void {
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir(".");
     wasm.setBuildMode(b.standardReleaseOptions());
-    wasm.setTarget(.wasm32, .freestanding, .none);
+    wasm.setTarget(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+        .abi = .none,
+    });
     addCommonRequirements(b, wasm);
 
     b.step("test", "Run all tests").dependOn(&t.step);
