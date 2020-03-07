@@ -45,7 +45,7 @@ fn openDataFile(
     const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
 
     if (mode == .write) {
-        std.fs.makeDir(dir_path) catch |err| {
+        std.fs.cwd().makeDir(dir_path) catch |err| {
             if (err != error.PathAlreadyExists) {
                 return err;
             }
@@ -58,8 +58,8 @@ fn openDataFile(
     );
 
     return switch (mode) {
-        .read => std.fs.cwd().openFile(file_path, .{}),
-        .write => std.fs.cwd().createFile(file_path, .{}),
+        .read => try std.fs.cwd().openFile(file_path, .{}),
+        .write => try std.fs.cwd().createFile(file_path, .{}),
     };
 }
 

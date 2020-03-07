@@ -240,9 +240,8 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
                 if (maybe_out_id) |out_id| {
                     out_id.* = .{ .id = id };
                 }
-                const data = &self.list.data[self.index + i];
-                self.index += i + 1;
-                return data;
+                defer self.index += i + 1;
+                return &self.list.data[self.index + i];
             }
             self.index = self.list.count;
             return null;
