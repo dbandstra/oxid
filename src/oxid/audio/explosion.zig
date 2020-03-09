@@ -22,7 +22,14 @@ pub const ExplosionVoice = struct {
         };
     }
 
-    pub fn paint(self: *ExplosionVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(
+        self: *ExplosionVoice,
+        span: zang.Span,
+        outputs: [num_outputs][]f32,
+        temps: [num_temps][]f32,
+        note_id_changed: bool,
+        params: Params,
+    ) void {
         const out = outputs[0];
 
         zang.zero(span, temps[0]);
@@ -30,7 +37,7 @@ pub const ExplosionVoice = struct {
         zang.zero(span, temps[1]);
         self.cutoff_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .function = .SmoothStep,
+            .function = .smoothstep,
             .curve = &[_]zang.CurveNode {
                 .{ .t = 0.0, .value = 3000.0 },
                 .{ .t = 0.5, .value = 1000.0 },
@@ -41,19 +48,20 @@ pub const ExplosionVoice = struct {
         // FIXME - apply this to the curve nodes before interpolation, to save
         // time. but this probably requires a change to the zang api
         var i: usize = 0; while (i < temps[1].len) : (i += 1) {
-            temps[1][i] = zang.cutoffFromFrequency(temps[1][i], params.sample_rate);
+            temps[1][i] =
+                zang.cutoffFromFrequency(temps[1][i], params.sample_rate);
         }
         zang.zero(span, temps[2]);
         self.filter.paint(span, .{temps[2]}, .{}, .{
             .input = temps[0],
-            .filter_type = .LowPass,
+            .filter_type = .low_pass,
             .cutoff = zang.buffer(temps[1]),
             .resonance = 0.0,
         });
         zang.zero(span, temps[1]);
         self.volume_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .function = .SmoothStep,
+            .function = .smoothstep,
             .curve = &[_]zang.CurveNode {
                 .{ .t = 0.0, .value = 0.0 },
                 .{ .t = 0.004, .value = 0.75 },

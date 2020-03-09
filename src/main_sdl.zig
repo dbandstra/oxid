@@ -433,13 +433,21 @@ fn getFramerateScheme(
     };
 }
 
-fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
+fn audioCallback(
+    userdata_: ?*c_void,
+    stream_: ?[*]u8,
+    len_: c_int,
+) callconv(.C) void {
     const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const buf = self.main_state.audio_module.paint(self.audio_sample_rate_current, &self.main_state.session);
-    const vol = std.math.min(1.0, @intToFloat(f32, self.main_state.cfg.volume) / 100.0);
-    zang.mixDown(out_bytes, buf, .S16LSB, 1, 0, vol);
+    const buf = self.main_state.audio_module.paint(
+        self.audio_sample_rate_current,
+        &self.main_state.session,
+    );
+    const vol = std.math.min(1.0,
+        @intToFloat(f32, self.main_state.cfg.volume) / 100.0);
+    zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
 
 fn init(hunk: *Hunk, options: Options) !*Main {

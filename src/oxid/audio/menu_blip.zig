@@ -16,7 +16,14 @@ pub const Instrument = struct {
         };
     }
 
-    pub fn paint(self: *Instrument, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(
+        self: *Instrument,
+        span: zang.Span,
+        outputs: [num_outputs][]f32,
+        temps: [num_temps][]f32,
+        note_id_changed: bool,
+        params: Params,
+    ) void {
         zang.zero(span, temps[0]);
         self.osc.paint(span, .{temps[0]}, .{}, .{
             .sample_rate = params.sample_rate,
@@ -26,9 +33,9 @@ pub const Instrument = struct {
         zang.zero(span, temps[1]);
         self.env.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .attack = .Instantaneous,
-            .decay = .Instantaneous,
-            .release = .{ .Linear = 0.04 },
+            .attack = .instantaneous,
+            .decay = .instantaneous,
+            .release = .{ .linear = 0.04 },
             .sustain_volume = 1.0,
             .note_on = params.note_on,
         });
@@ -36,6 +43,19 @@ pub const Instrument = struct {
         zang.multiply(span, outputs[0], temps[0], temps[1]);
     }
 };
+
+fn makeNote(
+    t: f32,
+    note_id: usize,
+    freq: f32,
+    note_on: bool,
+) zang.Notes(Instrument.NoteParams).SongEvent {
+    return .{
+        .t = t,
+        .note_id = note_id,
+        .params = .{ .freq = freq, .note_on = note_on },
+    };
+}
 
 pub const MenuBlipVoice = struct {
     pub const num_outputs = 1;
@@ -56,23 +76,30 @@ pub const MenuBlipVoice = struct {
     flt: zang.Filter,
 
     pub fn init() MenuBlipVoice {
-        const SongEvent = zang.Notes(Instrument.NoteParams).SongEvent;
+        const Notes = zang.Notes(Instrument.NoteParams);
         const IParams = Instrument.NoteParams;
 
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = zang.Notes(Instrument.NoteParams).NoteTracker.init(&[_]SongEvent {
-                .{ .params = .{ .freq = 60.0, .note_on =  true }, .note_id = 1, .t = 0.0  },
-                .{ .params = .{ .freq = 60.0, .note_on = false }, .note_id = 2, .t = 0.02 },
-                .{ .params = .{ .freq = 40.0, .note_on =  true }, .note_id = 3, .t = 0.08 },
-                .{ .params = .{ .freq = 40.0, .note_on = false }, .note_id = 4, .t = 0.1  },
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
+                comptime makeNote(0.00, 1, 60.0, true),
+                comptime makeNote(0.02, 2, 60.0, false),
+                comptime makeNote(0.08, 3, 40.0, true),
+                comptime makeNote(0.10, 4, 40.0, false),
             }),
             .flt = zang.Filter.init(),
         };
     }
 
-    pub fn paint(self: *MenuBlipVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(
+        self: *MenuBlipVoice,
+        span: zang.Span,
+        outputs: [num_outputs][]f32,
+        temps: [num_temps][]f32,
+        note_id_changed: bool,
+        params: Params,
+    ) void {
         if (note_id_changed) {
             self.trigger.reset();
             self.note_tracker.reset();
@@ -80,19 +107,34 @@ pub const MenuBlipVoice = struct {
 
         zang.zero(span, temps[2]);
 
-        var ctr = self.trigger.counter(span, self.note_tracker.consume(params.sample_rate, span.end - span.start));
+        var ctr = self.trigger.counter(
+            span,
+            self.note_tracker.consume(
+                params.sample_rate,
+                span.end - span.start,
+            ),
+        );
         while (self.trigger.next(&ctr)) |result| {
-            self.instrument.paint(result.span, .{temps[2]}, .{temps[0], temps[1]}, note_id_changed or result.note_id_changed, .{
-                .sample_rate = params.sample_rate,
-                .freq = result.params.freq * params.freq_mul,
-                .note_on = result.params.note_on,
-            });
+            self.instrument.paint(
+                result.span,
+                .{temps[2]},
+                .{temps[0], temps[1]},
+                note_id_changed or result.note_id_changed,
+                .{
+                    .sample_rate = params.sample_rate,
+                    .freq = result.params.freq * params.freq_mul,
+                    .note_on = result.params.note_on,
+                },
+            );
         }
 
         self.flt.paint(span, outputs, .{}, .{
             .input = temps[2],
-            .filter_type = .LowPass,
-            .cutoff = zang.constant(zang.cutoffFromFrequency(2000.0 * params.freq_mul, params.sample_rate)),
+            .filter_type = .low_pass,
+            .cutoff = zang.constant(zang.cutoffFromFrequency(
+                2000.0 * params.freq_mul,
+                params.sample_rate,
+            )),
             .resonance = 0.3,
         });
     }

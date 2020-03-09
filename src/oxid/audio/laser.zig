@@ -35,13 +35,20 @@ pub const LaserVoice = struct {
         };
     }
 
-    pub fn paint(self: *LaserVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(
+        self: *LaserVoice,
+        span: zang.Span,
+        outputs: [num_outputs][]f32,
+        temps: [num_temps][]f32,
+        note_id_changed: bool,
+        params: Params,
+    ) void {
         const out = outputs[0];
 
         zang.zero(span, temps[0]);
         self.modulator_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .function = .SmoothStep,
+            .function = .smoothstep,
             .curve = &[_]zang.CurveNode {
                 .{ .value = 1000.0, .t = 0.0 },
                 .{ .value = 200.0, .t = 0.1 },
@@ -59,7 +66,7 @@ pub const LaserVoice = struct {
         zang.zero(span, temps[0]);
         self.carrier_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .function = .SmoothStep,
+            .function = .smoothstep,
             .curve = &[_]zang.CurveNode {
                 .{ .value = 1000.0, .t = 0.0 },
                 .{ .value = 200.0, .t = 0.1 },
@@ -76,7 +83,7 @@ pub const LaserVoice = struct {
         zang.zero(span, temps[0]);
         self.volume_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
-            .function = .SmoothStep,
+            .function = .smoothstep,
             .curve = &[_]zang.CurveNode {
                 .{ .value = 0.0, .t = 0.0 },
                 .{ .value = 0.35, .t = 0.004 },

@@ -33,10 +33,10 @@ fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
         .num_channels = preloaded.num_channels,
         .sample_rate = preloaded.sample_rate,
         .format = switch (preloaded.format) {
-            .U8 => .U8,
-            .S16LSB => .S16LSB,
-            .S24LSB => .S24LSB,
-            .S32LSB => .S32LSB,
+            .unsigned8 => .unsigned8,
+            .signed16_lsb => .signed16_lsb,
+            .signed24_lsb => .signed24_lsb,
+            .signed32_lsb => .signed32_lsb,
         },
         .data = data,
     };
