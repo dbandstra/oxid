@@ -91,9 +91,7 @@ fn detectGLSLVersion() InitError!shaders.GLSLVersion {
                 }
             }
 
-            warn("Unsupported OpenGL version: {}\n", .{
-                std.mem.toSliceConst(u8, v),
-            });
+            warn("Unsupported OpenGL version: {}\n", .{std.mem.spanZ(v)});
         } else {
             warn("Failed to get OpenGL version.\n", .{});
         }

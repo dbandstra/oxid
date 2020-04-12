@@ -233,16 +233,16 @@ pub const Monster = struct {
                 if (params.monster_type == .juggernaut)
                     c.Monster.Personality.chase
                 else
-                    switch (gs.getRand().range(u32, 0, 2)) {
-                        0 => c.Monster.Personality.chase,
-                        else => c.Monster.Personality.wander,
-                    },
+                    if (gs.getRand().boolean())
+                        c.Monster.Personality.chase
+                    else
+                        c.Monster.Personality.wander,
             .kill_points = monster_values.kill_points,
             .can_shoot = can_shoot,
             .can_drop_webs = monster_values.can_drop_webs,
             .next_attack_timer =
                 if (can_shoot or monster_values.can_drop_webs)
-                    constants.duration60(gs.getRand().range(u31, 75, 400))
+                    constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400))
                 else
                     0,
             .has_coin = params.has_coin,

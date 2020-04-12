@@ -73,23 +73,16 @@ pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     defer file.close();
 
     const size = try std.math.cast(usize, try file.getEndPos());
-    return try config.read(
-        std.fs.File.InStream.Error,
-        &std.fs.File.inStream(file).stream,
-        size,
-        hunk_side,
-    );
+    var stream = file.inStream();
+    return try config.read(@TypeOf(stream), &stream, size, hunk_side);
 }
 
 pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
     const file = try openDataFile(hunk_side, config_filename, .write);
     defer file.close();
 
-    return try config.write(
-        std.fs.File.OutStream.Error,
-        &std.fs.File.outStream(file).stream,
-        cfg,
-    );
+    var stream = file.outStream();
+    return try config.write(@TypeOf(stream), &stream, cfg);
 }
 
 pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
@@ -107,10 +100,8 @@ pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
     };
     defer file.close();
 
-    return datafile.readHighScores(
-        std.fs.File.InStream.Error,
-        &std.fs.File.inStream(file).stream,
-    );
+    var stream = file.inStream();
+    return datafile.readHighScores(@TypeOf(stream), &stream);
 }
 
 pub fn saveHighScores(
@@ -120,11 +111,8 @@ pub fn saveHighScores(
     const file = try openDataFile(hunk_side, highscores_filename, .write);
     defer file.close();
 
-    try datafile.writeHighScores(
-        std.fs.File.OutStream.Error,
-        &std.fs.File.outStream(file).stream,
-        high_scores,
-    );
+    var stream = file.outStream();
+    try datafile.writeHighScores(@TypeOf(stream), &stream, high_scores);
 }
 
 const WindowDims = struct {
@@ -353,7 +341,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
 
     if (args.flag("--help")) {
         std.debug.warn("Usage:\n", .{});
-        try clap.help(std.debug.getStderrStream(), &params);
+        try clap.help(std.debug.getStderrStream().*, &params);
         return null;
     }
 

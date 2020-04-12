@@ -195,7 +195,8 @@ fn drawHud(
     defer perf.end(.draw_hud);
 
     var buffer: [40]u8 = undefined;
-    var dest = std.io.SliceOutStream.init(buffer[0..]);
+    var fbs = std.io.fixedBufferStream(&buffer);
+    var stream = fbs.outStream();
 
     const mc = gs.ecs.findFirstComponent(c.MainController).?;
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
@@ -217,9 +218,9 @@ fn drawHud(
     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
-        _ = dest.stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
-        fontDrawString(ds, &static.font, 0, 0, dest.getWritten());
-        dest.reset();
+        _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
+        fontDrawString(ds, &static.font, 0, 0, fbs.getWritten());
+        fbs.reset();
 
         var player_number: u31 = 0; while (player_number < 2) : (player_number += 1) {
             const pc_maybe = blk: {
@@ -279,9 +280,9 @@ fn drawHud(
                 }
 
                 pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
-                _ = dest.stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-                fontDrawString(ds, &static.font, 19*8, y, dest.getWritten());
-                dest.reset();
+                _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
+                fontDrawString(ds, &static.font, 19*8, y, fbs.getWritten());
+                fbs.reset();
             }
         }
 
@@ -293,9 +294,9 @@ fn drawHud(
         }
     }
 
-    _ = dest.stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fontDrawString(ds, &static.font, 30*8, 0, dest.getWritten());
-    dest.reset();
+    _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
+    fontDrawString(ds, &static.font, 30*8, 0, fbs.getWritten());
+    fbs.reset();
 
     pdraw.end(ds);
 }

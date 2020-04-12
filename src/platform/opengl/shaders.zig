@@ -35,11 +35,11 @@ fn printLog(s: []const u8, comptime indentation: usize) void {
     const stderr = std.debug.getStderrStream();
     var new_line = true;
     for (s) |ch| {
-        if (new_line) stderr.write(" " ** indentation) catch return;
+        if (new_line) stderr.writeByteNTimes(' ', indentation) catch return;
         stderr.writeByte(ch) catch return;
         new_line = ch == '\n';
     }
-    if (s.len > 0 and s[s.len - 1] != '\n') stderr.write("\n") catch return;
+    if (s.len > 0 and s[s.len - 1] != '\n') stderr.writeByte('\n') catch return;
 }
 
 pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {

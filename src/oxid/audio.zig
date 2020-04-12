@@ -82,15 +82,14 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
         });
 
         const file = try std.fs.cwd().openFile(file_path, .{});
-        var fis = file.inStream();
-        const stream = &fis.stream;
+        var stream = file.inStream();
 
-        const Loader = wav.Loader(std.fs.File.InStream.Error, true);
-        const preloaded = try Loader.preload(stream);
+        const Loader = wav.Loader(@TypeOf(stream), true);
+        const preloaded = try Loader.preload(&stream);
 
         const num_bytes = preloaded.getNumBytes();
         var data = try hunk.low().allocator.alloc(u8, num_bytes);
-        try Loader.load(stream, preloaded, data);
+        try Loader.load(&stream, preloaded, data);
 
         return makeSample(preloaded, data);
     }

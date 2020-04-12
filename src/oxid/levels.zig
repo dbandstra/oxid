@@ -118,15 +118,15 @@ const pcx = @import("zig-pcx");
 fn loadLevel(comptime filename: []const u8) [width * height]u8 {
     @setEvalBranchQuota(20000);
     const input = @embedFile(build_options.assets_path ++ "/" ++ filename);
-    var slice_stream = std.io.SliceInStream.init(input);
-    var stream = &slice_stream.stream;
-    const Loader = pcx.Loader(std.io.SliceInStream.Error);
-    const preloaded = try Loader.preload(stream);
+    var fbs = std.io.fixedBufferStream(input);
+    var stream = fbs.inStream();
+    const Loader = pcx.Loader(@TypeOf(stream));
+    const preloaded = try Loader.preload(&stream);
     if (preloaded.width != width or preloaded.height != height) {
         @compileError(filename ++ " must be a 20x14 image");
     }
     var data: [width * height]u8 = undefined;
-    try Loader.loadIndexed(stream, preloaded, data[0..], null);
+    try Loader.loadIndexed(&stream, preloaded, &data, null);
     for (data) |*v| {
         v.* = mapping[v.*];
     }

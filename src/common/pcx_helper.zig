@@ -22,12 +22,12 @@ pub fn loadPcx(
 ) LoadPcxError!PcxImage {
     const filedata = @embedFile(filename);
 
-    var slice_stream = std.io.SliceInStream.init(filedata);
-    var stream = &slice_stream.stream;
-    const Loader = pcx.Loader(std.io.SliceInStream.Error);
+    var fbs = std.io.fixedBufferStream(filedata);
+    var stream = fbs.inStream();
+    const Loader = pcx.Loader(@TypeOf(stream));
 
     // load PCX header
-    const preloaded = try Loader.preload(stream);
+    const preloaded = try Loader.preload(&stream);
 
     // allocate space for image data
     const width: u32 = preloaded.width;
@@ -37,7 +37,7 @@ pub fn loadPcx(
     var palette: [768]u8 = undefined;
 
     // decode image into `pixels`
-    try Loader.loadIndexedWithStride(stream, preloaded, pixels, 4, palette[0..]);
+    try Loader.loadIndexedWithStride(&stream, preloaded, pixels, 4, palette[0..]);
 
     // convert image data to RGBA
     var i: u32 = 0;
@@ -57,7 +57,7 @@ pub fn loadPcx(
         .palette = undefined,
     };
 
-    std.mem.copy(u8, image.palette[0..], palette[0..48]);
+    std.mem.copy(u8, &image.palette, palette[0..48]);
 
     return image;
 }

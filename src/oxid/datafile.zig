@@ -2,8 +2,8 @@ const std = @import("std");
 const constants = @import("constants.zig");
 
 pub fn readHighScores(
-    comptime ReadError: type,
-    stream: *std.io.InStream(ReadError),
+    comptime InStream: type,
+    stream: *InStream,
 ) [constants.num_high_scores]u32 {
     var high_scores = [1]u32{0} ** constants.num_high_scores;
     var i: usize = 0; while (i < constants.num_high_scores) : (i += 1) {
@@ -13,8 +13,8 @@ pub fn readHighScores(
 }
 
 pub fn writeHighScores(
-    comptime WriteError: type,
-    stream: *std.io.OutStream(WriteError),
+    comptime OutStream: type,
+    stream: *OutStream,
     high_scores: [constants.num_high_scores]u32,
 ) !void {
     for (high_scores) |score| {

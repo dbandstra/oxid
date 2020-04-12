@@ -97,10 +97,10 @@ test "config.read" {
     var hunk_buf: [50000]u8 = undefined;
     var hunk = Hunk.init(hunk_buf[0..]);
 
-    var sis = std.io.SliceInStream.init(fixture_json);
+    var stream = std.io.fixedBufferStream(fixture_json).inStream();
     const cfg = try config.read(
-        std.io.SliceInStream.Error,
-        &sis.stream,
+        @TypeOf(stream),
+        &stream,
         fixture_json.len,
         &hunk.low(),
     );
@@ -109,7 +109,8 @@ test "config.read" {
 
 test "config.write" {
     var buffer: [4000]u8 = undefined;
-    var sos = std.io.SliceOutStream.init(buffer[0..]);
-    try config.write(std.io.SliceOutStream.Error, &sos.stream, getFixtureConfig());
-    std.testing.expectEqualSlices(u8, fixture_json, sos.getWritten());
+    var fbs = std.io.fixedBufferStream(&buffer);
+    var stream = fbs.outStream();
+    try config.write(@TypeOf(stream), &stream, getFixtureConfig());
+    std.testing.expectEqualSlices(u8, fixture_json, fbs.getWritten());
 }

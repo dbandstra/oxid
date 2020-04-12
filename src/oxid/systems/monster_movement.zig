@@ -156,7 +156,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
             }) catch undefined;
         }
         self.monster.next_attack_timer =
-            constants.duration60(gs.getRand().range(u31, 75, 400));
+            constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400));
     }
 }
 
@@ -245,7 +245,7 @@ fn chooseTurn(
         break :blk total;
     };
     if (total_score > 0) {
-        var r = gs.getRand().range(u32, 0, total_score);
+        var r = gs.getRand().intRangeLessThan(u32, 0, total_score);
         for (choices.choices[0..choices.num_choices]) |choice| {
             if (r < choice.score) {
                 return choice.direction;

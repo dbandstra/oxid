@@ -57,7 +57,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     }
     if (util.decrementTimer(&gc.next_pickup_timer)) {
         const pickup_type: ConstantTypes.PickupType =
-            if ((gs.getRand().scalar(u32) & 1) == 0)
+            if (gs.getRand().boolean())
                 .speed_up
             else
                 .power_up;

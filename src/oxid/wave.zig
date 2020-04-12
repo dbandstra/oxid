@@ -117,7 +117,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             for (choices) |choice| {
                 total_weight += choice.weight;
             }
-            const r = gs.getRand().range(u32, 0, total_weight);
+            const r = gs.getRand().intRangeLessThan(u32, 0, total_weight);
             var sum: u32 = 0;
             for (choices) |choice| {
                 sum += choice.weight;

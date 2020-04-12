@@ -78,9 +78,9 @@ pub const DrawMenuContext = struct {
 
     pub fn label(self: *@This(), comptime fmt: []const u8, args: var) void {
         var buffer: [80]u8 = undefined;
-        var dest = std.io.SliceOutStream.init(buffer[0..]);
-        _ = dest.stream.print(fmt, args) catch {};
-        const s = dest.getWritten();
+        var fbs = std.io.fixedBufferStream(&buffer);
+        _ = fbs.outStream().print(fmt, args) catch {};
+        const s = fbs.getWritten();
 
         self.textHelper(.left, s);
         self.bottom_margin = 2;
@@ -92,9 +92,9 @@ pub const DrawMenuContext = struct {
 
     pub fn option(self: *@This(), comptime fmt: []const u8, args: var) bool {
         var buffer: [80]u8 = undefined;
-        var dest = std.io.SliceOutStream.init(buffer[0..]);
-        _ = dest.stream.print(fmt, args) catch {};
-        const s = dest.getWritten();
+        var fbs = std.io.fixedBufferStream(&buffer);
+        _ = fbs.outStream().print(fmt, args) catch {};
+        const s = fbs.getWritten();
 
         self.h += self.bottom_margin;
         if (self.draw) {

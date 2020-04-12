@@ -67,8 +67,8 @@ pub fn getDefault() Config {
 // reading config json
 
 pub fn read(
-    comptime ReadError: type,
-    stream: *std.io.InStream(ReadError),
+    comptime InStream: type,
+    stream: *InStream,
     size: usize,
     hunk_side: *HunkSide,
 ) !Config {
@@ -241,30 +241,26 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
     unreachable;
 }
 
-pub fn write(
-    comptime WriteError: type,
-    stream: *std.io.OutStream(WriteError),
-    cfg: Config,
-) !void {
+pub fn write(comptime OutStream: type, stream: *OutStream, cfg: Config) !void {
     try stream.print(
         \\{{
         \\    "volume": {},
         \\    "menu_bindings": {{
         \\
     , .{ cfg.volume });
-    try writeBindings(WriteError, stream, input.MenuCommand, cfg.menu_bindings);
+    try writeBindings(OutStream, stream, input.MenuCommand, cfg.menu_bindings);
     try stream.print(
         \\    }},
         \\    "game_bindings": {{
         \\
     , .{});
-    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[0]);
+    try writeBindings(OutStream, stream, input.GameCommand, cfg.game_bindings[0]);
     try stream.print(
         \\    }},
         \\    "game_bindings2": {{
         \\
     , .{});
-    try writeBindings(WriteError, stream, input.GameCommand, cfg.game_bindings[1]);
+    try writeBindings(OutStream, stream, input.GameCommand, cfg.game_bindings[1]);
     try stream.print(
         \\    }}
         \\}}
@@ -273,8 +269,8 @@ pub fn write(
 }
 
 fn writeBindings(
-    comptime WriteError: type,
-    stream: *std.io.OutStream(WriteError),
+    comptime OutStream: type,
+    stream: *OutStream,
     comptime CommandType: type,
     bindings: [@typeInfo(CommandType).Enum.fields.len]?InputSource,
 ) !void {
