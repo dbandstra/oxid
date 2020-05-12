@@ -36,9 +36,8 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
         spiders = 8;
         // first dreadnaut
     } else {
-        const choices = [_]WaveChoice {
-            // https://github.com/ziglang/zig/issues/3679
-            WaveChoice {
+        const choices = [_]WaveChoice{
+            .{
                 // all regular spiders
                 .weight = if (wavenum < 20) 10 else 0,
                 .spider_basecount = 8,
