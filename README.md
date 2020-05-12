@@ -29,7 +29,7 @@ zig-cache/oxid
 
 The native version supports a few command-line options for things like audio sample rate. Run `zig-cache/oxid --help` for a listing.
 
-To build the Web Assembly version:
+To build the Web Assembly version (currently broken, see [#43](https://github.com/dbandstra/oxid/issues/43)):
 ```
 zig build wasm
 ```
