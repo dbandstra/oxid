@@ -61,18 +61,18 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
             return error.AssetNotFound;
         };
 
-        var sis = std.io.SliceInStream.init(buf);
-        const stream = &sis.stream;
+        var fbs = std.io.fixedBufferStream(buf);
+        var stream = fbs.inStream();
 
-        const Loader = wav.Loader(std.io.SliceInStream.Error, false);
-        const preloaded = try Loader.preload(stream);
+        const Loader = wav.Loader(@TypeOf(stream), false);
+        const preloaded = try Loader.preload(&stream);
 
         // don't need to allocate new memory or call Loader.load, because:
         // 1. `buf` is always available (provided from the JS side) and
         //    contains the wav file contents, and
         // 2. wavs are decoded and ready to go already, so we can just take a
         //    slice into the file contents.
-        return makeSample(preloaded, buf[sis.pos .. sis.pos + preloaded.getNumBytes()]);
+        return makeSample(preloaded, buf[fbs.pos .. fbs.pos + preloaded.getNumBytes()]);
     } else {
         // non-wasm build: load assets from disk, allocating new memory to
         // store them

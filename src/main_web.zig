@@ -1,4 +1,5 @@
 const std = @import("std");
+const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
@@ -40,8 +41,9 @@ pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
     if (bytes_read == 0) {
         return config.getDefault();
     }
-    var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
-    return try config.read(std.io.SliceInStream.Error, &sis.stream, bytes_read, hunk_side);
+    var fbs = std.io.fixedBufferStream(buffer[0..bytes_read]);
+    var stream = fbs.inStream();
+    return try config.read(@TypeOf(stream), &stream, bytes_read, hunk_side);
 }
 
 pub fn saveConfig(cfg: config.Config) !void {
@@ -60,118 +62,120 @@ pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
         warn("Failed to load high scores from local storage: {}\n", .{err});
         return [1]u32{0} ** constants.num_high_scores;
     };
-    var sis = std.io.SliceInStream.init(buffer[0..bytes_read]);
-    return datafile.readHighScores(std.io.SliceInStream.Error, &sis.stream);
+    var fbs = std.io.fixedBufferStream(buffer[0..bytes_read]);
+    var stream = fbs.inStream();
+    return datafile.readHighScores(@TypeOf(stream), &stream);
 }
 
 pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
     var buffer: [1000]u8 = undefined;
-    var dest = std.io.SliceOutStream.init(buffer[0..]);
-    try datafile.writeHighScores(std.io.SliceOutStream.Error, &dest.stream, high_scores);
-    web.setLocalStorage(highscores_storagekey, dest.getWritten());
+    var fbs = std.io.fixedBufferStream(&buffer);
+    var stream = fbs.outStream();
+    try datafile.writeHighScores(@TypeOf(stream), &stream, high_scores);
+    web.setLocalStorage(highscores_storagekey, fbs.getWritten());
 }
 
 fn translateKey(keyCode: c_int) ?Key {
     return switch (keyCode) {
-        8 => Key.Backspace,
-        9 => Key.Tab,
-        13 => Key.Return,
-        16 => Key.LShift, // FIXME - 16 is just shift in general?
-        17 => Key.LCtrl, // FIXME - 17 is just ctrl in general?
-        18 => Key.LAlt, // FIXME - 18 is just alt in general?
-        19 => Key.Pause,
-        20 => Key.CapsLock,
-        22 => Key.Quote,
-        27 => Key.Escape,
-        32 => Key.Space,
-        33 => Key.PageUp,
-        34 => Key.PageDown,
-        35 => Key.End,
-        36 => Key.Home,
-        37 => Key.Left,
-        38 => Key.Up,
-        39 => Key.Right,
-        40 => Key.Down,
-        45 => Key.Insert,
-        46 => Key.Delete,
-        48 => Key.N0,
-        49 => Key.N1,
-        50 => Key.N2,
-        51 => Key.N3,
-        52 => Key.N4,
-        53 => Key.N5,
-        54 => Key.N6,
-        55 => Key.N7,
-        56 => Key.N8,
-        57 => Key.N9,
-        65 => Key.A,
-        66 => Key.B,
-        67 => Key.C,
-        68 => Key.D,
-        69 => Key.E,
-        70 => Key.F,
-        71 => Key.G,
-        72 => Key.H,
-        73 => Key.I,
-        74 => Key.J,
-        75 => Key.K,
-        76 => Key.L,
-        77 => Key.M,
-        78 => Key.N,
-        79 => Key.O,
-        80 => Key.P,
-        81 => Key.Q,
-        82 => Key.R,
-        83 => Key.S,
-        84 => Key.T,
-        85 => Key.U,
-        86 => Key.V,
-        87 => Key.W,
-        88 => Key.X,
-        89 => Key.Y,
-        90 => Key.Z,
+        8 => .backspace,
+        9 => .tab,
+        13 => .@"return",
+        16 => .lshift, // FIXME - 16 is just shift in general?
+        17 => .lctrl, // FIXME - 17 is just ctrl in general?
+        18 => .lalt, // FIXME - 18 is just alt in general?
+        19 => .pause,
+        20 => .capslock,
+        22 => .quote,
+        27 => .escape,
+        32 => .space,
+        33 => .pageup,
+        34 => .pagedown,
+        35 => .end,
+        36 => .home,
+        37 => .left,
+        38 => .up,
+        39 => .right,
+        40 => .down,
+        45 => .insert,
+        46 => .delete,
+        48 => .@"0",
+        49 => .@"1",
+        50 => .@"2",
+        51 => .@"3",
+        52 => .@"4",
+        53 => .@"5",
+        54 => .@"6",
+        55 => .@"7",
+        56 => .@"8",
+        57 => .@"9",
+        65 => .a,
+        66 => .b,
+        67 => .c,
+        68 => .d,
+        69 => .e,
+        70 => .f,
+        71 => .g,
+        72 => .h,
+        73 => .i,
+        74 => .j,
+        75 => .k,
+        76 => .l,
+        77 => .m,
+        78 => .n,
+        79 => .o,
+        80 => .p,
+        81 => .q,
+        82 => .r,
+        83 => .s,
+        84 => .t,
+        85 => .u,
+        86 => .v,
+        87 => .w,
+        88 => .x,
+        89 => .y,
+        90 => .z,
         91 => null, // META_LEFT? what is this?
         92 => null, // META_RIGHT? what is this?
         93 => null, // SELECT? what is this?
-        96 => Key.Kp0,
-        97 => Key.Kp1,
-        98 => Key.Kp2,
-        99 => Key.Kp3,
-        100 => Key.Kp4,
-        101 => Key.Kp5,
-        102 => Key.Kp6,
-        103 => Key.Kp7,
-        104 => Key.Kp8,
-        105 => Key.Kp9,
-        106 => Key.KpMultiply,
-        107 => Key.KpPlus,
-        109 => Key.KpMinus,
-        110 => Key.KpPeriod,
-        111 => Key.KpDivide,
-        112 => Key.F1,
-        113 => Key.F2,
-        114 => Key.F3,
-        115 => Key.F4,
-        116 => Key.F5,
-        117 => Key.F6,
-        118 => Key.F7,
-        119 => Key.F8,
-        120 => Key.F9,
-        121 => Key.F10,
-        122 => Key.F11,
-        123 => Key.F12,
-        144 => Key.NumLockClear,
-        145 => Key.ScrollLock,
-        186 => Key.Semicolon,
-        187 => Key.Equals,
-        188 => Key.Comma,
-        189 => Key.Minus,
-        190 => Key.Period,
-        191 => Key.Slash,
-        192 => Key.Backquote,
-        219 => Key.LeftBracket,
-        220 => Key.Backslash,
-        221 => Key.RightBracket,
+        96 => .kp_0,
+        97 => .kp_1,
+        98 => .kp_2,
+        99 => .kp_3,
+        100 => .kp_4,
+        101 => .kp_5,
+        102 => .kp_6,
+        103 => .kp_7,
+        104 => .kp_8,
+        105 => .kp_9,
+        106 => .kp_multiply,
+        107 => .kp_plus,
+        109 => .kp_minus,
+        110 => .kp_period,
+        111 => .kp_divide,
+        112 => .f1,
+        113 => .f2,
+        114 => .f3,
+        115 => .f4,
+        116 => .f5,
+        117 => .f6,
+        118 => .f7,
+        119 => .f8,
+        120 => .f9,
+        121 => .f10,
+        122 => .f11,
+        123 => .f12,
+        144 => .numlockclear,
+        145 => .scrolllock,
+        186 => .semicolon,
+        187 => .equals,
+        188 => .comma,
+        189 => .minus,
+        190 => .period,
+        191 => .slash,
+        192 => .backquote,
+        219 => .leftbracket,
+        220 => .backslash,
+        221 => .rightbracket,
         else => null,
     };
 }
@@ -184,14 +188,14 @@ const SET_CANVAS_SCALE = 100;
 
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
-    const source = InputSource{ .Key = key };
+    const source: InputSource = .{ .key = key };
     const special = common.inputEvent(g, @This(), source, down != 0) orelse return NOP;
     return switch (special) {
-        .NoOp => NOP,
-        .Quit => NOP, // unused in web build
-        .ToggleSound => TOGGLE_SOUND,
-        .ToggleFullscreen => TOGGLE_FULLSCREEN,
-        .SetCanvasScale => |value| SET_CANVAS_SCALE + @intCast(c_int, value),
+        .noop => NOP,
+        .quit => NOP, // unused in web build
+        .toggle_sound => TOGGLE_SOUND,
+        .toggle_fullscreen => TOGGLE_FULLSCREEN,
+        .set_canvas_scale => |value| SET_CANVAS_SCALE + @intCast(c_int, value),
     };
 }
 
@@ -341,9 +345,10 @@ fn playSounds() void {
     } else {
         // prevent a bunch sounds from queueing up when audio is disabled (as
         // the mixing function won't be called to advance them)
-        var it = g.main_state.session.iter(c.Voice);
-        while (it.next()) |object| {
-            g.main_state.session.markEntityForRemoval(object.entity_id);
+        var it = g.main_state.session.ecs.componentIter(c.Voice);
+        var id: gbe.EntityId = undefined;
+        while (it.nextWithId(&id) != null) {
+            g.main_state.session.ecs.markForRemoval(id);
         }
 
         g.main_state.audio_module.resetMenuSounds();
