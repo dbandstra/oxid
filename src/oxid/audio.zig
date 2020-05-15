@@ -52,7 +52,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
         // the getAsset API
         const web = @import("../web.zig");
 
-        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8 {
+        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8{
             "assets",
             filename,
         });
@@ -76,7 +76,7 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
     } else {
         // non-wasm build: load assets from disk, allocating new memory to
         // store them
-        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8 {
+        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8{
             build_options.assets_path,
             filename,
         });
@@ -156,7 +156,7 @@ pub const MainModule = struct {
     pub fn init(hunk: *Hunk, audio_buffer_size: usize) !MainModule {
         const rand_seed: u32 = 0;
 
-        return MainModule {
+        return MainModule{
             .menu_backoff = MenuSoundWrapper(MenuBackoffVoice).init(),
             .menu_blip = MenuSoundWrapper(MenuBlipVoice).init(),
             .menu_ding = MenuSoundWrapper(MenuDingVoice).init(),
@@ -198,20 +198,15 @@ pub const MainModule = struct {
         self.paintWrapper(span, &self.menu_blip, sample_rate);
         self.paintWrapper(span, &self.menu_ding, sample_rate);
 
-        var it = gs.ecs.componentIter(c.Voice); while (it.next()) |voice| {
+        var it = gs.ecs.componentIter(c.Voice);
+        while (it.next()) |voice| {
             switch (voice.wrapper) {
-                .accelerate => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
-                .coin => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
-                .explosion => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
-                .laser => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
-                .sample => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
-                .wave_begin => |*wrapper|
-                    self.paintWrapper(span, wrapper, sample_rate),
+                .accelerate => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .coin => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .explosion => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .laser => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .sample => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
+                .wave_begin => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
                 else => {},
             }
         }
@@ -226,15 +221,15 @@ pub const MainModule = struct {
         std.debug.assert(@typeInfo(@TypeOf(wrapper)) == .Pointer);
         const ModuleType = @typeInfo(@TypeOf(wrapper)).Pointer.child.ModuleType;
         var temps: [ModuleType.num_temps][]f32 = undefined;
-        comptime var i: usize = 0; inline while (i < ModuleType.num_temps) : (i += 1) {
+        comptime var i: usize = 0;
+        inline while (i < ModuleType.num_temps) : (i += 1) {
             temps[i] = self.tmp_bufs[i];
         }
 
-        const NoteParamsType =
-            if (ModuleType == zang.Sampler)
-                SamplerNoteParams
-            else
-                ModuleType.NoteParams;
+        const NoteParamsType = if (ModuleType == zang.Sampler)
+            SamplerNoteParams
+        else
+            ModuleType.NoteParams;
 
         comptime {
             // make sure NoteParamsType isn't missing any fields
@@ -272,14 +267,14 @@ pub const MainModule = struct {
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
             .backoff => {
-                self.menu_backoff.push(.{.unused = undefined});
+                self.menu_backoff.push(.{ .unused = undefined });
             },
             .blip => {
                 const rand = &self.prng.random;
-                self.menu_blip.push(.{.freq_mul = 0.95 + 0.1 * rand.float(f32)});
+                self.menu_blip.push(.{ .freq_mul = 0.95 + 0.1 * rand.float(f32) });
             },
             .ding => {
-                self.menu_ding.push(.{.unused = undefined});
+                self.menu_ding.push(.{ .unused = undefined });
             },
         }
     }
@@ -292,14 +287,15 @@ pub const MainModule = struct {
 
     // called in the main thread
     pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
-        var it = gs.ecs.componentIter(c.Voice); while (it.next()) |object| {
+        var it = gs.ecs.componentIter(c.Voice);
+        while (it.next()) |object| {
             switch (object.wrapper) {
                 .accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .coin =>       |*wrapper| updateVoice(wrapper, impulse_frame),
-                .explosion =>  |*wrapper| updateVoice(wrapper, impulse_frame),
-                .laser =>      |*wrapper| updateVoice(wrapper, impulse_frame),
+                .coin => |*wrapper| updateVoice(wrapper, impulse_frame),
+                .explosion => |*wrapper| updateVoice(wrapper, impulse_frame),
+                .laser => |*wrapper| updateVoice(wrapper, impulse_frame),
                 .wave_begin => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .sample =>     |*wrapper| {
+                .sample => |*wrapper| {
                     if (wrapper.initial_sample) |sample_alias| {
                         // https://github.com/ziglang/zig/issues/2915
                         const sample = sample_alias;

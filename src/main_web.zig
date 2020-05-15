@@ -177,14 +177,14 @@ fn translateKey(keyCode: c_int) ?Key {
 }
 
 // these match same values in web/js/wasm.js
-const NOP               = 1;
-const TOGGLE_SOUND      = 2;
+const NOP = 1;
+const TOGGLE_SOUND = 2;
 const TOGGLE_FULLSCREEN = 3;
-const SET_CANVAS_SCALE  = 100;
+const SET_CANVAS_SCALE = 100;
 
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
-    const source = InputSource { .Key = key };
+    const source = InputSource{ .Key = key };
     const special = common.inputEvent(g, @This(), source, down != 0) orelse return NOP;
     return switch (special) {
         .NoOp => NOP,
@@ -213,7 +213,7 @@ var g: *Main = undefined;
 const audio_buffer_size = 1024;
 
 fn init() !void {
-    main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200*1024) catch |err| {
+    main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200 * 1024) catch |err| {
         warn("failed to allocate main_memory: {}\n", .{err});
         return error.Failed;
     };
@@ -228,7 +228,7 @@ fn init() !void {
 
     g = hunk.low().allocator.create(Main) catch unreachable;
 
-    if (!common.init(&g.main_state, @This(), common.InitParams {
+    if (!common.init(&g.main_state, @This(), common.InitParams{
         .hunk = hunk,
         .random_seed = web.getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
@@ -261,7 +261,8 @@ export fn audioCallback(sample_rate: f32) [*]f32 {
 
     const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.cfg.volume) / 100.0);
 
-    var i: usize = 0; while (i < audio_buffer_size) : (i += 1) {
+    var i: usize = 0;
+    while (i < audio_buffer_size) : (i += 1) {
         buf[i] *= vol;
     }
 
@@ -273,15 +274,13 @@ var maybe_prev: ?c_int = null;
 
 // `now` is in milliseconds
 export fn onAnimationFrame(now: c_int) void {
-    const delta =
-        if (maybe_prev) |prev| (
-            if (now > prev) (
-                @intCast(usize, now - prev)
-            ) else (
-                0
-            )
-        ) else (
-            16 // first tick's delta corresponds to ~60 fps
+    const delta = if (maybe_prev) |prev|
+        (if (now > prev)
+            (@intCast(usize, now - prev))
+        else
+            (0))
+    else
+        (16 // first tick's delta corresponds to ~60 fps
         );
     maybe_prev = now;
 
@@ -301,7 +300,8 @@ export fn onAnimationFrame(now: c_int) void {
         break :blk n;
     };
 
-    var i: usize = 0; while (i < num_frames_to_simulate) : (i += 1) {
+    var i: usize = 0;
+    while (i < num_frames_to_simulate) : (i += 1) {
         // if we're simulating multiple frames for one draw cycle, we only
         // need to actually draw for the last one of them
         const draw = i == num_frames_to_simulate - 1;
@@ -341,7 +341,8 @@ fn playSounds() void {
     } else {
         // prevent a bunch sounds from queueing up when audio is disabled (as
         // the mixing function won't be called to advance them)
-        var it = g.main_state.session.iter(c.Voice); while (it.next()) |object| {
+        var it = g.main_state.session.iter(c.Voice);
+        while (it.next()) |object| {
             g.main_state.session.markEntityForRemoval(object.entity_id);
         }
 

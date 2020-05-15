@@ -66,75 +66,75 @@ const js_bottom =
     \\}
 ;
 
-const funcs = [_]Func {
-    Func {
+const funcs = [_]Func{
+    Func{
         .name = "glActiveTexture",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.activeTexture(target);
-    },
-    Func {
+            },
+    Func{
         .name = "glAttachShader",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program", .type = "c_uint" },
             .{ .name = "shader", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.attachShader(glPrograms[program], glShaders[shader]);
-    },
+            },
     // TODO - glBindAttribLocation
-    Func {
+    Func{
         .name = "glBindBuffer",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "type", .type = "c_uint" },
             .{ .name = "buffer_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.bindBuffer(type, glBuffers[buffer_id]);
-    },
-    Func {
+            },
+    Func{
         .name = "glBindFramebuffer",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
             .{ .name = "framebuffer", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.bindFramebuffer(target, glFramebuffers[framebuffer]);
-    },
+            },
     // TODO - glBindRenderbuffer
-    Func {
+    Func{
         .name = "glBindTexture",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
             .{ .name = "texture_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.bindTexture(target, glTextures[texture_id]);
-    },
+            },
     // TODO - glBlendColor
     // TODO - glBlendEquation
     // TODO - glBlendEquationSeparate
-    Func {
+    Func{
         .name = "glBlendFunc",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "x", .type = "c_uint" },
             .{ .name = "y", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.blendFunc(x, y);
-    },
+            },
     // TODO - glBlendFuncSeparate
-    Func {
+    Func{
         .name = "glBufferData",
-        .args =& [_]Arg {
+        .args = &[_]Arg{
             .{ .name = "type", .type = "c_uint" },
             .{ .name = "count", .type = "c_uint" },
             .{ .name = "data_ptr", .type = "[*c]const f32" },
@@ -142,32 +142,32 @@ const funcs = [_]Func {
         },
         .ret = "void",
         .js =
-            // TODO - check for NULL?
-            \\const floats = new Float32Array(getMemory().buffer, data_ptr, count);
+        // TODO - check for NULL?
+        \\const floats = new Float32Array(getMemory().buffer, data_ptr, count);
             \\gl.bufferData(type, floats, draw_type);
-    },
+            },
     // TODO - glBufferSubData
-    Func {
+    Func{
         .name = "glCheckFramebufferStatus",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "GLenum" },
         },
         .ret = "GLenum",
         .js =
             \\return gl.checkFramebufferStatus(target);
-    },
-    Func {
+            },
+    Func{
         .name = "glClear",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "mask", .type = "GLbitfield" },
         },
         .ret = "void",
         .js =
             \\gl.clear(mask);
-    },
-    Func {
+            },
+    Func{
         .name = "glClearColor",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "r", .type = "f32" },
             .{ .name = "g", .type = "f32" },
             .{ .name = "b", .type = "f32" },
@@ -176,149 +176,149 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.clearColor(r, g, b, a);
-    },
+            },
     // TODO - glClearDepth
     // TODO - glClearStencil
     // TODO - glColorMask
     // TODO - glCommit
-    Func {
+    Func{
         .name = "glCompileShader",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "shader", .type = "GLuint" },
         },
         .ret = "void",
         .js =
-            // TODO don't call getShaderParameter here
-            \\gl.compileShader(glShaders[shader]);
+        // TODO don't call getShaderParameter here
+        \\gl.compileShader(glShaders[shader]);
             \\if (!gl.getShaderParameter(glShaders[shader], gl.COMPILE_STATUS)) {
             \\    throw "Error compiling shader:" + gl.getShaderInfoLog(glShaders[shader]);
             \\}
-    },
+            },
     // TODO - glCompressedTexImage2D
     // TODO - glCompressedTexImage3D
     // TODO - glCompressedTexSubImage2D
     // TODO - glCopyTexImage2D
     // TODO - glCopyTexSubImage2D
-    Func {
+    Func{
         .name = "glCreateBuffer",
-        .args = &[_]Arg {},
+        .args = &[_]Arg{},
         .ret = "c_uint",
         .js =
             \\glBuffers.push(gl.createBuffer());
             \\return glBuffers.length - 1;
-    },
-    Func {
+            },
+    Func{
         .name = "glCreateFramebuffer",
-        .args = &[_]Arg {},
+        .args = &[_]Arg{},
         .ret = "GLuint",
         .js =
             \\glFramebuffers.push(gl.createFramebuffer());
             \\return glFramebuffers.length - 1;
-    },
-    Func {
+            },
+    Func{
         .name = "glCreateProgram",
-        .args = &[_]Arg {},
+        .args = &[_]Arg{},
         .ret = "GLuint",
         .js =
             \\glPrograms.push(gl.createProgram());
             \\return glPrograms.length - 1;
-    },
+            },
     // TODO - glCreateRenderbuffer
-    Func {
+    Func{
         .name = "glCreateShader",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "shader_type", .type = "GLenum" },
         },
         .ret = "GLuint",
         .js =
             \\glShaders.push(gl.createShader(shader_type));
             \\return glShaders.length - 1;
-    },
-    Func {
+            },
+    Func{
         .name = "glCreateTexture",
-        .args = &[_]Arg {},
+        .args = &[_]Arg{},
         .ret = "c_uint",
         .js =
             \\glTextures.push(gl.createTexture());
             \\return glTextures.length - 1;
-    },
+            },
     // TODO - glCullFace
-    Func {
+    Func{
         .name = "glDeleteBuffer",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.deleteBuffer(glBuffers[id]);
             \\glBuffers[id] = undefined;
-    },
+            },
     // TODO - glDeleteFramebuffer
-    Func {
+    Func{
         .name = "glDeleteProgram",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.deleteProgram(glPrograms[id]);
             \\glPrograms[id] = undefined;
-    },
+            },
     // TODO - glDeleteRenderbuffer
-    Func {
+    Func{
         .name = "glDeleteShader",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.deleteShader(glShaders[id]);
             \\glShaders[id] = undefined;
-    },
-    Func {
+            },
+    Func{
         .name = "glDeleteTexture",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.deleteTexture(glTextures[id]);
             \\glTextures[id] = undefined;
-    },
-    Func {
+            },
+    Func{
         .name = "glDepthFunc",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.depthFunc(x);
-    },
+            },
     // TODO - glDepthMask
     // TODO - glDepthRange
-    Func {
+    Func{
         .name = "glDetachShader",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program", .type = "c_uint" },
             .{ .name = "shader", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.detachShader(glPrograms[program], glShaders[shader]);
-    },
-    Func {
+            },
+    Func{
         .name = "glDisable",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "cap", .type = "GLenum" },
         },
         .ret = "void",
         .js =
             \\gl.disable(cap);
-    },
+            },
     // TODO - glDisableVertexAttribArray
-    Func {
+    Func{
         .name = "glDrawArrays",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "type", .type = "c_uint" },
             .{ .name = "offset", .type = "c_uint" },
             .{ .name = "count", .type = "c_uint" },
@@ -326,32 +326,32 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.drawArrays(type, offset, count);
-    },
+            },
     // TODO - glDrawElements
-    Func {
+    Func{
         .name = "glEnable",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.enable(x);
-    },
-    Func {
+            },
+    Func{
         .name = "glEnableVertexAttribArray",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "x", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.enableVertexAttribArray(x);
-    },
+            },
     // TODO - glFinish
     // TODO - glFlush
     // TODO - glFramebufferRenderbuffer
-    Func {
+    Func{
         .name = "glFramebufferTexture2D",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "GLenum" },
             .{ .name = "attachment", .type = "GLenum" },
             .{ .name = "textarget", .type = "GLenum" },
@@ -361,39 +361,39 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.framebufferTexture2D(target, attachment, textarget, glTextures[texture], level);
-    },
-    Func {
+            },
+    Func{
         .name = "glFrontFace",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "mode", .type = "GLenum" },
         },
         .ret = "void",
         .js =
             \\gl.frontFace(mode);
-    },
+            },
     // TODO - glGenerateMipmap
     // TODO - glGetActiveAttrib
     // TODO - glGetActiveUniform
     // TODO - glGetAttachedShaders
-    Func {
+    Func{
         .name = "glGetAttribLocation",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program_id", .type = "c_uint" },
             .{ .name = "name", .type = "SLICE" },
         },
         .ret = "c_int",
         .js =
             \\return gl.getAttribLocation(glPrograms[program_id], name);
-    },
+            },
     // TODO - glGetBufferParameter
     // TODO - glGetContextAttributes
-    Func {
+    Func{
         .name = "glGetError",
-        .args = &[_]Arg {},
+        .args = &[_]Arg{},
         .ret = "c_int",
         .js =
             \\return gl.getError();
-    },
+            },
     // TODO - glGetExtension
     // TODO - glGetFramebufferAttachmentParameter
     // TODO - glGetParameter
@@ -407,9 +407,9 @@ const funcs = [_]Func {
     // TODO - glGetSupportedExtensions
     // TODO - glGetTexParameter
     // TODO - glGetUniform
-    Func {
+    Func{
         .name = "glGetUniformLocation",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program_id", .type = "c_uint" },
             .{ .name = "name", .type = "SLICE" },
         },
@@ -417,7 +417,7 @@ const funcs = [_]Func {
         .js =
             \\glUniformLocations.push(gl.getUniformLocation(glPrograms[program_id], name));
             \\return glUniformLocations.length - 1;
-    },
+            },
     // TODO - glGetVertexAttrib
     // TODO - glGetVertexAttribOffset
     // TODO - glHint
@@ -430,54 +430,54 @@ const funcs = [_]Func {
     // TODO - glIsShader
     // TODO - glIsTexture
     // TODO - glLineWidth
-    Func {
+    Func{
         .name = "glLinkProgram",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program", .type = "c_uint" },
         },
         .ret = "void",
         .js =
-            // TODO - don't call getProgramParameter here
-            \\gl.linkProgram(glPrograms[program]);
+        // TODO - don't call getProgramParameter here
+        \\gl.linkProgram(glPrograms[program]);
             \\if (!gl.getProgramParameter(glPrograms[program], gl.LINK_STATUS)) {
             \\    throw ("Error linking program:" + gl.getProgramInfoLog(glPrograms[program]));
             \\}
-    },
-    Func {
+            },
+    Func{
         .name = "glPixelStorei",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "pname", .type = "GLenum" },
             .{ .name = "param", .type = "GLint" },
         },
         .ret = "void",
         .js =
             \\gl.pixelStorei(pname, param);
-    },
+            },
     // TODO - glPolygonOffset
     // TODO - glReadPixels
     // TODO - glRenderbufferStorage
     // TODO - glSampleCoverage
     // TODO - glScissor
-    Func {
+    Func{
         .name = "glShaderSource",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "shader", .type = "GLuint" },
             .{ .name = "string", .type = "SLICE" },
         },
         .ret = "void",
         .js =
             \\gl.shaderSource(glShaders[shader], string);
-    },
+            },
     // TODO - glStencilFunc
     // TODO - glStencilFuncSeparate
     // TODO - glStencilMask
     // TODO - glStencilMaskSeparate
     // TODO - glStencilOp
     // TODO - glStencilOpSeparate
-    Func {
+    Func{
         .name = "glTexImage2D",
         // FIXME - take slice for data. note it needs to be optional
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
             .{ .name = "level", .type = "c_uint" },
             .{ .name = "internal_format", .type = "c_uint" },
@@ -494,10 +494,10 @@ const funcs = [_]Func {
             \\// FIXME - look at data_ptr, not data_len, to determine NULL?
             \\const data = data_len > 0 ? new Uint8Array(getMemory().buffer, data_ptr, data_len) : null;
             \\gl.texImage2D(target, level, internal_format, width, height, border, format, type, data);
-    },
-    Func {
+            },
+    Func{
         .name = "glTexParameterf",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
             .{ .name = "pname", .type = "c_uint" },
             .{ .name = "param", .type = "f32" },
@@ -505,10 +505,10 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.texParameterf(target, pname, param);
-    },
-    Func {
+            },
+    Func{
         .name = "glTexParameteri",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "target", .type = "c_uint" },
             .{ .name = "pname", .type = "c_uint" },
             .{ .name = "param", .type = "c_uint" },
@@ -516,29 +516,29 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.texParameteri(target, pname, param);
-    },
+            },
     // TODO - glTexSubImage2D
-    Func {
+    Func{
         .name = "glUniform1f",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "location_id", .type = "c_int" },
             .{ .name = "x", .type = "f32" },
         },
         .ret = "void",
         .js =
             \\gl.uniform1f(glUniformLocations[location_id], x);
-    },
+            },
     // TODO - glUniform1fv
-    Func {
+    Func{
         .name = "glUniform1i",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "location_id", .type = "c_int" },
             .{ .name = "x", .type = "c_int" },
         },
         .ret = "void",
         .js =
             \\gl.uniform1i(glUniformLocations[location_id], x);
-    },
+            },
     // TODO - glUniform1iv
     // TODO - glUniform2f
     // TODO - glUniform2fv
@@ -548,9 +548,9 @@ const funcs = [_]Func {
     // TODO - glUniform3fv
     // TODO - glUniform3i
     // TODO - glUniform3iv
-    Func {
+    Func{
         .name = "glUniform4f",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "location_id", .type = "c_int" },
             .{ .name = "x", .type = "f32" },
             .{ .name = "y", .type = "f32" },
@@ -560,16 +560,16 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.uniform4f(glUniformLocations[location_id], x, y, z, w);
-    },
+            },
     // TODO - glUniform4fv
     // TODO - glUniform4i
     // TODO - glUniform4iv
     // TODO - glUniformMatrix2fv
     // TODO - glUniformMatrix3fv
-    Func {
+    Func{
         .name = "glUniformMatrix4fv",
         // FIXME - take three args, not four.. transpose should be second arg
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "location_id", .type = "c_int" },
             .{ .name = "data_len", .type = "c_int" },
             .{ .name = "transpose", .type = "c_uint" },
@@ -579,16 +579,16 @@ const funcs = [_]Func {
         .js =
             \\const floats = new Float32Array(getMemory().buffer, data_ptr, data_len * 16);
             \\gl.uniformMatrix4fv(glUniformLocations[location_id], transpose, floats);
-    },
-    Func {
+            },
+    Func{
         .name = "glUseProgram",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "program_id", .type = "c_uint" },
         },
         .ret = "void",
         .js =
             \\gl.useProgram(glPrograms[program_id]);
-    },
+            },
     // TODO - glValidateProgram
     // TODO - glVertexAttrib1f
     // TODO - glVertexAttrib1fv
@@ -598,9 +598,9 @@ const funcs = [_]Func {
     // TODO - glVertexAttrib3fv
     // TODO - glVertexAttrib4f
     // TODO - glVertexAttrib4fv
-    Func {
+    Func{
         .name = "glVertexAttribPointer",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "attrib_location", .type = "c_uint" },
             .{ .name = "size", .type = "c_uint" },
             .{ .name = "type", .type = "c_uint" },
@@ -611,10 +611,10 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.vertexAttribPointer(attrib_location, size, type, normalize, stride, offset);
-    },
-    Func {
+            },
+    Func{
         .name = "glViewport",
-        .args = &[_]Arg {
+        .args = &[_]Arg{
             .{ .name = "x", .type = "c_int" },
             .{ .name = "y", .type = "c_int" },
             .{ .name = "width", .type = "c_int" },
@@ -623,7 +623,7 @@ const funcs = [_]Func {
         .ret = "void",
         .js =
             \\gl.viewport(x, y, width, height);
-    },
+            },
 };
 
 fn nextNewline(s: []const u8) usize {
@@ -653,15 +653,15 @@ fn writeZigFile(filename: []const u8) !void {
         // https://github.com/ziglang/zig/issues/3882
         const fmtarg_pub = if (any_slice) "" else "pub ";
         const fmtarg_suf = if (any_slice) "_" else "";
-        try stream.print("{}extern fn {}{}(", .{fmtarg_pub, func.name, fmtarg_suf});
+        try stream.print("{}extern fn {}{}(", .{ fmtarg_pub, func.name, fmtarg_suf });
         for (func.args) |arg, i| {
             if (i > 0) {
                 try stream.print(", ", .{});
             }
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("{}_ptr: [*]const u8, {}_len: c_uint", .{arg.name, arg.name});
+                try stream.print("{}_ptr: [*]const u8, {}_len: c_uint", .{ arg.name, arg.name });
             } else {
-                try stream.print("{}: {}", .{arg.name, arg.type});
+                try stream.print("{}: {}", .{ arg.name, arg.type });
             }
         }
         try stream.print(") {};\n", .{func.ret});
@@ -675,19 +675,19 @@ fn writeZigFile(filename: []const u8) !void {
                 if (std.mem.eql(u8, arg.type, "SLICE")) {
                     try stream.print("{}: []const u8", .{arg.name});
                 } else {
-                    try stream.print("{}: {}", .{arg.name, arg.type});
+                    try stream.print("{}: {}", .{ arg.name, arg.type });
                 }
             }
             try stream.print(") {} {{\n", .{func.ret});
             // https://github.com/ziglang/zig/issues/3882
             const fmtarg_ret = if (std.mem.eql(u8, func.ret, "void")) "" else "return ";
-            try stream.print("    {}{}_(", .{fmtarg_ret, func.name});
+            try stream.print("    {}{}_(", .{ fmtarg_ret, func.name });
             for (func.args) |arg, i| {
                 if (i > 0) {
                     try stream.print(", ", .{});
                 }
                 if (std.mem.eql(u8, arg.type, "SLICE")) {
-                    try stream.print("{}.ptr, {}.len", .{arg.name, arg.name});
+                    try stream.print("{}.ptr, {}.len", .{ arg.name, arg.name });
                 } else {
                     try stream.print("{}", .{arg.name});
                 }
@@ -716,13 +716,13 @@ fn writeJsFile(filename: []const u8) !void {
 
         // https://github.com/ziglang/zig/issues/3882
         const fmtarg_suf = if (any_slice) "_" else "";
-        try stream.print("        {}{}(", .{func.name, fmtarg_suf});
+        try stream.print("        {}{}(", .{ func.name, fmtarg_suf });
         for (func.args) |arg, i| {
             if (i > 0) {
                 try stream.print(", ", .{});
             }
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("{}_ptr, {}_len", .{arg.name, arg.name});
+                try stream.print("{}_ptr, {}_len", .{ arg.name, arg.name });
             } else {
                 try stream.print("{}", .{arg.name});
             }
@@ -730,12 +730,13 @@ fn writeJsFile(filename: []const u8) !void {
         try stream.print(") {{\n", .{});
         for (func.args) |arg| {
             if (std.mem.eql(u8, arg.type, "SLICE")) {
-                try stream.print("            const {} = readCharStr({}_ptr, {}_len);\n", .{arg.name, arg.name, arg.name});
+                try stream.print("            const {} = readCharStr({}_ptr, {}_len);\n", .{ arg.name, arg.name, arg.name });
             }
         }
-        var start: usize = 0; while (start < func.js.len) {
+        var start: usize = 0;
+        while (start < func.js.len) {
             const rel_newline_pos = nextNewline(func.js[start..]);
-            try stream.print("            {}\n", .{func.js[start..start + rel_newline_pos]});
+            try stream.print("            {}\n", .{func.js[start .. start + rel_newline_pos]});
             start += rel_newline_pos + 1;
         }
         try stream.print("        }},\n", .{});

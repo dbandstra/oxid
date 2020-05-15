@@ -1,11 +1,10 @@
 const builtin = @import("builtin");
-usingnamespace
-    if (builtin.arch == .wasm32)
-        @import("../../web.zig")
-    else
-        @cImport({
-            @cInclude("epoxy/gl.h");
-        });
+usingnamespace if (builtin.arch == .wasm32)
+    @import("../../web.zig")
+else
+    @cImport({
+        @cInclude("epoxy/gl.h");
+    });
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const warn = @import("../../warn.zig").warn;
@@ -37,7 +36,7 @@ pub const DrawInitParams = struct {
     virtual_window_height: u32,
 };
 
-pub const buffer_vertices = 4*512; // render up to 512 quads at once
+pub const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
 pub const DrawState = struct {
     // dimensions of the game viewport, which will be scaled up to fit the system
@@ -58,11 +57,10 @@ pub const DrawState = struct {
 
 pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
     const size = buffer_vertices * 2 * @sizeOf(GLfloat);
-    const null_data =
-        if (builtin.arch == .wasm32)
-            @intToPtr(?[*]const f32, 0)
-        else
-            @intToPtr(?*const c_void, 0);
+    const null_data = if (builtin.arch == .wasm32)
+        @intToPtr(?[*]const f32, 0)
+    else
+        @intToPtr(?*const c_void, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
@@ -72,9 +70,7 @@ pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
     }
 }
 
-pub const InitError = error {
-    UnsupportedOpenGLVersion,
-} || shaders.InitError;
+pub const InitError = error{UnsupportedOpenGLVersion} || shaders.InitError;
 
 fn detectGLSLVersion() InitError!shaders.GLSLVersion {
     if (builtin.arch == .wasm32) {
@@ -132,7 +128,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
     ds.virtual_window_height = params.virtual_window_height;
     ds.draw_buffer.num_vertices = 0;
 
-    const blank_tex_pixels = &[_]u8{255, 255, 255, 255};
+    const blank_tex_pixels = &[_]u8{ 255, 255, 255, 255 };
     ds.blank_tex = uploadTexture(1, 1, blank_tex_pixels);
     ds.blank_tileset = .{
         .texture = ds.blank_tex,
@@ -204,18 +200,18 @@ pub fn cycleGlitchMode(ds: *DrawState) void {
     const count = @typeInfo(GlitchMode).Enum.fields.len;
     ds.glitch_mode =
         if (i + 1 < count)
-            @intToEnum(GlitchMode, i + 1)
-        else
-            @intToEnum(GlitchMode, 0);
+        @intToEnum(GlitchMode, i + 1)
+    else
+        @intToEnum(GlitchMode, 0);
     ds.clear_screen = true;
 }
 
 pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     return .{
-        2.0 / (right - left), 0.0, 0.0, -(right + left) / (right - left),
-        0.0, 2.0 / (top - bottom), 0.0, -(top + bottom) / (top - bottom),
-        0.0, 0.0, -1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0,
+        2.0 / (right - left), 0.0,                  0.0,  -(right + left) / (right - left),
+        0.0,                  2.0 / (top - bottom), 0.0,  -(top + bottom) / (top - bottom),
+        0.0,                  0.0,                  -1.0, 0.0,
+        0.0,                  0.0,                  0.0,  1.0,
     };
 }
 
@@ -239,21 +235,20 @@ pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f3
 
     ds.shader_textured.bind(.{
         .tex = 0,
-        .color =
-            if (maybe_color) |color|
-                .{
-                    .r = @intToFloat(f32, color.r) / 255.0,
-                    .g = @intToFloat(f32, color.g) / 255.0,
-                    .b = @intToFloat(f32, color.b) / 255.0,
-                    .a = alpha,
-                }
-            else
-                .{
-                    .r = 1.0,
-                    .g = 1.0,
-                    .b = 1.0,
-                    .a = alpha,
-                },
+        .color = if (maybe_color) |color|
+            .{
+                .r = @intToFloat(f32, color.r) / 255.0,
+                .g = @intToFloat(f32, color.g) / 255.0,
+                .b = @intToFloat(f32, color.b) / 255.0,
+                .a = alpha,
+            }
+        else
+            .{
+                .r = 1.0,
+                .g = 1.0,
+                .b = 1.0,
+                .a = alpha,
+            },
         .mvp = ds.projection[0..],
         .vertex_buffer = null,
         .texcoord_buffer = null,
@@ -278,7 +273,10 @@ pub fn tile(
     ds: *DrawState,
     tileset: draw.Tileset,
     dtile: draw.Tile,
-    x0: i32, y0: i32, w: i32, h: i32,
+    x0: i32,
+    y0: i32,
+    w: i32,
+    h: i32,
     transform: draw.Transform,
 ) void {
     std.debug.assert(ds.draw_buffer.active);
@@ -314,10 +312,8 @@ pub fn tile(
     const num_vertices = ds.draw_buffer.num_vertices;
     std.debug.assert(num_vertices + verts_per_tile <= buffer_vertices);
 
-    const vertex2f = ds.draw_buffer.vertex2f
-        [num_vertices * 2..(num_vertices + verts_per_tile) * 2];
-    const texcoord2f = ds.draw_buffer.texcoord2f
-        [num_vertices * 2..(num_vertices + verts_per_tile) * 2];
+    const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
+    const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
 
     if (builtin.arch == .wasm32) {
         // top left, bottom left, bottom right
@@ -327,22 +323,17 @@ pub fn tile(
         std.mem.copy(
             GLfloat,
             vertex2f,
-            &[12]GLfloat{fx0,fy0, fx0,fy1, fx1,fy1, fx1,fy1, fx1,fy0, fx0,fy0},
+            &[12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 },
         );
         std.mem.copy(
             GLfloat,
             texcoord2f,
             switch (transform) {
-                .Identity =>
-                    &[12]f32{s0,t0, s0,t1, s1,t1, s1,t1, s1,t0, s0,t0},
-                .FlipVertical =>
-                    &[12]f32{s0,t1, s0,t0, s1,t0, s1,t0, s1,t1, s0,t1},
-                .FlipHorizontal =>
-                    &[12]f32{s1,t0, s1,t1, s0,t1, s0,t1, s0,t0, s1,t0},
-                .RotateClockwise =>
-                    &[12]f32{s0,t1, s1,t1, s1,t0, s1,t0, s0,t0, s0,t1},
-                .RotateCounterClockwise =>
-                    &[12]f32{s1,t0, s0,t0, s0,t1, s0,t1, s1,t1, s1,t0},
+                .Identity => &[12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
+                .FlipVertical => &[12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
+                .FlipHorizontal => &[12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
+                .RotateClockwise => &[12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
+                .RotateCounterClockwise => &[12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
             },
         );
     } else {
@@ -350,24 +341,19 @@ pub fn tile(
         std.mem.copy(
             GLfloat,
             vertex2f,
-            &[8]GLfloat{fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0},
-    );
-    std.mem.copy(
-        GLfloat,
-        texcoord2f,
-        switch (transform) {
-            .identity =>
-                &[8]f32{s0, t0, s0, t1, s1, t1, s1, t0},
-            .flip_vert =>
-                &[8]f32{s0, t1, s0, t0, s1, t0, s1, t1},
-            .flip_horz =>
-                &[8]f32{s1, t0, s1, t1, s0, t1, s0, t0},
-            .rotate_cw =>
-                &[8]f32{s0, t1, s1, t1, s1, t0, s0, t0},
-            .rotate_ccw =>
-                &[8]f32{s1, t0, s0, t0, s0, t1, s1, t1},
-        },
-    );
+            &[8]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0 },
+        );
+        std.mem.copy(
+            GLfloat,
+            texcoord2f,
+            switch (transform) {
+                .identity => &[8]f32{ s0, t0, s0, t1, s1, t1, s1, t0 },
+                .flip_vert => &[8]f32{ s0, t1, s0, t0, s1, t0, s1, t1 },
+                .flip_horz => &[8]f32{ s1, t0, s1, t1, s0, t1, s0, t0 },
+                .rotate_cw => &[8]f32{ s0, t1, s1, t1, s1, t0, s0, t0 },
+                .rotate_ccw => &[8]f32{ s1, t0, s0, t0, s0, t1, s1, t1 },
+            },
+        );
     }
 
     if (ds.glitch_mode == .quad_strips and builtin.arch != .wasm32) {
@@ -388,7 +374,7 @@ fn flush(ds: *DrawState) void {
         return;
     }
 
-    ds.shader_textured.update(shader_textured.UpdateParams {
+    ds.shader_textured.update(shader_textured.UpdateParams{
         .vertex_buffer = ds.dyn_vertex_buffer,
         .vertex2f = ds.draw_buffer.vertex2f[0..],
         .texcoord_buffer = ds.dyn_texcoord_buffer,
