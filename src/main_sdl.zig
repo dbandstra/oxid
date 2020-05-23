@@ -194,6 +194,7 @@ const Main = struct {
     main_state: common.MainState,
     framebuffer_state: platform_framebuffer.FramebufferState,
     window: *SDL_Window,
+    display_index: c_int, // used to detect when the window has been moved to another display
     glcontext: SDL_GLContext,
     blit_rect: platform_framebuffer.BlitRect,
     audio_sample_rate: usize,
@@ -423,21 +424,19 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     }
     errdefer SDL_Quit();
 
-    // we're determining max canvas scale based on the first display only. this
-    // is sort of a flaw. it could be improved if max_canvas_scale were allowed
-    // to change on the fly (i.e. when user moves game window to another
-    // display).
+    // determine initial and max canvas scale (note: max canvas scale will be
+    // updated on the fly when the window is moved between displays)
     var max_canvas_scale: u31 = 1;
     var initial_canvas_scale: u31 = 1;
     {
-        // get the desktop resolution (for the first display)
-        var dm: SDL_DisplayMode = undefined;
-        if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
+        // get the usable screen region (for the first display)
+        var bounds: SDL_Rect = undefined;
+        if (SDL_GetDisplayUsableBounds(0, &bounds) < 0) {
             // if this happens we'll just stick with a small 1:1 scale window
             std.debug.warn("Failed to query desktop display mode.\n", .{});
         } else {
-            const w = @intCast(u31, std.math.max(1, dm.w));
-            const h = @intCast(u31, std.math.max(1, dm.h));
+            const w = @intCast(u31, std.math.max(1, bounds.w));
+            const h = @intCast(u31, std.math.max(1, bounds.h));
             max_canvas_scale = getMaxCanvasScale(w, h);
             initial_canvas_scale = std.math.min(max_canvas_scale, 4);
         }
@@ -573,6 +572,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     // framebuffer_state already set
     self.window = window;
+    self.display_index = 0;
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
     self.audio_sample_rate = options.audio_sample_rate;
@@ -845,11 +845,25 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 .which = @intCast(usize, evt.jbutton.which),
                 .button = evt.jbutton.button,
             };
-            inputEvent(
-                self,
-                .{ .joy_button = joy_button },
-                evt.type == SDL_JOYBUTTONDOWN,
-            );
+            inputEvent(self, .{ .joy_button = joy_button }, evt.type == SDL_JOYBUTTONDOWN);
+        },
+        SDL_WINDOWEVENT => {
+            if (evt.window.event == SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
+                // did window move to another display?
+                const display_index = SDL_GetWindowDisplayIndex(self.window);
+                if (self.display_index != display_index) {
+                    self.display_index = display_index;
+                    // update max_canvas_scale based on the new display's dimensions.
+                    // (the current canvas scale won't change, but the user won't be
+                    // able to increase it beyond the new maximum.)
+                    var bounds: SDL_Rect = undefined;
+                    if (SDL_GetDisplayUsableBounds(display_index, &bounds) >= 0) {
+                        const w = @intCast(u31, std.math.max(1, bounds.w));
+                        const h = @intCast(u31, std.math.max(1, bounds.h));
+                        self.main_state.max_canvas_scale = getMaxCanvasScale(w, h);
+                    }
+                }
+            }
         },
         SDL_QUIT => {
             self.quit = true;
