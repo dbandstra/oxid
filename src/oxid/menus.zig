@@ -80,22 +80,14 @@ pub const Menu = union(enum) {
         comptime func: var,
     ) ?Result {
         return switch (self.*) {
-            .main_menu => |*menu_state|
-                func(MainMenu, menu_state, params),
-            .in_game_menu => |*menu_state|
-                func(InGameMenu, menu_state, params),
-            .game_over_menu => |*menu_state|
-                func(GameOverMenu, menu_state, params),
-            .really_end_game_menu => |*menu_state|
-                func(ReallyEndGameMenu, menu_state, params),
-            .options_menu => |*menu_state|
-                func(OptionsMenu, menu_state, params),
-            .game_settings_menu => |*menu_state|
-                func(GameSettingsMenu, menu_state, params),
-            .key_bindings_menu => |*menu_state|
-                func(KeyBindingsMenu, menu_state, params),
-            .high_scores_menu => |*menu_state|
-                func(HighScoresMenu, menu_state, params),
+            .main_menu => |*menu_state| func(MainMenu, menu_state, params),
+            .in_game_menu => |*menu_state| func(InGameMenu, menu_state, params),
+            .game_over_menu => |*menu_state| func(GameOverMenu, menu_state, params),
+            .really_end_game_menu => |*menu_state| func(ReallyEndGameMenu, menu_state, params),
+            .options_menu => |*menu_state| func(OptionsMenu, menu_state, params),
+            .game_settings_menu => |*menu_state| func(GameSettingsMenu, menu_state, params),
+            .key_bindings_menu => |*menu_state| func(KeyBindingsMenu, menu_state, params),
+            .high_scores_menu => |*menu_state| func(HighScoresMenu, menu_state, params),
         };
     }
 };
@@ -245,8 +237,7 @@ pub const ReallyEndGameMenu = struct {
                     ctx.setSound(.ding);
                     return;
                 },
-                .no,
-                .escape => {
+                .no, .escape => {
                     ctx.setEffect(.pop);
                     ctx.setSound(.backoff);
                     return;
@@ -280,14 +271,14 @@ pub const OptionsMenu = struct {
         if (builtin.arch == .wasm32) {
             // https://github.com/ziglang/zig/issues/3882
             const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF";
-            if (ctx.optionToggle("Sound: {}", .{ sound_str })) {
+            if (ctx.optionToggle("Sound: {}", .{sound_str})) {
                 ctx.setEffect(.toggle_sound);
                 // don't play sound because the sound init/deinit may not be
                 // done in time to pick the new sound up
             }
         }
         const volume = ctx.menu_context.cfg.volume;
-        if (ctx.optionSlider("Volume: {}%", .{ volume })) |direction| {
+        if (ctx.optionSlider("Volume: {}%", .{volume})) |direction| {
             switch (direction) {
                 .left => {
                     if (volume > 0) {
@@ -307,7 +298,7 @@ pub const OptionsMenu = struct {
             ctx.setSound(.ding);
         }
         const canvas_scale = ctx.menu_context.canvas_scale;
-        if (ctx.optionSlider("Canvas scale: {}x", .{ ctx.menu_context.canvas_scale })) |direction| {
+        if (ctx.optionSlider("Canvas scale: {}x", .{ctx.menu_context.canvas_scale})) |direction| {
             switch (direction) {
                 .left => {
                     if (canvas_scale > 1) {
@@ -324,7 +315,7 @@ pub const OptionsMenu = struct {
         }
         // https://github.com/ziglang/zig/issues/3882
         const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF";
-        if (ctx.optionToggle("Fullscreen: {}", .{ fullscreen_str })) {
+        if (ctx.optionToggle("Fullscreen: {}", .{fullscreen_str})) {
             ctx.setEffect(.toggle_fullscreen);
             // don't play a sound because the fullscreen transition might mess
             // with playback
@@ -363,9 +354,8 @@ pub const GameSettingsMenu = struct {
         ctx.title(.left, "GAME SETTINGS");
 
         // https://github.com/ziglang/zig/issues/3882
-        const friendly_fire_str =
-            if (ctx.menu_context.friendly_fire) "ON" else "OFF";
-        if (ctx.optionToggle("Friendly fire: {}", .{ friendly_fire_str })) {
+        const friendly_fire_str = if (ctx.menu_context.friendly_fire) "ON" else "OFF";
+        if (ctx.optionToggle("Friendly fire: {}", .{friendly_fire_str})) {
             ctx.setEffect(.toggle_friendly_fire);
             ctx.setSound(.ding);
         }
@@ -415,7 +405,7 @@ pub const KeyBindingsMenu = struct {
             }
         }
 
-        const commands = [_]input.GameCommand { .up, .down, .left, .right, .shoot };
+        const commands = [_]input.GameCommand{ .up, .down, .left, .right, .shoot };
 
         const longest_command_name = comptime blk: {
             var longest: usize = 0;
@@ -427,7 +417,7 @@ pub const KeyBindingsMenu = struct {
 
         ctx.title(.left, "KEY BINDINGS");
 
-        if (ctx.optionToggle("For player: {}", .{ self.for_player + 1 })) {
+        if (ctx.optionToggle("For player: {}", .{self.for_player + 1})) {
             self.for_player += 1;
             if (self.for_player == config.num_players) {
                 self.for_player = 0;
@@ -459,30 +449,24 @@ pub const KeyBindingsMenu = struct {
         command: input.GameCommand,
         command_name: []const u8,
     ) void {
-        const result =
-            if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) blk: {
-                // https://github.com/ziglang/zig/issues/3882
-                const dots = switch (ctx.menu_context.anim_time / 16 % 4) {
-                    0 => ".  ",
-                    1 => ".. ",
-                    2 => "...",
-                    else => "",
-                };
-                break :blk ctx.option("{} {}", .{ command_name, dots });
-            } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source| (
-                switch (source) {
-                    .key => |key|
-                        ctx.option("{} {}", .{ command_name, key_names[@enumToInt(key)] }),
-                    .joy_button => |j|
-                        ctx.option("{} Joy{}Button{}", .{ command_name, j.which, j.button }),
-                    .joy_axis_pos => |j|
-                        ctx.option("{} Joy{}Axis{}+", .{ command_name, j.which, j.axis }),
-                    .joy_axis_neg => |j|
-                        ctx.option("{} Joy{}Axis{}-", .{ command_name, j.which, j.axis }),
-                }
-            ) else (
-                ctx.option("{}", .{ command_name })
-            );
+        const result = if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) blk: {
+            // https://github.com/ziglang/zig/issues/3882
+            const dots = switch (ctx.menu_context.anim_time / 16 % 4) {
+                0 => ".  ",
+                1 => ".. ",
+                2 => "...",
+                else => "",
+            };
+            break :blk ctx.option("{} {}", .{ command_name, dots });
+        } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source|
+            (switch (source) {
+                .key => |key| ctx.option("{} {}", .{ command_name, key_names[@enumToInt(key)] }),
+                .joy_button => |j| ctx.option("{} Joy{}Button{}", .{ command_name, j.which, j.button }),
+                .joy_axis_pos => |j| ctx.option("{} Joy{}Axis{}+", .{ command_name, j.which, j.axis }),
+                .joy_axis_neg => |j| ctx.option("{} Joy{}Axis{}-", .{ command_name, j.which, j.axis }),
+            })
+        else
+            (ctx.option("{}", .{command_name}));
 
         if (result) {
             self.rebinding = command;
