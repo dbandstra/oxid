@@ -54,7 +54,7 @@ fn openDataFile(
 
     const file_path = try std.fs.path.join(
         &hunk_side.allocator,
-        &[_][]const u8 { dir_path, filename },
+        &[_][]const u8{ dir_path, filename },
     );
 
     return switch (mode) {
@@ -138,28 +138,27 @@ fn getFullscreenDims(native_screen_size: NativeScreenSize) WindowDims {
     return .{
         .window_width = native_screen_size.width,
         .window_height = native_screen_size.height,
-        .blit_rect =
-            if (scaled_w < native_screen_size.width)
-                platform_framebuffer.BlitRect {
-                    .w = scaled_w,
-                    .h = native_screen_size.height,
-                    .x = native_screen_size.width / 2 - scaled_w / 2,
-                    .y = 0,
-                }
-            else if (scaled_h < native_screen_size.height)
-                platform_framebuffer.BlitRect {
-                    .w = native_screen_size.width,
-                    .h = scaled_h,
-                    .x = 0,
-                    .y = native_screen_size.height / 2 - scaled_h / 2,
-                }
-            else
-                platform_framebuffer.BlitRect {
-                    .w = native_screen_size.width,
-                    .h = native_screen_size.height,
-                    .x = 0,
-                    .y = 0,
-                },
+        .blit_rect = if (scaled_w < native_screen_size.width)
+            platform_framebuffer.BlitRect{
+                .w = scaled_w,
+                .h = native_screen_size.height,
+                .x = native_screen_size.width / 2 - scaled_w / 2,
+                .y = 0,
+            }
+        else if (scaled_h < native_screen_size.height)
+            platform_framebuffer.BlitRect{
+                .w = native_screen_size.width,
+                .h = scaled_h,
+                .x = 0,
+                .y = native_screen_size.height / 2 - scaled_h / 2,
+            }
+        else
+            platform_framebuffer.BlitRect{
+                .w = native_screen_size.width,
+                .h = native_screen_size.height,
+                .x = 0,
+                .y = 0,
+            },
     };
 }
 
@@ -171,7 +170,8 @@ fn getMaxCanvasScale(native_screen_size: NativeScreenSize) u31 {
 
     const scale_limit = 8;
 
-    var scale: u31 = 1; while (scale < scale_limit) : (scale += 1) {
+    var scale: u31 = 1;
+    while (scale < scale_limit) : (scale += 1) {
         const w = (scale + 1) * common.virtual_window_width;
         const h = (scale + 1) * common.virtual_window_height;
 
@@ -190,7 +190,7 @@ fn getWindowedDims(scale: u31) WindowDims {
     return .{
         .window_width = window_width,
         .window_height = window_height,
-        .blit_rect = platform_framebuffer.BlitRect {
+        .blit_rect = platform_framebuffer.BlitRect{
             .x = 0,
             .y = 0,
             .w = window_width,
@@ -237,7 +237,7 @@ const Options = struct {
 // the memory buffer
 const audio_assets_size = 320700;
 
-var main_memory: [@sizeOf(Main) + 200*1024 + audio_assets_size]u8 = undefined;
+var main_memory: [@sizeOf(Main) + 200 * 1024 + audio_assets_size]u8 = undefined;
 
 pub fn main() u8 {
     var hunk = Hunk.init(main_memory[0..]);
@@ -268,15 +268,13 @@ pub fn main() u8 {
             var maybe_prev: ?u64 = null;
             while (true) {
                 const now: u64 = SDL_GetPerformanceCounter();
-                const delta_microseconds: u64 =
-                    if (maybe_prev) |prev| (
-                        if (now > prev) (
-                            (now - prev) * 1000000 / freq
-                        ) else (
-                            0
-                        )
-                    ) else (
-                        16667 // first tick's delta corresponds to 60 fps
+                const delta_microseconds: u64 = if (maybe_prev) |prev|
+                    (if (now > prev)
+                        ((now - prev) * 1000000 / freq)
+                    else
+                        (0))
+                else
+                    (16667 // first tick's delta corresponds to 60 fps
                     );
                 maybe_prev = now;
 
@@ -328,7 +326,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     const allocator = &hunk_side.allocator;
 
     @setEvalBranchQuota(200000);
-    const params = comptime [_]clap.Param(clap.Help) {
+    const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help              Display this help and exit") catch unreachable,
         clap.parseParam("-r, --rate <NUM>        Audio sample rate (default 44100)") catch unreachable,
         clap.parseParam("-b, --bufsize <NUM>     Audio buffer size (default 1024)") catch unreachable,
@@ -404,19 +402,16 @@ fn getFramerateScheme(
     const display_index = SDL_GetWindowDisplayIndex(window);
     var mode: SDL_DisplayMode = undefined;
     if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
-        std.debug.warn(
-            "Failed to get refresh rate, defaulting to free framerate.\n", .{});
+        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n", .{});
         return .free;
     }
     if (mode.refresh_rate <= 0) {
-        std.debug.warn(
-            "Refresh rate reported as {}, defaulting to free framerate.\n",
-            .{ mode.refresh_rate });
+        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", .{mode.refresh_rate});
         return .free;
     }
     // TODO - do i need to update this when the window moves (possibly to
     // another monitor with a different refresh rate)?
-    return FramerateScheme {
+    return FramerateScheme{
         .fixed = @intCast(usize, mode.refresh_rate),
     };
 }
@@ -433,8 +428,7 @@ fn audioCallback(
         self.audio_sample_rate_current,
         &self.main_state.session,
     );
-    const vol = std.math.min(1.0,
-        @intToFloat(f32, self.main_state.cfg.volume) / 100.0);
+    const vol = std.math.min(1.0, @intToFloat(f32, self.main_state.cfg.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
 
@@ -452,7 +446,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     var windowed_dims: WindowDims = .{
         .window_width = common.virtual_window_width,
         .window_height = common.virtual_window_height,
-        .blit_rect = platform_framebuffer.BlitRect {
+        .blit_rect = platform_framebuffer.BlitRect{
             .x = 0,
             .y = 0,
             .w = common.virtual_window_width,
@@ -565,7 +559,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
     // https://github.com/ziglang/zig/issues/3882
     const vsync_str = if (vsync_enabled) "enabled" else "disabled";
-    std.debug.warn("Vsync is {}.\n", .{ vsync_str });
+    std.debug.warn("Vsync is {}.\n", .{vsync_str});
 
     const framerate_scheme = try getFramerateScheme(
         window,
@@ -573,8 +567,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         options.framerate_scheme,
     );
     switch (framerate_scheme) {
-        .fixed => |refresh_rate|
-            std.debug.warn("Framerate scheme: fixed {}hz\n", .{ refresh_rate }),
+        .fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
         .free => std.debug.warn("Framerate scheme: free\n", .{}),
     }
 
@@ -591,7 +584,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     {
         const num_joysticks = SDL_NumJoysticks();
         std.debug.warn("{} joystick(s)\n", .{num_joysticks});
-        var i: c_int = 0; while (i < 2 and i < num_joysticks) : (i += 1) {
+        var i: c_int = 0;
+        while (i < 2 and i < num_joysticks) : (i += 1) {
             const joystick = SDL_JoystickOpen(i);
             if (joystick == null) {
                 std.debug.warn("Failed to open joystick {}\n", .{i + 1});
@@ -601,7 +595,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     // FIXME - can't use an anonymous literal here. the compiler says
     // "TODO: type coercion of an anon struct literal to struct"
-    if (!common.init(&self.main_state, @This(), common.InitParams {
+    if (!common.init(&self.main_state, @This(), common.InitParams{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
@@ -669,7 +663,8 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
     var toggle_fullscreen = false;
 
-    var i: usize = 0; while (i < num_frames_to_simulate) : (i += 1) {
+    var i: usize = 0;
+    while (i < num_frames_to_simulate) : (i += 1) {
         var evt: SDL_Event = undefined;
         while (SDL_PollEvent(&evt) != 0) {
             handleSDLEvent(self, evt);
@@ -694,8 +689,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             const draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
-            const paused = self.main_state.menu_stack.len > 0
-                            and !self.main_state.game_over;
+            const paused = self.main_state.menu_stack.len > 0 and !self.main_state.game_over;
 
             perf.begin(.frame);
             gameFrame(&self.main_state.session, frame_context, draw, paused);
@@ -835,7 +829,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_JOYAXISMOTION => {
             const threshold = 16384;
-            const joy_axis = JoyAxis {
+            const joy_axis = JoyAxis{
                 .which = @intCast(usize, evt.jaxis.which),
                 .axis = evt.jaxis.axis,
             };
@@ -863,7 +857,8 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_WINDOWEVENT => {
             if (!self.main_state.fullscreen and
-                    evt.window.event == SDL_WINDOWEVENT_MOVED) {
+                evt.window.event == SDL_WINDOWEVENT_MOVED)
+            {
                 self.original_window_x = evt.window.data1;
                 self.original_window_y = evt.window.data2;
             }
