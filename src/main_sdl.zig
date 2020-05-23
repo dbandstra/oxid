@@ -426,21 +426,17 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     // determine initial and max canvas scale (note: max canvas scale will be
     // updated on the fly when the window is moved between displays)
-    var max_canvas_scale: u31 = 1;
-    var initial_canvas_scale: u31 = 1;
-    {
+    const max_canvas_scale: u31 = blk: {
         // get the usable screen region (for the first display)
         var bounds: SDL_Rect = undefined;
         if (SDL_GetDisplayUsableBounds(0, &bounds) < 0) {
-            // if this happens we'll just stick with a small 1:1 scale window
             std.debug.warn("Failed to query desktop display mode.\n", .{});
-        } else {
-            const w = @intCast(u31, std.math.max(1, bounds.w));
-            const h = @intCast(u31, std.math.max(1, bounds.h));
-            max_canvas_scale = getMaxCanvasScale(w, h);
-            initial_canvas_scale = std.math.min(max_canvas_scale, 4);
+            break :blk 1; // stick with a small 1x scale window
         }
-    }
+        const w = @intCast(u31, std.math.max(1, bounds.w));
+        const h = @intCast(u31, std.math.max(1, bounds.h));
+        break :blk getMaxCanvasScale(w, h);
+    };
 
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DOUBLEBUFFER), 1);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BUFFER_SIZE), 32);
@@ -450,6 +446,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_ALPHA_SIZE), 8);
 
     // start in windowed mode
+    const initial_canvas_scale = std.math.min(max_canvas_scale, 4);
     const window_dims = getWindowDimsForScale(initial_canvas_scale);
     const window = SDL_CreateWindow(
         "Oxid",
