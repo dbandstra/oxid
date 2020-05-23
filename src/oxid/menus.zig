@@ -297,21 +297,25 @@ pub const OptionsMenu = struct {
             }
             ctx.setSound(.ding);
         }
-        const canvas_scale = ctx.menu_context.canvas_scale;
-        if (ctx.optionSlider("Canvas scale: {}x", .{ctx.menu_context.canvas_scale})) |direction| {
-            switch (direction) {
-                .left => {
-                    if (canvas_scale > 1) {
-                        ctx.setEffect(.{ .set_canvas_scale = canvas_scale - 1 });
-                    }
-                },
-                .right => {
-                    if (canvas_scale < ctx.menu_context.max_canvas_scale) {
-                        ctx.setEffect(.{ .set_canvas_scale = canvas_scale + 1 });
-                    }
-                },
+        if (ctx.menu_context.fullscreen) {
+            _ = ctx.optionSlider("Canvas scale: N/A", .{});
+        } else {
+            const canvas_scale = ctx.menu_context.canvas_scale;
+            if (ctx.optionSlider("Canvas scale: {}x", .{canvas_scale})) |direction| {
+                switch (direction) {
+                    .left => {
+                        if (canvas_scale > 1) {
+                            ctx.setEffect(.{ .set_canvas_scale = canvas_scale - 1 });
+                        }
+                    },
+                    .right => {
+                        if (canvas_scale < ctx.menu_context.max_canvas_scale) {
+                            ctx.setEffect(.{ .set_canvas_scale = canvas_scale + 1 });
+                        }
+                    },
+                }
+                ctx.setSound(.ding);
             }
-            ctx.setSound(.ding);
         }
         // https://github.com/ziglang/zig/issues/3882
         const fullscreen_str = if (ctx.menu_context.fullscreen) "ON" else "OFF";
