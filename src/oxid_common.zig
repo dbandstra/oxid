@@ -27,8 +27,7 @@ const audio = @import("oxid/audio.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
-const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig")
-                            .setFriendlyFire;
+const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -36,8 +35,7 @@ pub const hud_height = 16;
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
 pub const virtual_window_width = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height = levels.height * levels.pixels_per_tile
-                                        + hud_height; // 240
+pub const virtual_window_height = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 pub const MainState = struct {
     hunk: *Hunk,
@@ -184,17 +182,16 @@ pub fn inputEvent(
     const main_state: *MainState = &outer_self.main_state;
 
     if (down) {
-        const maybe_menu_command =
-            for (main_state.cfg.menu_bindings) |maybe_source, i| {
-                const s = maybe_source orelse continue;
+        const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
+            const s = maybe_source orelse continue;
 
-                if (!areInputSourcesEqual(s, source)) continue;
+            if (!areInputSourcesEqual(s, source)) continue;
 
-                break @intToEnum(
-                    input.MenuCommand,
-                    @intCast(@TagType(input.MenuCommand), i),
-                );
-            } else null;
+            break @intToEnum(
+                input.MenuCommand,
+                @intCast(@TagType(input.MenuCommand), i),
+            );
+        } else null;
 
         // if menu is open, input goes to it
         if (main_state.menu_stack.len > 0) {
@@ -219,7 +216,7 @@ pub fn inputEvent(
                 // assuming that if the menu isn't open, we must be in game
                 main_state.audio_module.playMenuSound(.backoff);
 
-                return applyMenuEffect(outer_self, ns, menus.Effect {
+                return applyMenuEffect(outer_self, ns, menus.Effect{
                     .push = .{ .in_game_menu = menus.InGameMenu.init() },
                 });
             }
@@ -236,12 +233,11 @@ pub fn inputEvent(
 
             _ = p.EventGameInput.spawn(&main_state.session, .{
                 .player_number = player_number,
-                .command = @intToEnum(input.GameCommand,
-                    @intCast(@TagType(input.GameCommand), i)),
+                .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                 .down = down,
             }) catch undefined;
 
-            return InputSpecial { .noop = {} };
+            return InputSpecial{ .noop = {} };
         }
     }
 
@@ -279,16 +275,16 @@ fn applyMenuEffect(
             });
         },
         .toggle_sound => {
-            return InputSpecial { .toggle_sound = {} };
+            return InputSpecial{ .toggle_sound = {} };
         },
         .set_volume => |value| {
             self.cfg.volume = value;
         },
         .set_canvas_scale => |value| {
-            return InputSpecial { .set_canvas_scale = value };
+            return InputSpecial{ .set_canvas_scale = value };
         },
         .toggle_fullscreen => {
-            return InputSpecial { .toggle_fullscreen = {} };
+            return InputSpecial{ .toggle_fullscreen = {} };
         },
         .toggle_friendly_fire => {
             self.friendly_fire = !self.friendly_fire;
@@ -297,15 +293,11 @@ fn applyMenuEffect(
         },
         .bind_game_command => |payload| {
             const command_index = @enumToInt(payload.command);
-            const in_use =
-                if (payload.source) |new_source|
-                    for (self.cfg.game_bindings[payload.player_number])
-                                                            |maybe_source| {
-                        const source = maybe_source orelse continue;
-                        if (!areInputSourcesEqual(source, new_source)) continue;
-                        break true;
-                    } else false
-                else false;
+            const in_use = if (payload.source) |new_source| for (self.cfg.game_bindings[payload.player_number]) |maybe_source| {
+                const source = maybe_source orelse continue;
+                if (!areInputSourcesEqual(source, new_source)) continue;
+                break true;
+            } else false else false;
             if (!in_use) {
                 self.cfg.game_bindings[payload.player_number][command_index] =
                     payload.source;
@@ -346,7 +338,8 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
         .num_players = num_players,
     }) catch undefined;
 
-    var n: u32 = 0; while (n < num_players) : (n += 1) {
+    var n: u32 = 0;
+    while (n < num_players) : (n += 1) {
         _ = p.PlayerController.spawn(gs, .{
             .player_number = n,
         }) catch undefined;
@@ -386,13 +379,11 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
         const new_score = pc.score;
 
         // the list is always sorted highest to lowest
-        var i: usize = 0; while (i < constants.num_high_scores) : (i += 1) {
+        var i: usize = 0;
+        while (i < constants.num_high_scores) : (i += 1) {
             if (new_score > self.high_scores[i]) {
                 // insert the new score here
-                std.mem.copyBackwards(u32,
-                    self.high_scores[i + 1..constants.num_high_scores],
-                    self.high_scores[i..constants.num_high_scores - 1]
-                );
+                std.mem.copyBackwards(u32, self.high_scores[i + 1 .. constants.num_high_scores], self.high_scores[i .. constants.num_high_scores - 1]);
 
                 self.high_scores[i] = new_score;
                 if (i == 0) {
