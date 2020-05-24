@@ -125,8 +125,8 @@ fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
 
     var scale: u31 = 1;
     while (scale < scale_limit) : (scale += 1) {
-        const w = (scale + 1) * common.virtual_window_width;
-        const h = (scale + 1) * common.virtual_window_height;
+        const w = (scale + 1) * common.vwin_w;
+        const h = (scale + 1) * common.vwin_h;
 
         if (w > max_w or h > max_h) {
             break;
@@ -138,15 +138,15 @@ fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
 
 fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
     return .{
-        .w = common.virtual_window_width * scale,
-        .h = common.virtual_window_height * scale,
+        .w = common.vwin_w * scale,
+        .h = common.vwin_h * scale,
     };
 }
 
 fn getBlitRect(screen_w: u31, screen_h: u31) platform_framebuffer.BlitRect {
     // scale the game view up as far as possible, maintaining the aspect ratio
-    const scaled_w = screen_h * common.virtual_window_width / common.virtual_window_height;
-    const scaled_h = screen_w * common.virtual_window_height / common.virtual_window_width;
+    const scaled_w = screen_h * common.vwin_w / common.vwin_h;
+    const scaled_h = screen_w * common.vwin_h / common.vwin_w;
 
     if (scaled_w < screen_w) {
         return .{
@@ -355,11 +355,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     return options;
 }
 
-fn getFramerateScheme(
-    window: *SDL_Window,
-    vsync: bool,
-    maybe_scheme: ?FramerateScheme,
-) !FramerateScheme {
+fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?FramerateScheme) !FramerateScheme {
     if (!vsync) {
         // if vsync isn't enabled, a fixed framerate scheme never makes sense
         return .free;
@@ -399,11 +395,7 @@ fn getFramerateScheme(
     };
 }
 
-fn audioCallback(
-    userdata_: ?*c_void,
-    stream_: ?[*]u8,
-    len_: c_int,
-) callconv(.C) void {
+fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
     const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
@@ -519,21 +511,13 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     const vsync_str = if (vsync_enabled) "enabled" else "disabled";
     std.debug.warn("Vsync is {}.\n", .{vsync_str});
 
-    const framerate_scheme = try getFramerateScheme(
-        window,
-        vsync_enabled,
-        options.framerate_scheme,
-    );
+    const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
     switch (framerate_scheme) {
         .fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
         .free => std.debug.warn("Framerate scheme: free\n", .{}),
     }
 
-    if (!platform_framebuffer.init(
-        &self.framebuffer_state,
-        common.virtual_window_width,
-        common.virtual_window_height,
-    )) {
+    if (!platform_framebuffer.init(&self.framebuffer_state, common.vwin_w, common.vwin_h)) {
         std.debug.warn("platform_framebuffer.init failed\n", .{});
         return error.Failed;
     }

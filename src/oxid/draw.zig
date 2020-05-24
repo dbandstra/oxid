@@ -223,7 +223,7 @@ fn drawHud(
         .{ .tx = 0, .ty = 0 },
         0,
         0,
-        @intToFloat(f32, common.virtual_window_width),
+        @intToFloat(f32, common.vwin_w),
         @intToFloat(f32, common.hud_height),
         .identity,
     );
@@ -307,7 +307,7 @@ fn drawHud(
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = common.virtual_window_width / 2 - message.len * 8 / 2;
+                const x = common.vwin_w / 2 - message.len * 8 / 2;
                 fontDrawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }

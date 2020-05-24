@@ -168,19 +168,21 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     const pad_vert = 8;
     const box_w = pad_left + pad_right + ctx.w;
     const box_h = pad_vert * 2 + ctx.h;
-    const box_x = @as(i32, common.virtual_window_width / 2) - @as(i32, box_w / 2);
-    const box_y =
-        if (!ctx.position_top)
-            @as(i32, common.virtual_window_height / 2) - @as(i32, box_h / 2)
-        else
-            32;
+    const box_x = @as(i32, common.vwin_w / 2) - @as(i32, box_w / 2);
+    const box_y = if (!ctx.position_top)
+        @as(i32, common.vwin_h / 2) - @as(i32, box_h / 2)
+    else
+        32;
 
     pdraw.begin(params.ds, params.ds.blank_tex.handle, draw.black, 1.0, false);
     pdraw.tile(
         params.ds,
         params.ds.blank_tileset,
         .{ .tx = 0, .ty = 0 },
-        box_x, box_y, box_w, box_h,
+        box_x,
+        box_y,
+        box_w,
+        box_h,
         .identity,
     );
     pdraw.end(params.ds);

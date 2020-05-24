@@ -34,8 +34,8 @@ pub const hud_height = 16;
 
 // size of the virtual screen. the actual window size will be an integer
 // multiple of this
-pub const virtual_window_width = levels.width * levels.pixels_per_tile; // 320
-pub const virtual_window_height = levels.height * levels.pixels_per_tile + hud_height; // 240
+pub const vwin_w = levels.width * levels.pixels_per_tile; // 320
+pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 pub const MainState = struct {
     hunk: *Hunk,
@@ -118,8 +118,8 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
 
     platform_draw.init(&self.draw_state, .{
         .hunk = self.hunk,
-        .virtual_window_width = virtual_window_width,
-        .virtual_window_height = virtual_window_height,
+        .virtual_window_width = vwin_w,
+        .virtual_window_height = vwin_h,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", .{err});
         return false;
