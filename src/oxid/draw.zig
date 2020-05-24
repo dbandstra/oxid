@@ -60,7 +60,8 @@ fn getSortedDrawables(
     defer perf.end(.draw_sort);
 
     var num_drawables: usize = 0;
-    var it = gs.ecs.componentIter(c.EventDraw); while (it.next()) |event| {
+    var it = gs.ecs.componentIter(c.EventDraw);
+    while (it.next()) |event| {
         sort_buffer[num_drawables] = event;
         num_drawables += 1;
     }
@@ -100,7 +101,10 @@ fn drawMapTile(
             ds,
             static.tileset,
             getGraphicTile(graphic),
-            dx, dy, dw, dh,
+            dx,
+            dy,
+            dw,
+            dh,
             .identity,
         );
     }
@@ -110,8 +114,10 @@ fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
     perf.begin(.draw_map);
     defer perf.end(.draw_map);
 
-    var y: u31 = 0; while (y < levels.height) : (y += 1) {
-        var x: u31 = 0; while (x < levels.width) : (x += 1) {
+    var y: u31 = 0;
+    while (y < levels.height) : (y += 1) {
+        var x: u31 = 0;
+        while (x < levels.width) : (x += 1) {
             drawMapTile(ds, static, x, y);
         }
     }
@@ -124,8 +130,10 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) voi
     perf.begin(.draw_map_foreground);
     defer perf.end(.draw_map_foreground);
 
-    var y: u31 = 6; while (y < 8) : (y += 1) {
-        var x: u31 = 9; while (x < 11) : (x += 1) {
+    var y: u31 = 6;
+    while (y < 8) : (y += 1) {
+        var x: u31 = 9;
+        while (x < 11) : (x += 1) {
             drawMapTile(ds, static, x, y);
         }
     }
@@ -148,14 +156,18 @@ fn drawEntities(
             ds,
             static.tileset,
             getGraphicTile(drawable.graphic),
-            x, y, w, h,
+            x,
+            y,
+            w,
+            h,
             drawable.transform,
         );
     }
 }
 
 fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
-    var it = gs.ecs.componentIter(c.EventDrawBox); while (it.next()) |event| {
+    var it = gs.ecs.componentIter(c.EventDrawBox);
+    while (it.next()) |event| {
         const abs_bbox = event.box;
         const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
         const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
@@ -168,7 +180,10 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
             ds,
             ds.blank_tileset,
             .{ .tx = 0, .ty = 0 },
-            x0, y0, w, h,
+            x0,
+            y0,
+            w,
+            h,
             .identity,
         );
         pdraw.end(ds);
@@ -222,7 +237,8 @@ fn drawHud(
         fontDrawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
 
-        var player_number: u31 = 0; while (player_number < 2) : (player_number += 1) {
+        var player_number: u31 = 0;
+        while (player_number < 2) : (player_number += 1) {
             const pc_maybe = blk: {
                 var it = gs.ecs.componentIter(c.PlayerController);
                 while (it.next()) |pc| {
@@ -245,43 +261,46 @@ fn drawHud(
                         ds,
                         static.tileset,
                         getGraphicTile(.man_icons),
-                        6*8-2, -1, 16, 16,
+                        6 * 8 - 2,
+                        -1,
+                        16,
+                        16,
                         .identity,
                     );
                     pdraw.end(ds);
                     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
                 }
 
-                const maybe_player_creature =
-                    if (pc.player_id) |player_id|
-                        gs.ecs.findComponentById(player_id, c.Creature)
-                    else
-                        null;
+                const maybe_player_creature = if (pc.player_id) |player_id|
+                    gs.ecs.findComponentById(player_id, c.Creature)
+                else
+                    null;
 
                 if (if (maybe_player_creature) |creature| creature.god_mode else false) {
-                    fontDrawString(ds, &static.font, 8*8, y, "(god):");
+                    fontDrawString(ds, &static.font, 8 * 8, y, "(god):");
                 } else {
-                    fontDrawString(ds, &static.font, 8*8, y, "Lives:");
+                    fontDrawString(ds, &static.font, 8 * 8, y, "Lives:");
                 }
                 pdraw.end(ds);
 
                 const heart_font_color = getColor(static, heart_font_color_index);
                 pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
-                var i: u31 = 0; while (i < pc.lives) : (i += 1) {
-                    fontDrawString(ds, &static.font, (14+i)*8, y, "\x1E"); // heart
+                var i: u31 = 0;
+                while (i < pc.lives) : (i += 1) {
+                    fontDrawString(ds, &static.font, (14 + i) * 8, y, "\x1E"); // heart
                 }
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
                     const skull_font_color = getColor(static, skull_font_color_index);
                     pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                    fontDrawString(ds, &static.font, 14*8, y, "\x1F"); // skull
+                    fontDrawString(ds, &static.font, 14 * 8, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
                 pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-                fontDrawString(ds, &static.font, 19*8, y, fbs.getWritten());
+                fontDrawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
                 fbs.reset();
             }
         }
@@ -289,13 +308,13 @@ fn drawHud(
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = common.virtual_window_width / 2 - message.len * 8 / 2;
-                fontDrawString(ds, &static.font, @intCast(i32, x), 28*8, message);
+                fontDrawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fontDrawString(ds, &static.font, 30*8, 0, fbs.getWritten());
+    fontDrawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.end(ds);
