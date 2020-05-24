@@ -39,17 +39,17 @@ const MenuInputContext = struct {
                         self.setSound(.blip);
                         self.new_cursor_pos =
                             if (self.cursor_pos > 0)
-                                self.cursor_pos - 1
-                            else
-                                self.num_options - 1;
+                            self.cursor_pos - 1
+                        else
+                            self.num_options - 1;
                     },
                     .down => {
                         self.setSound(.blip);
                         self.new_cursor_pos =
                             if (self.cursor_pos < self.num_options - 1)
-                                self.cursor_pos + 1
-                            else
-                                0;
+                            self.cursor_pos + 1
+                        else
+                            0;
                     },
                     else => {},
                 }
@@ -70,13 +70,11 @@ const MenuInputContext = struct {
     }
 
     pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: var) ?menus.OptionSliderResult {
-        return if (self.optionInner(true, fmt, args)) |result|
-            switch (result) {
-                .left => menus.OptionSliderResult.left,
-                .right => menus.OptionSliderResult.right,
-                else => null,
-            }
-        else null;
+        return if (self.optionInner(true, fmt, args)) |result| switch (result) {
+            .left => menus.OptionSliderResult.left,
+            .right => menus.OptionSliderResult.right,
+            else => null,
+        } else null;
     }
 
     pub fn setEffect(self: *@This(), effect: menus.Effect) void {
@@ -143,7 +141,7 @@ fn menuInputInner(
     if (ctx.effect != null or ctx.sound != null) {
         // FIXME - can't use anonymous struct literal here (for menus.Result)
         // file an issue?
-        return menus.Result {
+        return menus.Result{
             .effect = ctx.effect orelse .noop,
             .sound = ctx.sound,
         };

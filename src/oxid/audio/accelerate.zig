@@ -40,7 +40,7 @@ pub const AccelerateVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
                 comptime makeNote(0.0 * speed, 1, 43.0, true),
                 comptime makeNote(0.1 * speed, 2, 36.0, true),
                 comptime makeNote(0.2 * speed, 3, 40.0, true),

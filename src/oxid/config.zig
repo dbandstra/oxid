@@ -10,8 +10,7 @@ pub const num_players = 2; // hardcoded for now
 pub const Config = struct {
     volume: u32,
     menu_bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?InputSource,
-    game_bindings:
-        [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
+    game_bindings: [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
 };
 
 // this can't be a global constant because of a compiler bug
@@ -95,8 +94,7 @@ pub fn read(
                 if (std.mem.eql(u8, kv.key, "volume")) {
                     switch (kv.value) {
                         .Integer => |v| {
-                            cfg.volume = @intCast(u32,
-                                std.math.min(100, std.math.max(0, v)));
+                            cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
                         else => {
                             warn("Value of \"volume\" must be an integer\n", .{});
@@ -137,8 +135,7 @@ fn readBindings(
             while (it.next()) |kv| {
                 const command = parseCommand(CommandType, kv.key) orelse continue;
                 const source = parseInputSource(kv.value) catch {
-                    warn("Error parsing input source for command '{}'\n",
-                        .{ kv.key });
+                    warn("Error parsing input source for command '{}'\n", .{kv.key});
                     continue;
                 };
                 bindings.*[@enumToInt(command)] = source;
@@ -163,29 +160,26 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
 fn parseInputSource(value: std.json.Value) !?InputSource {
     switch (value) {
         .Object => |map| {
-            const source_type_value = map.getValue("type")
-                orelse return error.Failed;
+            const source_type_value = map.getValue("type") orelse return error.Failed;
             const source_type = switch (source_type_value) {
                 .String => |s| s,
                 else => return error.Failed,
             };
             if (std.mem.eql(u8, source_type, "key")) {
-                const key_name_value = map.getValue("key")
-                    orelse return error.Failed;
+                const key_name_value = map.getValue("key") orelse return error.Failed;
                 const key_name = switch (key_name_value) {
                     .String => |s| s,
                     else => return error.Failed,
                 };
                 inline for (@typeInfo(Key).Enum.fields) |field| {
                     if (std.mem.eql(u8, key_name, field.name)) {
-                        return InputSource { .key = @intToEnum(Key, field.value) };
+                        return InputSource{ .key = @intToEnum(Key, field.value) };
                     }
                 } else {
                     return error.Failed;
                 }
             } else if (std.mem.eql(u8, source_type, "joy_button")) {
-                const button_value = map.getValue("button")
-                    orelse return error.Failed;
+                const button_value = map.getValue("button") orelse return error.Failed;
                 const button = switch (button_value) {
                     .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
                     else => return error.Failed,
@@ -193,11 +187,12 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // FIXME - doesn't feel right to reset `which` to 0, but it
                 // also doesn't feel right to save which joystick in the
                 // config file?
-                return InputSource {
+                return InputSource{
                     .joy_button = .{ .which = 0, .button = button },
                 };
             } else if (std.mem.eql(u8, source_type, "joy_axis_neg") or
-                       std.mem.eql(u8, source_type, "joy_axis_pos")) {
+                std.mem.eql(u8, source_type, "joy_axis_pos"))
+            {
                 const axis_value = map.getValue("axis") orelse return error.Failed;
                 const axis = switch (axis_value) {
                     .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
@@ -207,11 +202,11 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // also doesn't feel right to save which joystick in the
                 // config file?
                 if (std.mem.eql(u8, source_type, "joy_axis_neg")) {
-                    return InputSource {
+                    return InputSource{
                         .joy_axis_neg = .{ .which = 0, .axis = axis },
                     };
                 } else {
-                    return InputSource {
+                    return InputSource{
                         .joy_axis_pos = .{ .which = 0, .axis = axis },
                     };
                 }
@@ -224,7 +219,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
         },
         else => {
             return error.Failed;
-        }
+        },
     }
 }
 
@@ -247,7 +242,7 @@ pub fn write(comptime OutStream: type, stream: *OutStream, cfg: Config) !void {
         \\    "volume": {},
         \\    "menu_bindings": {{
         \\
-    , .{ cfg.volume });
+    , .{cfg.volume});
     try writeBindings(OutStream, stream, input.MenuCommand, cfg.menu_bindings);
     try stream.print(
         \\    }},
@@ -283,20 +278,16 @@ fn writeBindings(
         if (maybe_source) |source| {
             switch (source) {
                 .key => |key| {
-                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}",
-                        .{ getEnumValueName(Key, key) });
+                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(Key, key)});
                 },
                 .joy_button => |j| {
-                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}",
-                        .{ j.button });
+                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});
                 },
                 .joy_axis_neg => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}",
-                        .{ j.axis });
+                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", .{j.axis});
                 },
                 .joy_axis_pos => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}",
-                        .{ j.axis });
+                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", .{j.axis});
                 },
             }
         } else {

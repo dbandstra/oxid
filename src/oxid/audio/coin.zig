@@ -81,8 +81,8 @@ pub const CoinVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
-                comptime makeNote(0.000, 1,  750.0, true),
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
+                comptime makeNote(0.000, 1, 750.0, true),
                 comptime makeNote(0.045, 2, 1000.0, true),
                 comptime makeNote(0.090, 3, 1000.0, false),
             }),

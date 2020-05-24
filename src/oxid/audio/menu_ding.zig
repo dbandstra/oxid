@@ -84,16 +84,16 @@ pub const MenuDingVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
-                comptime makeNote(0.00 * f,  1, 80.0, true),
-                comptime makeNote(0.01 * f,  2, 60.0, true),
-                comptime makeNote(0.02 * f,  3, 70.0, true),
-                comptime makeNote(0.03 * f,  4, 50.0, true),
-                comptime makeNote(0.04 * f,  5, 60.0, true),
-                comptime makeNote(0.05 * f,  6, 40.0, true),
-                comptime makeNote(0.06 * f,  7, 50.0, true),
-                comptime makeNote(0.07 * f,  8, 30.0, true),
-                comptime makeNote(0.08 * f,  9, 40.0, true),
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
+                comptime makeNote(0.00 * f, 1, 80.0, true),
+                comptime makeNote(0.01 * f, 2, 60.0, true),
+                comptime makeNote(0.02 * f, 3, 70.0, true),
+                comptime makeNote(0.03 * f, 4, 50.0, true),
+                comptime makeNote(0.04 * f, 5, 60.0, true),
+                comptime makeNote(0.05 * f, 6, 40.0, true),
+                comptime makeNote(0.06 * f, 7, 50.0, true),
+                comptime makeNote(0.07 * f, 8, 30.0, true),
+                comptime makeNote(0.08 * f, 9, 40.0, true),
                 comptime makeNote(0.09 * f, 10, 20.0, true),
                 comptime makeNote(0.10 * f, 11, 30.0, false),
             }),
@@ -127,7 +127,7 @@ pub const MenuDingVoice = struct {
             self.instrument.paint(
                 result.span,
                 .{temps[2]},
-                .{temps[0], temps[1]},
+                .{ temps[0], temps[1] },
                 note_id_changed or result.note_id_changed,
                 .{
                     .sample_rate = params.sample_rate,

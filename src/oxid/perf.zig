@@ -44,10 +44,10 @@ else
         }
 
         fn initTimer(label: []const u8) ?Timer {
-            return Timer {
+            return Timer{
                 .label = label,
                 .timer = std.time.Timer.start() catch |err| {
-                    warn("Failed to initialize \"{}\" perf timer: {}\n", .{label, err});
+                    warn("Failed to initialize \"{}\" perf timer: {}\n", .{ label, err });
                     return null;
                 },
                 .samples = [1]u64{0} ** num_samples,
@@ -125,14 +125,13 @@ else
             const avg_us = @intToFloat(f32, avg) / 1000.0;
             // std.fmt api doesn't support alignment
             if (avg_us < 10.0) {
-                warn("{} -    {d:.3} μs ({} fps)\n", .{label, avg_us, fps});
+                warn("{} -    {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else if (avg_us < 100.0) {
-                warn("{} -   {d:.3} μs ({} fps)\n", .{label, avg_us, fps});
+                warn("{} -   {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else if (avg_us < 1000.0) {
-                warn("{} -  {d:.3} μs ({} fps)\n", .{label, avg_us, fps});
+                warn("{} -  {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else {
-                warn("{} - {d:.3} μs ({} fps)\n", .{label, avg_us, fps});
+                warn("{} - {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             }
         }
-    }
-;
+    };

@@ -21,16 +21,16 @@ pub fn duration60(v: u31) u31 {
 
 pub const num_high_scores = 10;
 
-pub const enemy_speed_ticks = duration60(20*60); // every 20 seconds, increase monster speed
+pub const enemy_speed_ticks = duration60(20 * 60); // every 20 seconds, increase monster speed
 pub const max_enemy_speed_level = 4;
-pub const pickup_spawn_time = duration60(60*60); // spawn a new pickup every 60 seconds
+pub const pickup_spawn_time = duration60(60 * 60); // spawn a new pickup every 60 seconds
 pub const next_wave_time = duration60(45); // next wave will begin 0.75 seconds after the last monster dies
 pub const monster_spawn_time = duration60(90); // monsters are in spawning state for 1.5 seconds
-pub const monster_freeze_time = duration60(4*60); // monsters freeze for 4 seconds when player dies
+pub const monster_freeze_time = duration60(4 * 60); // monsters freeze for 4 seconds when player dies
 
 // if you push into a wall but there is corner within this distance, move
 // around the corner.
-pub const player_slip_threshold = 12*16; // FIXME - use screen space
+pub const player_slip_threshold = 12 * 16; // FIXME - use screen space
 
 pub const player_death_anim_time: u32 = duration60(90); // 1.5 seconds
 pub const player_respawn_time: u32 = duration60(150); // 2.5 seconds
@@ -110,29 +110,29 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     return switch (pickup_type) {
         .coin => .{
-            .lifetime = duration60(6*60),
+            .lifetime = duration60(6 * 60),
             .get_points = 20,
             .message = null,
         },
         .life_up => .{
-            .lifetime = duration60(15*60),
+            .lifetime = duration60(15 * 60),
             .get_points = 0,
             .message = "Life up!",
         },
         .power_up => .{
-            .lifetime = duration60(12*60),
+            .lifetime = duration60(12 * 60),
             .get_points = 0,
             .message = "Power up!",
         },
         .speed_up => .{
-            .lifetime = duration60(12*60),
+            .lifetime = duration60(12 * 60),
             .get_points = 0,
             .message = "Speed up!",
         },
     };
 }
 
-pub const invulnerability_time: u32 = duration60(2*60);
+pub const invulnerability_time: u32 = duration60(2 * 60);
 
 pub const player_bullet_speed: u31 = speed60(64);
 pub const monster_bullet_speed: u31 = speed60(20);

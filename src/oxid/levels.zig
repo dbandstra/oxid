@@ -40,8 +40,7 @@ pub const Level = struct {
         const offx = @mod(x, subpixels_per_tile) != 0;
         const offy = @mod(y, subpixels_per_tile) != 0;
 
-        return
-            self.gridIsWall(gx0, gy0) or
+        return self.gridIsWall(gx0, gy0) or
             (offx and self.grid_is_wall(gx0 + 1, gy0)) or
             (offy and self.grid_is_wall(gx0, gy0 + 1)) or
             (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
@@ -102,7 +101,7 @@ pub const Level = struct {
 pub const level1 = Level.init(loadLevel("level1.pcx"));
 
 // map of pcx values to the values that are meaningful to the program
-const mapping = [_]u8 {
+const mapping = [_]u8{
     0x00, // floor
     0x85, // spooky block, bottom left
     0x83, // spooky block, top left

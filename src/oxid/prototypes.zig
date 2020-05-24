@@ -34,7 +34,7 @@ pub const bullet_bbox = blk: {
     const bullet_size = 4 * levels.pixels_per_tile;
     const min = levels.subpixels_per_tile / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
-    break :blk math.BoundingBox {
+    break :blk math.BoundingBox{
         .mins = math.Vec2.init(min, min),
         .maxs = math.Vec2.init(max, max),
     };
@@ -45,7 +45,7 @@ pub const MainController = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.MainController {
+        try gs.ecs.addComponent(entity_id, c.MainController{
             .game_running_state = null,
         });
 
@@ -62,13 +62,13 @@ pub const GameController = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.GameController {
+        try gs.ecs.addComponent(entity_id, c.GameController{
             .monster_count = 0,
             .enemy_speed_level = 0,
             .enemy_speed_timer = constants.enemy_speed_ticks,
             .wave_number = 0,
             .next_wave_timer = constants.duration60(90),
-            .next_pickup_timer = constants.duration60(15*60),
+            .next_pickup_timer = constants.duration60(15 * 60),
             .freeze_monsters_timer = 0,
             .extra_lives_spawned = 0,
             .wave_message = null,
@@ -89,7 +89,7 @@ pub const PlayerController = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.PlayerController {
+        try gs.ecs.addComponent(entity_id, c.PlayerController{
             .player_number = params.player_number,
             .player_id = null,
             .lives = constants.player_num_lives,
@@ -112,11 +112,11 @@ pub const Player = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = math.Vec2.init(params.pos.x, params.pos.y + levels.subpixels_per_tile),
         });
 
-        try gs.ecs.addComponent(entity_id, c.PhysObject {
+        try gs.ecs.addComponent(entity_id, c.PhysObject{
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
@@ -129,14 +129,14 @@ pub const Player = struct {
             .internal = undefined,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Creature {
+        try gs.ecs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = constants.invulnerability_time,
             .hit_points = 1,
             .flinch_timer = 0,
             .god_mode = false,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Player {
+        try gs.ecs.addComponent(entity_id, c.Player{
             .player_number = params.player_number,
             .player_controller_id = params.player_controller_id,
             .trigger_released = true,
@@ -167,11 +167,11 @@ pub const PlayerCorpse = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
+        try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = .man_dying6,
             .z_index = constants.z_index_corpse,
             .directional = false,
@@ -195,11 +195,11 @@ pub const Monster = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.PhysObject {
+        try gs.ecs.addComponent(entity_id, c.PhysObject{
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -212,39 +212,35 @@ pub const Monster = struct {
             .internal = undefined,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Creature {
+        try gs.ecs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = 0,
             .hit_points = 999, // invulnerable while spawning
             .flinch_timer = 0,
             .god_mode = false,
         });
 
-        const can_shoot =
-            if (monster_values.first_shooting_level) |first_level|
-                params.wave_number >= first_level
-            else
-                false;
+        const can_shoot = if (monster_values.first_shooting_level) |first_level|
+            params.wave_number >= first_level
+        else
+            false;
 
-        try gs.ecs.addComponent(entity_id, c.Monster {
+        try gs.ecs.addComponent(entity_id, c.Monster{
             .monster_type = params.monster_type,
             .spawning_timer = constants.monster_spawn_time,
             .full_hit_points = monster_values.hit_points,
-            .personality =
-                if (params.monster_type == .juggernaut)
-                    c.Monster.Personality.chase
-                else
-                    if (gs.getRand().boolean())
-                        c.Monster.Personality.chase
-                    else
-                        c.Monster.Personality.wander,
+            .personality = if (params.monster_type == .juggernaut)
+                c.Monster.Personality.chase
+            else if (gs.getRand().boolean())
+                c.Monster.Personality.chase
+            else
+                c.Monster.Personality.wander,
             .kill_points = monster_values.kill_points,
             .can_shoot = can_shoot,
             .can_drop_webs = monster_values.can_drop_webs,
-            .next_attack_timer =
-                if (can_shoot or monster_values.can_drop_webs)
-                    constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400))
-                else
-                    0,
+            .next_attack_timer = if (can_shoot or monster_values.can_drop_webs)
+                constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400))
+            else
+                0,
             .has_coin = params.has_coin,
             .persistent = monster_values.persistent,
         });
@@ -262,11 +258,11 @@ pub const Web = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.PhysObject {
+        try gs.ecs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -279,9 +275,9 @@ pub const Web = struct {
             .internal = undefined,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Web {});
+        try gs.ecs.addComponent(entity_id, c.Web{});
 
-        try gs.ecs.addComponent(entity_id, c.Creature {
+        try gs.ecs.addComponent(entity_id, c.Creature{
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
@@ -307,11 +303,11 @@ pub const Bullet = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.PhysObject {
+        try gs.ecs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = bullet_bbox,
             .entity_bbox = bullet_bbox,
@@ -325,27 +321,25 @@ pub const Bullet = struct {
             .flags = c.PhysObject.FLAG_BULLET,
             .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
                 // monster bullets ignore all monsters and webs
-                .monster_bullet =>
-                    c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
+                .monster_bullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
                 // player bullets ignore only the player that shot it (via
                 // `owner_id`), unless friendly fire is disabled.
                 // see also src/oxid/set_friendly_fire.zig, where this value
                 // is changed (called when user toggles friendly fire in the
                 // menu)
-                .player_bullet =>
-                    if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
+                .player_bullet => if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
             },
             .internal = undefined,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Bullet {
+        try gs.ecs.addComponent(entity_id, c.Bullet{
             .bullet_type = params.bullet_type,
             .inflictor_player_controller_id = params.inflictor_player_controller_id,
             .damage = params.cluster_size,
             .line_of_fire = null,
         });
 
-        try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
+        try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = switch (params.bullet_type) {
                 .monster_bullet => Graphic.mon_bullet,
                 .player_bullet => switch (params.cluster_size) {
@@ -373,11 +367,11 @@ pub const Animation = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Animation {
+        try gs.ecs.addComponent(entity_id, c.Animation{
             .simple_anim = params.simple_anim,
             .frame_index = 0,
             .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -400,11 +394,11 @@ pub const Pickup = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Transform {
+        try gs.ecs.addComponent(entity_id, c.Transform{
             .pos = params.pos,
         });
 
-        try gs.ecs.addComponent(entity_id, c.SimpleGraphic {
+        try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = switch (params.pickup_type) {
                 .power_up => .power_up,
                 .speed_up => .speed_up,
@@ -415,7 +409,7 @@ pub const Pickup = struct {
             .directional = false,
         });
 
-        try gs.ecs.addComponent(entity_id, c.PhysObject {
+        try gs.ecs.addComponent(entity_id, c.PhysObject{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
@@ -428,13 +422,13 @@ pub const Pickup = struct {
             .internal = undefined,
         });
 
-        try gs.ecs.addComponent(entity_id, c.Pickup {
+        try gs.ecs.addComponent(entity_id, c.Pickup{
             .pickup_type = params.pickup_type,
             .get_points = pickup_values.get_points,
             .message = pickup_values.message,
         });
 
-        try gs.ecs.addComponent(entity_id, c.RemoveTimer {
+        try gs.ecs.addComponent(entity_id, c.RemoveTimer{
             .timer = pickup_values.lifetime,
         });
 
@@ -452,13 +446,13 @@ pub const Sound = struct {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Voice {
+        try gs.ecs.addComponent(entity_id, c.Voice{
             .wrapper = params.wrapper,
         });
 
         // FIXME!!! this timer will be paused when you're in the menu, but we
         // use sounds in the menu too!
-        try gs.ecs.addComponent(entity_id, c.RemoveTimer {
+        try gs.ecs.addComponent(entity_id, c.RemoveTimer{
             .timer = @floatToInt(u32, params.duration * @as(f32, constants.ticks_per_second)),
         });
 

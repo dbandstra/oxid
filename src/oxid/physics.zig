@@ -178,7 +178,8 @@ pub fn physicsFrame(gs: *GameSession) void {
         // members take turns moving forward one subpixel
         var sanity: usize = 0;
         while (true) {
-            sanity += 1; std.debug.assert(sanity < 10000);
+            sanity += 1;
+            std.debug.assert(sanity < 10000);
 
             // which member has the lowest progress?
             // TODO - if there is a tie, the one with highest speed should go first
@@ -200,20 +201,15 @@ pub fn physicsFrame(gs: *GameSession) void {
 
             if (lowest) |m| {
                 // try to move this guy one subpixel
-                const transform =
-                    gs.ecs.findComponentById(m.entity_id, c.Transform).?;
-                var new_pos =
-                    math.Vec2.add(transform.pos,
-                                  math.Direction.normal(m.phys.facing));
+                const transform = gs.ecs.findComponentById(m.entity_id, c.Transform).?;
+                var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
 
                 // if push_dir differs from velocity direction, and we can
                 // move in that direction, redirect velocity to go in that
                 // direction
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
-                        const new_pos2 =
-                            math.Vec2.add(transform.pos,
-                                          math.Direction.normal(push_dir));
+                        const new_pos2 = math.Vec2.add(transform.pos, math.Direction.normal(push_dir));
                         if (!physInWall(m.phys, new_pos2)) {
                             m.phys.facing = push_dir;
                             new_pos = new_pos2;
@@ -226,7 +222,7 @@ pub fn physicsFrame(gs: *GameSession) void {
                 if (physInWall(m.phys, new_pos)) {
                     _ = p.EventCollide.spawn(gs, .{
                         .self_id = m.entity_id,
-                        .other_id = .{.id = 0},
+                        .other_id = .{ .id = 0 },
                         .propelled = true,
                     }) catch undefined;
                     hit_something = true;
@@ -234,14 +230,14 @@ pub fn physicsFrame(gs: *GameSession) void {
 
                 var other: ?*MoveGroupMember = move_group.head;
                 while (other) |o| : (other = o.next) {
-                    if (couldObjectsCollide(m.entity_id, m.phys,
-                                            o.entity_id, o.phys)) {
-                        const other_transform =
-                            gs.ecs.findComponentById(o.entity_id, c.Transform).?;
+                    if (couldObjectsCollide(m.entity_id, m.phys, o.entity_id, o.phys)) {
+                        const other_transform = gs.ecs.findComponentById(o.entity_id, c.Transform).?;
 
                         if (math.boxesOverlap(
-                            new_pos, m.phys.entity_bbox,
-                            other_transform.pos, o.phys.entity_bbox,
+                            new_pos,
+                            m.phys.entity_bbox,
+                            other_transform.pos,
+                            o.phys.entity_bbox,
                         )) {
                             collide(gs, m.entity_id, o.entity_id);
                             if (!m.phys.illusory and !o.phys.illusory) {
@@ -305,8 +301,16 @@ fn mergeMoveGroups(dest: *MoveGroup, src: *MoveGroup) void {
     var old_dest_count: usize = 0;
     var old_src_count: usize = 0;
     var member: ?*MoveGroupMember = undefined;
-    member = dest.head; while (member) |m| { old_dest_count += 1; member = m.next; }
-    member = src.head; while (member) |m| { old_src_count += 1; member = m.next; }
+    member = dest.head;
+    while (member) |m| {
+        old_dest_count += 1;
+        member = m.next;
+    }
+    member = src.head;
+    while (member) |m| {
+        old_src_count += 1;
+        member = m.next;
+    }
 
     var last_member = dest.head;
     while (last_member.next) |next| {
@@ -317,7 +321,11 @@ fn mergeMoveGroups(dest: *MoveGroup, src: *MoveGroup) void {
     src.is_active = false;
 
     var new_dest_count: usize = 0;
-    member = dest.head; while (member) |m| { new_dest_count += 1; member = m.next; }
+    member = dest.head;
+    while (member) |m| {
+        new_dest_count += 1;
+        member = m.next;
+    }
     std.debug.assert(new_dest_count == old_dest_count + old_src_count);
 }
 
@@ -362,11 +370,13 @@ fn assertNoOverlaps(gs: *GameSession) void {
         phys: *const c.PhysObject,
         transform: *const c.Transform,
     };
-    var it = gs.ecs.iter(T); while (it.next()) |self| {
+    var it = gs.ecs.iter(T);
+    while (it.next()) |self| {
         if (self.phys.illusory) {
             continue;
         }
-        var it2 = gs.ecs.iter(T); while (it2.next()) |other| {
+        var it2 = gs.ecs.iter(T);
+        while (it2.next()) |other| {
             if (other.phys.illusory) {
                 continue;
             }
@@ -374,8 +384,10 @@ fn assertNoOverlaps(gs: *GameSession) void {
                 continue;
             }
             if (math.boxesOverlap(
-                self.transform.pos, self.phys.entity_bbox,
-                other.transform.pos, other.phys.entity_bbox,
+                self.transform.pos,
+                self.phys.entity_bbox,
+                other.transform.pos,
+                other.phys.entity_bbox,
             )) {
                 warn("who is this joker\n", .{});
             }

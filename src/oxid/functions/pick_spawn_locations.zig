@@ -15,8 +15,10 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
     var gx: u31 = undefined;
     var gy: u31 = undefined;
 
-    gy = 0; while (gy < levels.height) : (gy += 1) {
-        gx = 0; while (gx < levels.width) : (gx += 1) {
+    gy = 0;
+    while (gy < levels.height) : (gy += 1) {
+        gx = 0;
+        while (gx < levels.width) : (gx += 1) {
             const pos = math.Vec2.init(gx, gy);
             const i = gy * levels.width + gx;
             gridmask[i] = levels.level1.getGridTerrainType(pos) == .floor;
@@ -48,8 +50,10 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
         const gy0 = @intCast(u31, gmins_y);
         const gx1 = @intCast(u31, gmaxs_x);
         const gy1 = @intCast(u31, gmaxs_y);
-        gy = gy0; while (gy <= gy1) : (gy += 1) {
-            gx = gx0; while (gx <= gx1) : (gx += 1) {
+        gy = gy0;
+        while (gy <= gy1) : (gy += 1) {
+            gx = gx0;
+            while (gx <= gx1) : (gx += 1) {
                 gridmask[gy * levels.width + gx] = false;
             }
         }
@@ -59,8 +63,10 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
     var candidates: [levels.width * levels.height]math.Vec2 = undefined;
     var num_candidates: usize = 0;
 
-    gy = 0; while (gy < levels.height) : (gy += 1) {
-        gx = 0; while (gx < levels.width) : (gx += 1) {
+    gy = 0;
+    while (gy < levels.height) : (gy += 1) {
+        gx = 0;
+        while (gx < levels.width) : (gx += 1) {
             if (gridmask[gy * levels.width + gx]) {
                 candidates[num_candidates] = math.Vec2.init(gx, gy);
                 num_candidates += 1;

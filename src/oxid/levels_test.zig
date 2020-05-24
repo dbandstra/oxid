@@ -18,13 +18,13 @@ test "box_in_wall" {
 
     const bbox: math.BoundingBox = .{
         .mins = math.Vec2.init(0, 0),
-        .maxs = math.Vec2.init(s-1, s-1),
+        .maxs = math.Vec2.init(s - 1, s - 1),
     };
 
-    std.testing.expect(!level.boxInWall(math.Vec2.init(1*s, 1*s), bbox));
+    std.testing.expect(!level.boxInWall(math.Vec2.init(1 * s, 1 * s), bbox));
 
-    std.testing.expect(level.boxInWall(math.Vec2.init(1*s-1, 1*s), bbox));
-    std.testing.expect(level.boxInWall(math.Vec2.init(1*s+1, 1*s), bbox));
-    std.testing.expect(level.boxInWall(math.Vec2.init(1*s, 1*s-1), bbox));
-    std.testing.expect(level.boxInWall(math.Vec2.init(1*s, 1*s+1), bbox));
+    std.testing.expect(level.boxInWall(math.Vec2.init(1 * s - 1, 1 * s), bbox));
+    std.testing.expect(level.boxInWall(math.Vec2.init(1 * s + 1, 1 * s), bbox));
+    std.testing.expect(level.boxInWall(math.Vec2.init(1 * s, 1 * s - 1), bbox));
+    std.testing.expect(level.boxInWall(math.Vec2.init(1 * s, 1 * s + 1), bbox));
 }

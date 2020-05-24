@@ -49,11 +49,10 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     }
 
     const monster_values = constants.getMonsterValues(self.monster.monster_type);
-    const move_speed =
-        if (gc.enemy_speed_level < monster_values.move_speed.len)
-            monster_values.move_speed[gc.enemy_speed_level]
-        else
-            monster_values.move_speed[monster_values.move_speed.len - 1];
+    const move_speed = if (gc.enemy_speed_level < monster_values.move_speed.len)
+        monster_values.move_speed[gc.enemy_speed_level]
+    else
+        monster_values.move_speed[monster_values.move_speed.len - 1];
 
     // look ahead for corners
     const pos = self.transform.pos;
@@ -129,7 +128,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         self.monster.next_attack_timer -= 1;
     } else {
         if (self.monster.can_shoot) {
-            p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams {
+            p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams{
                 .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                 .carrier_mul = 4.0,
                 .modulator_mul = 0.125,

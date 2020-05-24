@@ -49,7 +49,7 @@ pub const LaserVoice = struct {
         self.modulator_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &[_]zang.CurveNode {
+            .curve = &[_]zang.CurveNode{
                 .{ .value = 1000.0, .t = 0.0 },
                 .{ .value = 200.0, .t = 0.1 },
                 .{ .value = 100.0, .t = 0.2 },
@@ -67,7 +67,7 @@ pub const LaserVoice = struct {
         self.carrier_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &[_]zang.CurveNode {
+            .curve = &[_]zang.CurveNode{
                 .{ .value = 1000.0, .t = 0.0 },
                 .{ .value = 200.0, .t = 0.1 },
                 .{ .value = 100.0, .t = 0.2 },
@@ -84,7 +84,7 @@ pub const LaserVoice = struct {
         self.volume_curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &[_]zang.CurveNode {
+            .curve = &[_]zang.CurveNode{
                 .{ .value = 0.0, .t = 0.0 },
                 .{ .value = 0.35, .t = 0.004 },
                 .{ .value = 0.0, .t = 0.2 },

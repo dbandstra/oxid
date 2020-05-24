@@ -54,42 +54,42 @@ fn getFixtureConfig() config.Config {
 }
 
 const fixture_json =
-\\{
-\\    "volume": 100,
-\\    "menu_bindings": {
-\\        "left": {"type": "key", "key": "left"},
-\\        "right": {"type": "key", "key": "right"},
-\\        "up": {"type": "key", "key": "up"},
-\\        "down": {"type": "key", "key": "down"},
-\\        "escape": {"type": "key", "key": "escape"},
-\\        "enter": {"type": "key", "key": "return"},
-\\        "yes": {"type": "key", "key": "y"},
-\\        "no": {"type": "key", "key": "n"}
-\\    },
-\\    "game_bindings": {
-\\        "left": {"type": "joy_axis_neg", "axis": 0},
-\\        "right": {"type": "joy_axis_pos", "axis": 0},
-\\        "up": {"type": "joy_axis_neg", "axis": 1},
-\\        "down": {"type": "joy_axis_pos", "axis": 1},
-\\        "shoot": {"type": "joy_button", "button": 1},
-\\        "toggle_god_mode": null,
-\\        "toggle_draw_boxes": null,
-\\        "kill_all_monsters": null,
-\\        "escape": {"type": "key", "key": "escape"}
-\\    },
-\\    "game_bindings2": {
-\\        "left": {"type": "key", "key": "a"},
-\\        "right": {"type": "key", "key": "d"},
-\\        "up": {"type": "key", "key": "w"},
-\\        "down": {"type": "key", "key": "s"},
-\\        "shoot": {"type": "key", "key": "f"},
-\\        "toggle_god_mode": null,
-\\        "toggle_draw_boxes": null,
-\\        "kill_all_monsters": null,
-\\        "escape": null
-\\    }
-\\}
-\\
+    \\{
+    \\    "volume": 100,
+    \\    "menu_bindings": {
+    \\        "left": {"type": "key", "key": "left"},
+    \\        "right": {"type": "key", "key": "right"},
+    \\        "up": {"type": "key", "key": "up"},
+    \\        "down": {"type": "key", "key": "down"},
+    \\        "escape": {"type": "key", "key": "escape"},
+    \\        "enter": {"type": "key", "key": "return"},
+    \\        "yes": {"type": "key", "key": "y"},
+    \\        "no": {"type": "key", "key": "n"}
+    \\    },
+    \\    "game_bindings": {
+    \\        "left": {"type": "joy_axis_neg", "axis": 0},
+    \\        "right": {"type": "joy_axis_pos", "axis": 0},
+    \\        "up": {"type": "joy_axis_neg", "axis": 1},
+    \\        "down": {"type": "joy_axis_pos", "axis": 1},
+    \\        "shoot": {"type": "joy_button", "button": 1},
+    \\        "toggle_god_mode": null,
+    \\        "toggle_draw_boxes": null,
+    \\        "kill_all_monsters": null,
+    \\        "escape": {"type": "key", "key": "escape"}
+    \\    },
+    \\    "game_bindings2": {
+    \\        "left": {"type": "key", "key": "a"},
+    \\        "right": {"type": "key", "key": "d"},
+    \\        "up": {"type": "key", "key": "w"},
+    \\        "down": {"type": "key", "key": "s"},
+    \\        "shoot": {"type": "key", "key": "f"},
+    \\        "toggle_god_mode": null,
+    \\        "toggle_draw_boxes": null,
+    \\        "kill_all_monsters": null,
+    \\        "escape": null
+    \\    }
+    \\}
+    \\
 ;
 
 test "config.read" {

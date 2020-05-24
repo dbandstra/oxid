@@ -1,11 +1,10 @@
 const builtin = @import("builtin");
-usingnamespace
-    if (builtin.arch == .wasm32)
-        @import("../../web.zig")
-    else
-        @cImport({
-            @cInclude("epoxy/gl.h");
-        });
+usingnamespace if (builtin.arch == .wasm32)
+    @import("../../web.zig")
+else
+    @cImport({
+        @cInclude("epoxy/gl.h");
+    });
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;
@@ -93,16 +92,11 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
 
     const old = version == .v120 or version == .webgl;
 
-    return shaders.ShaderSource {
-        .vertex =
-            first_line
-            ++
-            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n"
-            ++
-            (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n"
-            ++
-            (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n"
-            ++
+    return shaders.ShaderSource{
+        .vertex = first_line ++
+            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
+            (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
+            (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
             \\uniform mat4 MVP;
             \\
             \\void main(void)
@@ -111,25 +105,19 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\  gl_Position = vec4(VertexPosition, 1.0) * MVP;
             \\}
         ,
-        .fragment =
-            first_line
-            ++
-            (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n"
-            ++
-            (if (old) "" else "out vec4 FragColor;\n")
-            ++
+        .fragment = first_line ++
+            (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
+            (if (old) "" else "out vec4 FragColor;\n") ++
             \\uniform sampler2D Tex;
             \\uniform vec4 Color;
             \\
             \\void main(void)
             \\{
             \\
-            ++
-            "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n"
-            ++
+        ++
+            "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
             \\}
-        ,
-    };
+            };
 }
 
 fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
@@ -148,7 +136,7 @@ pub fn create(
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 
-    return Shader {
+    return Shader{
         .program = program,
         .attrib_position = shaders.getAttribLocation(program, "VertexPosition"),
         .attrib_texcoord = shaders.getAttribLocation(program, "TexCoord"),

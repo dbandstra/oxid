@@ -38,7 +38,7 @@ pub const ExplosionVoice = struct {
         self.cutoff_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &[_]zang.CurveNode {
+            .curve = &[_]zang.CurveNode{
                 .{ .t = 0.0, .value = 3000.0 },
                 .{ .t = 0.5, .value = 1000.0 },
                 .{ .t = 0.7, .value = 200.0 },
@@ -47,7 +47,8 @@ pub const ExplosionVoice = struct {
         });
         // FIXME - apply this to the curve nodes before interpolation, to save
         // time. but this probably requires a change to the zang api
-        var i: usize = 0; while (i < temps[1].len) : (i += 1) {
+        var i: usize = 0;
+        while (i < temps[1].len) : (i += 1) {
             temps[1][i] =
                 zang.cutoffFromFrequency(temps[1][i], params.sample_rate);
         }
@@ -62,7 +63,7 @@ pub const ExplosionVoice = struct {
         self.volume_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &[_]zang.CurveNode {
+            .curve = &[_]zang.CurveNode{
                 .{ .t = 0.0, .value = 0.0 },
                 .{ .t = 0.004, .value = 0.75 },
                 .{ .t = 0.7, .value = 0.0 },

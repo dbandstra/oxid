@@ -81,7 +81,7 @@ pub const Vec2 = struct {
     }
 };
 
-pub const BoundingBox = struct{
+pub const BoundingBox = struct {
     mins: Vec2,
     maxs: Vec2,
 
@@ -97,16 +97,17 @@ pub fn absBoxesOverlap(a: BoundingBox, b: BoundingBox) bool {
     std.debug.assert(a.mins.x < a.maxs.x and a.mins.y < a.maxs.y);
     std.debug.assert(b.mins.x < b.maxs.x and b.mins.y < b.maxs.y);
 
-    return
-        a.maxs.x >= b.mins.x and
+    return a.maxs.x >= b.mins.x and
         b.maxs.x >= a.mins.x and
         a.maxs.y >= b.mins.y and
         b.maxs.y >= a.mins.y;
 }
 
 pub fn boxesOverlap(
-    a_pos: Vec2, a_bbox: BoundingBox,
-    b_pos: Vec2, b_bbox: BoundingBox,
+    a_pos: Vec2,
+    a_bbox: BoundingBox,
+    b_pos: Vec2,
+    b_bbox: BoundingBox,
 ) bool {
     return absBoxesOverlap(
         BoundingBox.move(a_bbox, a_pos),
@@ -121,19 +122,27 @@ test "boxesOverlap" {
     };
 
     std.testing.expect(!boxesOverlap(
-        Vec2.init(0, 0), bbox,
-        Vec2.init(16, 0), bbox,
+        Vec2.init(0, 0),
+        bbox,
+        Vec2.init(16, 0),
+        bbox,
     ));
     std.testing.expect(boxesOverlap(
-        Vec2.init(0, 0), bbox,
-        Vec2.init(15, 0), bbox,
+        Vec2.init(0, 0),
+        bbox,
+        Vec2.init(15, 0),
+        bbox,
     ));
     std.testing.expect(!boxesOverlap(
-        Vec2.init(0, 0), bbox,
-        Vec2.init(-16, 0), bbox,
+        Vec2.init(0, 0),
+        bbox,
+        Vec2.init(-16, 0),
+        bbox,
     ));
     std.testing.expect(boxesOverlap(
-        Vec2.init(0, 0), bbox,
-        Vec2.init(-15, 0), bbox,
+        Vec2.init(0, 0),
+        bbox,
+        Vec2.init(-15, 0),
+        bbox,
     ));
 }

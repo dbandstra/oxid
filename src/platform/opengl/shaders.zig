@@ -1,11 +1,10 @@
 const builtin = @import("builtin");
-usingnamespace
-    if (builtin.arch == .wasm32)
-        @import("../../web.zig")
-    else
-        @cImport({
-            @cInclude("epoxy/gl.h");
-        });
+usingnamespace if (builtin.arch == .wasm32)
+    @import("../../web.zig")
+else
+    @cImport({
+        @cInclude("epoxy/gl.h");
+    });
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;
@@ -23,7 +22,7 @@ pub const Program = struct {
     fragment_id: GLuint,
 };
 
-pub const InitError = error {
+pub const InitError = error{
     ShaderCompileFailed,
     ShaderLinkFailed,
     ShaderInvalidAttrib,
@@ -55,7 +54,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
 
     if (builtin.arch == .wasm32) {
         // TODO - check program status (currently that's hacked into my webgl bindings)
-        return Program {
+        return Program{
             .program_id = program_id,
             .vertex_id = vertex_id,
             .fragment_id = fragment_id,
@@ -64,7 +63,7 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
         var ok: GLint = undefined;
         glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
         if (ok != 0) {
-            return Program {
+            return Program{
                 .program_id = program_id,
                 .vertex_id = vertex_id,
                 .fragment_id = fragment_id,

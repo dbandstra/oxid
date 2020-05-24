@@ -27,29 +27,26 @@ fn think(gs: *GameSession, self: SystemData) void {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
             //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
-            _ = p.EventDraw.spawn(gs, c.EventDraw {
+            _ = p.EventDraw.spawn(gs, c.EventDraw{
                 .pos = self.transform.pos,
-                .graphic =
-                    if (player.dying_timer > constants.duration60(30))
-                        if (alternation(u32, player.dying_timer, constants.duration60(2)))
-                            Graphic.man_dying1
-                        else
-                            Graphic.man_dying2
-                    else if (player.dying_timer > constants.duration60(20))
-                        Graphic.man_dying3
-                    else if (player.dying_timer > constants.duration60(10))
-                        Graphic.man_dying4
+                .graphic = if (player.dying_timer > constants.duration60(30))
+                    if (alternation(u32, player.dying_timer, constants.duration60(2)))
+                        Graphic.man_dying1
                     else
-                        Graphic.man_dying5,
+                        Graphic.man_dying2
+                else if (player.dying_timer > constants.duration60(20))
+                    Graphic.man_dying3
+                else if (player.dying_timer > constants.duration60(10))
+                    Graphic.man_dying4
+                else
+                    Graphic.man_dying5,
                 .transform = .identity,
                 .z_index = constants.z_index_player,
             }) catch undefined;
         } else {
             drawCreature(gs, self, .{
-                .graphic1 =
-                    if (player.player_number == 0) .man1_walk1 else .man2_walk1,
-                .graphic2 =
-                    if (player.player_number == 0) .man1_walk2 else .man2_walk2,
+                .graphic1 = if (player.player_number == 0) .man1_walk1 else .man2_walk1,
+                .graphic2 = if (player.player_number == 0) .man1_walk2 else .man2_walk2,
                 .rotates = true,
                 .z_index = constants.z_index_player,
             });
@@ -60,13 +57,12 @@ fn think(gs: *GameSession, self: SystemData) void {
     if (self.monster) |monster| {
         if (monster.spawning_timer > 0) {
             //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
-            _ = p.EventDraw.spawn(gs, c.EventDraw {
+            _ = p.EventDraw.spawn(gs, c.EventDraw{
                 .pos = self.transform.pos,
-                .graphic =
-                    if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
-                        .spawn1
-                    else
-                        .spawn2,
+                .graphic = if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
+                    .spawn1
+                else
+                    .spawn2,
                 .transform = .identity,
                 .z_index = constants.z_index_enemy,
             }) catch undefined;
@@ -108,8 +104,7 @@ fn think(gs: *GameSession, self: SystemData) void {
     }
 
     if (self.web) |web| {
-        const graphic: Graphic =
-            if (self.creature.flinch_timer > 0) .web2 else .web1;
+        const graphic: Graphic = if (self.creature.flinch_timer > 0) .web2 else .web1;
         drawCreature(gs, self, .{
             .graphic1 = graphic,
             .graphic2 = graphic,
@@ -145,8 +140,7 @@ fn drawCreature(
 ) void {
     // blink during invulnerability
     if (self.creature.invulnerability_timer > 0) {
-        if (alternation(u32, self.creature.invulnerability_timer,
-                        constants.duration60(2))) {
+        if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
             return;
         }
     }
@@ -160,16 +154,15 @@ fn drawCreature(
     _ = p.EventDraw.spawn(gs, .{
         .pos = self.transform.pos,
         .graphic =
-            // animate legs every 6 screen pixels
-            if (alternation(i32, sxpos, 6))
-                params.graphic1
-            else
-                params.graphic2,
-        .transform =
-            if (params.rotates)
-                util.getDirTransform(self.phys.facing)
-            else
-                .identity,
+        // animate legs every 6 screen pixels
+        if (alternation(i32, sxpos, 6))
+            params.graphic1
+        else
+            params.graphic2,
+        .transform = if (params.rotates)
+            util.getDirTransform(self.phys.facing)
+        else
+            .identity,
         .z_index = params.z_index,
     }) catch undefined;
 }

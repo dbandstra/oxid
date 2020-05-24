@@ -20,23 +20,26 @@ fn initECS(ecs: *MockECS) !void {
 
     var i: usize = undefined;
 
-    i = 0; while (i < 8) : (i += 1) {
+    i = 0;
+    while (i < 8) : (i += 1) {
         const entity_id = ecs.spawn();
-        try ecs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
-        try ecs.addComponent(entity_id, Creature { .hit_points = 8 });
-        try ecs.addComponent(entity_id, Monster { .chasing = true });
+        try ecs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
+        try ecs.addComponent(entity_id, Creature{ .hit_points = 8 });
+        try ecs.addComponent(entity_id, Monster{ .chasing = true });
     }
     var player_ids: [8]gbe.EntityId = undefined;
-    i = 0; while (i < 8) : (i += 1) {
+    i = 0;
+    while (i < 8) : (i += 1) {
         const entity_id = ecs.spawn();
-        try ecs.addComponent(entity_id, Transform { .x = 0, .y = 0 });
-        try ecs.addComponent(entity_id, Creature { .hit_points = 16 });
-        try ecs.addComponent(entity_id, Player { .attack_level = 0 });
+        try ecs.addComponent(entity_id, Transform{ .x = 0, .y = 0 });
+        try ecs.addComponent(entity_id, Creature{ .hit_points = 16 });
+        try ecs.addComponent(entity_id, Player{ .attack_level = 0 });
         player_ids[i] = entity_id;
     }
-    i = 0; while (i < 2) : (i += 1) {
+    i = 0;
+    while (i < 2) : (i += 1) {
         const entity_id = ecs.spawn();
-        try ecs.addComponent(entity_id, EventDie {
+        try ecs.addComponent(entity_id, EventDie{
             .self_id = player_ids[i],
             .num = i,
         });
@@ -51,7 +54,8 @@ test "EntityIterator basic test" {
         creature: *Creature,
         transform: *Transform,
     });
-    var i: usize = 0; while (i < 16) : (i += 1) {
+    var i: usize = 0;
+    while (i < 16) : (i += 1) {
         const entry = it.next().?;
         std.testing.expect(entry.transform.x == 0);
         std.testing.expect(entry.transform.y == 0);
@@ -71,7 +75,8 @@ test "EntityIterator only players" {
     var it = ecs.iter(struct {
         player: *Player,
     });
-    var i: usize = 0; while (i < 8) : (i += 1) {
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
         const entry = it.next().?;
         std.testing.expect(entry.player.attack_level == 0);
     }
@@ -89,7 +94,8 @@ test "EntityIterator test with optionals and id field" {
         creature: *Creature,
         transform: *Transform,
     });
-    var i: usize = 0; while (i < 16) : (i += 1) {
+    var i: usize = 0;
+    while (i < 16) : (i += 1) {
         const entry = it.next().?;
         std.testing.expect(entry.id.id == i + 1);
         if (i < 8) {
@@ -112,7 +118,8 @@ test "EntityIterator test with inbox" {
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, "self_id"),
     });
-    var i: usize = 0; while (i < 2) : (i += 1) {
+    var i: usize = 0;
+    while (i < 2) : (i += 1) {
         var entry = it.next().?;
         std.testing.expect(entry.inbox.all().len == 1);
         std.testing.expect(entry.inbox.all()[0].num == i);
@@ -130,11 +137,13 @@ test "EntityIterator test with inbox with null id_field" {
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, null),
     });
-    var i: usize = 0; while (i < 8) : (i += 1) {
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
         var entry = it.next().?;
         const all = entry.inbox.all();
         std.testing.expect(all.len == 2);
-        var j: usize = 0; while (j < 2) : (j += 1) {
+        var j: usize = 0;
+        while (j < 2) : (j += 1) {
             std.testing.expect(all[j].num == j);
         }
     }
@@ -184,10 +193,11 @@ test "EntityIterator where \"main\" component type is zero-sized" {
 
     ecs.init();
 
-    var i: u32 = 0; while (i < 2) : (i += 1) {
+    var i: u32 = 0;
+    while (i < 2) : (i += 1) {
         const entity_id = ecs.spawn();
-        try ecs.addComponent(entity_id, NotEmpty { .field = i });
-        try ecs.addComponent(entity_id, Empty {});
+        try ecs.addComponent(entity_id, NotEmpty{ .field = i });
+        try ecs.addComponent(entity_id, Empty{});
     }
 
     var it = ecs.iter(struct {
@@ -195,7 +205,8 @@ test "EntityIterator where \"main\" component type is zero-sized" {
         empty: *Empty,
     });
 
-    i = 0; while (i < 2) : (i += 1) {
+    i = 0;
+    while (i < 2) : (i += 1) {
         const entry = it.next().?;
         std.testing.expect(entry.not_empty.field == i);
     }
@@ -215,11 +226,11 @@ test "EntityIterator with an optional zero-size component" {
     ecs.init();
 
     var entity_id = ecs.spawn();
-    try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
-    try ecs.addComponent(entity_id, Empty {});
+    try ecs.addComponent(entity_id, NotEmpty{ .field = 1 });
+    try ecs.addComponent(entity_id, Empty{});
 
     entity_id = ecs.spawn();
-    try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+    try ecs.addComponent(entity_id, NotEmpty{ .field = 2 });
 
     var it = ecs.iter(struct {
         not_empty: *NotEmpty,
@@ -250,11 +261,11 @@ test "EntityIterator with a 0-size component" {
     ecs.init();
 
     var entity_id = ecs.spawn();
-    try ecs.addComponent(entity_id, NotEmpty { .field = 1 });
-    try ecs.addComponent(entity_id, Empty {});
+    try ecs.addComponent(entity_id, NotEmpty{ .field = 1 });
+    try ecs.addComponent(entity_id, Empty{});
 
     entity_id = ecs.spawn();
-    try ecs.addComponent(entity_id, NotEmpty { .field = 2 });
+    try ecs.addComponent(entity_id, NotEmpty{ .field = 2 });
 
     var it = ecs.iter(struct {
         not_empty: *NotEmpty,
@@ -274,8 +285,8 @@ test "ComponentIterator with a non-empty struct component" {
     }) = undefined;
     ecs.init();
 
-    try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 1 });
-    try ecs.addComponent(ecs.spawn(), NonEmpty { .field = 2 });
+    try ecs.addComponent(ecs.spawn(), NonEmpty{ .field = 1 });
+    try ecs.addComponent(ecs.spawn(), NonEmpty{ .field = 2 });
 
     var it = ecs.componentIter(NonEmpty);
     std.testing.expect(it.next().?.field == 1);
@@ -305,8 +316,8 @@ test "ComponentIterator with an empty struct component" {
     }) = undefined;
     ecs.init();
 
-    try ecs.addComponent(ecs.spawn(), Empty {});
-    try ecs.addComponent(ecs.spawn(), Empty {});
+    try ecs.addComponent(ecs.spawn(), Empty{});
+    try ecs.addComponent(ecs.spawn(), Empty{});
 
     var it = ecs.componentIter(Empty);
     std.testing.expect(it.next() != null);

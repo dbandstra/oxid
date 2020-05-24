@@ -2,7 +2,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const pcx = @import("zig-pcx");
 
-pub const LoadPcxError = error {
+pub const LoadPcxError = error{
     PcxLoadFailed,
     EndOfStream,
     OutOfMemory,
@@ -42,11 +42,11 @@ pub fn loadPcx(
     // convert image data to RGBA
     var i: u32 = 0;
     while (i < width * height) : (i += 1) {
-        const index: usize = pixels[i*4+0];
-        pixels[i*4+0] = palette[index*3+0];
-        pixels[i*4+1] = palette[index*3+1];
-        pixels[i*4+2] = palette[index*3+2];
-        pixels[i*4+3] =
+        const index: usize = pixels[i * 4 + 0];
+        pixels[i * 4 + 0] = palette[index * 3 + 0];
+        pixels[i * 4 + 1] = palette[index * 3 + 1];
+        pixels[i * 4 + 2] = palette[index * 3 + 2];
+        pixels[i * 4 + 3] =
             if ((transparent_color_index orelse ~index) == index) 0 else 255;
     }
 

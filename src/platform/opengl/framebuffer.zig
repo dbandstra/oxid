@@ -2,13 +2,12 @@
 // the wasm build doesn't use it because it can just scale up the DOM canvas
 
 const builtin = @import("builtin");
-usingnamespace
-    if (builtin.arch == .wasm32)
-        @import("../../web.zig")
-    else
-        @cImport({
-            @cInclude("epoxy/gl.h");
-        });
+usingnamespace if (builtin.arch == .wasm32)
+    @import("../../web.zig")
+else
+    @cImport({
+        @cInclude("epoxy/gl.h");
+    });
 const pdraw = @import("draw.zig");
 const draw = @import("../../common/draw.zig");
 
@@ -49,7 +48,7 @@ pub fn init(fbs: *FramebufferState, w: u31, h: u31) bool {
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
 
-    var draw_buffers = [_]GLenum {
+    var draw_buffers = [_]GLenum{
         GL_COLOR_ATTACHMENT0,
     };
     glDrawBuffers(1, &draw_buffers[0]);

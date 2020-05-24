@@ -21,7 +21,8 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *GameSession, context: GameFrameContext) void {
-    var it = gs.ecs.iter(SystemData); while (it.next()) |self| {
+    var it = gs.ecs.iter(SystemData);
+    while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
             const dy = std.math.min(
                 constants.player_spawn_arise_speed,
@@ -80,7 +81,7 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
                     break slot;
                 }
             } else null) |slot| {
-                p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams {
+                p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams{
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,
@@ -122,8 +123,10 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
     });
     while (it.next()) |other| {
         if (math.boxesOverlap(
-            self.transform.pos, self.phys.entity_bbox,
-            other.transform.pos, other.phys.entity_bbox,
+            self.transform.pos,
+            self.phys.entity_bbox,
+            other.transform.pos,
+            other.phys.entity_bbox,
         )) {
             return true;
         }
@@ -144,10 +147,18 @@ fn playerMove(gs: *GameSession, self: SystemData) void {
 
     var xmove: i32 = 0;
     var ymove: i32 = 0;
-    if (self.player.in_right) { xmove += 1; }
-    if (self.player.in_left) { xmove -= 1; }
-    if (self.player.in_down) { ymove += 1; }
-    if (self.player.in_up) { ymove -= 1; }
+    if (self.player.in_right) {
+        xmove += 1;
+    }
+    if (self.player.in_left) {
+        xmove -= 1;
+    }
+    if (self.player.in_down) {
+        ymove += 1;
+    }
+    if (self.player.in_up) {
+        ymove -= 1;
+    }
 
     self.phys.speed = 0;
     self.phys.push_dir = null;

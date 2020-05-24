@@ -7,8 +7,7 @@ const ConstantTypes = @import("../constant_types.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig")
-    .pickSpawnLocations;
+const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
 
@@ -28,7 +27,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     }
     _ = util.decrementTimer(&gc.wave_message_timer);
     if (util.decrementTimer(&gc.next_wave_timer)) {
-        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams {
+        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams{
             .unused = false,
         });
         gc.wave_number += 1;
@@ -44,7 +43,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     if (util.decrementTimer(&gc.enemy_speed_timer)) {
         if (gc.enemy_speed_level < constants.max_enemy_speed_level) {
             gc.enemy_speed_level += 1;
-            p.playSynth(gs, "accelerate", audio.AccelerateVoice, audio.AccelerateVoice.NoteParams {
+            p.playSynth(gs, "accelerate", audio.AccelerateVoice, audio.AccelerateVoice.NoteParams{
                 .playback_speed = switch (gc.enemy_speed_level) {
                     1 => 1.25,
                     2 => 1.5,
@@ -56,11 +55,10 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&gc.next_pickup_timer)) {
-        const pickup_type: ConstantTypes.PickupType =
-            if (gs.getRand().boolean())
-                .speed_up
-            else
-                .power_up;
+        const pickup_type: ConstantTypes.PickupType = if (gs.getRand().boolean())
+            .speed_up
+        else
+            .power_up;
         spawnPickup(gs, pickup_type);
         gc.next_pickup_timer = constants.pickup_spawn_time;
     }
@@ -110,17 +108,16 @@ fn spawnWave(
         _ = p.Monster.spawn(gs, .{
             .wave_number = wave_number,
             .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
-            .monster_type =
-                if (i < wave.spiders)
-                    ConstantTypes.MonsterType.spider
-                else if (i < wave.spiders + wave.knights)
-                    ConstantTypes.MonsterType.knight
-                else if (i < wave.spiders + wave.knights + wave.fastbugs)
-                    ConstantTypes.MonsterType.fast_bug
-                else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
-                    ConstantTypes.MonsterType.squid
-                else
-                    ConstantTypes.MonsterType.juggernaut,
+            .monster_type = if (i < wave.spiders)
+                ConstantTypes.MonsterType.spider
+            else if (i < wave.spiders + wave.knights)
+                ConstantTypes.MonsterType.knight
+            else if (i < wave.spiders + wave.knights + wave.fastbugs)
+                ConstantTypes.MonsterType.fast_bug
+            else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
+                ConstantTypes.MonsterType.squid
+            else
+                ConstantTypes.MonsterType.juggernaut,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
         }) catch undefined;

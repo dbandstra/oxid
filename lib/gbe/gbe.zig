@@ -10,7 +10,7 @@ pub const max_removals_per_frame: usize = 1000;
 pub const EntityId = struct {
     id: u64,
 
-    pub const zero = EntityId {
+    pub const zero = EntityId{
         .id = 0,
     };
 
@@ -201,10 +201,8 @@ pub fn ECS(comptime ComponentLists: type) type {
             }
             // FIXME - this implementation is not good. it's going through
             // every slot of every component type, for each removal.
-            inline for (@typeInfo(ComponentLists).Struct.fields)
-                       |field, field_index| {
-                const list = &@field(self.components,
-                    @typeName(field.field_type.ComponentType));
+            inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
+                const list = &@field(self.components, @typeName(field.field_type.ComponentType));
 
                 for (list.id[0..list.count]) |*id| {
                     if (id.* == entity_id.id) {
@@ -334,7 +332,7 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
             },
             else => {
                 @compileError("invalid field (" ++ field.name ++ ")");
-            }
+            },
         }
     }
 
@@ -468,7 +466,8 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                 }
 
                 if (@typeInfo(field.field_type) == .Struct and
-                        field.field_type.is_inbox) {
+                    field.field_type.is_inbox)
+                {
                     const EventComponentType = field.field_type.ComponentType;
 
                     var array = &@field(result, field.name).array;
@@ -478,8 +477,7 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                     // take the first match.
                     const ti = @typeInfo(ECSType.ComponentListsType);
                     inline for (ti.Struct.fields) |c_field, c_field_index| {
-                        if (c_field.field_type.ComponentType
-                                != EventComponentType) {
+                        if (c_field.field_type.ComponentType != EventComponentType) {
                             continue;
                         }
 

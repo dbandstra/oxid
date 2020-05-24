@@ -6,7 +6,8 @@ pub fn readHighScores(
     stream: *InStream,
 ) [constants.num_high_scores]u32 {
     var high_scores = [1]u32{0} ** constants.num_high_scores;
-    var i: usize = 0; while (i < constants.num_high_scores) : (i += 1) {
+    var i: usize = 0;
+    while (i < constants.num_high_scores) : (i += 1) {
         high_scores[i] = stream.readIntLittle(u32) catch 0;
     }
     return high_scores;

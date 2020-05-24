@@ -82,7 +82,7 @@ pub const MenuBlipVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
                 comptime makeNote(0.00, 1, 60.0, true),
                 comptime makeNote(0.02, 2, 60.0, false),
                 comptime makeNote(0.08, 3, 40.0, true),
@@ -118,7 +118,7 @@ pub const MenuBlipVoice = struct {
             self.instrument.paint(
                 result.span,
                 .{temps[2]},
-                .{temps[0], temps[1]},
+                .{ temps[0], temps[1] },
                 note_id_changed or result.note_id_changed,
                 .{
                     .sample_rate = params.sample_rate,

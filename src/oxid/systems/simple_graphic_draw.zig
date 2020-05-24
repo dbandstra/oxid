@@ -13,14 +13,13 @@ pub fn run(gs: *GameSession) void {
         _ = p.EventDraw.spawn(gs, .{
             .pos = self.transform.pos,
             .graphic = self.simple_graphic.graphic,
-            .transform =
-                if (self.simple_graphic.directional)
-                    if (self.phys) |phys|
-                        util.getDirTransform(phys.facing)
-                    else
-                        .identity
+            .transform = if (self.simple_graphic.directional)
+                if (self.phys) |phys|
+                    util.getDirTransform(phys.facing)
                 else
-                    .identity,
+                    .identity
+            else
+                .identity,
             .z_index = self.simple_graphic.z_index,
         }) catch undefined;
     }

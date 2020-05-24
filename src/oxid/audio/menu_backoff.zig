@@ -84,13 +84,13 @@ pub const MenuBackoffVoice = struct {
         return .{
             .instrument = Instrument.init(),
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
-            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent {
-                comptime makeNote(0.00, 1,  70.0, true),
-                comptime makeNote(0.01, 2,  75.0, true),
-                comptime makeNote(0.02, 3,  80.0, true),
-                comptime makeNote(0.03, 4,  85.0, true),
-                comptime makeNote(0.04, 5,  90.0, true),
-                comptime makeNote(0.05, 6,  95.0, true),
+            .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
+                comptime makeNote(0.00, 1, 70.0, true),
+                comptime makeNote(0.01, 2, 75.0, true),
+                comptime makeNote(0.02, 3, 80.0, true),
+                comptime makeNote(0.03, 4, 85.0, true),
+                comptime makeNote(0.04, 5, 90.0, true),
+                comptime makeNote(0.05, 6, 95.0, true),
                 comptime makeNote(0.06, 7, 100.0, true),
                 comptime makeNote(0.07, 8, 105.0, false),
             }),
@@ -124,7 +124,7 @@ pub const MenuBackoffVoice = struct {
             self.instrument.paint(
                 result.span,
                 .{temps[2]},
-                .{temps[0], temps[1]},
+                .{ temps[0], temps[1] },
                 note_id_changed or result.note_id_changed,
                 .{
                     .sample_rate = params.sample_rate,

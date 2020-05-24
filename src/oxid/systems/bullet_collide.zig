@@ -22,8 +22,7 @@ pub fn run(gs: *GameSession) void {
 
         if (!gbe.EntityId.isZero(event.other_id)) {
             _ = p.EventTakeDamage.spawn(gs, .{
-                .inflictor_player_controller_id =
-                    self.bullet.inflictor_player_controller_id,
+                .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
                 .self_id = event.other_id,
                 .amount = self.bullet.damage,
             }) catch undefined;
