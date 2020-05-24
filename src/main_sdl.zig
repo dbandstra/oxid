@@ -207,6 +207,8 @@ const Main = struct {
     framerate_scheme: FramerateScheme,
     t: usize,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
+    requested_vsync: bool,
+    requested_framerate_scheme: ?FramerateScheme,
 };
 
 const Options = struct {
@@ -343,9 +345,12 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         if (std.mem.eql(u8, value, "free")) {
             options.framerate_scheme = .free;
         } else {
-            options.framerate_scheme = .{
-                .fixed = try std.fmt.parseInt(usize, value, 10),
-            };
+            const rate = try std.fmt.parseInt(usize, value, 10);
+            if (rate < 1 or rate > 300) {
+                std.debug.warn("Invalid refresh rate: {}\n", .{rate});
+                return error.BadArg;
+            }
+            options.framerate_scheme = .{ .fixed = rate };
         }
     }
     if (args.flag("--novsync")) {
@@ -355,44 +360,55 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     return options;
 }
 
-fn getFramerateScheme(window: *SDL_Window, vsync: bool, maybe_scheme: ?FramerateScheme) !FramerateScheme {
-    if (!vsync) {
-        // if vsync isn't enabled, a fixed framerate scheme never makes sense
-        return .free;
-    }
-
-    if (maybe_scheme) |scheme| {
-        // explicit scheme was supplied via command line option. override any
-        // auto-detection.
-        switch (scheme) {
-            .fixed => |rate| {
-                if (rate < 1 or rate > 300) {
-                    std.debug.warn("Invalid refresh rate: {}\n", .{rate});
-                    return error.Failed;
-                }
-            },
-            .free => {},
+// run on startup as well as when the window is moved between displays
+fn updateFramerateScheme(self: *Main) void {
+    if (self.requested_vsync) {
+        if (SDL_GL_SetSwapInterval(1) != 0) {
+            std.debug.warn("Warning: failed to set vsync.\n", .{});
         }
-        return scheme;
+    } else {
+        if (SDL_GL_SetSwapInterval(0) != 0) {
+            std.debug.warn("Warning: failed to disable vsync.\n", .{});
+        }
     }
 
-    // vsync is enabled, so try to identify the display's native refresh rate
-    // and use that as our fixed rate
-    const display_index = SDL_GetWindowDisplayIndex(window);
-    var mode: SDL_DisplayMode = undefined;
-    if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
-        std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n", .{});
-        return .free;
-    }
-    if (mode.refresh_rate <= 0) {
-        std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", .{mode.refresh_rate});
-        return .free;
-    }
-    // TODO - do i need to update this when the window moves (possibly to
-    // another monitor with a different refresh rate)?
-    return FramerateScheme{
-        .fixed = @intCast(usize, mode.refresh_rate),
+    // this function can return 1 (vsync), 0 (no vsync), or -1 (adaptive
+    // vsync). i don't really get what adaptive vsync is but it seems like it
+    // should be classed with vsync.
+    const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
+    // https://github.com/ziglang/zig/issues/3882
+    const vsync_str = if (vsync_enabled) "enabled" else "disabled";
+    std.debug.warn("Vsync is {}.\n", .{vsync_str});
+
+    self.framerate_scheme = blk: {
+        if (!vsync_enabled) {
+            // if vsync isn't enabled, a fixed framerate scheme never makes sense
+            break :blk .free;
+        }
+        if (self.requested_framerate_scheme) |scheme| {
+            // explicit scheme was supplied via command line option. override any
+            // auto-detection.
+            break :blk scheme;
+        }
+        // vsync is enabled, so try to identify the display's native refresh rate
+        // and use that as our fixed rate
+        const display_index = SDL_GetWindowDisplayIndex(self.window);
+        var mode: SDL_DisplayMode = undefined;
+        if (SDL_GetDesktopDisplayMode(display_index, &mode) != 0) {
+            std.debug.warn("Failed to get refresh rate, defaulting to free framerate.\n", .{});
+            break :blk .free;
+        }
+        if (mode.refresh_rate <= 0) {
+            std.debug.warn("Refresh rate reported as {}, defaulting to free framerate.\n", .{mode.refresh_rate});
+            break :blk .free;
+        }
+        break :blk .{ .fixed = @intCast(usize, mode.refresh_rate) };
     };
+
+    switch (self.framerate_scheme) {
+        .fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
+        .free => std.debug.warn("Framerate scheme: free\n", .{}),
+    }
 }
 
 fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
@@ -493,29 +509,10 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
 
-    if (options.vsync) {
-        if (SDL_GL_SetSwapInterval(1) != 0) {
-            std.debug.warn("Warning: failed to set vsync.\n", .{});
-        }
-    } else {
-        if (SDL_GL_SetSwapInterval(0) != 0) {
-            std.debug.warn("Warning: failed to disable vsync.\n", .{});
-        }
-    }
-
-    // this function can return 1 (vsync), 0 (no vsync), or -1 (adaptive
-    // vsync). i don't really get what adaptive vsync is but it seems like it
-    // should be classed with vsync.
-    const vsync_enabled = SDL_GL_GetSwapInterval() != 0;
-    // https://github.com/ziglang/zig/issues/3882
-    const vsync_str = if (vsync_enabled) "enabled" else "disabled";
-    std.debug.warn("Vsync is {}.\n", .{vsync_str});
-
-    const framerate_scheme = try getFramerateScheme(window, vsync_enabled, options.framerate_scheme);
-    switch (framerate_scheme) {
-        .fixed => |refresh_rate| std.debug.warn("Framerate scheme: fixed {}hz\n", .{refresh_rate}),
-        .free => std.debug.warn("Framerate scheme: free\n", .{}),
-    }
+    self.window = window;
+    self.requested_vsync = options.vsync;
+    self.requested_framerate_scheme = options.framerate_scheme;
+    updateFramerateScheme(self); // sets self.framerate_scheme.
 
     if (!platform_framebuffer.init(&self.framebuffer_state, common.vwin_w, common.vwin_h)) {
         std.debug.warn("platform_framebuffer.init failed\n", .{});
@@ -551,8 +548,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     }
     errdefer common.deinit(&self.main_state);
 
-    // framebuffer_state already set
-    self.window = window;
+    // already set: main_state, window, requested_vsync, requested_framerate_scheme, framerate_scheme, framebuffer_state
     self.display_index = 0;
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
@@ -563,7 +559,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.toggle_fullscreen = false;
     self.set_canvas_scale = null;
     self.fast_forward = false;
-    self.framerate_scheme = framerate_scheme;
     self.t = 0.0;
     self.saved_window_pos = null;
 
@@ -830,9 +825,9 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_WINDOWEVENT => {
             if (evt.window.event == SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
-                // did window move to another display?
                 const display_index = SDL_GetWindowDisplayIndex(self.window);
                 if (self.display_index != display_index) {
+                    // window moved to another display
                     self.display_index = display_index;
                     // update max_canvas_scale based on the new display's dimensions.
                     // (the current canvas scale won't change, but the user won't be
@@ -843,6 +838,9 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                         const h = @intCast(u31, std.math.max(1, bounds.h));
                         self.main_state.max_canvas_scale = getMaxCanvasScale(w, h);
                     }
+                    // update the framerate scheme (e.g. get the new native refresh
+                    // rate if vsync is enabled)
+                    updateFramerateScheme(self);
                 }
             }
         },
@@ -858,18 +856,14 @@ fn playSounds(self: *Main, num_frames: u32) void {
     defer SDL_UnlockAudioDevice(self.audio_device);
 
     // speed up audio mixing frequency if game is being fast forwarded
-    self.audio_sample_rate_current =
-        @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
+    self.audio_sample_rate_current = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
 
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
     // "syncing" to guess where we are in the middle of a mix frame
     const impulse_frame: usize = 0;
 
-    self.main_state.audio_module.playSounds(
-        &self.main_state.session,
-        impulse_frame,
-    );
+    self.main_state.audio_module.playSounds(&self.main_state.session, impulse_frame);
 }
 
 fn drawMain(self: *Main, blit_alpha: f32) void {
