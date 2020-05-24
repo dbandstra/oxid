@@ -251,51 +251,43 @@ pub fn main() u8 {
         .free => {
             const freq: u64 = SDL_GetPerformanceFrequency();
             var maybe_prev: ?u64 = null;
-            while (true) {
+            while (!self.quit) {
+                // how many microseconds have elapsed since the last tick?
                 const now: u64 = SDL_GetPerformanceCounter();
                 const delta_microseconds: u64 = if (maybe_prev) |prev|
                     (if (now > prev)
-                        ((now - prev) * 1000000 / freq)
+                        (now - prev) * 1_000_000 / freq
                     else
-                        (0))
+                        0)
                 else
-                    (16667 // first tick's delta corresponds to 60 fps
-                    );
-                maybe_prev = now;
+                    16667; // first tick's delta corresponds to 60 fps
 
                 if (delta_microseconds < 1000) {
                     // avoid possible divide by zero
-                    SDL_Delay(1);
+                    // note this also has the effect of capping the refresh rate at 1000fps
+                    SDL_Delay(1); // ease up on the cpu
                     continue;
                 }
 
+                maybe_prev = now;
+
+                // get the current framerate (refreshes per second)
                 const refresh_rate = switch (self.framerate_scheme) {
                     .fixed => |rate| rate,
-                    .free => 1000000 / delta_microseconds,
+                    .free => 1_000_000 / delta_microseconds,
                 };
 
                 if (refresh_rate == 0) {
                     // delta was >= 1 second. the computer is hitched up on
                     // something. let's just wait.
+                    std.debug.warn("refresh took > 1 second, skipping\n", .{});
                     continue;
                 }
 
                 tick(self, refresh_rate);
-                if (self.quit) {
-                    break;
-                }
 
-                const threshold = 1000000 / (2 * constants.ticks_per_second);
-                if (delta_microseconds < threshold) {
-                    // try to ease up on cpu usage in case the computer is
-                    // capable of running far quicker than the desired
-                    // framerate
-                    // TODO - think this through. i don't think the 1ms delay
-                    // is helping at all. a 5ms delay does help a bit but i
-                    // need to be smart about choosing delay values (as well
-                    // as the threshold value above)
-                    SDL_Delay(1);
-                }
+                // TODO is there more i can do to ease up on CPU? currently i
+                // sleep enough to get the fps down to 1000.
             }
         },
     }
@@ -598,6 +590,11 @@ fn tick(self: *Main, refresh_rate: u64) void {
         break :blk n;
     };
 
+    if (num_frames_to_simulate == 0) {
+        // don't call SDL_GL_SwapWindow if we haven't drawn anything
+        return;
+    }
+
     var i: usize = 0;
     while (i < num_frames_to_simulate) : (i += 1) {
         var evt: SDL_Event = undefined;
@@ -771,17 +768,9 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                     inputEvent(self, .{ .key = key }, true);
 
                     switch (key) {
-                        .backquote => {
-                            self.fast_forward = true;
-                        },
-                        .f4 => {
-                            perf.toggleSpam();
-                        },
-                        .f5 => {
-                            platform_draw.cycleGlitchMode(
-                                &self.main_state.draw_state,
-                            );
-                        },
+                        .backquote => self.fast_forward = true,
+                        .f4 => perf.toggleSpam(),
+                        .f5 => platform_draw.cycleGlitchMode(&self.main_state.draw_state),
                         else => {},
                     }
                 }
@@ -792,16 +781,14 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 inputEvent(self, .{ .key = key }, false);
 
                 switch (key) {
-                    .backquote => {
-                        self.fast_forward = false;
-                    },
+                    .backquote => self.fast_forward = false,
                     else => {},
                 }
             }
         },
         SDL_JOYAXISMOTION => {
             const threshold = 16384;
-            const joy_axis = JoyAxis{
+            const joy_axis: JoyAxis = .{
                 .which = @intCast(usize, evt.jaxis.which),
                 .axis = evt.jaxis.axis,
             };
@@ -844,9 +831,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 }
             }
         },
-        SDL_QUIT => {
-            self.quit = true;
-        },
+        SDL_QUIT => self.quit = true,
         else => {},
     }
 }
