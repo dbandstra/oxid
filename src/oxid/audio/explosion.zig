@@ -3,8 +3,8 @@ const zang = @import("zang");
 pub const ExplosionVoice = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
-    pub const Params = struct { sample_rate: f32, unused: bool };
-    pub const NoteParams = struct { unused: bool };
+    pub const Params = struct { sample_rate: f32 };
+    pub const NoteParams = struct {};
 
     pub const sound_duration = 0.7;
 

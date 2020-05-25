@@ -60,14 +60,8 @@ fn makeNote(
 pub const MenuBackoffVoice = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
-    pub const Params = struct {
-        sample_rate: f32,
-        unused: u32,
-    };
-    pub const NoteParams = struct {
-        // compiler was segfaulting when this was empty (2019-07-29)
-        unused: u32,
-    };
+    pub const Params = struct { sample_rate: f32 };
+    pub const NoteParams = struct {};
 
     pub const sound_duration = 2.0;
 

@@ -91,9 +91,7 @@ pub fn run(gs: *GameSession) void {
         }
 
         p.playSample(gs, .monster_impact);
-        p.playSynth(gs, "explosion", audio.ExplosionVoice, audio.ExplosionVoice.NoteParams{
-            .unused = false,
-        });
+        p.playSynth(gs, "explosion", audio.ExplosionVoice, audio.ExplosionVoice.NoteParams{});
 
         _ = p.Animation.spawn(gs, .{
             .pos = self.transform.pos,

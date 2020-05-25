@@ -27,9 +27,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     }
     _ = util.decrementTimer(&gc.wave_message_timer);
     if (util.decrementTimer(&gc.next_wave_timer)) {
-        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams{
-            .unused = false,
-        });
+        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams{});
         gc.wave_number += 1;
         gc.wave_message_timer = constants.duration60(180);
         gc.enemy_speed_level = 0;
