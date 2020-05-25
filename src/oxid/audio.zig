@@ -296,11 +296,7 @@ pub const MainModule = struct {
                 .laser => |*wrapper| updateVoice(wrapper, impulse_frame),
                 .wave_begin => |*wrapper| updateVoice(wrapper, impulse_frame),
                 .sample => |*wrapper| {
-                    if (wrapper.initial_sample) |sample_alias| {
-                        // https://github.com/ziglang/zig/issues/2915
-                        const sample = sample_alias;
-
-                        wrapper.initial_sample = null; // this invalidates sample_alias
+                    if (wrapper.initial_sample) |sample| {
                         wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), .{
                             .loop = false,
                             .channel = 0,
@@ -314,6 +310,7 @@ pub const MainModule = struct {
                                 .monster_impact => self.monster_impact,
                             },
                         });
+                        wrapper.initial_sample = null;
                     }
                 },
             }
