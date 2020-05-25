@@ -266,16 +266,11 @@ pub const MainModule = struct {
     // called in the main thread
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
-            .backoff => {
-                self.menu_backoff.push(.{});
-            },
-            .blip => {
-                const rand = &self.prng.random;
-                self.menu_blip.push(.{ .freq_mul = 0.95 + 0.1 * rand.float(f32) });
-            },
-            .ding => {
-                self.menu_ding.push(.{});
-            },
+            .backoff => self.menu_backoff.push(.{}),
+            .blip => self.menu_blip.push(.{
+                .freq_mul = 0.95 + 0.1 * self.prng.random.float(f32),
+            }),
+            .ding => self.menu_ding.push(.{}),
         }
     }
 

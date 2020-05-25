@@ -189,14 +189,20 @@ const SET_CANVAS_SCALE = 100;
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
     const source: InputSource = .{ .key = key };
-    const special = common.inputEvent(g, @This(), source, down != 0) orelse return NOP;
-    return switch (special) {
-        .noop => NOP,
-        .quit => NOP, // unused in web build
-        .toggle_sound => TOGGLE_SOUND,
-        .toggle_fullscreen => TOGGLE_FULLSCREEN,
-        .set_canvas_scale => |value| SET_CANVAS_SCALE + @intCast(c_int, value),
-    };
+    const result = common.inputEvent(&g.main_state, @This(), source, down != 0);
+    if (result.sound) |sound| {
+        g.main_state.audio_module.playMenuSound(sound);
+    }
+    const effect = result.effect orelse return 0;
+    switch (effect) {
+        .noop => {},
+        .quit => {}, // unused in web build
+        .toggle_sound => return TOGGLE_SOUND,
+        .toggle_fullscreen => return TOGGLE_FULLSCREEN,
+        .set_canvas_scale => |value| return SET_CANVAS_SCALE + @intCast(c_int, value),
+        .set_volume => |value| g.main_state.cfg.volume = value,
+    }
+    return NOP;
 }
 
 export fn onSoundEnabledChange(enabled: c_int) void {

@@ -82,19 +82,12 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    loadTileset(
-        &self.hunk.low(),
-        &self.static.tileset,
-        self.static.palette[0..],
-    ) catch |err| {
+    loadTileset(&self.hunk.low(), &self.static.tileset, self.static.palette[0..]) catch |err| {
         warn("Failed to load tileset: {}\n", .{err});
         return false;
     };
 
-    self.audio_module = audio.MainModule.init(
-        self.hunk,
-        params.audio_buffer_size,
-    ) catch |err| {
+    self.audio_module = audio.MainModule.init(self.hunk, params.audio_buffer_size) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
@@ -165,60 +158,60 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
     };
 }
 
-pub const InputSpecial = union(enum) {
+pub const InputEffect = union(enum) {
     noop,
     quit,
     toggle_sound,
     toggle_fullscreen,
     set_canvas_scale: u31,
+    set_volume: u32,
 };
 
-pub fn inputEvent(
-    outer_self: var,
-    comptime ns: type,
-    source: InputSource,
-    down: bool,
-) ?InputSpecial {
-    const main_state: *MainState = &outer_self.main_state;
+pub const InputSpecial = struct {
+    sound: ?menus.Sound,
+    effect: ?InputEffect,
+};
 
+pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource, down: bool) InputSpecial {
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
-
             if (!areInputSourcesEqual(s, source)) continue;
-
-            break @intToEnum(
-                input.MenuCommand,
-                @intCast(@TagType(input.MenuCommand), i),
-            );
+            break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
         } else null;
 
         // if menu is open, input goes to it
         if (main_state.menu_stack.len > 0) {
             // note that the menu receives input even if the menu_command is null
             // (used by the key rebinding menu)
-            const result = menuInput(&main_state.menu_stack, .{
+            if (menuInput(&main_state.menu_stack, .{
                 .source = source,
                 .maybe_command = maybe_menu_command,
                 .menu_context = makeMenuContext(main_state),
-            }) orelse return null;
-
-            if (result.sound) |sound| {
-                main_state.audio_module.playMenuSound(sound);
+            })) |result| {
+                return .{
+                    .sound = result.sound,
+                    .effect = applyMenuEffect(main_state, ns, result.effect),
+                };
             }
-
-            return applyMenuEffect(outer_self, ns, result.effect);
+            return .{ .sound = null, .effect = null };
         }
 
         // menu is not open, but should we open it?
         if (maybe_menu_command) |menu_command| {
             if (menu_command == .escape) {
                 // assuming that if the menu isn't open, we must be in game
-                main_state.audio_module.playMenuSound(.backoff);
-
-                return applyMenuEffect(outer_self, ns, menus.Effect{
+                // FIXME there's a zig compiler bug where this code crashes at runtime without a stack
+                // trace if I don't have this type annotation here (if the anonymous literal is inlined
+                // into the return statement it crashes)
+                // i haven't made a reduced case or posted an issue for this yet
+                const menu_effect: menus.Effect = .{
                     .push = .{ .in_game_menu = menus.InGameMenu.init() },
-                });
+                };
+                return .{
+                    .sound = .backoff,
+                    .effect = applyMenuEffect(main_state, ns, menu_effect),
+                };
             }
         }
     }
@@ -228,7 +221,6 @@ pub fn inputEvent(
     while (player_number < config.num_players) : (player_number += 1) {
         for (main_state.cfg.game_bindings[player_number]) |maybe_source, i| {
             const s = maybe_source orelse continue;
-
             if (!areInputSourcesEqual(s, source)) continue;
 
             _ = p.EventGameInput.spawn(&main_state.session, .{
@@ -237,20 +229,14 @@ pub fn inputEvent(
                 .down = down,
             }) catch undefined;
 
-            return InputSpecial{ .noop = {} };
+            return .{ .sound = null, .effect = .noop };
         }
     }
 
-    return null;
+    return .{ .sound = null, .effect = null };
 }
 
-fn applyMenuEffect(
-    outer_self: var,
-    comptime ns: var,
-    effect: menus.Effect,
-) ?InputSpecial {
-    const self = &outer_self.main_state;
-
+fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) InputEffect {
     switch (effect) {
         .noop => {},
         .push => |new_menu| {
@@ -275,16 +261,16 @@ fn applyMenuEffect(
             });
         },
         .toggle_sound => {
-            return InputSpecial{ .toggle_sound = {} };
+            return .{ .toggle_sound = {} };
         },
         .set_volume => |value| {
-            self.cfg.volume = value;
+            return .{ .set_volume = value };
         },
         .set_canvas_scale => |value| {
-            return InputSpecial{ .set_canvas_scale = value };
+            return .{ .set_canvas_scale = value };
         },
         .toggle_fullscreen => {
-            return InputSpecial{ .toggle_fullscreen = {} };
+            return .{ .toggle_fullscreen = {} };
         },
         .toggle_friendly_fire => {
             self.friendly_fire = !self.friendly_fire;
@@ -299,8 +285,7 @@ fn applyMenuEffect(
                 break true;
             } else false else false;
             if (!in_use) {
-                self.cfg.game_bindings[payload.player_number][command_index] =
-                    payload.source;
+                self.cfg.game_bindings[payload.player_number][command_index] = payload.source;
             }
         },
         .reset_anim_time => {
@@ -405,15 +390,7 @@ fn finalizeGame(self: *MainState, comptime ns: var) void {
 
 pub fn drawMain(self: *MainState) void {
     platform_draw.prepare(&self.draw_state);
-
-    drawGame(
-        &self.draw_state,
-        &self.static,
-        &self.session,
-        self.cfg,
-        self.high_scores[0],
-    );
-
+    drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
         .ds = &self.draw_state,
         .static = &self.static,

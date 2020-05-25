@@ -751,12 +751,25 @@ fn toggleFullscreen(self: *Main) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    switch (common.inputEvent(self, @This(), source, down) orelse return) {
-        .noop => {},
-        .quit => self.quit = true,
-        .toggle_sound => {}, // unused in SDL build
-        .toggle_fullscreen => self.toggle_fullscreen = true,
-        .set_canvas_scale => |scale| self.set_canvas_scale = scale,
+    const result = common.inputEvent(&self.main_state, @This(), source, down);
+    if (result.sound) |sound| {
+        SDL_LockAudioDevice(self.audio_device);
+        self.main_state.audio_module.playMenuSound(sound);
+        SDL_UnlockAudioDevice(self.audio_device);
+    }
+    if (result.effect) |effect| {
+        switch (effect) {
+            .noop => {},
+            .quit => self.quit = true,
+            .toggle_sound => {}, // unused in SDL build
+            .toggle_fullscreen => self.toggle_fullscreen = true,
+            .set_canvas_scale => |scale| self.set_canvas_scale = scale,
+            .set_volume => |volume| {
+                SDL_LockAudioDevice(self.audio_device);
+                self.main_state.cfg.volume = volume;
+                SDL_UnlockAudioDevice(self.audio_device);
+            },
+        }
     }
 }
 

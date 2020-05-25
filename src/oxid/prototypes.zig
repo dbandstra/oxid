@@ -450,8 +450,6 @@ pub const Sound = struct {
             .wrapper = params.wrapper,
         });
 
-        // FIXME!!! this timer will be paused when you're in the menu, but we
-        // use sounds in the menu too!
         try gs.ecs.addComponent(entity_id, c.RemoveTimer{
             .timer = @floatToInt(u32, params.duration * @as(f32, constants.ticks_per_second)),
         });

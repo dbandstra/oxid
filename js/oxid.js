@@ -146,6 +146,7 @@
                     setCanvasScale(instance, result - SET_CANVAS_SCALE);
                     break;
                 }
+                // anything that isn't a known result code will not trigger preventDefault
                 return;
             }
 
