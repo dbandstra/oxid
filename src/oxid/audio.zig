@@ -95,42 +95,84 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
     }
 }
 
+fn MenuSoundWrapper(comptime T: type) type {
+    return struct {
+        const ModuleType = T;
+
+        // main thread fields:
+        iq: zang.Notes(T.NoteParams).ImpulseQueue,
+        idgen: zang.IdGenerator,
+
+        // audio thread fields:
+        module: T,
+        trigger: zang.Trigger(T.NoteParams),
+        // TODO zang should have a "ImpulsesAndParamses array" structure so i don't have to copy paste
+        // this out of the ImpulseQueue code. a `copy` method should be added there too
+        impulses_array: [32]zang.Impulse,
+        paramses_array: [32]T.NoteParams,
+        iap: zang.Notes(T.NoteParams).ImpulsesAndParamses,
+        resetting: bool,
+
+        fn init() @This() {
+            return .{
+                .iq = zang.Notes(T.NoteParams).ImpulseQueue.init(),
+                .idgen = zang.IdGenerator.init(),
+                .module = T.init(),
+                .trigger = zang.Trigger(T.NoteParams).init(),
+                .impulses_array = undefined,
+                .paramses_array = undefined,
+                .iap = .{
+                    .impulses = &[0]zang.Impulse{},
+                    .paramses = &[0]T.NoteParams{},
+                },
+                .resetting = false,
+            };
+        }
+
+        // called from main thread
+        fn push(self: *@This(), params: T.NoteParams) void {
+            const impulse_frame: usize = 0;
+            self.iq.push(impulse_frame, self.idgen.nextId(), params);
+        }
+
+        // called from main thread
+        fn reset(self: *@This()) void {
+            self.iq.length = 0; // FIXME - add a method to zang API for this?
+            self.resetting = true;
+        }
+
+        // call when audio thread is locked. communicate information from main
+        // thread to audio thread
+        fn sync(self: *@This()) void {
+            const iap = self.iq.consume();
+
+            std.mem.copy(zang.Impulse, self.impulses_array[0..iap.impulses.len], iap.impulses);
+            // FIXME this doesn't work (compiler bug?)! but the above does...!
+            //std.mem.copy(T.NoteParams, self.paramses_array[0..iap.paramses.len], iap.paramses);
+            // this works:
+            var i: usize = 0;
+            while (i < iap.paramses.len) : (i += 1) {
+                self.paramses_array[i] = iap.paramses[i];
+            }
+
+            self.iap = .{
+                .impulses = self.impulses_array[0..iap.impulses.len],
+                .paramses = self.paramses_array[0..iap.paramses.len],
+            };
+
+            if (self.resetting) {
+                self.trigger.reset();
+                self.resetting = false;
+            }
+        }
+    };
+}
+
 pub const SamplerNoteParams = struct {
     sample: zang.Sample,
     channel: usize,
     loop: bool,
 };
-
-fn MenuSoundWrapper(comptime ModuleType_: type) type {
-    return struct {
-        const ModuleType = ModuleType_;
-
-        module: ModuleType,
-        iq: zang.Notes(ModuleType.NoteParams).ImpulseQueue,
-        idgen: zang.IdGenerator,
-        trigger: zang.Trigger(ModuleType.NoteParams),
-
-        fn init() @This() {
-            return .{
-                .module = ModuleType.init(),
-                .iq = zang.Notes(ModuleType.NoteParams).ImpulseQueue.init(),
-                .idgen = zang.IdGenerator.init(),
-                .trigger = zang.Trigger(ModuleType.NoteParams).init(),
-            };
-        }
-
-        fn push(self: *@This(), params: ModuleType.NoteParams) void {
-            const impulse_frame: usize = 0;
-
-            self.iq.push(impulse_frame, self.idgen.nextId(), params);
-        }
-
-        fn reset(self: *@This()) void {
-            self.iq.length = 0; // FIXME - add a method to zang API for this?
-            self.trigger.reset();
-        }
-    };
-}
 
 pub const MainModule = struct {
     menu_backoff: MenuSoundWrapper(MenuBackoffVoice),
@@ -179,6 +221,14 @@ pub const MainModule = struct {
         };
     }
 
+    // called when audio thread is locked. this is where we communicate
+    // information from the main thread to the audio thread.
+    pub fn sync(self: *MainModule) void {
+        self.menu_backoff.sync();
+        self.menu_blip.sync();
+        self.menu_ding.sync();
+    }
+
     // called in the audio thread.
     // note: this works under the assumption the thread mutex is locked during
     // the entire audio callback call. this is just how SDL2 works. if we switch
@@ -194,9 +244,9 @@ pub const MainModule = struct {
 
         zang.zero(span, self.out_buf);
 
-        self.paintWrapper(span, &self.menu_backoff, sample_rate);
-        self.paintWrapper(span, &self.menu_blip, sample_rate);
-        self.paintWrapper(span, &self.menu_ding, sample_rate);
+        self.paintMenuWrapper(span, &self.menu_backoff, sample_rate);
+        self.paintMenuWrapper(span, &self.menu_blip, sample_rate);
+        self.paintMenuWrapper(span, &self.menu_ding, sample_rate);
 
         var it = gs.ecs.componentIter(c.Voice);
         while (it.next()) |voice| {
@@ -212,6 +262,31 @@ pub const MainModule = struct {
         }
 
         return self.out_buf;
+    }
+
+    fn paintMenuWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
+        const ModuleType = @typeInfo(@TypeOf(wrapper)).Pointer.child.ModuleType;
+
+        var temps: [ModuleType.num_temps][]f32 = undefined;
+        comptime var i: usize = 0;
+        inline while (i < ModuleType.num_temps) : (i += 1) {
+            temps[i] = self.tmp_bufs[i];
+        }
+
+        // the only real difference between paintMenuWrapper and paintWrapper is that we don't
+        // consume an impulse queue. it was already consumed in the sync stage
+        var ctr = wrapper.trigger.counter(span, wrapper.iap);
+        while (wrapper.trigger.next(&ctr)) |result| {
+            // convert `NoteParams` into `Params`
+            var params: ModuleType.Params = undefined;
+
+            inline for (@typeInfo(ModuleType.NoteParams).Struct.fields) |field| {
+                @field(params, field.name) = @field(result.params, field.name);
+            }
+            params.sample_rate = sample_rate;
+
+            wrapper.module.paint(result.span, .{self.out_buf}, temps, result.note_id_changed, params);
+        }
     }
 
     // this is called on both MenuSoundWrapper objects, as well as Wrapper
@@ -263,7 +338,7 @@ pub const MainModule = struct {
         }
     }
 
-    // called in the main thread
+    // called in the main thread with the audio device locked
     pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
             .backoff => self.menu_backoff.push(.{}),
@@ -274,6 +349,7 @@ pub const MainModule = struct {
         }
     }
 
+    // called in the main thread with the audio device locked
     pub fn resetMenuSounds(self: *MainModule) void {
         self.menu_backoff.reset();
         self.menu_blip.reset();
