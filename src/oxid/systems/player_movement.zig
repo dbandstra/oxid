@@ -44,7 +44,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
 
         if (self.player.dying_timer > 0) {
             if (self.player.dying_timer == constants.duration60(30)) { // yeesh
-                p.playSample(gs, .player_crumble);
+                _ = p.VoiceSampler.spawn(gs, .player_crumble) catch undefined;
             }
             self.phys.speed = 0;
             self.phys.push_dir = null;
@@ -81,12 +81,12 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
                     break slot;
                 }
             } else null) |slot| {
-                p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams{
+                _ = p.VoiceLaser.spawn(gs, .{
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,
                     .modulator_rad = 0.5,
-                });
+                }) catch undefined;
                 // spawn the bullet one quarter of a grid cell in front of the player
                 const pos = self.transform.pos;
                 const dir_vec = math.Direction.normal(self.phys.facing);

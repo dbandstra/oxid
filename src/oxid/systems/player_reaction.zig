@@ -13,7 +13,7 @@ pub fn run(gs: *GameSession) void {
         for (self.inbox.all()) |event| {
             switch (event.pickup_type) {
                 .power_up => {
-                    p.playSample(gs, .power_up);
+                    _ = p.VoiceSampler.spawn(gs, .power_up) catch undefined;
                     self.player.attack_level = switch (self.player.attack_level) {
                         .one => .two,
                         else => .three,
@@ -21,7 +21,7 @@ pub fn run(gs: *GameSession) void {
                     self.player.last_pickup = .power_up;
                 },
                 .speed_up => {
-                    p.playSample(gs, .power_up);
+                    _ = p.VoiceSampler.spawn(gs, .power_up) catch undefined;
                     self.player.speed_level = switch (self.player.speed_level) {
                         .one => .two,
                         else => .three,
@@ -29,15 +29,15 @@ pub fn run(gs: *GameSession) void {
                     self.player.last_pickup = .speed_up;
                 },
                 .life_up => {
-                    p.playSample(gs, .extra_life);
+                    _ = p.VoiceSampler.spawn(gs, .extra_life) catch undefined;
                     _ = p.EventAwardLife.spawn(gs, .{
                         .player_controller_id = self.player.player_controller_id,
                     }) catch undefined;
                 },
                 .coin => {
-                    p.playSynth(gs, "coin", audio.CoinVoice, audio.CoinVoice.NoteParams{
+                    _ = p.VoiceCoin.spawn(gs, .{
                         .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
-                    });
+                    }) catch undefined;
                 },
             }
         }

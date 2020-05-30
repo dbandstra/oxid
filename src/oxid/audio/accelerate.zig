@@ -42,13 +42,13 @@ pub const AccelerateVoice = struct {
             .trigger = zang.Trigger(Instrument.NoteParams).init(),
             .note_tracker = Notes.NoteTracker.init(&[_]Notes.SongEvent{
                 comptime makeNote(0.0 * speed, 1, 43.0, true),
-                comptime makeNote(0.1 * speed, 2, 36.0, true),
-                comptime makeNote(0.2 * speed, 3, 40.0, true),
-                comptime makeNote(0.3 * speed, 4, 45.0, true),
-                comptime makeNote(0.4 * speed, 5, 43.0, true),
-                comptime makeNote(0.5 * speed, 6, 35.0, true),
-                comptime makeNote(0.6 * speed, 7, 38.0, true),
-                comptime makeNote(0.7 * speed, 8, 38.0, false),
+                comptime makeNote(1.0 * speed, 2, 36.0, true),
+                comptime makeNote(2.0 * speed, 3, 40.0, true),
+                comptime makeNote(3.0 * speed, 4, 45.0, true),
+                comptime makeNote(4.0 * speed, 5, 43.0, true),
+                comptime makeNote(5.0 * speed, 6, 35.0, true),
+                comptime makeNote(6.0 * speed, 7, 38.0, true),
+                comptime makeNote(7.0 * speed, 8, 38.0, false),
             }),
         };
     }

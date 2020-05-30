@@ -4,29 +4,20 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
+const ComponentLists = @import("game.zig").ComponentLists;
 const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
-const menus = @import("menus.zig");
+const MenuSounds = @import("../oxid_common.zig").MenuSounds;
 
-const MenuBackoffVoice = @import("audio/menu_backoff.zig").MenuBackoffVoice;
-const MenuBlipVoice = @import("audio/menu_blip.zig").MenuBlipVoice;
-const MenuDingVoice = @import("audio/menu_ding.zig").MenuDingVoice;
+pub const MenuBackoffVoice = @import("audio/menu_backoff.zig").MenuBackoffVoice;
+pub const MenuBlipVoice = @import("audio/menu_blip.zig").MenuBlipVoice;
+pub const MenuDingVoice = @import("audio/menu_ding.zig").MenuDingVoice;
 
 pub const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
 pub const CoinVoice = @import("audio/coin.zig").CoinVoice;
 pub const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
 pub const LaserVoice = @import("audio/laser.zig").LaserVoice;
 pub const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
-
-pub const Sample = enum {
-    drop_web,
-    extra_life,
-    player_scream,
-    player_death,
-    player_crumble,
-    power_up,
-    monster_impact,
-};
 
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     return .{
@@ -42,6 +33,7 @@ fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     };
 }
 
+// why is `filename` comptime?
 fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
     // temporary allocations in the high hunk side, persistent in the low side
     const mark = hunk.getHighMark();
@@ -95,227 +87,257 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
     }
 }
 
+pub const Sample = enum {
+    drop_web,
+    extra_life,
+    player_scream,
+    player_death,
+    player_crumble,
+    power_up,
+    monster_impact,
+};
+
+const LoadedSamples = struct {
+    samples: [@typeInfo(Sample).Enum.fields.len]zang.Sample,
+
+    fn init(hunk: *Hunk) !LoadedSamples {
+        var self: LoadedSamples = undefined;
+        inline for (@typeInfo(Sample).Enum.fields) |_, i| {
+            self.samples[i] = try readWav(hunk, switch (@intToEnum(Sample, i)) {
+                .drop_web => "sfx_sounds_interaction5.wav",
+                .extra_life => "sfx_sounds_powerup4.wav",
+                .player_scream => "sfx_deathscream_human2.wav",
+                .player_death => "sfx_exp_cluster7.wav",
+                .player_crumble => "sfx_exp_short_soft10.wav",
+                .power_up => "sfx_sounds_powerup10.wav",
+                .monster_impact => "sfx_sounds_impact1.wav",
+            });
+        }
+        return self;
+    }
+
+    fn get(self: *const LoadedSamples, sample: Sample) zang.Sample {
+        return self.samples[@enumToInt(sample)];
+    }
+};
+
 pub const SamplerNoteParams = struct {
     sample: zang.Sample,
     channel: usize,
     loop: bool,
 };
 
-fn MenuSoundWrapper(comptime ModuleType_: type) type {
-    return struct {
-        const ModuleType = ModuleType_;
+// this object lives on the audio thread. use `sync` to pass it information from the main thread.
+fn GameSoundWrapper(comptime ModuleType: type) type {
+    const NoteParamsType = if (ModuleType == zang.Sampler)
+        SamplerNoteParams
+    else
+        ModuleType.NoteParams;
 
+    return struct {
         module: ModuleType,
-        iq: zang.Notes(ModuleType.NoteParams).ImpulseQueue,
+        trigger: zang.Trigger(NoteParamsType),
+        iq: zang.Notes(NoteParamsType).ImpulseQueue,
         idgen: zang.IdGenerator,
-        trigger: zang.Trigger(ModuleType.NoteParams),
 
         fn init() @This() {
             return .{
                 .module = ModuleType.init(),
-                .iq = zang.Notes(ModuleType.NoteParams).ImpulseQueue.init(),
+                .trigger = zang.Trigger(NoteParamsType).init(),
+                .iq = zang.Notes(NoteParamsType).ImpulseQueue.init(),
                 .idgen = zang.IdGenerator.init(),
-                .trigger = zang.Trigger(ModuleType.NoteParams).init(),
             };
         }
 
-        fn push(self: *@This(), params: ModuleType.NoteParams) void {
-            const impulse_frame: usize = 0;
-
-            self.iq.push(impulse_frame, self.idgen.nextId(), params);
+        // call from main thread with audio thread locked. communicate information from main thread to audio thread
+        fn sync(self: *@This(), reset: bool, impulse_frame: usize, maybe_params: ?NoteParamsType) void {
+            if (reset) {
+                self.trigger.reset();
+                _ = self.iq.consume();
+                return;
+            }
+            if (maybe_params) |params| {
+                self.iq.push(impulse_frame, self.idgen.nextId(), params);
+            }
         }
 
-        fn reset(self: *@This()) void {
-            self.iq.length = 0; // FIXME - add a method to zang API for this?
-            self.trigger.reset();
+        // this is called on both MenuSoundWrapper objects, as well as Wrapper
+        // objects (defined in components.zig). the latter has a few more fields
+        // which are not used in this function.
+        fn paint(self: *@This(), span: zang.Span, out_buf: []f32, tmp_bufs: var, sample_rate: f32) void {
+            var temps = tmp_bufs[0..ModuleType.num_temps].*;
+
+            comptime {
+                // make sure NoteParamsType isn't missing any fields
+                for (@typeInfo(ModuleType.Params).Struct.fields) |field| {
+                    var found = false;
+                    if (std.mem.eql(u8, field.name, "sample_rate")) {
+                        found = true;
+                    }
+                    for (@typeInfo(NoteParamsType).Struct.fields) |note_field| {
+                        if (std.mem.eql(u8, field.name, note_field.name)) {
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        @compileError(@typeName(NoteParamsType) ++ ": missing field `" ++ field.name ++ "`");
+                    }
+                }
+            }
+
+            var ctr = self.trigger.counter(span, self.iq.consume());
+            while (self.trigger.next(&ctr)) |result| {
+                // convert `NoteParams` into `Params`
+                var params: ModuleType.Params = undefined;
+
+                inline for (@typeInfo(NoteParamsType).Struct.fields) |field| {
+                    @field(params, field.name) = @field(result.params, field.name);
+                }
+                params.sample_rate = sample_rate;
+
+                self.module.paint(result.span, .{out_buf}, temps, result.note_id_changed, params);
+            }
         }
     };
 }
 
+// this contains a list of wrappers which parallel the Voice* game components.
+fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8) type {
+    return struct {
+        const component_name = component_name_;
+        const count = std.meta.fieldInfo(ComponentLists, component_name).field_type.capacity;
+
+        wrappers: [count]GameSoundWrapper(T),
+
+        fn init() @This() {
+            var self: @This() = undefined;
+            for (self.wrappers) |*wrapper| {
+                wrapper.* = GameSoundWrapper(T).init();
+            }
+            return self;
+        }
+
+        fn sync(self: *@This(), reset: bool, loaded_samples: *const LoadedSamples, impulse_frame: usize, component_list: var) void {
+            for (self.wrappers) |*wrapper, i| {
+                if (component_list.id[i] == 0) {
+                    continue;
+                }
+                if (T == zang.Sampler) {
+                    const maybe_params: ?SamplerNoteParams = if (component_list.data[i].sample) |sample|
+                        .{ .sample = loaded_samples.get(sample), .channel = 0, .loop = false }
+                    else
+                        null;
+                    wrapper.sync(reset, impulse_frame, maybe_params);
+                    component_list.data[i].sample = null;
+                } else {
+                    wrapper.sync(reset, impulse_frame, component_list.data[i].params);
+                    component_list.data[i].params = null;
+                }
+            }
+        }
+
+        fn paint(self: *@This(), span: zang.Span, out_buf: var, tmp_bufs: var, sample_rate: f32) void {
+            for (self.wrappers) |*wrapper| {
+                wrapper.paint(span, out_buf, tmp_bufs, sample_rate);
+            }
+        }
+    };
+}
+
+// see https://github.com/ziglang/zig/issues/5479
+const VoiceAccelerateWrapperArray = GameSoundWrapperArray(AccelerateVoice, "VoiceAccelerate");
+const VoiceCoinWrapperArray = GameSoundWrapperArray(CoinVoice, "VoiceCoin");
+const VoiceExplosionWrapperArray = GameSoundWrapperArray(ExplosionVoice, "VoiceExplosion");
+const VoiceLaserWrapperArray = GameSoundWrapperArray(LaserVoice, "VoiceLaser");
+const VoiceSamplerWrapperArray = GameSoundWrapperArray(zang.Sampler, "VoiceSampler");
+const VoiceWaveBeginWrapperArray = GameSoundWrapperArray(WaveBeginVoice, "VoiceWaveBegin");
+
 pub const MainModule = struct {
-    menu_backoff: MenuSoundWrapper(MenuBackoffVoice),
-    menu_blip: MenuSoundWrapper(MenuBlipVoice),
-    menu_ding: MenuSoundWrapper(MenuDingVoice),
+    menu_backoff: GameSoundWrapper(MenuBackoffVoice),
+    menu_blip: GameSoundWrapper(MenuBlipVoice),
+    menu_ding: GameSoundWrapper(MenuDingVoice),
 
-    prng: std.rand.DefaultPrng,
+    voice_accelerate: VoiceAccelerateWrapperArray,
+    voice_coin: VoiceCoinWrapperArray,
+    voice_explosion: VoiceExplosionWrapperArray,
+    voice_laser: VoiceLaserWrapperArray,
+    voice_sampler: VoiceSamplerWrapperArray,
+    voice_wave_begin: VoiceWaveBeginWrapperArray,
 
-    drop_web: zang.Sample,
-    extra_life: zang.Sample,
-    player_scream: zang.Sample,
-    player_death: zang.Sample,
-    player_crumble: zang.Sample,
-    power_up: zang.Sample,
-    monster_impact: zang.Sample,
+    loaded_samples: LoadedSamples,
 
     out_buf: []f32,
     // this will fail to compile if there aren't enough temp bufs to supply
     // each of the sound module types being used
     tmp_bufs: [3][]f32,
 
-    // call this in the main thread before the audio device is set up
-    pub fn init(hunk: *Hunk, audio_buffer_size: usize) !MainModule {
-        const rand_seed: u32 = 0;
+    // these fields are owned by the audio thread. they are set in sync and
+    // used in the audio callback
+    volume: u32,
+    sample_rate: f32,
 
+    // call this in the main thread before the audio device is set up
+    pub fn init(hunk: *Hunk, volume: u32, sample_rate: f32, audio_buffer_size: usize) !MainModule {
         return MainModule{
-            .menu_backoff = MenuSoundWrapper(MenuBackoffVoice).init(),
-            .menu_blip = MenuSoundWrapper(MenuBlipVoice).init(),
-            .menu_ding = MenuSoundWrapper(MenuDingVoice).init(),
-            .prng = std.rand.DefaultPrng.init(rand_seed),
-            .drop_web = try readWav(hunk, "sfx_sounds_interaction5.wav"),
-            .extra_life = try readWav(hunk, "sfx_sounds_powerup4.wav"),
-            .player_scream = try readWav(hunk, "sfx_deathscream_human2.wav"),
-            .player_death = try readWav(hunk, "sfx_exp_cluster7.wav"),
-            .player_crumble = try readWav(hunk, "sfx_exp_short_soft10.wav"),
-            .power_up = try readWav(hunk, "sfx_sounds_powerup10.wav"),
-            .monster_impact = try readWav(hunk, "sfx_sounds_impact1.wav"),
+            .menu_backoff = GameSoundWrapper(MenuBackoffVoice).init(),
+            .menu_blip = GameSoundWrapper(MenuBlipVoice).init(),
+            .menu_ding = GameSoundWrapper(MenuDingVoice).init(),
+            .voice_accelerate = VoiceAccelerateWrapperArray.init(),
+            .voice_coin = VoiceCoinWrapperArray.init(),
+            .voice_explosion = VoiceExplosionWrapperArray.init(),
+            .voice_laser = VoiceLaserWrapperArray.init(),
+            .voice_sampler = VoiceSamplerWrapperArray.init(),
+            .voice_wave_begin = VoiceWaveBeginWrapperArray.init(),
             // these allocations are never freed (but it's ok because this
             // object is created once in the main function)
+            .loaded_samples = try LoadedSamples.init(hunk),
             .out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size),
             .tmp_bufs = .{
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
             },
+            .volume = volume,
+            .sample_rate = sample_rate,
         };
     }
 
-    // called in the audio thread.
-    // note: this works under the assumption the thread mutex is locked during
-    // the entire audio callback call. this is just how SDL2 works. if we switch
-    // to another library that gives more control, this method should be
-    // refactored so that all the IQs (impulse queues) are pulled out before
-    // painting, so that the thread doesn't need to be locked during the actual
-    // painting
-    pub fn paint(self: *MainModule, sample_rate: f32, gs: *GameSession) []f32 {
-        const span: zang.Span = .{
-            .start = 0,
-            .end = self.out_buf.len,
-        };
+    // called when audio thread is locked. this is where we communicate
+    // information from the main thread to the audio thread.
+    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *GameSession, menu_sounds: *MenuSounds) void {
+        const impulse_frame: usize = 0;
+
+        self.volume = volume;
+        self.sample_rate = sample_rate;
+
+        inline for (@typeInfo(MainModule).Struct.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "menu_")) {
+                const maybe_params_ptr = &@field(menu_sounds, field.name[5..]);
+                @field(self, field.name).sync(reset, impulse_frame, maybe_params_ptr.*);
+                maybe_params_ptr.* = null;
+            }
+            if (comptime std.mem.startsWith(u8, field.name, "voice_")) {
+                const component_name = @TypeOf(@field(self, field.name)).component_name;
+                const component_list = &@field(gs.ecs.components, component_name);
+                @field(self, field.name).sync(reset, &self.loaded_samples, impulse_frame, component_list);
+            }
+        }
+    }
+
+    // called in the audio thread
+    pub fn paint(self: *MainModule) []f32 {
+        const span = zang.Span.init(0, self.out_buf.len);
 
         zang.zero(span, self.out_buf);
 
-        self.paintWrapper(span, &self.menu_backoff, sample_rate);
-        self.paintWrapper(span, &self.menu_blip, sample_rate);
-        self.paintWrapper(span, &self.menu_ding, sample_rate);
-
-        var it = gs.ecs.componentIter(c.Voice);
-        while (it.next()) |voice| {
-            switch (voice.wrapper) {
-                .accelerate => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .coin => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .explosion => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .laser => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .sample => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                .wave_begin => |*wrapper| self.paintWrapper(span, wrapper, sample_rate),
-                else => {},
+        inline for (@typeInfo(MainModule).Struct.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "menu_") or
+                comptime std.mem.startsWith(u8, field.name, "voice_"))
+            {
+                @field(self, field.name).paint(span, self.out_buf, self.tmp_bufs, self.sample_rate);
             }
         }
 
         return self.out_buf;
     }
-
-    // this is called on both MenuSoundWrapper objects, as well as Wrapper
-    // objects (defined in components.zig). the latter has a few more fields
-    // which are not used in this function.
-    fn paintWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
-        std.debug.assert(@typeInfo(@TypeOf(wrapper)) == .Pointer);
-        const ModuleType = @typeInfo(@TypeOf(wrapper)).Pointer.child.ModuleType;
-        var temps: [ModuleType.num_temps][]f32 = undefined;
-        comptime var i: usize = 0;
-        inline while (i < ModuleType.num_temps) : (i += 1) {
-            temps[i] = self.tmp_bufs[i];
-        }
-
-        const NoteParamsType = if (ModuleType == zang.Sampler)
-            SamplerNoteParams
-        else
-            ModuleType.NoteParams;
-
-        comptime {
-            // make sure NoteParamsType isn't missing any fields
-            for (@typeInfo(ModuleType.Params).Struct.fields) |field| {
-                var found = false;
-                if (std.mem.eql(u8, field.name, "sample_rate")) {
-                    found = true;
-                }
-                for (@typeInfo(NoteParamsType).Struct.fields) |note_field| {
-                    if (std.mem.eql(u8, field.name, note_field.name)) {
-                        found = true;
-                    }
-                }
-                if (!found) {
-                    @compileError(@typeName(NoteParamsType) ++ ": missing field `" ++ field.name ++ "`");
-                }
-            }
-        }
-
-        var ctr = wrapper.trigger.counter(span, wrapper.iq.consume());
-        while (wrapper.trigger.next(&ctr)) |result| {
-            // convert `NoteParams` into `Params`
-            var params: ModuleType.Params = undefined;
-
-            inline for (@typeInfo(NoteParamsType).Struct.fields) |field| {
-                @field(params, field.name) = @field(result.params, field.name);
-            }
-            params.sample_rate = sample_rate;
-
-            wrapper.module.paint(result.span, .{self.out_buf}, temps, result.note_id_changed, params);
-        }
-    }
-
-    // called in the main thread
-    pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
-        switch (sound) {
-            .backoff => self.menu_backoff.push(.{}),
-            .blip => self.menu_blip.push(.{
-                .freq_mul = 0.95 + 0.1 * self.prng.random.float(f32),
-            }),
-            .ding => self.menu_ding.push(.{}),
-        }
-    }
-
-    pub fn resetMenuSounds(self: *MainModule) void {
-        self.menu_backoff.reset();
-        self.menu_blip.reset();
-        self.menu_ding.reset();
-    }
-
-    // called in the main thread
-    pub fn playSounds(self: *MainModule, gs: *GameSession, impulse_frame: usize) void {
-        var it = gs.ecs.componentIter(c.Voice);
-        while (it.next()) |object| {
-            switch (object.wrapper) {
-                .accelerate => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .coin => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .explosion => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .laser => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .wave_begin => |*wrapper| updateVoice(wrapper, impulse_frame),
-                .sample => |*wrapper| {
-                    if (wrapper.initial_sample) |sample| {
-                        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), .{
-                            .loop = false,
-                            .channel = 0,
-                            .sample = switch (sample) {
-                                .drop_web => self.drop_web,
-                                .extra_life => self.extra_life,
-                                .player_scream => self.player_scream,
-                                .player_death => self.player_death,
-                                .player_crumble => self.player_crumble,
-                                .power_up => self.power_up,
-                                .monster_impact => self.monster_impact,
-                            },
-                        });
-                        wrapper.initial_sample = null;
-                    }
-                },
-            }
-        }
-    }
 };
-
-fn updateVoice(wrapper: var, impulse_frame: usize) void {
-    if (wrapper.initial_params) |params| {
-        wrapper.iq.push(impulse_frame, wrapper.idgen.nextId(), params);
-        wrapper.initial_params = null;
-    }
-}

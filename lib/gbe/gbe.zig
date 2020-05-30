@@ -26,7 +26,7 @@ pub const EntityId = struct {
 pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
     return struct {
         pub const ComponentType = T;
-        const capacity = capacity_;
+        pub const capacity = capacity_;
 
         id: [capacity]u64, // if 0, the slot is not in use
         data: [capacity]T,

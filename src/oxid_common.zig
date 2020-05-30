@@ -54,6 +54,8 @@ pub const MainState = struct {
     max_canvas_scale: u31,
     friendly_fire: bool,
     sound_enabled: bool,
+    prng: std.rand.DefaultPrng,
+    menu_sounds: MenuSounds,
 };
 
 pub const GameStatic = struct {
@@ -62,10 +64,17 @@ pub const GameStatic = struct {
     font: Font,
 };
 
+pub const MenuSounds = struct {
+    backoff: ?audio.MenuBackoffVoice.NoteParams,
+    blip: ?audio.MenuBlipVoice.NoteParams,
+    ding: ?audio.MenuDingVoice.NoteParams,
+};
+
 pub const InitParams = struct {
     hunk: *Hunk,
     random_seed: u32,
     audio_buffer_size: usize,
+    audio_sample_rate: f32,
     fullscreen: bool,
     canvas_scale: u31,
     max_canvas_scale: u31,
@@ -87,11 +96,6 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    self.audio_module = audio.MainModule.init(self.hunk, params.audio_buffer_size) catch |err| {
-        warn("Failed to load audio module: {}\n", .{err});
-        return false;
-    };
-
     self.cfg = blk: {
         // if config couldn't load, warn and fall back to default config
         const cfg = ns.loadConfig(&self.hunk.low()) catch |err| {
@@ -104,6 +108,11 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.session.init(params.random_seed);
     gameInit(&self.session) catch |err| {
         warn("Failed to initialize game: {}\n", .{err});
+        return false;
+    };
+
+    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_sample_rate, params.audio_buffer_size) catch |err| {
+        warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
 
@@ -135,6 +144,12 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
     self.sound_enabled = params.sound_enabled;
+    self.prng = std.rand.DefaultPrng.init(0);
+    self.menu_sounds = .{
+        .backoff = null,
+        .blip = null,
+        .ding = null,
+    };
 
     return true;
 }
@@ -158,21 +173,29 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
     };
 }
 
-pub const InputEffect = union(enum) {
+fn playMenuSound(self: *MainState, sound: menus.Sound) void {
+    switch (sound) {
+        .backoff => {
+            self.menu_sounds.backoff = .{};
+        },
+        .blip => {
+            self.menu_sounds.blip = .{ .freq_mul = 0.95 + 0.1 * self.prng.random.float(f32) };
+        },
+        .ding => {
+            self.menu_sounds.ding = .{};
+        },
+    }
+}
+
+pub const InputSpecial = union(enum) {
     noop,
     quit,
     toggle_sound,
     toggle_fullscreen,
     set_canvas_scale: u31,
-    set_volume: u32,
 };
 
-pub const InputSpecial = struct {
-    sound: ?menus.Sound,
-    effect: ?InputEffect,
-};
-
-pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource, down: bool) InputSpecial {
+pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource, down: bool) ?InputSpecial {
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
@@ -189,18 +212,19 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
                 .maybe_command = maybe_menu_command,
                 .menu_context = makeMenuContext(main_state),
             })) |result| {
-                return .{
-                    .sound = result.sound,
-                    .effect = applyMenuEffect(main_state, ns, result.effect),
-                };
+                if (result.sound) |sound| {
+                    playMenuSound(main_state, sound);
+                }
+                return applyMenuEffect(main_state, ns, result.effect);
             }
-            return .{ .sound = null, .effect = null };
+            return null;
         }
 
         // menu is not open, but should we open it?
         if (maybe_menu_command) |menu_command| {
             if (menu_command == .escape) {
                 // assuming that if the menu isn't open, we must be in game
+                playMenuSound(main_state, .backoff);
                 // FIXME there's a zig compiler bug where this code crashes at runtime without a stack
                 // trace if I don't have this type annotation here (if the anonymous literal is inlined
                 // into the return statement it crashes)
@@ -208,10 +232,7 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
                 const menu_effect: menus.Effect = .{
                     .push = .{ .in_game_menu = menus.InGameMenu.init() },
                 };
-                return .{
-                    .sound = .backoff,
-                    .effect = applyMenuEffect(main_state, ns, menu_effect),
-                };
+                return applyMenuEffect(main_state, ns, menu_effect);
             }
         }
     }
@@ -229,14 +250,14 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
                 .down = down,
             }) catch undefined;
 
-            return .{ .sound = null, .effect = .noop };
+            return InputSpecial{ .noop = {} };
         }
     }
 
-    return .{ .sound = null, .effect = null };
+    return null;
 }
 
-fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) InputEffect {
+fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) ?InputSpecial {
     switch (effect) {
         .noop => {},
         .push => |new_menu| {
@@ -261,16 +282,16 @@ fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) Inp
             });
         },
         .toggle_sound => {
-            return .{ .toggle_sound = {} };
+            return InputSpecial{ .toggle_sound = {} };
         },
         .set_volume => |value| {
-            return .{ .set_volume = value };
+            self.cfg.volume = value;
         },
         .set_canvas_scale => |value| {
-            return .{ .set_canvas_scale = value };
+            return InputSpecial{ .set_canvas_scale = value };
         },
         .toggle_fullscreen => {
-            return .{ .toggle_fullscreen = {} };
+            return InputSpecial{ .toggle_fullscreen = {} };
         },
         .toggle_friendly_fire => {
             self.friendly_fire = !self.friendly_fire;
@@ -292,11 +313,11 @@ fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) Inp
             self.menu_anim_time = 0;
         },
         .quit => {
-            return .quit;
+            return InputSpecial{ .quit = {} };
         },
     }
 
-    return .noop;
+    return InputSpecial{ .noop = {} };
 }
 
 // i feel like these functions are too heavy to be done inline by this system.

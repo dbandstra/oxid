@@ -436,22 +436,42 @@ pub const Pickup = struct {
     }
 };
 
-pub const Sound = struct {
-    pub const Params = struct {
-        duration: f32,
-        wrapper: c.Voice.WrapperU,
-    };
+fn VoiceGeneric(comptime C: type, comptime T: type) type {
+    return struct {
+        pub fn spawn(gs: *GameSession, params: T.NoteParams) !gbe.EntityId {
+            const entity_id = gs.ecs.spawn();
+            errdefer gs.ecs.undoSpawn(entity_id);
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+            try gs.ecs.addComponent(entity_id, C{
+                .params = params,
+            });
+
+            try gs.ecs.addComponent(entity_id, c.RemoveTimer{
+                .timer = @floatToInt(u32, T.sound_duration * @as(f32, constants.ticks_per_second)),
+            });
+
+            return entity_id;
+        }
+    };
+}
+
+pub const VoiceAccelerate = VoiceGeneric(c.VoiceAccelerate, audio.AccelerateVoice);
+pub const VoiceCoin = VoiceGeneric(c.VoiceCoin, audio.CoinVoice);
+pub const VoiceExplosion = VoiceGeneric(c.VoiceExplosion, audio.ExplosionVoice);
+pub const VoiceLaser = VoiceGeneric(c.VoiceLaser, audio.LaserVoice);
+pub const VoiceWaveBegin = VoiceGeneric(c.VoiceWaveBegin, audio.WaveBeginVoice);
+
+pub const VoiceSampler = struct {
+    pub fn spawn(gs: *GameSession, sample: audio.Sample) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
-        try gs.ecs.addComponent(entity_id, c.Voice{
-            .wrapper = params.wrapper,
+        try gs.ecs.addComponent(entity_id, c.VoiceSampler{
+            .sample = sample,
         });
 
         try gs.ecs.addComponent(entity_id, c.RemoveTimer{
-            .timer = @floatToInt(u32, params.duration * @as(f32, constants.ticks_per_second)),
+            .timer = @floatToInt(u32, 2.0 * @as(f32, constants.ticks_per_second)),
         });
 
         return entity_id;
@@ -484,38 +504,3 @@ pub const EventPlayerDied = Event(c.EventPlayerDied);
 pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);
 pub const EventShowMessage = Event(c.EventShowMessage);
 pub const EventTakeDamage = Event(c.EventTakeDamage);
-
-pub fn playSample(gs: *GameSession, sample: audio.Sample) void {
-    _ = Sound.spawn(gs, .{
-        .duration = 2.0,
-        .wrapper = .{
-            .sample = .{
-                .initial_params = null,
-                .initial_sample = sample,
-                .iq = zang.Notes(audio.SamplerNoteParams).ImpulseQueue.init(),
-                .idgen = zang.IdGenerator.init(),
-                .module = zang.Sampler.init(),
-                .trigger = zang.Trigger(audio.SamplerNoteParams).init(),
-            },
-        },
-    }) catch undefined;
-}
-
-pub fn playSynth(
-    gs: *GameSession,
-    comptime name: []const u8,
-    comptime VoiceType: type,
-    params: VoiceType.NoteParams,
-) void {
-    _ = Sound.spawn(gs, .{
-        .duration = VoiceType.sound_duration,
-        .wrapper = @unionInit(c.Voice.WrapperU, name, .{
-            .initial_params = params,
-            .initial_sample = null,
-            .iq = zang.Notes(VoiceType.NoteParams).ImpulseQueue.init(),
-            .idgen = zang.IdGenerator.init(),
-            .module = VoiceType.init(),
-            .trigger = zang.Trigger(VoiceType.NoteParams).init(),
-        }),
-    }) catch undefined;
-}

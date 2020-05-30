@@ -128,12 +128,12 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
         self.monster.next_attack_timer -= 1;
     } else {
         if (self.monster.can_shoot) {
-            p.playSynth(gs, "laser", audio.LaserVoice, audio.LaserVoice.NoteParams{
+            _ = p.VoiceLaser.spawn(gs, .{
                 .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                 .carrier_mul = 4.0,
                 .modulator_mul = 0.125,
                 .modulator_rad = 1.0,
-            });
+            }) catch undefined;
             // spawn the bullet one quarter of a grid cell in front of the monster
             const pos = self.transform.pos;
             const dir_vec = math.Direction.normal(self.phys.facing);
@@ -149,7 +149,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
-            p.playSample(gs, .drop_web);
+            _ = p.VoiceSampler.spawn(gs, .drop_web) catch undefined;
             _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;
