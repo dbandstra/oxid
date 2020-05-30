@@ -11,56 +11,60 @@ const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pick
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
 
+const SystemData = struct {
+    gc: *c.GameController,
+    voice_accelerate: *c.VoiceAccelerate,
+    voice_wave_begin: *c.VoiceWaveBegin,
+};
+
 pub fn run(gs: *GameSession) void {
-    var it = gs.ecs.iter(struct {
-        gc: *c.GameController,
-    });
+    var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
-        think(gs, self.gc);
+        think(gs, self);
     }
 }
 
-fn think(gs: *GameSession, gc: *c.GameController) void {
+fn think(gs: *GameSession, self: SystemData) void {
     // if all non-persistent monsters are dead, prepare next wave
-    if (gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
-        gc.next_wave_timer = constants.next_wave_time;
+    if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
+        self.gc.next_wave_timer = constants.next_wave_time;
     }
-    _ = util.decrementTimer(&gc.wave_message_timer);
-    if (util.decrementTimer(&gc.next_wave_timer)) {
-        _ = p.VoiceWaveBegin.spawn(gs, .{}) catch undefined;
-        gc.wave_number += 1;
-        gc.wave_message_timer = constants.duration60(180);
-        gc.enemy_speed_level = 0;
-        gc.enemy_speed_timer = constants.enemy_speed_ticks;
-        const wave = createWave(gs, gc);
-        spawnWave(gs, gc.wave_number, &wave);
-        gc.enemy_speed_level = wave.speed;
-        gc.monster_count = countNonPersistentMonsters(gs);
-        gc.wave_message = wave.message;
+    _ = util.decrementTimer(&self.gc.wave_message_timer);
+    if (util.decrementTimer(&self.gc.next_wave_timer)) {
+        self.voice_wave_begin.params = .{};
+        self.gc.wave_number += 1;
+        self.gc.wave_message_timer = constants.duration60(180);
+        self.gc.enemy_speed_level = 0;
+        self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
+        const wave = createWave(gs, self.gc);
+        spawnWave(gs, self.gc.wave_number, &wave);
+        self.gc.enemy_speed_level = wave.speed;
+        self.gc.monster_count = countNonPersistentMonsters(gs);
+        self.gc.wave_message = wave.message;
     }
-    if (util.decrementTimer(&gc.enemy_speed_timer)) {
-        if (gc.enemy_speed_level < constants.max_enemy_speed_level) {
-            gc.enemy_speed_level += 1;
-            _ = p.VoiceAccelerate.spawn(gs, .{
-                .playback_speed = switch (gc.enemy_speed_level) {
+    if (util.decrementTimer(&self.gc.enemy_speed_timer)) {
+        if (self.gc.enemy_speed_level < constants.max_enemy_speed_level) {
+            self.gc.enemy_speed_level += 1;
+            self.voice_accelerate.params = .{
+                .playback_speed = switch (self.gc.enemy_speed_level) {
                     1 => 1.25,
                     2 => 1.5,
                     3 => 1.75,
                     else => 2.0,
                 },
-            }) catch undefined;
+            };
         }
-        gc.enemy_speed_timer = constants.enemy_speed_ticks;
+        self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
-    if (util.decrementTimer(&gc.next_pickup_timer)) {
+    if (util.decrementTimer(&self.gc.next_pickup_timer)) {
         const pickup_type: ConstantTypes.PickupType = if (gs.getRand().boolean())
             .speed_up
         else
             .power_up;
         spawnPickup(gs, pickup_type);
-        gc.next_pickup_timer = constants.pickup_spawn_time;
+        self.gc.next_pickup_timer = constants.pickup_spawn_time;
     }
-    _ = util.decrementTimer(&gc.freeze_monsters_timer);
+    _ = util.decrementTimer(&self.gc.freeze_monsters_timer);
 
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
@@ -69,11 +73,11 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
         pc: *const c.PlayerController,
     });
     while (it.next()) |entry| {
-        if (gc.extra_lives_spawned < constants.extra_life_score_thresholds.len) {
-            const threshold = constants.extra_life_score_thresholds[gc.extra_lives_spawned];
+        if (self.gc.extra_lives_spawned < constants.extra_life_score_thresholds.len) {
+            const threshold = constants.extra_life_score_thresholds[self.gc.extra_lives_spawned];
             if (entry.pc.score >= threshold) {
                 spawnPickup(gs, .life_up);
-                gc.extra_lives_spawned += 1;
+                self.gc.extra_lives_spawned += 1;
             }
         }
     }

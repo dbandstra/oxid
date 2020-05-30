@@ -76,6 +76,14 @@ pub const GameController = struct {
             .num_players_remaining = params.num_players,
         });
 
+        try gs.ecs.addComponent(entity_id, c.VoiceAccelerate{
+            .params = null,
+        });
+
+        try gs.ecs.addComponent(entity_id, c.VoiceWaveBegin{
+            .params = null,
+        });
+
         return entity_id;
     }
 };
@@ -455,11 +463,9 @@ fn VoiceGeneric(comptime C: type, comptime T: type) type {
     };
 }
 
-pub const VoiceAccelerate = VoiceGeneric(c.VoiceAccelerate, audio.AccelerateVoice);
 pub const VoiceCoin = VoiceGeneric(c.VoiceCoin, audio.CoinVoice);
 pub const VoiceExplosion = VoiceGeneric(c.VoiceExplosion, audio.ExplosionVoice);
 pub const VoiceLaser = VoiceGeneric(c.VoiceLaser, audio.LaserVoice);
-pub const VoiceWaveBegin = VoiceGeneric(c.VoiceWaveBegin, audio.WaveBeginVoice);
 
 pub const VoiceSampler = struct {
     pub fn spawn(gs: *GameSession, sample: audio.Sample) !gbe.EntityId {
