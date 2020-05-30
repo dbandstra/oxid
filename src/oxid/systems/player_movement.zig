@@ -18,6 +18,7 @@ const SystemData = struct {
     phys: *c.PhysObject,
     player: *c.Player,
     transform: *c.Transform,
+    voice_laser: *c.VoiceLaser,
 };
 
 pub fn run(gs: *GameSession, context: GameFrameContext) void {
@@ -81,12 +82,12 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
                     break slot;
                 }
             } else null) |slot| {
-                _ = p.VoiceLaser.spawn(gs, .{
+                self.voice_laser.params = .{
                     .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,
                     .modulator_rad = 0.5,
-                }) catch undefined;
+                };
                 // spawn the bullet one quarter of a grid cell in front of the player
                 const pos = self.transform.pos;
                 const dir_vec = math.Direction.normal(self.phys.facing);

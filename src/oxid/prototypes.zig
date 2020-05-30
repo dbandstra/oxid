@@ -162,6 +162,10 @@ pub const Player = struct {
             .in_shoot = false,
         });
 
+        try gs.ecs.addComponent(entity_id, c.VoiceLaser{
+            .params = null,
+        });
+
         return entity_id;
     }
 };
@@ -252,6 +256,12 @@ pub const Monster = struct {
             .has_coin = params.has_coin,
             .persistent = monster_values.persistent,
         });
+
+        if (can_shoot) {
+            try gs.ecs.addComponent(entity_id, c.VoiceLaser{
+                .params = null,
+            });
+        }
 
         return entity_id;
     }
@@ -468,27 +478,22 @@ pub const Explosion = struct {
     }
 };
 
-fn VoiceGeneric(comptime C: type, comptime T: type) type {
-    return struct {
-        pub fn spawn(gs: *GameSession, params: T.NoteParams) !gbe.EntityId {
-            const entity_id = gs.ecs.spawn();
-            errdefer gs.ecs.undoSpawn(entity_id);
+pub const VoiceCoin = struct {
+    pub fn spawn(gs: *GameSession, params: audio.CoinVoice.NoteParams) !gbe.EntityId {
+        const entity_id = gs.ecs.spawn();
+        errdefer gs.ecs.undoSpawn(entity_id);
 
-            try gs.ecs.addComponent(entity_id, C{
-                .params = params,
-            });
+        try gs.ecs.addComponent(entity_id, c.VoiceCoin{
+            .params = params,
+        });
 
-            try gs.ecs.addComponent(entity_id, c.RemoveTimer{
-                .timer = @floatToInt(u32, T.sound_duration * @as(f32, constants.ticks_per_second)),
-            });
+        try gs.ecs.addComponent(entity_id, c.RemoveTimer{
+            .timer = @floatToInt(u32, audio.CoinVoice.sound_duration * @as(f32, constants.ticks_per_second)),
+        });
 
-            return entity_id;
-        }
-    };
-}
-
-pub const VoiceCoin = VoiceGeneric(c.VoiceCoin, audio.CoinVoice);
-pub const VoiceLaser = VoiceGeneric(c.VoiceLaser, audio.LaserVoice);
+        return entity_id;
+    }
+};
 
 pub const VoiceSampler = struct {
     pub fn spawn(gs: *GameSession, sample: audio.Sample) !gbe.EntityId {
