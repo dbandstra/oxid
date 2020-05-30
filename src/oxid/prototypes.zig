@@ -444,6 +444,30 @@ pub const Pickup = struct {
     }
 };
 
+pub const Explosion = struct {
+    pub fn spawn(gs: *GameSession, pos: math.Vec2) !gbe.EntityId {
+        const entity_id = gs.ecs.spawn();
+        errdefer gs.ecs.undoSpawn(entity_id);
+
+        try gs.ecs.addComponent(entity_id, c.Transform{
+            .pos = pos,
+        });
+
+        try gs.ecs.addComponent(entity_id, c.Animation{
+            .simple_anim = .explosion,
+            .frame_index = 0,
+            .frame_timer = getSimpleAnim(.explosion).ticks_per_frame,
+            .z_index = constants.z_index_explosion,
+        });
+
+        try gs.ecs.addComponent(entity_id, c.VoiceExplosion{
+            .params = .{},
+        });
+
+        return entity_id;
+    }
+};
+
 fn VoiceGeneric(comptime C: type, comptime T: type) type {
     return struct {
         pub fn spawn(gs: *GameSession, params: T.NoteParams) !gbe.EntityId {
@@ -464,7 +488,6 @@ fn VoiceGeneric(comptime C: type, comptime T: type) type {
 }
 
 pub const VoiceCoin = VoiceGeneric(c.VoiceCoin, audio.CoinVoice);
-pub const VoiceExplosion = VoiceGeneric(c.VoiceExplosion, audio.ExplosionVoice);
 pub const VoiceLaser = VoiceGeneric(c.VoiceLaser, audio.LaserVoice);
 
 pub const VoiceSampler = struct {
