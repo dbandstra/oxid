@@ -188,7 +188,6 @@ const Main = struct {
     glcontext: SDL_GLContext,
     blit_rect: platform_framebuffer.BlitRect,
     audio_sample_rate: usize,
-    audio_sample_rate_current: f32,
     audio_device: SDL_AudioDeviceID,
     quit: bool,
     toggle_fullscreen: bool,
@@ -397,7 +396,7 @@ fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C)
     const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const buf = self.main_state.audio_module.paint(self.audio_sample_rate_current, &self.main_state.session);
+    const buf = self.main_state.audio_module.paint(self.main_state.audio_module.sample_rate, &self.main_state.session);
     const vol = std.math.min(1.0, @intToFloat(f32, self.main_state.audio_module.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
@@ -517,6 +516,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
+        .audio_sample_rate = @intToFloat(f32, options.audio_sample_rate),
         .fullscreen = false,
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
@@ -532,7 +532,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
     self.audio_sample_rate = options.audio_sample_rate;
-    self.audio_sample_rate_current = @intToFloat(f32, options.audio_sample_rate);
     self.audio_device = device;
     self.quit = false;
     self.toggle_fullscreen = false;
@@ -645,8 +644,8 @@ fn tick(self: *Main, refresh_rate: u64) void {
     // if the audio thread is currently doing a mix, this will wait until it's finished.
     SDL_LockAudioDevice(self.audio_device);
     // speed up audio mixing frequency if game is being fast forwarded
-    self.audio_sample_rate_current = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
-    self.main_state.audio_module.sync(self.main_state.cfg.volume);
+    const sample_rate = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
+    self.main_state.audio_module.sync(self.main_state.cfg.volume, sample_rate);
     SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {

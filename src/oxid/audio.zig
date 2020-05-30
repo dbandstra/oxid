@@ -175,11 +175,13 @@ pub const MainModule = struct {
     // each of the sound module types being used
     tmp_bufs: [3][]f32,
 
-    // this volume field is owned by the audio thread
+    // these fields are owned by the audio thread. they are set in sync and
+    // used in the audio callback
     volume: u32,
+    sample_rate: f32,
 
     // call this in the main thread before the audio device is set up
-    pub fn init(hunk: *Hunk, volume: u32, audio_buffer_size: usize) !MainModule {
+    pub fn init(hunk: *Hunk, volume: u32, sample_rate: f32, audio_buffer_size: usize) !MainModule {
         const rand_seed: u32 = 0;
 
         return MainModule{
@@ -203,15 +205,17 @@ pub const MainModule = struct {
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
             },
             .volume = volume,
+            .sample_rate = sample_rate,
         };
     }
 
     // called when audio thread is locked. this is where we communicate
     // information from the main thread to the audio thread.
-    pub fn sync(self: *MainModule, volume: u32) void {
+    pub fn sync(self: *MainModule, volume: u32, sample_rate: f32) void {
         const impulse_frame: usize = 0;
 
         self.volume = volume;
+        self.sample_rate = sample_rate;
 
         self.menu_backoff.sync(impulse_frame);
         self.menu_blip.sync(impulse_frame);

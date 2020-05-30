@@ -66,6 +66,7 @@ pub const InitParams = struct {
     hunk: *Hunk,
     random_seed: u32,
     audio_buffer_size: usize,
+    audio_sample_rate: f32,
     fullscreen: bool,
     canvas_scale: u31,
     max_canvas_scale: u31,
@@ -102,7 +103,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_buffer_size) catch |err| {
+    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_sample_rate, params.audio_buffer_size) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
