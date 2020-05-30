@@ -87,11 +87,6 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
         return false;
     };
 
-    self.audio_module = audio.MainModule.init(self.hunk, params.audio_buffer_size) catch |err| {
-        warn("Failed to load audio module: {}\n", .{err});
-        return false;
-    };
-
     self.cfg = blk: {
         // if config couldn't load, warn and fall back to default config
         const cfg = ns.loadConfig(&self.hunk.low()) catch |err| {
@@ -104,6 +99,11 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
     self.session.init(params.random_seed);
     gameInit(&self.session) catch |err| {
         warn("Failed to initialize game: {}\n", .{err});
+        return false;
+    };
+
+    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_buffer_size) catch |err| {
+        warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
 

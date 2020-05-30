@@ -100,69 +100,50 @@ fn MenuSoundWrapper(comptime T: type) type {
         const ModuleType = T;
 
         // main thread fields:
-        iq: zang.Notes(T.NoteParams).ImpulseQueue,
-        idgen: zang.IdGenerator,
+        queued_params: ?T.NoteParams,
 
         // audio thread fields:
         module: T,
         trigger: zang.Trigger(T.NoteParams),
-        // TODO zang should have a "ImpulsesAndParamses array" structure so i don't have to copy paste
-        // this out of the ImpulseQueue code. a `copy` method should be added there too
-        impulses_array: [32]zang.Impulse,
-        paramses_array: [32]T.NoteParams,
-        iap: zang.Notes(T.NoteParams).ImpulsesAndParamses,
+        iq: zang.Notes(T.NoteParams).ImpulseQueue,
+        idgen: zang.IdGenerator,
         resetting: bool,
 
         fn init() @This() {
             return .{
-                .iq = zang.Notes(T.NoteParams).ImpulseQueue.init(),
-                .idgen = zang.IdGenerator.init(),
+                .queued_params = null,
                 .module = T.init(),
                 .trigger = zang.Trigger(T.NoteParams).init(),
-                .impulses_array = undefined,
-                .paramses_array = undefined,
-                .iap = .{
-                    .impulses = &[0]zang.Impulse{},
-                    .paramses = &[0]T.NoteParams{},
-                },
+                .iq = zang.Notes(T.NoteParams).ImpulseQueue.init(),
+                .idgen = zang.IdGenerator.init(),
                 .resetting = false,
             };
         }
 
-        // called from main thread
+        // called from main thread. no lock
         fn push(self: *@This(), params: T.NoteParams) void {
-            const impulse_frame: usize = 0;
-            self.iq.push(impulse_frame, self.idgen.nextId(), params);
+            if (self.resetting) return;
+            self.queued_params = params;
         }
 
-        // called from main thread
+        // called from main thread. no lock
         fn reset(self: *@This()) void {
-            self.iq.length = 0; // FIXME - add a method to zang API for this?
+            self.queued_params = null;
             self.resetting = true;
         }
 
-        // call when audio thread is locked. communicate information from main
-        // thread to audio thread
-        fn sync(self: *@This()) void {
-            const iap = self.iq.consume();
-
-            std.mem.copy(zang.Impulse, self.impulses_array[0..iap.impulses.len], iap.impulses);
-            // FIXME this doesn't work (compiler bug?)! but the above does...!
-            //std.mem.copy(T.NoteParams, self.paramses_array[0..iap.paramses.len], iap.paramses);
-            // this works:
-            var i: usize = 0;
-            while (i < iap.paramses.len) : (i += 1) {
-                self.paramses_array[i] = iap.paramses[i];
+        // call from main thread with audio thread locked. communicate information from main thread to audio thread
+        fn sync(self: *@This(), impulse_frame: usize) void {
+            if (self.resetting) {
+                self.resetting = false;
+                self.trigger.reset();
+                _ = self.iq.consume();
+                return;
             }
 
-            self.iap = .{
-                .impulses = self.impulses_array[0..iap.impulses.len],
-                .paramses = self.paramses_array[0..iap.paramses.len],
-            };
-
-            if (self.resetting) {
-                self.trigger.reset();
-                self.resetting = false;
+            if (self.queued_params) |params| {
+                self.iq.push(impulse_frame, self.idgen.nextId(), params);
+                self.queued_params = null;
             }
         }
     };
@@ -194,8 +175,11 @@ pub const MainModule = struct {
     // each of the sound module types being used
     tmp_bufs: [3][]f32,
 
+    // this volume field is owned by the audio thread
+    volume: u32,
+
     // call this in the main thread before the audio device is set up
-    pub fn init(hunk: *Hunk, audio_buffer_size: usize) !MainModule {
+    pub fn init(hunk: *Hunk, volume: u32, audio_buffer_size: usize) !MainModule {
         const rand_seed: u32 = 0;
 
         return MainModule{
@@ -218,15 +202,20 @@ pub const MainModule = struct {
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
             },
+            .volume = volume,
         };
     }
 
     // called when audio thread is locked. this is where we communicate
     // information from the main thread to the audio thread.
-    pub fn sync(self: *MainModule) void {
-        self.menu_backoff.sync();
-        self.menu_blip.sync();
-        self.menu_ding.sync();
+    pub fn sync(self: *MainModule, volume: u32) void {
+        const impulse_frame: usize = 0;
+
+        self.volume = volume;
+
+        self.menu_backoff.sync(impulse_frame);
+        self.menu_blip.sync(impulse_frame);
+        self.menu_ding.sync(impulse_frame);
     }
 
     // called in the audio thread.
@@ -244,9 +233,9 @@ pub const MainModule = struct {
 
         zang.zero(span, self.out_buf);
 
-        self.paintMenuWrapper(span, &self.menu_backoff, sample_rate);
-        self.paintMenuWrapper(span, &self.menu_blip, sample_rate);
-        self.paintMenuWrapper(span, &self.menu_ding, sample_rate);
+        self.paintWrapper(span, &self.menu_backoff, sample_rate);
+        self.paintWrapper(span, &self.menu_blip, sample_rate);
+        self.paintWrapper(span, &self.menu_ding, sample_rate);
 
         var it = gs.ecs.componentIter(c.Voice);
         while (it.next()) |voice| {
@@ -262,31 +251,6 @@ pub const MainModule = struct {
         }
 
         return self.out_buf;
-    }
-
-    fn paintMenuWrapper(self: *MainModule, span: zang.Span, wrapper: var, sample_rate: f32) void {
-        const ModuleType = @typeInfo(@TypeOf(wrapper)).Pointer.child.ModuleType;
-
-        var temps: [ModuleType.num_temps][]f32 = undefined;
-        comptime var i: usize = 0;
-        inline while (i < ModuleType.num_temps) : (i += 1) {
-            temps[i] = self.tmp_bufs[i];
-        }
-
-        // the only real difference between paintMenuWrapper and paintWrapper is that we don't
-        // consume an impulse queue. it was already consumed in the sync stage
-        var ctr = wrapper.trigger.counter(span, wrapper.iap);
-        while (wrapper.trigger.next(&ctr)) |result| {
-            // convert `NoteParams` into `Params`
-            var params: ModuleType.Params = undefined;
-
-            inline for (@typeInfo(ModuleType.NoteParams).Struct.fields) |field| {
-                @field(params, field.name) = @field(result.params, field.name);
-            }
-            params.sample_rate = sample_rate;
-
-            wrapper.module.paint(result.span, .{self.out_buf}, temps, result.note_id_changed, params);
-        }
     }
 
     // this is called on both MenuSoundWrapper objects, as well as Wrapper
@@ -338,8 +302,8 @@ pub const MainModule = struct {
         }
     }
 
-    // called in the main thread with the audio device locked
-    pub fn playMenuSound(self: *MainModule, sound: menus.Sound) void {
+    // called in the main thread. audio thread is not locked.
+    pub fn queueMenuSound(self: *MainModule, sound: menus.Sound) void {
         switch (sound) {
             .backoff => self.menu_backoff.push(.{}),
             .blip => self.menu_blip.push(.{

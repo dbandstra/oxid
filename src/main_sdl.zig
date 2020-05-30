@@ -34,11 +34,7 @@ const datadir = "Oxid";
 const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
 
-fn openDataFile(
-    hunk_side: *HunkSide,
-    filename: []const u8,
-    mode: enum { read, write },
-) !std.fs.File {
+fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { read, write }) !std.fs.File {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -52,10 +48,7 @@ fn openDataFile(
         };
     }
 
-    const file_path = try std.fs.path.join(
-        &hunk_side.allocator,
-        &[_][]const u8{ dir_path, filename },
-    );
+    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{ dir_path, filename });
 
     return switch (mode) {
         .read => try std.fs.cwd().openFile(file_path, .{}),
@@ -104,10 +97,7 @@ pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
     return datafile.readHighScores(@TypeOf(stream), &stream);
 }
 
-pub fn saveHighScores(
-    hunk_side: *HunkSide,
-    high_scores: [constants.num_high_scores]u32,
-) !void {
+pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
     const file = try openDataFile(hunk_side, highscores_filename, .write);
     defer file.close();
 
@@ -407,17 +397,8 @@ fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C)
     const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    // if SDL allowed it, i would only lock during this block of code
-    const volume = self.main_state.cfg.volume;
-    self.main_state.audio_module.sync();
-
-    // there's no need for audio device to be locked from this point on
-    // (well, once i finish refactoring the game code)
-    const buf = self.main_state.audio_module.paint(
-        self.audio_sample_rate_current,
-        &self.main_state.session,
-    );
-    const vol = std.math.min(1.0, @intToFloat(f32, volume) / 100.0);
+    const buf = self.main_state.audio_module.paint(self.audio_sample_rate_current, &self.main_state.session);
+    const vol = std.math.min(1.0, @intToFloat(f32, self.main_state.audio_module.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
 
@@ -601,6 +582,10 @@ fn tick(self: *Main, refresh_rate: u64) void {
         return;
     }
 
+    // when fast forwarding, we'll simulate 4 frames and draw them blended
+    // together. we'll also speed up the sound playback rate by 4x
+    const num_frames: u32 = if (self.fast_forward) 4 else 1;
+
     var i: usize = 0;
     while (i < num_frames_to_simulate) : (i += 1) {
         var evt: SDL_Event = undefined;
@@ -617,9 +602,6 @@ fn tick(self: *Main, refresh_rate: u64) void {
             .friendly_fire = self.main_state.friendly_fire,
         };
 
-        // when fast forwarding, we'll simulate 4 frames and draw them blended
-        // together. we'll also speed up the sound playback rate by 4x
-        const num_frames: u32 = if (self.fast_forward) 4 else 1;
         var frame_index: u32 = 0;
         while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
@@ -637,7 +619,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             common.handleGameOver(&self.main_state, @This());
 
             // update audio (from events)
-            playSounds(self, num_frames);
+            playSounds(self);
 
             // draw to framebuffer (from events)
             if (draw) {
@@ -651,7 +633,21 @@ fn tick(self: *Main, refresh_rate: u64) void {
         }
     }
 
+    // TODO what's the correct arrangement of the calls to SwapWindow and Lock/UnlockAudioDevice?
+    // they both have the possibility of waiting for something else to finish, unless i'm mistaken.
+    // would be better if i could get them to go at the same time somehow?
+
+    // (this wraps glxSwapBuffers)
+    // this is where commands are flushed, so this may wait for a while. i think it also waits if vsync is enabled.
     SDL_GL_SwapWindow(self.window);
+
+    // TODO count time and see where we are along the mix buffer...
+    // if the audio thread is currently doing a mix, this will wait until it's finished.
+    SDL_LockAudioDevice(self.audio_device);
+    // speed up audio mixing frequency if game is being fast forwarded
+    self.audio_sample_rate_current = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
+    self.main_state.audio_module.sync(self.main_state.cfg.volume);
+    SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {
         toggleFullscreen(self);
@@ -759,9 +755,7 @@ fn toggleFullscreen(self: *Main) void {
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
     const result = common.inputEvent(&self.main_state, @This(), source, down);
     if (result.sound) |sound| {
-        SDL_LockAudioDevice(self.audio_device);
-        self.main_state.audio_module.playMenuSound(sound);
-        SDL_UnlockAudioDevice(self.audio_device);
+        self.main_state.audio_module.queueMenuSound(sound);
     }
     if (result.effect) |effect| {
         switch (effect) {
@@ -770,11 +764,7 @@ fn inputEvent(self: *Main, source: InputSource, down: bool) void {
             .toggle_sound => {}, // unused in SDL build
             .toggle_fullscreen => self.toggle_fullscreen = true,
             .set_canvas_scale => |scale| self.set_canvas_scale = scale,
-            .set_volume => |volume| {
-                SDL_LockAudioDevice(self.audio_device);
-                self.main_state.cfg.volume = volume;
-                SDL_UnlockAudioDevice(self.audio_device);
-            },
+            .set_volume => |volume| self.main_state.cfg.volume = volume,
         }
     }
 }
@@ -855,12 +845,10 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
     }
 }
 
-fn playSounds(self: *Main, num_frames: u32) void {
+// called once per frame
+fn playSounds(self: *Main) void {
     SDL_LockAudioDevice(self.audio_device);
     defer SDL_UnlockAudioDevice(self.audio_device);
-
-    // speed up audio mixing frequency if game is being fast forwarded
-    self.audio_sample_rate_current = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
 
     // FIXME - impulse_frame being 0 means that sounds will always start
     // playing at the beginning of the mix buffer. need to implement some
