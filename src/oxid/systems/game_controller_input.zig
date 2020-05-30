@@ -27,7 +27,7 @@ pub fn killAllMonsters(gs: *GameSession) void {
         monster: *const c.Monster,
     });
     while (it.next()) |self| {
-        if (!self.monster.persistent) {
+        if (self.monster.persistent) {
             continue;
         }
         gs.ecs.markForRemoval(self.id);
