@@ -393,11 +393,11 @@ fn updateFramerateScheme(self: *Main) void {
 }
 
 fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
-    const self = @ptrCast(*Main, @alignCast(@alignOf(*Main), userdata_.?));
+    const audio_module = @ptrCast(*audio.MainModule, @alignCast(@alignOf(*audio.MainModule), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const buf = self.main_state.audio_module.paint(self.main_state.audio_module.sample_rate, &self.main_state.session);
-    const vol = std.math.min(1.0, @intToFloat(f32, self.main_state.audio_module.volume) / 100.0);
+    const buf = audio_module.paint();
+    const vol = std.math.min(1.0, @intToFloat(f32, audio_module.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
 
@@ -463,7 +463,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     want.channels = 1;
     want.samples = @intCast(u16, options.audio_buffer_size);
     want.callback = audioCallback;
-    want.userdata = self;
+    want.userdata = &self.main_state.audio_module;
 
     // TODO - allow SDL to pick something different?
     const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
@@ -617,9 +617,6 @@ fn tick(self: *Main, refresh_rate: u64) void {
             // middleware response to certain events
             common.handleGameOver(&self.main_state, @This());
 
-            // update audio (from events)
-            playSounds(self);
-
             // draw to framebuffer (from events)
             if (draw) {
                 // this alpha value is calculated to end up with an even blend
@@ -645,7 +642,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
     SDL_LockAudioDevice(self.audio_device);
     // speed up audio mixing frequency if game is being fast forwarded
     const sample_rate = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
-    self.main_state.audio_module.sync(self.main_state.cfg.volume, sample_rate);
+    self.main_state.audio_module.sync(false, self.main_state.cfg.volume, sample_rate, &self.main_state.session, &self.main_state.menu_sounds);
     SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {
@@ -752,19 +749,12 @@ fn toggleFullscreen(self: *Main) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    const result = common.inputEvent(&self.main_state, @This(), source, down);
-    if (result.sound) |sound| {
-        self.main_state.audio_module.queueMenuSound(sound);
-    }
-    if (result.effect) |effect| {
-        switch (effect) {
-            .noop => {},
-            .quit => self.quit = true,
-            .toggle_sound => {}, // unused in SDL build
-            .toggle_fullscreen => self.toggle_fullscreen = true,
-            .set_canvas_scale => |scale| self.set_canvas_scale = scale,
-            .set_volume => |volume| self.main_state.cfg.volume = volume,
-        }
+    switch (common.inputEvent(&self.main_state, @This(), source, down) orelse return) {
+        .noop => {},
+        .quit => self.quit = true,
+        .toggle_sound => {}, // unused in SDL build
+        .toggle_fullscreen => self.toggle_fullscreen = true,
+        .set_canvas_scale => |scale| self.set_canvas_scale = scale,
     }
 }
 
@@ -842,19 +832,6 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         SDL_QUIT => self.quit = true,
         else => {},
     }
-}
-
-// called once per frame
-fn playSounds(self: *Main) void {
-    SDL_LockAudioDevice(self.audio_device);
-    defer SDL_UnlockAudioDevice(self.audio_device);
-
-    // FIXME - impulse_frame being 0 means that sounds will always start
-    // playing at the beginning of the mix buffer. need to implement some
-    // "syncing" to guess where we are in the middle of a mix frame
-    const impulse_frame: usize = 0;
-
-    self.main_state.audio_module.playSounds(&self.main_state.session, impulse_frame);
 }
 
 fn drawMain(self: *Main, blit_alpha: f32) void {

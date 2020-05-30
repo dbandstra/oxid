@@ -27,7 +27,7 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     }
     _ = util.decrementTimer(&gc.wave_message_timer);
     if (util.decrementTimer(&gc.next_wave_timer)) {
-        p.playSynth(gs, "wave_begin", audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams{});
+        _ = p.VoiceWaveBegin.spawn(gs, .{}) catch undefined;
         gc.wave_number += 1;
         gc.wave_message_timer = constants.duration60(180);
         gc.enemy_speed_level = 0;
@@ -41,14 +41,14 @@ fn think(gs: *GameSession, gc: *c.GameController) void {
     if (util.decrementTimer(&gc.enemy_speed_timer)) {
         if (gc.enemy_speed_level < constants.max_enemy_speed_level) {
             gc.enemy_speed_level += 1;
-            p.playSynth(gs, "accelerate", audio.AccelerateVoice, audio.AccelerateVoice.NoteParams{
+            _ = p.VoiceAccelerate.spawn(gs, .{
                 .playback_speed = switch (gc.enemy_speed_level) {
                     1 => 1.25,
                     2 => 1.5,
                     3 => 1.75,
                     else => 2.0,
                 },
-            });
+            }) catch undefined;
         }
         gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }

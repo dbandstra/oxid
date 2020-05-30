@@ -242,36 +242,9 @@ pub const EventTakeDamage = struct {
     amount: u32,
 };
 
-pub const Voice = struct {
-    pub fn Wrapper(comptime T: type, comptime P: type) type {
-        return struct {
-            pub const ModuleType = T;
-            pub const NoteParams = P;
-
-            // `initial_params`: set when the Voice entity is spawned. this will be
-            // fed into the impulse queue by the sound middleware at the end of the
-            // frame. (it can't be done when spawning the entity because it requires
-            // a lock on the audio thread and a calculated impulse frame.)
-            initial_params: ?NoteParams,
-            // `initial_sample`: this is a hack that is used instead of
-            // initial_params for sample voices. the game code doesn't have access to
-            // the wav file data that is needed to create the params for the sampler.
-            initial_sample: ?audio.Sample,
-            iq: zang.Notes(NoteParams).ImpulseQueue,
-            idgen: zang.IdGenerator,
-            module: T,
-            trigger: zang.Trigger(NoteParams),
-        };
-    }
-
-    pub const WrapperU = union(enum) {
-        accelerate: Wrapper(audio.AccelerateVoice, audio.AccelerateVoice.NoteParams),
-        coin: Wrapper(audio.CoinVoice, audio.CoinVoice.NoteParams),
-        explosion: Wrapper(audio.ExplosionVoice, audio.ExplosionVoice.NoteParams),
-        laser: Wrapper(audio.LaserVoice, audio.LaserVoice.NoteParams),
-        sample: Wrapper(zang.Sampler, audio.SamplerNoteParams),
-        wave_begin: Wrapper(audio.WaveBeginVoice, audio.WaveBeginVoice.NoteParams),
-    };
-
-    wrapper: WrapperU,
-};
+pub const VoiceAccelerate = struct { params: ?audio.AccelerateVoice.NoteParams };
+pub const VoiceCoin = struct { params: ?audio.CoinVoice.NoteParams };
+pub const VoiceExplosion = struct { params: ?audio.ExplosionVoice.NoteParams };
+pub const VoiceLaser = struct { params: ?audio.LaserVoice.NoteParams };
+pub const VoiceSampler = struct { sample: ?audio.Sample };
+pub const VoiceWaveBegin = struct { params: ?audio.WaveBeginVoice.NoteParams };

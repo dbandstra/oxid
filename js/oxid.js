@@ -167,6 +167,7 @@
         };
         window.requestAnimationFrame(step);
     }).catch(err => {
+        console.error(err);
         alert(err);
     });
 

@@ -189,20 +189,14 @@ const SET_CANVAS_SCALE = 100;
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
     const source: InputSource = .{ .key = key };
-    const result = common.inputEvent(&g.main_state, @This(), source, down != 0);
-    if (result.sound) |sound| {
-        g.main_state.audio_module.playMenuSound(sound);
-    }
-    const effect = result.effect orelse return 0;
-    switch (effect) {
-        .noop => {},
-        .quit => {}, // unused in web build
+    const special = common.inputEvent(&g.main_state, @This(), source, down != 0) orelse return NOP;
+    return switch (special) {
+        .noop => NOP,
+        .quit => NOP, // unused in web build
         .toggle_sound => return TOGGLE_SOUND,
         .toggle_fullscreen => return TOGGLE_FULLSCREEN,
         .set_canvas_scale => |value| return SET_CANVAS_SCALE + @intCast(c_int, value),
-        .set_volume => |value| g.main_state.cfg.volume = value,
-    }
-    return NOP;
+    };
 }
 
 export fn onSoundEnabledChange(enabled: c_int) void {
@@ -242,6 +236,7 @@ fn init() !void {
         .hunk = hunk,
         .random_seed = web.getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
+        .audio_sample_rate = 44100, // will be overridden before first paint
         .fullscreen = false,
         .canvas_scale = 1,
         .max_canvas_scale = 4,
@@ -267,9 +262,9 @@ export fn getAudioBufferSize() c_int {
 }
 
 export fn audioCallback(sample_rate: f32) [*]f32 {
-    const buf = g.main_state.audio_module.paint(sample_rate, &g.main_state.session);
-
-    const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.cfg.volume) / 100.0);
+    g.main_state.audio_module.sample_rate = sample_rate;
+    const buf = g.main_state.audio_module.paint();
+    const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.audio_module.volume) / 100.0);
 
     var i: usize = 0;
     while (i < audio_buffer_size) : (i += 1) {
@@ -286,12 +281,11 @@ var maybe_prev: ?c_int = null;
 export fn onAnimationFrame(now: c_int) void {
     const delta = if (maybe_prev) |prev|
         (if (now > prev)
-            (@intCast(usize, now - prev))
+            @intCast(usize, now - prev)
         else
-            (0))
+            0)
     else
-        (16 // first tick's delta corresponds to ~60 fps
-        );
+        16; // first tick's delta corresponds to ~60 fps
     maybe_prev = now;
 
     if (delta == 0 or delta > 1000) {
@@ -331,32 +325,17 @@ fn tick(draw: bool) void {
 
     common.handleGameOver(&g.main_state, @This());
 
-    playSounds();
+    g.main_state.audio_module.sync(
+        !g.main_state.sound_enabled,
+        g.main_state.cfg.volume,
+        g.main_state.audio_module.sample_rate,
+        &g.main_state.session,
+        &g.main_state.menu_sounds,
+    );
 
     if (draw) {
         common.drawMain(&g.main_state);
     }
 
     gameFrameCleanup(&g.main_state.session);
-}
-
-fn playSounds() void {
-    if (g.main_state.sound_enabled) {
-        // FIXME - impulse_frame being 0 means that sounds will always start
-        // playing at the beginning of the mix buffer. need to implement some
-        // "syncing" to guess where we are in the middle of a mix frame
-        const impulse_frame: usize = 0;
-
-        g.main_state.audio_module.playSounds(&g.main_state.session, impulse_frame);
-    } else {
-        // prevent a bunch sounds from queueing up when audio is disabled (as
-        // the mixing function won't be called to advance them)
-        var it = g.main_state.session.ecs.componentIter(c.Voice);
-        var id: gbe.EntityId = undefined;
-        while (it.nextWithId(&id) != null) {
-            g.main_state.session.ecs.markForRemoval(id);
-        }
-
-        g.main_state.audio_module.resetMenuSounds();
-    }
 }
