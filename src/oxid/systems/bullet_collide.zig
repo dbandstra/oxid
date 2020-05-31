@@ -14,10 +14,9 @@ pub fn run(gs: *GameSession) void {
     while (it.next()) |self| {
         const event = self.inbox.one();
 
-        _ = p.Animation.spawn(gs, .{
+        _ = p.Sparks.spawn(gs, .{
             .pos = self.transform.pos,
-            .simple_anim = .pla_sparks,
-            .z_index = constants.z_index_sparks,
+            .impact_sound = !gbe.EntityId.isZero(event.other_id),
         }) catch undefined;
 
         if (!gbe.EntityId.isZero(event.other_id)) {

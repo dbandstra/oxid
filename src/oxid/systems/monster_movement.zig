@@ -152,7 +152,6 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
         } else if (self.monster.can_drop_webs) {
-            _ = p.VoiceSampler.spawn(gs, .drop_web) catch undefined;
             _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;

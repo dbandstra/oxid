@@ -39,7 +39,6 @@ pub fn run(gs: *GameSession) void {
 
         if (self.creature.hit_points > total_damage) {
             // hurt but not killed
-            _ = p.VoiceSampler.spawn(gs, .monster_impact) catch undefined;
             self.creature.hit_points -= total_damage;
             self.creature.flinch_timer = constants.duration60(4);
             continue;
@@ -90,7 +89,6 @@ pub fn run(gs: *GameSession) void {
             }
         }
 
-        _ = p.VoiceSampler.spawn(gs, .monster_impact) catch undefined;
         _ = p.Explosion.spawn(gs, self.transform.pos) catch undefined;
 
         gs.ecs.markForRemoval(self.id);

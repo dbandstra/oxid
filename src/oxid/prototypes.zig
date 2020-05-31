@@ -162,9 +162,9 @@ pub const Player = struct {
             .in_shoot = false,
         });
 
-        try gs.ecs.addComponent(entity_id, c.VoiceLaser{
-            .params = null,
-        });
+        try gs.ecs.addComponent(entity_id, c.VoiceLaser{ .params = null });
+        try gs.ecs.addComponent(entity_id, c.VoiceCoin{ .params = null });
+        try gs.ecs.addComponent(entity_id, c.VoiceSampler{ .sample = null });
 
         return entity_id;
     }
@@ -300,6 +300,10 @@ pub const Web = struct {
             .hit_points = 3,
             .flinch_timer = 0,
             .god_mode = false,
+        });
+
+        try gs.ecs.addComponent(entity_id, c.VoiceSampler{
+            .sample = .drop_web,
         });
 
         return entity_id;
@@ -454,6 +458,37 @@ pub const Pickup = struct {
     }
 };
 
+pub const Sparks = struct {
+    pub const Params = struct {
+        pos: math.Vec2,
+        impact_sound: bool,
+    };
+
+    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+        const entity_id = gs.ecs.spawn();
+        errdefer gs.ecs.undoSpawn(entity_id);
+
+        try gs.ecs.addComponent(entity_id, c.Transform{
+            .pos = params.pos,
+        });
+
+        try gs.ecs.addComponent(entity_id, c.Animation{
+            .simple_anim = .pla_sparks,
+            .frame_index = 0,
+            .frame_timer = getSimpleAnim(.pla_sparks).ticks_per_frame,
+            .z_index = constants.z_index_sparks,
+        });
+
+        if (params.impact_sound) {
+            try gs.ecs.addComponent(entity_id, c.VoiceSampler{
+                .sample = .monster_impact,
+            });
+        }
+
+        return entity_id;
+    }
+};
+
 pub const Explosion = struct {
     pub fn spawn(gs: *GameSession, pos: math.Vec2) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
@@ -472,23 +507,6 @@ pub const Explosion = struct {
 
         try gs.ecs.addComponent(entity_id, c.VoiceExplosion{
             .params = .{},
-        });
-
-        return entity_id;
-    }
-};
-
-pub const VoiceCoin = struct {
-    pub fn spawn(gs: *GameSession, params: audio.CoinVoice.NoteParams) !gbe.EntityId {
-        const entity_id = gs.ecs.spawn();
-        errdefer gs.ecs.undoSpawn(entity_id);
-
-        try gs.ecs.addComponent(entity_id, c.VoiceCoin{
-            .params = params,
-        });
-
-        try gs.ecs.addComponent(entity_id, c.RemoveTimer{
-            .timer = @floatToInt(u32, audio.CoinVoice.sound_duration * @as(f32, constants.ticks_per_second)),
         });
 
         return entity_id;

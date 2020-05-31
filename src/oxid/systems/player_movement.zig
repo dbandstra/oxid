@@ -19,6 +19,7 @@ const SystemData = struct {
     player: *c.Player,
     transform: *c.Transform,
     voice_laser: *c.VoiceLaser,
+    voice_sampler: *c.VoiceSampler,
 };
 
 pub fn run(gs: *GameSession, context: GameFrameContext) void {
@@ -45,7 +46,7 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
 
         if (self.player.dying_timer > 0) {
             if (self.player.dying_timer == constants.duration60(30)) { // yeesh
-                _ = p.VoiceSampler.spawn(gs, .player_crumble) catch undefined;
+                self.voice_sampler.sample = .player_crumble;
             }
             self.phys.speed = 0;
             self.phys.push_dir = null;
