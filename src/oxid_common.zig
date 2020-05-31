@@ -226,14 +226,9 @@ pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?Inpu
             if (menu_command == .escape) {
                 // assuming that if the menu isn't open, we must be in game
                 playMenuSound(main_state, .backoff);
-                // FIXME there's a zig compiler bug where this code crashes at runtime without a stack
-                // trace if I don't have this type annotation here (if the anonymous literal is inlined
-                // into the return statement it crashes)
-                // i haven't made a reduced case or posted an issue for this yet
-                const menu_effect: menus.Effect = .{
+                return applyMenuEffect(main_state, .{
                     .push = .{ .in_game_menu = menus.InGameMenu.init() },
-                };
-                return applyMenuEffect(main_state, menu_effect);
+                });
             }
         }
     }
