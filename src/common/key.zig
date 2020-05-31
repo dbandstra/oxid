@@ -266,25 +266,21 @@ pub const InputSource = union(enum) {
 };
 
 pub fn areInputSourcesEqual(a: InputSource, b: InputSource) bool {
-    // TODO - use std.meta.eql?
     return switch (a) {
         .key => |a_i| switch (b) {
             .key => |b_i| a_i == b_i,
             else => false,
         },
         .joy_button => |a_i| switch (b) {
-            .joy_button => |b_i| a_i.which == b_i.which and
-                a_i.button == b_i.button,
+            .joy_button => |b_i| a_i.which == b_i.which and a_i.button == b_i.button,
             else => false,
         },
         .joy_axis_neg => |a_i| switch (b) {
-            .joy_axis_neg => |b_i| a_i.which == b_i.which and
-                a_i.axis == b_i.axis,
+            .joy_axis_neg => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
             else => false,
         },
         .joy_axis_pos => |a_i| switch (b) {
-            .joy_axis_pos => |b_i| a_i.which == b_i.which and
-                a_i.axis == b_i.axis,
+            .joy_axis_pos => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
             else => false,
         },
     };
