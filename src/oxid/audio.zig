@@ -33,8 +33,7 @@ fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     };
 }
 
-// why is `filename` comptime?
-fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
+fn readWav(hunk: *Hunk, filename: []const u8) !zang.Sample {
     // temporary allocations in the high hunk side, persistent in the low side
     const mark = hunk.getHighMark();
     defer hunk.freeToHighMark(mark);
@@ -101,8 +100,9 @@ const LoadedSamples = struct {
 
     fn init(hunk: *Hunk) !LoadedSamples {
         var self: LoadedSamples = undefined;
-        inline for (@typeInfo(Sample).Enum.fields) |_, i| {
-            self.samples[i] = try readWav(hunk, switch (@intToEnum(Sample, i)) {
+        for (self.samples) |_, i| {
+            const s = @intToEnum(Sample, @intCast(@TagType(Sample), i));
+            self.samples[i] = try readWav(hunk, switch (s) {
                 .drop_web => "sfx_sounds_interaction5.wav",
                 .extra_life => "sfx_sounds_powerup4.wav",
                 .player_death => "player_death.wav",
