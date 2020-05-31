@@ -28,6 +28,7 @@ const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
 const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
+const root = @import("root");
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -81,10 +82,10 @@ pub const InitParams = struct {
     sound_enabled: bool,
 };
 
-pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
+pub fn init(self: *MainState, params: InitParams) bool {
     self.hunk = params.hunk;
 
-    self.high_scores = ns.loadHighScores(&self.hunk.low());
+    self.high_scores = root.loadHighScores(&self.hunk.low());
 
     loadFont(&self.hunk.low(), &self.static.font) catch |err| {
         warn("Failed to load font: {}\n", .{err});
@@ -98,7 +99,7 @@ pub fn init(self: *MainState, comptime ns: type, params: InitParams) bool {
 
     self.cfg = blk: {
         // if config couldn't load, warn and fall back to default config
-        const cfg = ns.loadConfig(&self.hunk.low()) catch |err| {
+        const cfg = root.loadConfig(&self.hunk.low()) catch |err| {
             warn("Failed to load config: {}\n", .{err});
             break :blk config.getDefault();
         };
@@ -195,7 +196,7 @@ pub const InputSpecial = union(enum) {
     set_canvas_scale: u31,
 };
 
-pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource, down: bool) ?InputSpecial {
+pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?InputSpecial {
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
@@ -215,7 +216,7 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
                 if (result.sound) |sound| {
                     playMenuSound(main_state, sound);
                 }
-                return applyMenuEffect(main_state, ns, result.effect);
+                return applyMenuEffect(main_state, result.effect);
             }
             return null;
         }
@@ -232,7 +233,7 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
                 const menu_effect: menus.Effect = .{
                     .push = .{ .in_game_menu = menus.InGameMenu.init() },
                 };
-                return applyMenuEffect(main_state, ns, menu_effect);
+                return applyMenuEffect(main_state, menu_effect);
             }
         }
     }
@@ -257,7 +258,7 @@ pub fn inputEvent(main_state: *MainState, comptime ns: type, source: InputSource
     return null;
 }
 
-fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) ?InputSpecial {
+fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
     switch (effect) {
         .noop => {},
         .push => |new_menu| {
@@ -274,7 +275,7 @@ fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) ?In
         },
         .end_game => {
             // user ended a running game using the menu.
-            postScores(self, ns);
+            postScores(self);
             resetGame(self);
         },
         .reset_game => {
@@ -356,13 +357,13 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
 // called after every game frame. if EventGameOver is present, post the high
 // score, but leave the monsters running around. (the game state will be
 // cleared when the user hits escape again.)
-pub fn handleGameOver(self: *MainState, comptime ns: var) void {
+pub fn handleGameOver(self: *MainState) void {
     if (self.session.ecs.findFirstComponent(c.EventGameOver) == null) {
         return;
     }
 
     self.game_over = true;
-    postScores(self, ns);
+    postScores(self);
 
     self.menu_stack.push(.{
         .game_over_menu = menus.GameOverMenu.init(),
@@ -386,7 +387,7 @@ fn resetGame(self: *MainState) void {
     });
 }
 
-fn postScores(self: *MainState, comptime ns: var) void {
+fn postScores(self: *MainState) void {
     self.new_high_score = false;
 
     var save_high_scores = true;
@@ -416,7 +417,7 @@ fn postScores(self: *MainState, comptime ns: var) void {
     }
 
     if (save_high_scores) {
-        ns.saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
+        root.saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
             warn("Failed to save high scores: {}\n", .{err});
         };
     }

@@ -189,7 +189,7 @@ const SET_CANVAS_SCALE = 100;
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
     const source: InputSource = .{ .key = key };
-    const special = common.inputEvent(&g.main_state, @This(), source, down != 0) orelse return NOP;
+    const special = common.inputEvent(&g.main_state, source, down != 0) orelse return NOP;
     return switch (special) {
         .noop => NOP,
         .quit => NOP, // unused in web build
@@ -232,7 +232,7 @@ fn init() !void {
 
     g = hunk.low().allocator.create(Main) catch unreachable;
 
-    if (!common.init(&g.main_state, @This(), common.InitParams{
+    if (!common.init(&g.main_state, .{
         .hunk = hunk,
         .random_seed = web.getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
@@ -323,7 +323,7 @@ fn tick(draw: bool) void {
 
     gameFrame(&g.main_state.session, frame_context, draw, paused);
 
-    common.handleGameOver(&g.main_state, @This());
+    common.handleGameOver(&g.main_state);
 
     g.main_state.audio_module.sync(
         !g.main_state.sound_enabled,

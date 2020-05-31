@@ -510,9 +510,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         }
     }
 
-    // FIXME - can't use an anonymous literal here. the compiler says
-    // "TODO: type coercion of an anon struct literal to struct"
-    if (!common.init(&self.main_state, @This(), common.InitParams{
+    if (!common.init(&self.main_state, .{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
@@ -615,7 +613,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             perf.end(.frame);
 
             // middleware response to certain events
-            common.handleGameOver(&self.main_state, @This());
+            common.handleGameOver(&self.main_state);
 
             // draw to framebuffer (from events)
             if (draw) {
@@ -749,7 +747,7 @@ fn toggleFullscreen(self: *Main) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    switch (common.inputEvent(&self.main_state, @This(), source, down) orelse return) {
+    switch (common.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,
         .toggle_sound => {}, // unused in SDL build
