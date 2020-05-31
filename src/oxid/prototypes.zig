@@ -513,23 +513,6 @@ pub const Explosion = struct {
     }
 };
 
-pub const VoiceSampler = struct {
-    pub fn spawn(gs: *GameSession, sample: audio.Sample) !gbe.EntityId {
-        const entity_id = gs.ecs.spawn();
-        errdefer gs.ecs.undoSpawn(entity_id);
-
-        try gs.ecs.addComponent(entity_id, c.VoiceSampler{
-            .sample = sample,
-        });
-
-        try gs.ecs.addComponent(entity_id, c.RemoveTimer{
-            .timer = @floatToInt(u32, 2.0 * @as(f32, constants.ticks_per_second)),
-        });
-
-        return entity_id;
-    }
-};
-
 fn Event(comptime T: type) type {
     return struct {
         pub fn spawn(gs: *GameSession, body: T) !gbe.EntityId {

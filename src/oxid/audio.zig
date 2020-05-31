@@ -90,7 +90,6 @@ fn readWav(hunk: *Hunk, comptime filename: []const u8) !zang.Sample {
 pub const Sample = enum {
     drop_web,
     extra_life,
-    player_scream,
     player_death,
     player_crumble,
     power_up,
@@ -106,8 +105,7 @@ const LoadedSamples = struct {
             self.samples[i] = try readWav(hunk, switch (@intToEnum(Sample, i)) {
                 .drop_web => "sfx_sounds_interaction5.wav",
                 .extra_life => "sfx_sounds_powerup4.wav",
-                .player_scream => "sfx_deathscream_human2.wav",
-                .player_death => "sfx_exp_cluster7.wav",
+                .player_death => "player_death.wav",
                 .player_crumble => "sfx_exp_short_soft10.wav",
                 .power_up => "sfx_sounds_powerup10.wav",
                 .monster_impact => "sfx_sounds_impact1.wav",
