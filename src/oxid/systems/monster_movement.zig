@@ -192,71 +192,44 @@ fn chooseTurn(
     const left = math.Direction.rotateCcw(facing);
     const right = math.Direction.rotateCw(facing);
 
-    var choices = util.Choices.init();
+    var choices = util.DirectionChoices.init();
 
     if (personality == .chase) {
         if (getChaseTarget(gs, pos)) |target_pos| {
-            const fwd = math.Direction.normal(facing);
-            const left_normal = math.Direction.normal(left);
-            const right_normal = math.Direction.normal(right);
-
-            const forward_point = math.Vec2.add(pos, math.Vec2.scale(fwd, levels.subpixels_per_tile));
-            const left_point = math.Vec2.add(pos, math.Vec2.scale(left_normal, levels.subpixels_per_tile));
-            const right_point = math.Vec2.add(pos, math.Vec2.scale(right_normal, levels.subpixels_per_tile));
-
-            const forward_point_dist = math.Vec2.manhattanDistance(forward_point, target_pos);
-            const left_point_dist = math.Vec2.manhattanDistance(left_point, target_pos);
-            const right_point_dist = math.Vec2.manhattanDistance(right_point, target_pos);
-
+            // for each potential direction that is unobstructed, come up with a score based on
+            // the distance between a point one tile ahead of self in that direction, and the
+            // target's position.
             if (can_go_forward) {
-                choices.add(facing, forward_point_dist);
+                const forward_normal = math.Direction.normal(facing);
+                const forward_point = math.Vec2.add(pos, math.Vec2.scale(forward_normal, levels.subpixels_per_tile));
+                choices.add(facing, math.Vec2.manhattanDistance(forward_point, target_pos));
             }
             if (can_go_left) {
-                choices.add(left, left_point_dist);
+                const left_normal = math.Direction.normal(left);
+                const left_point = math.Vec2.add(pos, math.Vec2.scale(left_normal, levels.subpixels_per_tile));
+                choices.add(left, math.Vec2.manhattanDistance(left_point, target_pos));
             }
             if (can_go_right) {
-                choices.add(right, right_point_dist);
+                const right_normal = math.Direction.normal(right);
+                const right_point = math.Vec2.add(pos, math.Vec2.scale(right_normal, levels.subpixels_per_tile));
+                choices.add(right, math.Vec2.manhattanDistance(right_point, target_pos));
             }
-
-            if (choices.choose()) |best_direction| {
+            // choose the direction with the lowest score (shortest distance to the target)
+            if (choices.chooseLowest()) |best_direction| {
                 if (best_direction != facing) {
                     return best_direction;
                 }
             }
-
             return null;
         }
     }
 
-    // wandering
-    if (can_go_forward) {
-        choices.add(facing, 2);
-    }
-    if (can_go_left) {
-        choices.add(left, 1);
-    }
-    if (can_go_right) {
-        choices.add(right, 1);
-    }
-    const total_score = blk: {
-        var total: u32 = 0;
-        for (choices.choices[0..choices.num_choices]) |choice| {
-            total += choice.score;
-        }
-        break :blk total;
-    };
-    if (total_score > 0) {
-        var r = gs.getRand().intRangeLessThan(u32, 0, total_score);
-        for (choices.choices[0..choices.num_choices]) |choice| {
-            if (r < choice.score) {
-                return choice.direction;
-            } else {
-                r -= choice.score;
-            }
-        }
-    }
+    // wandering - pick a direction at random. 50% forward, 25% left, 25% right
+    if (can_go_forward) choices.add(facing, 2);
+    if (can_go_left) choices.add(left, 1);
+    if (can_go_right) choices.add(right, 1);
 
-    return null;
+    return choices.chooseRandom(gs.getRand());
 }
 
 // return the direction a bullet would be fired, or null if not in the line of

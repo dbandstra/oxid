@@ -35,41 +35,59 @@ pub fn getDirTransform(direction: math.Direction) draw.Transform {
     };
 }
 
-pub const Choice = struct {
-    direction: math.Direction,
-    score: u32, // lower is better
-};
+pub const DirectionChoices = struct {
+    scores: [@typeInfo(math.Direction).Enum.fields.len]?u32,
 
-pub const Choices = struct {
-    choices: [4]Choice,
-    num_choices: usize,
-
-    pub fn init() Choices {
+    pub fn init() DirectionChoices {
         return .{
-            .choices = undefined,
-            .num_choices = 0,
+            .scores = [1]?u32{null} ** @typeInfo(math.Direction).Enum.fields.len,
         };
     }
 
-    pub fn add(self: *Choices, direction: math.Direction, score: u32) void {
-        self.choices[self.num_choices] = .{
-            .direction = direction,
-            .score = score,
-        };
-        self.num_choices += 1;
-    }
-
-    pub fn choose(self: *Choices) ?math.Direction {
-        if (self.num_choices > 0) {
-            // TODO - use random if there is a tie.
-            std.sort.sort(
-                Choice,
-                self.choices[0..self.num_choices],
-                lessThanField(Choice, "score"),
-            );
-            return self.choices[0].direction;
-        } else {
-            return null;
+    pub fn add(self: *DirectionChoices, direction: math.Direction, score: u32) void {
+        const i = @enumToInt(direction);
+        if (self.scores[i]) |current_score| {
+            if (current_score < score) {
+                return;
+            }
         }
+        self.scores[i] = score;
+    }
+
+    // return the direction with the lowest score
+    pub fn chooseLowest(self: *const DirectionChoices) ?math.Direction {
+        var best_dir: ?math.Direction = null;
+        var best_score: u32 = undefined;
+        for (self.scores) |maybe_score, i| {
+            const score = maybe_score orelse continue;
+            if (best_dir == null or score < best_score) {
+                best_dir = @intToEnum(math.Direction, @intCast(@TagType(math.Direction), i));
+                best_score = score;
+            }
+        }
+        return best_dir;
+    }
+
+    // return a random direction, weighted by score (higher score is more likely to be picked)
+    pub fn chooseRandom(self: *const DirectionChoices, rng: *std.rand.Random) ?math.Direction {
+        const total_score = blk: {
+            var total: u32 = 0;
+            for (self.scores) |maybe_score| {
+                total += maybe_score orelse 0;
+            }
+            break :blk total;
+        };
+        if (total_score > 0) {
+            var r = rng.intRangeLessThan(u32, 0, total_score);
+            for (self.scores) |maybe_score, i| {
+                const score = maybe_score orelse continue;
+                if (r < score) {
+                    return @intToEnum(math.Direction, @intCast(@TagType(math.Direction), i));
+                } else {
+                    r -= score;
+                }
+            }
+        }
+        return null;
     }
 };
