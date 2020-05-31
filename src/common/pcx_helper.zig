@@ -37,7 +37,7 @@ pub fn loadPcx(
     var palette: [768]u8 = undefined;
 
     // decode image into `pixels`
-    try Loader.loadIndexedWithStride(&stream, preloaded, pixels, 4, palette[0..]);
+    try Loader.loadIndexedWithStride(&stream, preloaded, pixels, 4, &palette);
 
     // convert image data to RGBA
     var i: u32 = 0;
@@ -50,14 +50,10 @@ pub fn loadPcx(
             if ((transparent_color_index orelse ~index) == index) 0 else 255;
     }
 
-    var image: PcxImage = .{
+    return PcxImage{
         .pixels = pixels,
         .width = width,
         .height = height,
-        .palette = undefined,
+        .palette = palette[0..48].*,
     };
-
-    std.mem.copy(u8, &image.palette, palette[0..48]);
-
-    return image;
 }
