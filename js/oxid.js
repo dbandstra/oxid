@@ -57,8 +57,7 @@
     }
 
     const assets = [
-        'assets/sfx_deathscream_human2.wav',
-        'assets/sfx_exp_cluster7.wav',
+        'assets/player_death.wav',
         'assets/sfx_exp_short_soft10.wav',
         'assets/sfx_sounds_impact1.wav',
         'assets/sfx_sounds_interaction5.wav',
