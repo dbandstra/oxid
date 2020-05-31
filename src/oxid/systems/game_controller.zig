@@ -7,6 +7,7 @@ const ConstantTypes = @import("../constant_types.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
+const pickSpawnLocation = @import("../functions/pick_spawn_locations.zig").pickSpawnLocation;
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const util = @import("../util.zig");
 const createWave = @import("../wave.zig").createWave;
@@ -104,9 +105,7 @@ fn spawnWave(
     const coins = (wave.spiders + wave.knights) / 3;
     std.debug.assert(count <= 100);
     var spawn_locs_buf: [100]math.Vec2 = undefined;
-    var spawn_locs = spawn_locs_buf[0..count];
-    pickSpawnLocations(gs, spawn_locs);
-    for (spawn_locs) |loc, i| {
+    for (pickSpawnLocations(gs, spawn_locs_buf[0..count])) |loc, i| {
         _ = p.Monster.spawn(gs, .{
             .wave_number = wave_number,
             .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
@@ -127,9 +126,8 @@ fn spawnWave(
 }
 
 fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
-    var spawn_locs: [1]math.Vec2 = undefined;
-    pickSpawnLocations(gs, spawn_locs[0..]);
-    const pos = math.Vec2.scale(spawn_locs[0], levels.subpixels_per_tile);
+    const spawn_loc = pickSpawnLocation(gs) orelse return;
+    const pos = math.Vec2.scale(spawn_loc, levels.subpixels_per_tile);
     _ = p.Pickup.spawn(gs, .{
         .pos = pos,
         .pickup_type = pickup_type,

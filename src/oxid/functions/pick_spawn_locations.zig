@@ -6,8 +6,10 @@ const levels = @import("../levels.zig");
 const c = @import("../components.zig");
 
 // fill given slice with random grid positions, none of which is in a wall,
-// near a player, or colocating with another
-pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
+// near a player, or colocating with another.
+// the length of `gridlocs_buf` specifies the number of requested spawn
+// locations. fewer may be returned if all available spots are occupied
+pub fn pickSpawnLocations(gs: *GameSession, gridlocs_buf: []math.Vec2) []const math.Vec2 {
     var gridmask: [levels.width * levels.height]bool = undefined;
 
     // create a mask over all the grid cells - true means it's ok to spawn here.
@@ -59,7 +61,7 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
         }
     }
 
-    // from the gridmask, generate an contiguous array of valid locations
+    // from the gridmask, make a list of all valid locations
     var candidates: [levels.width * levels.height]math.Vec2 = undefined;
     var num_candidates: usize = 0;
 
@@ -74,10 +76,19 @@ pub fn pickSpawnLocations(gs: *GameSession, out_gridlocs: []math.Vec2) void {
         }
     }
 
-    // FIXME - replace this with something more graceful
-    std.debug.assert(num_candidates >= out_gridlocs.len);
-
-    // shuffle the array and copy out as many spawn locations as were requested
+    // shuffle the list
     gs.prng.random.shuffle(math.Vec2, candidates[0..num_candidates]);
-    std.mem.copy(math.Vec2, out_gridlocs, candidates[0..out_gridlocs.len]);
+
+    // copy out as many spawn locations as were requested
+    const count = std.math.min(gridlocs_buf.len, num_candidates);
+    std.mem.copy(math.Vec2, gridlocs_buf[0..count], candidates[0..count]);
+    return gridlocs_buf[0..count];
+}
+
+// get a single spawn location
+pub fn pickSpawnLocation(gs: *GameSession) ?math.Vec2 {
+    var buf: [1]math.Vec2 = undefined;
+    const locs = pickSpawnLocations(gs, &buf);
+    if (locs.len == 0) return null;
+    return locs[0];
 }
