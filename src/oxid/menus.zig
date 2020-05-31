@@ -36,6 +36,7 @@ pub const Effect = union(enum) {
     pop,
     start_new_game: bool,
     end_game,
+    reset_game,
     toggle_sound,
     set_volume: u32,
     set_canvas_scale: u31,
@@ -205,7 +206,7 @@ pub const GameOverMenu = struct {
     pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
         if (ctx.command) |command| {
             if (command == .escape) {
-                ctx.setEffect(.{ .push = .{ .main_menu = MainMenu.init() } });
+                ctx.setEffect(.reset_game);
                 ctx.setSound(.backoff);
                 return;
             }

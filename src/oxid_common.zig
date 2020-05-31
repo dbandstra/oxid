@@ -44,7 +44,7 @@ pub const MainState = struct {
     audio_module: audio.MainModule,
     static: GameStatic,
     session: GameSession,
-    game_over: bool,
+    game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
     menu_anim_time: u32,
@@ -273,13 +273,14 @@ fn applyMenuEffect(self: *MainState, comptime ns: var, effect: menus.Effect) ?In
             self.new_high_score = false;
         },
         .end_game => {
-            finalizeGame(self, ns);
-            abortGame(&self.session);
-
-            self.menu_stack.clear();
-            self.menu_stack.push(.{
-                .main_menu = menus.MainMenu.init(),
-            });
+            // user ended a running game using the menu.
+            postScores(self, ns);
+            resetGame(self);
+        },
+        .reset_game => {
+            // user got "game over" and now pressed escape to go back to the main menu.
+            // scores were already been posted when the game ended
+            resetGame(self);
         },
         .toggle_sound => {
             return InputSpecial{ .toggle_sound = {} };
@@ -352,28 +353,40 @@ pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
     }
 }
 
-// called when "end game" is selected in the menu
-pub fn abortGame(gs: *GameSession) void {
-    gs.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
+// called after every game frame. if EventGameOver is present, post the high
+// score, but leave the monsters running around. (the game state will be
+// cleared when the user hits escape again.)
+pub fn handleGameOver(self: *MainState, comptime ns: var) void {
+    if (self.session.ecs.findFirstComponent(c.EventGameOver) == null) {
+        return;
+    }
+
+    self.game_over = true;
+    postScores(self, ns);
+
+    self.menu_stack.push(.{
+        .game_over_menu = menus.GameOverMenu.init(),
+    });
+}
+
+// clear out all existing game state and open the main menu. this should leave
+// the program in a similar state to when it was first started up.
+fn resetGame(self: *MainState) void {
+    self.session.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
 
     // remove all entities except the MainController
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         if (field.field_type.ComponentType == c.MainController) continue;
-        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
+        self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
+
+    self.menu_stack.clear();
+    self.menu_stack.push(.{
+        .main_menu = menus.MainMenu.init(),
+    });
 }
 
-pub fn handleGameOver(self: *MainState, comptime ns: var) void {
-    if (self.session.ecs.findFirstComponent(c.EventGameOver) != null) {
-        finalizeGame(self, ns);
-        self.menu_stack.push(.{
-            .game_over_menu = menus.GameOverMenu.init(),
-        });
-    }
-}
-
-fn finalizeGame(self: *MainState, comptime ns: var) void {
-    self.game_over = true;
+fn postScores(self: *MainState, comptime ns: var) void {
     self.new_high_score = false;
 
     var save_high_scores = true;
