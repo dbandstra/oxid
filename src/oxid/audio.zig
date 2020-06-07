@@ -9,15 +9,15 @@ const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
 const MenuSounds = @import("../oxid_common.zig").MenuSounds;
 
-pub const MenuBackoffVoice = @import("audio/menu_backoff.zig").MenuBackoffVoice;
-pub const MenuBlipVoice = @import("audio/menu_blip.zig").MenuBlipVoice;
-pub const MenuDingVoice = @import("audio/menu_ding.zig").MenuDingVoice;
-
-pub const AccelerateVoice = @import("audio/accelerate.zig").AccelerateVoice;
-pub const CoinVoice = @import("audio/coin.zig").CoinVoice;
-pub const ExplosionVoice = @import("audio/explosion.zig").ExplosionVoice;
-pub const LaserVoice = @import("audio/laser.zig").LaserVoice;
-pub const WaveBeginVoice = @import("audio/wave_begin.zig").WaveBeginVoice;
+const generated = @import("audio/generated.zig");
+pub const AccelerateVoice = generated.AccelerateVoice;
+pub const CoinVoice = generated.CoinVoice;
+pub const ExplosionVoice = generated.ExplosionVoice;
+pub const LaserVoice = generated.LaserVoice;
+pub const MenuBackoffVoice = generated.MenuBackoffVoice;
+pub const MenuBlipVoice = generated.MenuBlipVoice;
+pub const MenuDingVoice = generated.MenuDingVoice;
+pub const WaveBeginVoice = generated.WaveBeginVoice;
 
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     return .{
@@ -267,7 +267,8 @@ pub const MainModule = struct {
     out_buf: []f32,
     // this will fail to compile if there aren't enough temp bufs to supply
     // each of the sound module types being used
-    tmp_bufs: [3][]f32,
+    // TODO automatically determine this by looking at all the modules
+    tmp_bufs: [4][]f32,
 
     // these fields are owned by the audio thread. they are set in sync and
     // used in the audio callback
@@ -291,6 +292,7 @@ pub const MainModule = struct {
             .loaded_samples = try LoadedSamples.init(hunk),
             .out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size),
             .tmp_bufs = .{
+                try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),
                 try hunk.low().allocator.alloc(f32, audio_buffer_size),

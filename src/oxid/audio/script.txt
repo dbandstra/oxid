@@ -1,0 +1,213 @@
+def MenuInstrument:
+    freq: constant,
+    note_on: boolean,
+begin
+    input = PulseOsc(freq, color=0.5)
+      * (0.25 * Envelope(
+        attack='instantaneous',
+        decay='instantaneous',
+        release='linear'(0.04),
+        sustain_volume=1,
+        note_on
+      ))
+
+    cutoff_freq = 2000
+    cutoff = sqrt(max(0, min(1, 2 * (1 - cos(pi * cutoff_freq / sample_rate)))))
+
+    out Filter(input, type='low_pass', res=0.3, cutoff)
+end
+
+deftrack @menu_blip:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.00 (freq=60, note_on=true)
+    0.02 (freq=60, note_on=false)
+    0.08 (freq=40, note_on=true)
+    0.10 (freq=40, note_on=false)
+end
+
+deftrack @menu_ding:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.00 (freq=80, note_on=true)
+    0.01 (freq=60, note_on=true)
+    0.02 (freq=70, note_on=true)
+    0.03 (freq=50, note_on=true)
+    0.04 (freq=60, note_on=true)
+    0.05 (freq=40, note_on=true)
+    0.06 (freq=50, note_on=true)
+    0.07 (freq=30, note_on=true)
+    0.08 (freq=40, note_on=true)
+    0.09 (freq=20, note_on=true)
+    0.10 (freq=30, note_on=false)
+end
+
+deftrack @menu_backoff:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.00 (freq=70, note_on=true)
+    0.01 (freq=75, note_on=true)
+    0.02 (freq=80, note_on=true)
+    0.03 (freq=85, note_on=true)
+    0.04 (freq=90, note_on=true)
+    0.05 (freq=95, note_on=true)
+    0.06 (freq=100, note_on=true)
+    0.07 (freq=105, note_on=false)
+end
+
+def MenuBlipVoice: freq_mul: constant, begin
+    out @menu_blip(1) begin out MenuInstrument(freq=freq_mul * @.freq, note_on=@.note_on) end
+end
+
+def MenuDingVoice: begin
+    out @menu_ding(0.8) begin out MenuInstrument(freq=@.freq, note_on=@.note_on) end
+end
+
+def MenuBackoffVoice: begin
+    out @menu_backoff(0.8) begin out MenuInstrument(freq=@.freq, note_on=@.note_on) end
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+deftrack @wave_begin:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.0 (freq=40, note_on=true)
+    1.0 (freq=43, note_on=true)
+    2.0 (freq=36, note_on=true)
+    3.0 (freq=45, note_on=true)
+    4.0 (freq=43, note_on=true)
+    5.0 (freq=36, note_on=true)
+    6.0 (freq=40, note_on=true)
+    7.0 (freq=45, note_on=true)
+    8.0 (freq=43, note_on=true)
+    9.0 (freq=35, note_on=true)
+    10.0 (freq=38, note_on=true)
+    11.0 (freq=38, note_on=false)
+end
+
+deftrack @accelerate:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.0 (freq=43, note_on=true)
+    1.0 (freq=36, note_on=true)
+    2.0 (freq=40, note_on=true)
+    3.0 (freq=45, note_on=true)
+    4.0 (freq=43, note_on=true)
+    5.0 (freq=35, note_on=true)
+    6.0 (freq=38, note_on=true)
+    7.0 (freq=38, note_on=false)
+end
+
+def WaveBeginInstrument:
+    freq: constant,
+    note_on: boolean,
+begin
+    out PulseOsc(freq, color=0.5)
+      * (0.25 * Envelope(
+        attack='linear'(0.01),
+        decay='linear'(0.1),
+        release='linear'(0.15),
+        sustain_volume=0.5,
+        note_on
+      ))
+end
+
+def WaveBeginVoice:
+begin
+    out @wave_begin(8) begin
+        out WaveBeginInstrument(freq=@.freq, note_on=@.note_on)
+    end
+end
+
+def AccelerateVoice:
+    playback_speed: constant,
+begin
+    out @accelerate(8 * playback_speed) begin
+        out WaveBeginInstrument(freq=@.freq * playback_speed, note_on=@.note_on)
+    end
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+deftrack @coin:
+    freq: constant,
+    note_on: boolean,
+begin
+    0.000 (freq=750, note_on=true)
+    0.045 (freq=1000, note_on=true)
+    0.090 (freq=1000, note_on=false)
+end
+
+def CoinVoice:
+    freq_mul: constant,
+begin
+    out @coin(1) begin
+        out PulseOsc(freq=freq_mul * @.freq, color=0.5)
+          * (0.25 * Envelope(
+            attack='instantaneous',
+            decay='instantaneous',
+            release='linear'(0.04),
+            sustain_volume=1,
+            note_on=@.note_on
+          ))
+    end
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+defcurve $laser_curve begin
+    0.0  1000
+    0.1  200
+    0.2  100
+end
+
+defcurve $laser_volume begin
+    0.0    0
+    0.004  0.35
+    0.2    0
+end
+
+def LaserVoice:
+    freq_mul: constant,
+    carrier_mul: constant,
+    modulator_mul: constant,
+    modulator_rad: constant,
+begin
+    out SineOsc(
+        freq = Curve(function='smoothstep', curve=$laser_curve) * freq_mul * carrier_mul,
+        phase = SineOsc(
+            freq = Curve(function='smoothstep', curve=$laser_curve) * freq_mul * modulator_mul,
+            phase = 0
+        ) * modulator_rad
+    ) * Curve(function='smoothstep', curve=$laser_volume)
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+defcurve $explosion_cutoff begin
+    0.0  3000
+    0.5  1000
+    0.7  200
+end
+
+defcurve $explosion_volume begin
+    0.0    0
+    0.004  0.75
+    0.7    0
+end
+
+def ExplosionVoice:
+begin
+    cutoff_freq = Curve(function='smoothstep', curve=$explosion_cutoff)
+
+    cutoff = sqrt(max(0, min(1, 2 * (1 - cos(pi * cutoff_freq / sample_rate)))))
+
+    out Filter(input=Noise(color='white'), type='low_pass', cutoff, res=0)
+      * Curve(function='smoothstep', curve=$explosion_volume)
+end

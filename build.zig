@@ -5,7 +5,15 @@ pub fn build(b: *std.build.Builder) void {
     const t = b.addTest("test.zig");
     t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
 
+    const audio = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
+    audio.setBuildMode(b.standardReleaseOptions());
+    audio.setOutputDir("zig-cache");
+    audio.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
+    const audio_run_step = audio.run();
+    audio_run_step.addArgs(&[_][]const u8{ "-o", "src/oxid/audio/generated.zig", "src/oxid/audio/script.txt" });
+
     const main = b.addExecutable("oxid", "src/main_sdl.zig");
+    main.step.dependOn(&audio_run_step.step);
     main.setOutputDir("zig-cache");
     main.setBuildMode(b.standardReleaseOptions());
     main.linkSystemLibrary("SDL2");
@@ -15,14 +23,11 @@ pub fn build(b: *std.build.Builder) void {
     addCommonRequirements(b, main);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
+    wasm.step.dependOn(&audio_run_step.step);
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir(".");
     wasm.setBuildMode(b.standardReleaseOptions());
-    wasm.setTarget(.{
-        .cpu_arch = .wasm32,
-        .os_tag = .freestanding,
-        .abi = .none,
-    });
+    wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
     addCommonRequirements(b, wasm);
 
     b.step("test", "Run all tests").dependOn(&t.step);
