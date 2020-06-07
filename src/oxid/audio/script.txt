@@ -211,3 +211,27 @@ begin
     out Filter(input=Noise(color='white'), type='low_pass', cutoff, res=0)
       * Curve(function='smoothstep', curve=$explosion_volume)
 end
+
+//////////////////////////////////////////////////////////////////////////
+
+defcurve $powerup_freq begin
+    0.0    360
+    0.109  1633
+    0.11   360
+    0.218  1633
+    0.219  360
+    0.327  1633
+end
+
+defcurve $powerup_volume begin
+    0.0  0.3
+    0.2  0.2
+    0.3  0.0
+end
+
+def PowerUpVoice:
+begin
+    freq = Curve(curve=$powerup_freq, function='linear')
+    snd = PulseOsc(freq, color=0.5) * Curve(curve=$powerup_volume, function='smoothstep')
+    out Filter(input=snd, type='low_pass', cutoff=0.5, res=0)
+end

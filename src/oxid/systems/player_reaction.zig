@@ -7,15 +7,16 @@ const audio = @import("../audio.zig");
 pub fn run(gs: *GameSession) void {
     var it = gs.ecs.iter(struct {
         player: *c.Player,
-        voice_sampler: *c.VoiceSampler,
         voice_coin: *c.VoiceCoin,
+        voice_power_up: *c.VoicePowerUp,
+        voice_sampler: *c.VoiceSampler,
         inbox: gbe.Inbox(8, c.EventConferBonus, "recipient_id"),
     });
     while (it.next()) |self| {
         for (self.inbox.all()) |event| {
             switch (event.pickup_type) {
                 .power_up => {
-                    self.voice_sampler.sample = .power_up;
+                    self.voice_power_up.params = .{};
                     self.player.attack_level = switch (self.player.attack_level) {
                         .one => .two,
                         else => .three,
@@ -23,7 +24,7 @@ pub fn run(gs: *GameSession) void {
                     self.player.last_pickup = .power_up;
                 },
                 .speed_up => {
-                    self.voice_sampler.sample = .power_up;
+                    self.voice_power_up.params = .{};
                     self.player.speed_level = switch (self.player.speed_level) {
                         .one => .two,
                         else => .three,

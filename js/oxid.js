@@ -61,7 +61,6 @@
         'assets/sfx_exp_short_soft10.wav',
         'assets/sfx_sounds_impact1.wav',
         'assets/sfx_sounds_interaction5.wav',
-        'assets/sfx_sounds_powerup10.wav',
         'assets/sfx_sounds_powerup4.wav',
     ];
 

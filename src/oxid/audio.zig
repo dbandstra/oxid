@@ -17,6 +17,7 @@ pub const LaserVoice = generated.LaserVoice;
 pub const MenuBackoffVoice = generated.MenuBackoffVoice;
 pub const MenuBlipVoice = generated.MenuBlipVoice;
 pub const MenuDingVoice = generated.MenuDingVoice;
+pub const PowerUpVoice = generated.PowerUpVoice;
 pub const WaveBeginVoice = generated.WaveBeginVoice;
 
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
@@ -91,7 +92,6 @@ pub const Sample = enum {
     extra_life,
     player_death,
     player_crumble,
-    power_up,
     monster_impact,
 };
 
@@ -107,7 +107,6 @@ const LoadedSamples = struct {
                 .extra_life => "sfx_sounds_powerup4.wav",
                 .player_death => "player_death.wav",
                 .player_crumble => "sfx_exp_short_soft10.wav",
-                .power_up => "sfx_sounds_powerup10.wav",
                 .monster_impact => "sfx_sounds_impact1.wav",
             });
         }
@@ -247,6 +246,7 @@ const VoiceAccelerateWrapperArray = GameSoundWrapperArray(AccelerateVoice, "Voic
 const VoiceCoinWrapperArray = GameSoundWrapperArray(CoinVoice, "VoiceCoin");
 const VoiceExplosionWrapperArray = GameSoundWrapperArray(ExplosionVoice, "VoiceExplosion");
 const VoiceLaserWrapperArray = GameSoundWrapperArray(LaserVoice, "VoiceLaser");
+const VoicePowerUpWrapperArray = GameSoundWrapperArray(PowerUpVoice, "VoicePowerUp");
 const VoiceSamplerWrapperArray = GameSoundWrapperArray(zang.Sampler, "VoiceSampler");
 const VoiceWaveBeginWrapperArray = GameSoundWrapperArray(WaveBeginVoice, "VoiceWaveBegin");
 
@@ -259,6 +259,7 @@ pub const MainModule = struct {
     voice_coin: VoiceCoinWrapperArray,
     voice_explosion: VoiceExplosionWrapperArray,
     voice_laser: VoiceLaserWrapperArray,
+    voice_power_up: VoicePowerUpWrapperArray,
     voice_sampler: VoiceSamplerWrapperArray,
     voice_wave_begin: VoiceWaveBeginWrapperArray,
 
@@ -285,6 +286,7 @@ pub const MainModule = struct {
             .voice_coin = VoiceCoinWrapperArray.init(),
             .voice_explosion = VoiceExplosionWrapperArray.init(),
             .voice_laser = VoiceLaserWrapperArray.init(),
+            .voice_power_up = VoicePowerUpWrapperArray.init(),
             .voice_sampler = VoiceSamplerWrapperArray.init(),
             .voice_wave_begin = VoiceWaveBeginWrapperArray.init(),
             // these allocations are never freed (but it's ok because this

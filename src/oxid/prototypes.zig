@@ -162,8 +162,9 @@ pub const Player = struct {
             .in_shoot = false,
         });
 
-        try gs.ecs.addComponent(entity_id, c.VoiceLaser{ .params = null });
         try gs.ecs.addComponent(entity_id, c.VoiceCoin{ .params = null });
+        try gs.ecs.addComponent(entity_id, c.VoiceLaser{ .params = null });
+        try gs.ecs.addComponent(entity_id, c.VoicePowerUp{ .params = null });
         try gs.ecs.addComponent(entity_id, c.VoiceSampler{ .sample = null });
 
         return entity_id;

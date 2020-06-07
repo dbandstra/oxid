@@ -27,6 +27,21 @@ const _curve_explosion_volume = [_]zang.CurveNode{
     .{ .t = 0.7, .value = 0.0 },
 };
 
+const _curve_powerup_freq = [_]zang.CurveNode{
+    .{ .t = 0.0, .value = 360.0 },
+    .{ .t = 0.109, .value = 1633.0 },
+    .{ .t = 0.11, .value = 360.0 },
+    .{ .t = 0.218, .value = 1633.0 },
+    .{ .t = 0.219, .value = 360.0 },
+    .{ .t = 0.327, .value = 1633.0 },
+};
+
+const _curve_powerup_volume = [_]zang.CurveNode{
+    .{ .t = 0.0, .value = 0.3 },
+    .{ .t = 0.2, .value = 0.2 },
+    .{ .t = 0.3, .value = 0.0 },
+};
+
 const _track_menu_blip = struct {
     const Params = struct {
         freq: f32,
@@ -659,5 +674,58 @@ pub const ExplosionVoice = struct {
             .curve = &_curve_explosion_volume,
         });
         zang.multiply(span, outputs[0], temps[3], temps[1]);
+    }
+};
+
+pub const PowerUpVoice = struct {
+    pub const num_outputs = 1;
+    pub const num_temps = 4;
+    pub const Params = struct {
+        sample_rate: f32,
+    };
+    pub const NoteParams = struct {
+    };
+
+    field0_Curve: zang.Curve,
+    field1_PulseOsc: zang.PulseOsc,
+    field2_Curve: zang.Curve,
+    field3_Filter: zang.Filter,
+
+    pub fn init() PowerUpVoice {
+        return .{
+            .field0_Curve = zang.Curve.init(),
+            .field1_PulseOsc = zang.PulseOsc.init(),
+            .field2_Curve = zang.Curve.init(),
+            .field3_Filter = zang.Filter.init(),
+        };
+    }
+
+    pub fn paint(self: *PowerUpVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+        zang.zero(span, temps[0]);
+        self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .function = .linear,
+            .curve = &_curve_powerup_freq,
+        });
+        zang.zero(span, temps[1]);
+        self.field1_PulseOsc.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .freq = zang.buffer(temps[0]),
+            .color = 0.5,
+        });
+        zang.zero(span, temps[2]);
+        self.field2_Curve.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .function = .smoothstep,
+            .curve = &_curve_powerup_volume,
+        });
+        zang.zero(span, temps[3]);
+        zang.multiply(span, temps[3], temps[1], temps[2]);
+        self.field3_Filter.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
+            .input = temps[3],
+            .type = .low_pass,
+            .cutoff = zang.constant(0.5),
+            .res = 0.0,
+        });
     }
 };

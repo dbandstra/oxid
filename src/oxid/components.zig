@@ -246,5 +246,6 @@ pub const VoiceAccelerate = struct { params: ?audio.AccelerateVoice.NoteParams }
 pub const VoiceCoin = struct { params: ?audio.CoinVoice.NoteParams };
 pub const VoiceExplosion = struct { params: ?audio.ExplosionVoice.NoteParams };
 pub const VoiceLaser = struct { params: ?audio.LaserVoice.NoteParams };
+pub const VoicePowerUp = struct { params: ?audio.PowerUpVoice.NoteParams };
 pub const VoiceSampler = struct { sample: ?audio.Sample };
 pub const VoiceWaveBegin = struct { params: ?audio.WaveBeginVoice.NoteParams };
