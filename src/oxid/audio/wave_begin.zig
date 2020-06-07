@@ -25,7 +25,7 @@ pub const Instrument = struct {
         params: Params,
     ) void {
         zang.zero(span, temps[0]);
-        self.osc.paint(span, .{temps[0]}, .{}, .{
+        self.osc.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.constant(params.freq),
             .color = 0.5,

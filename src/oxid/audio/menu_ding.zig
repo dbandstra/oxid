@@ -25,7 +25,7 @@ pub const Instrument = struct {
         params: Params,
     ) void {
         zang.zero(span, temps[0]);
-        self.osc.paint(span, .{temps[0]}, .{}, .{
+        self.osc.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.constant(params.freq),
             .color = 0.5,
@@ -131,14 +131,14 @@ pub const MenuDingVoice = struct {
             );
         }
 
-        self.flt.paint(span, outputs, .{}, .{
+        self.flt.paint(span, outputs, .{}, note_id_changed, .{
             .input = temps[2],
-            .filter_type = .low_pass,
+            .type = .low_pass,
             .cutoff = zang.constant(zang.cutoffFromFrequency(
                 2000.0,
                 params.sample_rate,
             )),
-            .resonance = 0.3,
+            .res = 0.3,
         });
     }
 };

@@ -15,7 +15,7 @@ pub const ExplosionVoice = struct {
         return .{
             .cutoff_curve = zang.Curve.init(),
             .volume_curve = zang.Curve.init(),
-            .noise = zang.Noise.init(0),
+            .noise = zang.Noise.init(),
             .filter = zang.Filter.init(),
         };
     }
@@ -31,7 +31,9 @@ pub const ExplosionVoice = struct {
         const out = outputs[0];
 
         zang.zero(span, temps[0]);
-        self.noise.paint(span, .{temps[0]}, .{}, .{});
+        self.noise.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+            .color = .white,
+        });
         zang.zero(span, temps[1]);
         self.cutoff_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
@@ -41,21 +43,19 @@ pub const ExplosionVoice = struct {
                 .{ .t = 0.5, .value = 1000.0 },
                 .{ .t = 0.7, .value = 200.0 },
             },
-            .freq_mul = 1.0,
         });
         // FIXME - apply this to the curve nodes before interpolation, to save
         // time. but this probably requires a change to the zang api
         var i: usize = 0;
         while (i < temps[1].len) : (i += 1) {
-            temps[1][i] =
-                zang.cutoffFromFrequency(temps[1][i], params.sample_rate);
+            temps[1][i] = zang.cutoffFromFrequency(temps[1][i], params.sample_rate);
         }
         zang.zero(span, temps[2]);
-        self.filter.paint(span, .{temps[2]}, .{}, .{
+        self.filter.paint(span, .{temps[2]}, .{}, note_id_changed, .{
             .input = temps[0],
-            .filter_type = .low_pass,
+            .type = .low_pass,
             .cutoff = zang.buffer(temps[1]),
-            .resonance = 0.0,
+            .res = 0.0,
         });
         zang.zero(span, temps[1]);
         self.volume_curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
@@ -66,7 +66,6 @@ pub const ExplosionVoice = struct {
                 .{ .t = 0.004, .value = 0.75 },
                 .{ .t = 0.7, .value = 0.0 },
             },
-            .freq_mul = 1.0,
         });
         zang.multiply(span, out, temps[2], temps[1]);
     }
