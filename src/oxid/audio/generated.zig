@@ -3,31 +3,31 @@
 const std = @import("std");
 const zang = @import("zang");
 
-const _curve_laser_curve = [_]zang.CurveNode{
+const _curve_0 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 1000.0 },
     .{ .t = 0.1, .value = 200.0 },
     .{ .t = 0.2, .value = 100.0 },
 };
 
-const _curve_laser_volume = [_]zang.CurveNode{
+const _curve_1 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.0 },
     .{ .t = 0.004, .value = 0.35 },
     .{ .t = 0.2, .value = 0.0 },
 };
 
-const _curve_explosion_cutoff = [_]zang.CurveNode{
+const _curve_2 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 3000.0 },
     .{ .t = 0.5, .value = 1000.0 },
     .{ .t = 0.7, .value = 200.0 },
 };
 
-const _curve_explosion_volume = [_]zang.CurveNode{
+const _curve_3 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.0 },
     .{ .t = 0.004, .value = 0.75 },
     .{ .t = 0.7, .value = 0.0 },
 };
 
-const _curve_powerup_freq = [_]zang.CurveNode{
+const _curve_4 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 360.0 },
     .{ .t = 0.109, .value = 1633.0 },
     .{ .t = 0.11, .value = 360.0 },
@@ -36,7 +36,7 @@ const _curve_powerup_freq = [_]zang.CurveNode{
     .{ .t = 0.327, .value = 1633.0 },
 };
 
-const _curve_powerup_volume = [_]zang.CurveNode{
+const _curve_5 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.3 },
     .{ .t = 0.2, .value = 0.2 },
     .{ .t = 0.3, .value = 0.0 },
@@ -546,7 +546,7 @@ pub const LaserVoice = struct {
         self.field1_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_laser_curve,
+            .curve = &_curve_0,
         });
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[0], params.freq_mul);
@@ -556,7 +556,7 @@ pub const LaserVoice = struct {
         self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_laser_curve,
+            .curve = &_curve_0,
         });
         zang.zero(span, temps[2]);
         zang.multiplyScalar(span, temps[2], temps[1], params.freq_mul);
@@ -580,7 +580,7 @@ pub const LaserVoice = struct {
         self.field4_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_laser_volume,
+            .curve = &_curve_1,
         });
         zang.multiply(span, outputs[0], temps[2], temps[0]);
     }
@@ -614,7 +614,7 @@ pub const ExplosionVoice = struct {
         self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_explosion_cutoff,
+            .curve = &_curve_2,
         });
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[0], std.math.pi);
@@ -671,7 +671,7 @@ pub const ExplosionVoice = struct {
         self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_explosion_volume,
+            .curve = &_curve_3,
         });
         zang.multiply(span, outputs[0], temps[3], temps[1]);
     }
@@ -687,16 +687,16 @@ pub const PowerUpVoice = struct {
     };
 
     field0_Curve: zang.Curve,
-    field1_PulseOsc: zang.PulseOsc,
-    field2_Curve: zang.Curve,
-    field3_Filter: zang.Filter,
+    field1_Curve: zang.Curve,
+    field2_Filter: zang.Filter,
+    field3_PulseOsc: zang.PulseOsc,
 
     pub fn init() PowerUpVoice {
         return .{
             .field0_Curve = zang.Curve.init(),
-            .field1_PulseOsc = zang.PulseOsc.init(),
-            .field2_Curve = zang.Curve.init(),
-            .field3_Filter = zang.Filter.init(),
+            .field1_Curve = zang.Curve.init(),
+            .field2_Filter = zang.Filter.init(),
+            .field3_PulseOsc = zang.PulseOsc.init(),
         };
     }
 
@@ -705,23 +705,23 @@ pub const PowerUpVoice = struct {
         self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .linear,
-            .curve = &_curve_powerup_freq,
+            .curve = &_curve_4,
         });
         zang.zero(span, temps[1]);
-        self.field1_PulseOsc.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field1_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .function = .smoothstep,
+            .curve = &_curve_5,
+        });
+        zang.zero(span, temps[2]);
+        self.field3_PulseOsc.paint(span, .{temps[2]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.buffer(temps[0]),
             .color = 0.5,
         });
-        zang.zero(span, temps[2]);
-        self.field2_Curve.paint(span, .{temps[2]}, .{}, note_id_changed, .{
-            .sample_rate = params.sample_rate,
-            .function = .smoothstep,
-            .curve = &_curve_powerup_volume,
-        });
         zang.zero(span, temps[3]);
-        zang.multiply(span, temps[3], temps[1], temps[2]);
-        self.field3_Filter.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
+        zang.multiply(span, temps[3], temps[2], temps[1]);
+        self.field2_Filter.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
             .input = temps[3],
             .type = .low_pass,
             .cutoff = zang.constant(0.5),

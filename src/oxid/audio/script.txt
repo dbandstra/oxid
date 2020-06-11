@@ -161,77 +161,71 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-defcurve $laser_curve begin
-    0.0  1000
-    0.1  200
-    0.2  100
-end
-
-defcurve $laser_volume begin
-    0.0    0
-    0.004  0.35
-    0.2    0
-end
-
 def LaserVoice:
     freq_mul: constant,
     carrier_mul: constant,
     modulator_mul: constant,
     modulator_rad: constant,
 begin
+    freq_curve = defcurve
+        0.0  1000
+        0.1  200
+        0.2  100
+    end
+
+    volume_curve = defcurve
+        0.0    0
+        0.004  0.35
+        0.2    0
+    end
+
     out SineOsc(
-        freq = Curve(function='smoothstep', curve=$laser_curve) * freq_mul * carrier_mul,
+        freq = Curve(function='smoothstep', curve=freq_curve) * freq_mul * carrier_mul,
         phase = SineOsc(
-            freq = Curve(function='smoothstep', curve=$laser_curve) * freq_mul * modulator_mul,
+            freq = Curve(function='smoothstep', curve=freq_curve) * freq_mul * modulator_mul,
             phase = 0
         ) * modulator_rad
-    ) * Curve(function='smoothstep', curve=$laser_volume)
+    ) * Curve(function='smoothstep', curve=volume_curve)
 end
 
 //////////////////////////////////////////////////////////////////////////
 
-defcurve $explosion_cutoff begin
-    0.0  3000
-    0.5  1000
-    0.7  200
-end
-
-defcurve $explosion_volume begin
-    0.0    0
-    0.004  0.75
-    0.7    0
-end
-
 def ExplosionVoice:
 begin
-    cutoff_freq = Curve(function='smoothstep', curve=$explosion_cutoff)
+    cutoff_freq = Curve(function='smoothstep', curve=defcurve
+        0.0  3000
+        0.5  1000
+        0.7  200
+    end)
 
     cutoff = sqrt(max(0, min(1, 2 * (1 - cos(pi * cutoff_freq / sample_rate)))))
 
     out Filter(input=Noise(color='white'), type='low_pass', cutoff, res=0)
-      * Curve(function='smoothstep', curve=$explosion_volume)
+      * Curve(function='smoothstep', curve=defcurve
+            0.0    0
+            0.004  0.75
+            0.7    0
+        end)
 end
 
 //////////////////////////////////////////////////////////////////////////
 
-defcurve $powerup_freq begin
-    0.0    360
-    0.109  1633
-    0.11   360
-    0.218  1633
-    0.219  360
-    0.327  1633
-end
-
-defcurve $powerup_volume begin
-    0.0  0.3
-    0.2  0.2
-    0.3  0.0
-end
-
 def PowerUpVoice:
 begin
-    freq = Curve(curve=$powerup_freq, function='linear')
-    snd = PulseOsc(freq, color=0.5) * Curve(curve=$powerup_volume, function='smoothstep')
-    out Filter(input=snd, type='low_pass', cutoff=0.5, res=0)
+    freq = Curve(function='linear', curve=defcurve
+        0.0    360
+        0.109  1633
+        0.11   360
+        0.218  1633
+        0.219  360
+        0.327  1633
+    end)
+
+    volume = Curve(function='smoothstep', curve=defcurve
+        0.0  0.3
+        0.2  0.2
+        0.3  0.0
+    end)
+
+    out Filter(input=PulseOsc(freq, color=0.5) * volume, type='low_pass', cutoff=0.5, res=0)
 end
