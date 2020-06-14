@@ -1,4 +1,4 @@
-def MenuInstrument:
+MenuInstrument = defmodule
     freq: constant,
     note_on: boolean,
 begin
@@ -17,7 +17,7 @@ begin
     out Filter(input, type='low_pass', res=0.3, cutoff)
 end
 
-def MenuBlipVoice: freq_mul: constant, begin
+MenuBlipVoice = defmodule freq_mul: constant, begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -31,7 +31,7 @@ def MenuBlipVoice: freq_mul: constant, begin
     end
 end
 
-def MenuDingVoice: begin
+MenuDingVoice = defmodule begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -52,7 +52,7 @@ def MenuDingVoice: begin
     end
 end
 
-def MenuBackoffVoice: begin
+MenuBackoffVoice = defmodule begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -72,7 +72,7 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-def WaveBeginInstrument:
+WaveBeginInstrument = defmodule
     freq: constant,
     note_on: boolean,
 begin
@@ -86,8 +86,7 @@ begin
       ))
 end
 
-def WaveBeginVoice:
-begin
+WaveBeginVoice = defmodule begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -109,9 +108,7 @@ begin
     end
 end
 
-def AccelerateVoice:
-    playback_speed: constant,
-begin
+AccelerateVoice = defmodule playback_speed: constant, begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -131,9 +128,7 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-def CoinVoice:
-    freq_mul: constant,
-begin
+CoinVoice = defmodule freq_mul: constant, begin
     out from deftrack
         freq: constant,
         note_on: boolean,
@@ -155,7 +150,7 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-def LaserVoice:
+LaserVoice = defmodule
     freq_mul: constant,
     carrier_mul: constant,
     modulator_mul: constant,
@@ -184,8 +179,7 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-def ExplosionVoice:
-begin
+ExplosionVoice = defmodule begin
     cutoff_freq = Curve(function='smoothstep', curve=defcurve
         0.0  3000
         0.5  1000
@@ -204,8 +198,7 @@ end
 
 //////////////////////////////////////////////////////////////////////////
 
-def PowerUpVoice:
-begin
+PowerUpVoice = defmodule begin
     freq = Curve(function='linear', curve=defcurve
         0.0    360
         0.109  1633

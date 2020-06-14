@@ -3,6 +3,18 @@
 const std = @import("std");
 const zang = @import("zang");
 
+pub const MenuInstrument = _module12;
+pub const MenuBlipVoice = _module13;
+pub const MenuDingVoice = _module14;
+pub const MenuBackoffVoice = _module15;
+pub const WaveBeginInstrument = _module16;
+pub const WaveBeginVoice = _module17;
+pub const AccelerateVoice = _module18;
+pub const CoinVoice = _module19;
+pub const LaserVoice = _module20;
+pub const ExplosionVoice = _module21;
+pub const PowerUpVoice = _module22;
+
 const _curve0 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 1000.0 },
     .{ .t = 0.1, .value = 200.0 },
@@ -142,7 +154,7 @@ const _track5 = struct {
     };
 };
 
-pub const MenuInstrument = struct {
+const _module12 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -155,27 +167,27 @@ pub const MenuInstrument = struct {
         note_on: bool,
     };
 
-    field0_PulseOsc: zang.PulseOsc,
-    field1_Envelope: zang.Envelope,
-    field2_Filter: zang.Filter,
+    field0: zang.PulseOsc,
+    field1: zang.Envelope,
+    field2: zang.Filter,
 
-    pub fn init() MenuInstrument {
+    pub fn init() _module12 {
         return .{
-            .field0_PulseOsc = zang.PulseOsc.init(),
-            .field1_Envelope = zang.Envelope.init(),
-            .field2_Filter = zang.Filter.init(),
+            .field0 = zang.PulseOsc.init(),
+            .field1 = zang.Envelope.init(),
+            .field2 = zang.Filter.init(),
         };
     }
 
-    pub fn paint(self: *MenuInstrument, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module12, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
-        self.field0_PulseOsc.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field0.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.constant(params.freq),
             .color = 0.5,
         });
         zang.zero(span, temps[1]);
-        self.field1_Envelope.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field1.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .attack = .instantaneous,
             .decay = .instantaneous,
@@ -195,7 +207,7 @@ pub const MenuInstrument = struct {
         const temp_float5 = std.math.min(1.0, temp_float4);
         const temp_float6 = std.math.max(0.0, temp_float5);
         const temp_float7 = std.math.sqrt(temp_float6);
-        self.field2_Filter.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
+        self.field2.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
             .input = temps[1],
             .type = .low_pass,
             .cutoff = zang.constant(temp_float7),
@@ -204,7 +216,7 @@ pub const MenuInstrument = struct {
     }
 };
 
-pub const MenuBlipVoice = struct {
+const _module13 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -215,19 +227,19 @@ pub const MenuBlipVoice = struct {
         freq_mul: f32,
     };
 
-    field0_MenuInstrument: MenuInstrument,
+    field0: _module12,
     tracker0: zang.Notes(_track0.Params).NoteTracker,
     trigger0: zang.Trigger(_track0.Params),
 
-    pub fn init() MenuBlipVoice {
+    pub fn init() _module13 {
         return .{
-            .field0_MenuInstrument = MenuInstrument.init(),
+            .field0 = _module12.init(),
             .tracker0 = zang.Notes(_track0.Params).NoteTracker.init(&_track0.notes),
             .trigger0 = zang.Trigger(_track0.Params).init(),
         };
     }
 
-    pub fn paint(self: *MenuBlipVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module13, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.tracker0.reset();
             self.trigger0.reset();
@@ -237,7 +249,7 @@ pub const MenuBlipVoice = struct {
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
             const temp_float0 = params.freq_mul * _result.params.freq;
-            self.field0_MenuInstrument.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
+            self.field0.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = temp_float0,
                 .note_on = _result.params.note_on,
@@ -246,7 +258,7 @@ pub const MenuBlipVoice = struct {
     }
 };
 
-pub const MenuDingVoice = struct {
+const _module14 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -255,19 +267,19 @@ pub const MenuDingVoice = struct {
     pub const NoteParams = struct {
     };
 
-    field0_MenuInstrument: MenuInstrument,
+    field0: _module12,
     tracker0: zang.Notes(_track1.Params).NoteTracker,
     trigger0: zang.Trigger(_track1.Params),
 
-    pub fn init() MenuDingVoice {
+    pub fn init() _module14 {
         return .{
-            .field0_MenuInstrument = MenuInstrument.init(),
+            .field0 = _module12.init(),
             .tracker0 = zang.Notes(_track1.Params).NoteTracker.init(&_track1.notes),
             .trigger0 = zang.Trigger(_track1.Params).init(),
         };
     }
 
-    pub fn paint(self: *MenuDingVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module14, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.tracker0.reset();
             self.trigger0.reset();
@@ -276,7 +288,7 @@ pub const MenuDingVoice = struct {
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
-            self.field0_MenuInstrument.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
+            self.field0.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = _result.params.freq,
                 .note_on = _result.params.note_on,
@@ -285,7 +297,7 @@ pub const MenuDingVoice = struct {
     }
 };
 
-pub const MenuBackoffVoice = struct {
+const _module15 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -294,19 +306,19 @@ pub const MenuBackoffVoice = struct {
     pub const NoteParams = struct {
     };
 
-    field0_MenuInstrument: MenuInstrument,
+    field0: _module12,
     tracker0: zang.Notes(_track2.Params).NoteTracker,
     trigger0: zang.Trigger(_track2.Params),
 
-    pub fn init() MenuBackoffVoice {
+    pub fn init() _module15 {
         return .{
-            .field0_MenuInstrument = MenuInstrument.init(),
+            .field0 = _module12.init(),
             .tracker0 = zang.Notes(_track2.Params).NoteTracker.init(&_track2.notes),
             .trigger0 = zang.Trigger(_track2.Params).init(),
         };
     }
 
-    pub fn paint(self: *MenuBackoffVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module15, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.tracker0.reset();
             self.trigger0.reset();
@@ -315,7 +327,7 @@ pub const MenuBackoffVoice = struct {
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
-            self.field0_MenuInstrument.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
+            self.field0.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = _result.params.freq,
                 .note_on = _result.params.note_on,
@@ -324,7 +336,7 @@ pub const MenuBackoffVoice = struct {
     }
 };
 
-pub const WaveBeginInstrument = struct {
+const _module16 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -337,25 +349,25 @@ pub const WaveBeginInstrument = struct {
         note_on: bool,
     };
 
-    field0_PulseOsc: zang.PulseOsc,
-    field1_Envelope: zang.Envelope,
+    field0: zang.PulseOsc,
+    field1: zang.Envelope,
 
-    pub fn init() WaveBeginInstrument {
+    pub fn init() _module16 {
         return .{
-            .field0_PulseOsc = zang.PulseOsc.init(),
-            .field1_Envelope = zang.Envelope.init(),
+            .field0 = zang.PulseOsc.init(),
+            .field1 = zang.Envelope.init(),
         };
     }
 
-    pub fn paint(self: *WaveBeginInstrument, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module16, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
-        self.field0_PulseOsc.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field0.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.constant(params.freq),
             .color = 0.5,
         });
         zang.zero(span, temps[1]);
-        self.field1_Envelope.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field1.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .attack = .{ .linear = 0.01 },
             .decay = .{ .linear = 0.1 },
@@ -369,7 +381,7 @@ pub const WaveBeginInstrument = struct {
     }
 };
 
-pub const WaveBeginVoice = struct {
+const _module17 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -378,19 +390,19 @@ pub const WaveBeginVoice = struct {
     pub const NoteParams = struct {
     };
 
-    field0_WaveBeginInstrument: WaveBeginInstrument,
+    field0: _module16,
     tracker0: zang.Notes(_track3.Params).NoteTracker,
     trigger0: zang.Trigger(_track3.Params),
 
-    pub fn init() WaveBeginVoice {
+    pub fn init() _module17 {
         return .{
-            .field0_WaveBeginInstrument = WaveBeginInstrument.init(),
+            .field0 = _module16.init(),
             .tracker0 = zang.Notes(_track3.Params).NoteTracker.init(&_track3.notes),
             .trigger0 = zang.Trigger(_track3.Params).init(),
         };
     }
 
-    pub fn paint(self: *WaveBeginVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module17, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.tracker0.reset();
             self.trigger0.reset();
@@ -399,7 +411,7 @@ pub const WaveBeginVoice = struct {
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
-            self.field0_WaveBeginInstrument.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
+            self.field0.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = _result.params.freq,
                 .note_on = _result.params.note_on,
@@ -408,7 +420,7 @@ pub const WaveBeginVoice = struct {
     }
 };
 
-pub const AccelerateVoice = struct {
+const _module18 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -419,19 +431,19 @@ pub const AccelerateVoice = struct {
         playback_speed: f32,
     };
 
-    field0_WaveBeginInstrument: WaveBeginInstrument,
+    field0: _module16,
     tracker0: zang.Notes(_track4.Params).NoteTracker,
     trigger0: zang.Trigger(_track4.Params),
 
-    pub fn init() AccelerateVoice {
+    pub fn init() _module18 {
         return .{
-            .field0_WaveBeginInstrument = WaveBeginInstrument.init(),
+            .field0 = _module16.init(),
             .tracker0 = zang.Notes(_track4.Params).NoteTracker.init(&_track4.notes),
             .trigger0 = zang.Trigger(_track4.Params).init(),
         };
     }
 
-    pub fn paint(self: *AccelerateVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module18, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         const temp_float0 = 8.0 * params.playback_speed;
         if (note_id_changed) {
             self.tracker0.reset();
@@ -442,7 +454,7 @@ pub const AccelerateVoice = struct {
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
             const temp_float1 = _result.params.freq * params.playback_speed;
-            self.field0_WaveBeginInstrument.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
+            self.field0.paint(_result.span, .{outputs[0]}, .{temps[0], temps[1], temps[2]}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = temp_float1,
                 .note_on = _result.params.note_on,
@@ -451,7 +463,7 @@ pub const AccelerateVoice = struct {
     }
 };
 
-pub const CoinVoice = struct {
+const _module19 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -462,21 +474,21 @@ pub const CoinVoice = struct {
         freq_mul: f32,
     };
 
-    field0_PulseOsc: zang.PulseOsc,
-    field1_Envelope: zang.Envelope,
+    field0: zang.PulseOsc,
+    field1: zang.Envelope,
     tracker0: zang.Notes(_track5.Params).NoteTracker,
     trigger0: zang.Trigger(_track5.Params),
 
-    pub fn init() CoinVoice {
+    pub fn init() _module19 {
         return .{
-            .field0_PulseOsc = zang.PulseOsc.init(),
-            .field1_Envelope = zang.Envelope.init(),
+            .field0 = zang.PulseOsc.init(),
+            .field1 = zang.Envelope.init(),
             .tracker0 = zang.Notes(_track5.Params).NoteTracker.init(&_track5.notes),
             .trigger0 = zang.Trigger(_track5.Params).init(),
         };
     }
 
-    pub fn paint(self: *CoinVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module19, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         if (note_id_changed) {
             self.tracker0.reset();
             self.trigger0.reset();
@@ -487,13 +499,13 @@ pub const CoinVoice = struct {
             const _new_note = note_id_changed or _result.note_id_changed;
             const temp_float0 = params.freq_mul * _result.params.freq;
             zang.zero(_result.span, temps[0]);
-            self.field0_PulseOsc.paint(_result.span, .{temps[0]}, .{}, _new_note, .{
+            self.field0.paint(_result.span, .{temps[0]}, .{}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .freq = zang.constant(temp_float0),
                 .color = 0.5,
             });
             zang.zero(_result.span, temps[1]);
-            self.field1_Envelope.paint(_result.span, .{temps[1]}, .{}, _new_note, .{
+            self.field1.paint(_result.span, .{temps[1]}, .{}, _new_note, .{
                 .sample_rate = params.sample_rate,
                 .attack = .instantaneous,
                 .decay = .instantaneous,
@@ -508,7 +520,7 @@ pub const CoinVoice = struct {
     }
 };
 
-pub const LaserVoice = struct {
+const _module20 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 3;
     pub const Params = struct {
@@ -525,25 +537,25 @@ pub const LaserVoice = struct {
         modulator_rad: f32,
     };
 
-    field0_SineOsc: zang.SineOsc,
-    field1_Curve: zang.Curve,
-    field2_SineOsc: zang.SineOsc,
-    field3_Curve: zang.Curve,
-    field4_Curve: zang.Curve,
+    field0: zang.SineOsc,
+    field1: zang.Curve,
+    field2: zang.SineOsc,
+    field3: zang.Curve,
+    field4: zang.Curve,
 
-    pub fn init() LaserVoice {
+    pub fn init() _module20 {
         return .{
-            .field0_SineOsc = zang.SineOsc.init(),
-            .field1_Curve = zang.Curve.init(),
-            .field2_SineOsc = zang.SineOsc.init(),
-            .field3_Curve = zang.Curve.init(),
-            .field4_Curve = zang.Curve.init(),
+            .field0 = zang.SineOsc.init(),
+            .field1 = zang.Curve.init(),
+            .field2 = zang.SineOsc.init(),
+            .field3 = zang.Curve.init(),
+            .field4 = zang.Curve.init(),
         };
     }
 
-    pub fn paint(self: *LaserVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module20, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
-        self.field1_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field1.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve0,
@@ -553,7 +565,7 @@ pub const LaserVoice = struct {
         zang.zero(span, temps[0]);
         zang.multiplyScalar(span, temps[0], temps[1], params.carrier_mul);
         zang.zero(span, temps[1]);
-        self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field3.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve0,
@@ -563,7 +575,7 @@ pub const LaserVoice = struct {
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[2], params.modulator_mul);
         zang.zero(span, temps[2]);
-        self.field2_SineOsc.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+        self.field2.paint(span, .{temps[2]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.buffer(temps[1]),
             .phase = zang.constant(0.0),
@@ -571,13 +583,13 @@ pub const LaserVoice = struct {
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[2], params.modulator_rad);
         zang.zero(span, temps[2]);
-        self.field0_SineOsc.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+        self.field0.paint(span, .{temps[2]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.buffer(temps[0]),
             .phase = zang.buffer(temps[1]),
         });
         zang.zero(span, temps[0]);
-        self.field4_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field4.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve1,
@@ -586,7 +598,7 @@ pub const LaserVoice = struct {
     }
 };
 
-pub const ExplosionVoice = struct {
+const _module21 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 4;
     pub const Params = struct {
@@ -595,23 +607,23 @@ pub const ExplosionVoice = struct {
     pub const NoteParams = struct {
     };
 
-    field0_Curve: zang.Curve,
-    field1_Filter: zang.Filter,
-    field2_Noise: zang.Noise,
-    field3_Curve: zang.Curve,
+    field0: zang.Curve,
+    field1: zang.Filter,
+    field2: zang.Noise,
+    field3: zang.Curve,
 
-    pub fn init() ExplosionVoice {
+    pub fn init() _module21 {
         return .{
-            .field0_Curve = zang.Curve.init(),
-            .field1_Filter = zang.Filter.init(),
-            .field2_Noise = zang.Noise.init(),
-            .field3_Curve = zang.Curve.init(),
+            .field0 = zang.Curve.init(),
+            .field1 = zang.Filter.init(),
+            .field2 = zang.Noise.init(),
+            .field3 = zang.Curve.init(),
         };
     }
 
-    pub fn paint(self: *ExplosionVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module21, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
-        self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field0.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve2,
@@ -657,18 +669,18 @@ pub const ExplosionVoice = struct {
             }
         }
         zang.zero(span, temps[1]);
-        self.field2_Noise.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field2.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .color = .white,
         });
         zang.zero(span, temps[3]);
-        self.field1_Filter.paint(span, .{temps[3]}, .{}, note_id_changed, .{
+        self.field1.paint(span, .{temps[3]}, .{}, note_id_changed, .{
             .input = temps[1],
             .type = .low_pass,
             .cutoff = zang.buffer(temps[2]),
             .res = 0.0,
         });
         zang.zero(span, temps[1]);
-        self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field3.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve3,
@@ -677,7 +689,7 @@ pub const ExplosionVoice = struct {
     }
 };
 
-pub const PowerUpVoice = struct {
+const _module22 = struct {
     pub const num_outputs = 1;
     pub const num_temps = 4;
     pub const Params = struct {
@@ -686,42 +698,42 @@ pub const PowerUpVoice = struct {
     pub const NoteParams = struct {
     };
 
-    field0_Curve: zang.Curve,
-    field1_Curve: zang.Curve,
-    field2_Filter: zang.Filter,
-    field3_PulseOsc: zang.PulseOsc,
+    field0: zang.Curve,
+    field1: zang.Curve,
+    field2: zang.Filter,
+    field3: zang.PulseOsc,
 
-    pub fn init() PowerUpVoice {
+    pub fn init() _module22 {
         return .{
-            .field0_Curve = zang.Curve.init(),
-            .field1_Curve = zang.Curve.init(),
-            .field2_Filter = zang.Filter.init(),
-            .field3_PulseOsc = zang.PulseOsc.init(),
+            .field0 = zang.Curve.init(),
+            .field1 = zang.Curve.init(),
+            .field2 = zang.Filter.init(),
+            .field3 = zang.PulseOsc.init(),
         };
     }
 
-    pub fn paint(self: *PowerUpVoice, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+    pub fn paint(self: *_module22, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
         zang.zero(span, temps[0]);
-        self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+        self.field0.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .linear,
             .curve = &_curve4,
         });
         zang.zero(span, temps[1]);
-        self.field1_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+        self.field1.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
             .curve = &_curve5,
         });
         zang.zero(span, temps[2]);
-        self.field3_PulseOsc.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+        self.field3.paint(span, .{temps[2]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .freq = zang.buffer(temps[0]),
             .color = 0.5,
         });
         zang.zero(span, temps[3]);
         zang.multiply(span, temps[3], temps[2], temps[1]);
-        self.field2_Filter.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
+        self.field2.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
             .input = temps[3],
             .type = .low_pass,
             .cutoff = zang.constant(0.5),
