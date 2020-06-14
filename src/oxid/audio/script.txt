@@ -17,92 +17,60 @@ begin
     out Filter(input, type='low_pass', res=0.3, cutoff)
 end
 
-deftrack @menu_blip:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.00 (freq=60, note_on=true)
-    0.02 (freq=60, note_on=false)
-    0.08 (freq=40, note_on=true)
-    0.10 (freq=40, note_on=false)
-end
-
-deftrack @menu_ding:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.00 (freq=80, note_on=true)
-    0.01 (freq=60, note_on=true)
-    0.02 (freq=70, note_on=true)
-    0.03 (freq=50, note_on=true)
-    0.04 (freq=60, note_on=true)
-    0.05 (freq=40, note_on=true)
-    0.06 (freq=50, note_on=true)
-    0.07 (freq=30, note_on=true)
-    0.08 (freq=40, note_on=true)
-    0.09 (freq=20, note_on=true)
-    0.10 (freq=30, note_on=false)
-end
-
-deftrack @menu_backoff:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.00 (freq=70, note_on=true)
-    0.01 (freq=75, note_on=true)
-    0.02 (freq=80, note_on=true)
-    0.03 (freq=85, note_on=true)
-    0.04 (freq=90, note_on=true)
-    0.05 (freq=95, note_on=true)
-    0.06 (freq=100, note_on=true)
-    0.07 (freq=105, note_on=false)
-end
-
 def MenuBlipVoice: freq_mul: constant, begin
-    out @menu_blip(1) begin out MenuInstrument(freq=freq_mul * @.freq, note_on=@.note_on) end
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.00 (freq=60, note_on=true)
+        0.02 (freq=60, note_on=false)
+        0.08 (freq=40, note_on=true)
+        0.10 (freq=40, note_on=false)
+    end 1 begin
+        out MenuInstrument(freq=freq_mul * freq, note_on)
+    end
 end
 
 def MenuDingVoice: begin
-    out @menu_ding(0.8) begin out MenuInstrument(freq=@.freq, note_on=@.note_on) end
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.00 (freq=80, note_on=true)
+        0.01 (freq=60, note_on=true)
+        0.02 (freq=70, note_on=true)
+        0.03 (freq=50, note_on=true)
+        0.04 (freq=60, note_on=true)
+        0.05 (freq=40, note_on=true)
+        0.06 (freq=50, note_on=true)
+        0.07 (freq=30, note_on=true)
+        0.08 (freq=40, note_on=true)
+        0.09 (freq=20, note_on=true)
+        0.10 (freq=30, note_on=false)
+    end 0.8 begin
+        out MenuInstrument(freq, note_on)
+    end
 end
 
 def MenuBackoffVoice: begin
-    out @menu_backoff(0.8) begin out MenuInstrument(freq=@.freq, note_on=@.note_on) end
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.00 (freq=70, note_on=true)
+        0.01 (freq=75, note_on=true)
+        0.02 (freq=80, note_on=true)
+        0.03 (freq=85, note_on=true)
+        0.04 (freq=90, note_on=true)
+        0.05 (freq=95, note_on=true)
+        0.06 (freq=100, note_on=true)
+        0.07 (freq=105, note_on=false)
+    end 0.8 begin
+        out MenuInstrument(freq, note_on)
+    end
 end
 
 //////////////////////////////////////////////////////////////////////////
-
-deftrack @wave_begin:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.0 (freq=40, note_on=true)
-    1.0 (freq=43, note_on=true)
-    2.0 (freq=36, note_on=true)
-    3.0 (freq=45, note_on=true)
-    4.0 (freq=43, note_on=true)
-    5.0 (freq=36, note_on=true)
-    6.0 (freq=40, note_on=true)
-    7.0 (freq=45, note_on=true)
-    8.0 (freq=43, note_on=true)
-    9.0 (freq=35, note_on=true)
-    10.0 (freq=38, note_on=true)
-    11.0 (freq=38, note_on=false)
-end
-
-deftrack @accelerate:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.0 (freq=43, note_on=true)
-    1.0 (freq=36, note_on=true)
-    2.0 (freq=40, note_on=true)
-    3.0 (freq=45, note_on=true)
-    4.0 (freq=43, note_on=true)
-    5.0 (freq=35, note_on=true)
-    6.0 (freq=38, note_on=true)
-    7.0 (freq=38, note_on=false)
-end
 
 def WaveBeginInstrument:
     freq: constant,
@@ -120,41 +88,67 @@ end
 
 def WaveBeginVoice:
 begin
-    out @wave_begin(8) begin
-        out WaveBeginInstrument(freq=@.freq, note_on=@.note_on)
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.0 (freq=40, note_on=true)
+        1.0 (freq=43, note_on=true)
+        2.0 (freq=36, note_on=true)
+        3.0 (freq=45, note_on=true)
+        4.0 (freq=43, note_on=true)
+        5.0 (freq=36, note_on=true)
+        6.0 (freq=40, note_on=true)
+        7.0 (freq=45, note_on=true)
+        8.0 (freq=43, note_on=true)
+        9.0 (freq=35, note_on=true)
+        10.0 (freq=38, note_on=true)
+        11.0 (freq=38, note_on=false)
+    end 8 begin
+        out WaveBeginInstrument(freq, note_on)
     end
 end
 
 def AccelerateVoice:
     playback_speed: constant,
 begin
-    out @accelerate(8 * playback_speed) begin
-        out WaveBeginInstrument(freq=@.freq * playback_speed, note_on=@.note_on)
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.0 (freq=43, note_on=true)
+        1.0 (freq=36, note_on=true)
+        2.0 (freq=40, note_on=true)
+        3.0 (freq=45, note_on=true)
+        4.0 (freq=43, note_on=true)
+        5.0 (freq=35, note_on=true)
+        6.0 (freq=38, note_on=true)
+        7.0 (freq=38, note_on=false)
+    end (8 * playback_speed) begin
+        out WaveBeginInstrument(freq=freq * playback_speed, note_on)
     end
 end
 
 //////////////////////////////////////////////////////////////////////////
 
-deftrack @coin:
-    freq: constant,
-    note_on: boolean,
-begin
-    0.000 (freq=750, note_on=true)
-    0.045 (freq=1000, note_on=true)
-    0.090 (freq=1000, note_on=false)
-end
-
 def CoinVoice:
     freq_mul: constant,
 begin
-    out @coin(1) begin
-        out PulseOsc(freq=freq_mul * @.freq, color=0.5)
+    out from deftrack
+        freq: constant,
+        note_on: boolean,
+    begin
+        0.000 (freq=750, note_on=true)
+        0.045 (freq=1000, note_on=true)
+        0.090 (freq=1000, note_on=false)
+    end 1 begin
+        out PulseOsc(freq=freq_mul * freq, color=0.5)
           * (0.25 * Envelope(
             attack='instantaneous',
             decay='instantaneous',
             release='linear'(0.04),
             sustain_volume=1,
-            note_on=@.note_on
+            note_on
           ))
     end
 end

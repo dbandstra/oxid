@@ -3,31 +3,31 @@
 const std = @import("std");
 const zang = @import("zang");
 
-const _curve_0 = [_]zang.CurveNode{
+const _curve0 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 1000.0 },
     .{ .t = 0.1, .value = 200.0 },
     .{ .t = 0.2, .value = 100.0 },
 };
 
-const _curve_1 = [_]zang.CurveNode{
+const _curve1 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.0 },
     .{ .t = 0.004, .value = 0.35 },
     .{ .t = 0.2, .value = 0.0 },
 };
 
-const _curve_2 = [_]zang.CurveNode{
+const _curve2 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 3000.0 },
     .{ .t = 0.5, .value = 1000.0 },
     .{ .t = 0.7, .value = 200.0 },
 };
 
-const _curve_3 = [_]zang.CurveNode{
+const _curve3 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.0 },
     .{ .t = 0.004, .value = 0.75 },
     .{ .t = 0.7, .value = 0.0 },
 };
 
-const _curve_4 = [_]zang.CurveNode{
+const _curve4 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 360.0 },
     .{ .t = 0.109, .value = 1633.0 },
     .{ .t = 0.11, .value = 360.0 },
@@ -36,13 +36,13 @@ const _curve_4 = [_]zang.CurveNode{
     .{ .t = 0.327, .value = 1633.0 },
 };
 
-const _curve_5 = [_]zang.CurveNode{
+const _curve5 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.3 },
     .{ .t = 0.2, .value = 0.2 },
     .{ .t = 0.3, .value = 0.0 },
 };
 
-const _track_menu_blip = struct {
+const _track0 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -55,7 +55,7 @@ const _track_menu_blip = struct {
     };
 };
 
-const _track_menu_ding = struct {
+const _track1 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -75,7 +75,7 @@ const _track_menu_ding = struct {
     };
 };
 
-const _track_menu_backoff = struct {
+const _track2 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -92,7 +92,7 @@ const _track_menu_backoff = struct {
     };
 };
 
-const _track_wave_begin = struct {
+const _track3 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -113,7 +113,7 @@ const _track_wave_begin = struct {
     };
 };
 
-const _track_accelerate = struct {
+const _track4 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -130,7 +130,7 @@ const _track_accelerate = struct {
     };
 };
 
-const _track_coin = struct {
+const _track5 = struct {
     const Params = struct {
         freq: f32,
         note_on: bool,
@@ -216,14 +216,14 @@ pub const MenuBlipVoice = struct {
     };
 
     field0_MenuInstrument: MenuInstrument,
-    tracker0: zang.Notes(_track_menu_blip.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_menu_blip.Params),
+    tracker0: zang.Notes(_track0.Params).NoteTracker,
+    trigger0: zang.Trigger(_track0.Params),
 
     pub fn init() MenuBlipVoice {
         return .{
             .field0_MenuInstrument = MenuInstrument.init(),
-            .tracker0 = zang.Notes(_track_menu_blip.Params).NoteTracker.init(&_track_menu_blip.notes),
-            .trigger0 = zang.Trigger(_track_menu_blip.Params).init(),
+            .tracker0 = zang.Notes(_track0.Params).NoteTracker.init(&_track0.notes),
+            .trigger0 = zang.Trigger(_track0.Params).init(),
         };
     }
 
@@ -256,14 +256,14 @@ pub const MenuDingVoice = struct {
     };
 
     field0_MenuInstrument: MenuInstrument,
-    tracker0: zang.Notes(_track_menu_ding.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_menu_ding.Params),
+    tracker0: zang.Notes(_track1.Params).NoteTracker,
+    trigger0: zang.Trigger(_track1.Params),
 
     pub fn init() MenuDingVoice {
         return .{
             .field0_MenuInstrument = MenuInstrument.init(),
-            .tracker0 = zang.Notes(_track_menu_ding.Params).NoteTracker.init(&_track_menu_ding.notes),
-            .trigger0 = zang.Trigger(_track_menu_ding.Params).init(),
+            .tracker0 = zang.Notes(_track1.Params).NoteTracker.init(&_track1.notes),
+            .trigger0 = zang.Trigger(_track1.Params).init(),
         };
     }
 
@@ -295,14 +295,14 @@ pub const MenuBackoffVoice = struct {
     };
 
     field0_MenuInstrument: MenuInstrument,
-    tracker0: zang.Notes(_track_menu_backoff.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_menu_backoff.Params),
+    tracker0: zang.Notes(_track2.Params).NoteTracker,
+    trigger0: zang.Trigger(_track2.Params),
 
     pub fn init() MenuBackoffVoice {
         return .{
             .field0_MenuInstrument = MenuInstrument.init(),
-            .tracker0 = zang.Notes(_track_menu_backoff.Params).NoteTracker.init(&_track_menu_backoff.notes),
-            .trigger0 = zang.Trigger(_track_menu_backoff.Params).init(),
+            .tracker0 = zang.Notes(_track2.Params).NoteTracker.init(&_track2.notes),
+            .trigger0 = zang.Trigger(_track2.Params).init(),
         };
     }
 
@@ -379,14 +379,14 @@ pub const WaveBeginVoice = struct {
     };
 
     field0_WaveBeginInstrument: WaveBeginInstrument,
-    tracker0: zang.Notes(_track_wave_begin.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_wave_begin.Params),
+    tracker0: zang.Notes(_track3.Params).NoteTracker,
+    trigger0: zang.Trigger(_track3.Params),
 
     pub fn init() WaveBeginVoice {
         return .{
             .field0_WaveBeginInstrument = WaveBeginInstrument.init(),
-            .tracker0 = zang.Notes(_track_wave_begin.Params).NoteTracker.init(&_track_wave_begin.notes),
-            .trigger0 = zang.Trigger(_track_wave_begin.Params).init(),
+            .tracker0 = zang.Notes(_track3.Params).NoteTracker.init(&_track3.notes),
+            .trigger0 = zang.Trigger(_track3.Params).init(),
         };
     }
 
@@ -420,14 +420,14 @@ pub const AccelerateVoice = struct {
     };
 
     field0_WaveBeginInstrument: WaveBeginInstrument,
-    tracker0: zang.Notes(_track_accelerate.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_accelerate.Params),
+    tracker0: zang.Notes(_track4.Params).NoteTracker,
+    trigger0: zang.Trigger(_track4.Params),
 
     pub fn init() AccelerateVoice {
         return .{
             .field0_WaveBeginInstrument = WaveBeginInstrument.init(),
-            .tracker0 = zang.Notes(_track_accelerate.Params).NoteTracker.init(&_track_accelerate.notes),
-            .trigger0 = zang.Trigger(_track_accelerate.Params).init(),
+            .tracker0 = zang.Notes(_track4.Params).NoteTracker.init(&_track4.notes),
+            .trigger0 = zang.Trigger(_track4.Params).init(),
         };
     }
 
@@ -464,15 +464,15 @@ pub const CoinVoice = struct {
 
     field0_PulseOsc: zang.PulseOsc,
     field1_Envelope: zang.Envelope,
-    tracker0: zang.Notes(_track_coin.Params).NoteTracker,
-    trigger0: zang.Trigger(_track_coin.Params),
+    tracker0: zang.Notes(_track5.Params).NoteTracker,
+    trigger0: zang.Trigger(_track5.Params),
 
     pub fn init() CoinVoice {
         return .{
             .field0_PulseOsc = zang.PulseOsc.init(),
             .field1_Envelope = zang.Envelope.init(),
-            .tracker0 = zang.Notes(_track_coin.Params).NoteTracker.init(&_track_coin.notes),
-            .trigger0 = zang.Trigger(_track_coin.Params).init(),
+            .tracker0 = zang.Notes(_track5.Params).NoteTracker.init(&_track5.notes),
+            .trigger0 = zang.Trigger(_track5.Params).init(),
         };
     }
 
@@ -546,7 +546,7 @@ pub const LaserVoice = struct {
         self.field1_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_0,
+            .curve = &_curve0,
         });
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[0], params.freq_mul);
@@ -556,7 +556,7 @@ pub const LaserVoice = struct {
         self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_0,
+            .curve = &_curve0,
         });
         zang.zero(span, temps[2]);
         zang.multiplyScalar(span, temps[2], temps[1], params.freq_mul);
@@ -580,7 +580,7 @@ pub const LaserVoice = struct {
         self.field4_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_1,
+            .curve = &_curve1,
         });
         zang.multiply(span, outputs[0], temps[2], temps[0]);
     }
@@ -614,7 +614,7 @@ pub const ExplosionVoice = struct {
         self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_2,
+            .curve = &_curve2,
         });
         zang.zero(span, temps[1]);
         zang.multiplyScalar(span, temps[1], temps[0], std.math.pi);
@@ -671,7 +671,7 @@ pub const ExplosionVoice = struct {
         self.field3_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_3,
+            .curve = &_curve3,
         });
         zang.multiply(span, outputs[0], temps[3], temps[1]);
     }
@@ -705,13 +705,13 @@ pub const PowerUpVoice = struct {
         self.field0_Curve.paint(span, .{temps[0]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .linear,
-            .curve = &_curve_4,
+            .curve = &_curve4,
         });
         zang.zero(span, temps[1]);
         self.field1_Curve.paint(span, .{temps[1]}, .{}, note_id_changed, .{
             .sample_rate = params.sample_rate,
             .function = .smoothstep,
-            .curve = &_curve_5,
+            .curve = &_curve5,
         });
         zang.zero(span, temps[2]);
         self.field3_PulseOsc.paint(span, .{temps[2]}, .{}, note_id_changed, .{
