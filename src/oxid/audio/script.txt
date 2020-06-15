@@ -4,9 +4,9 @@ MenuInstrument = defmodule
 begin
     input = PulseOsc(freq, color=0.5)
       * (0.25 * Envelope(
-        attack='instantaneous',
-        decay='instantaneous',
-        release='linear'(0.04),
+        attack=.instantaneous,
+        decay=.instantaneous,
+        release=.linear(0.04),
         sustain_volume=1,
         note_on
       ))
@@ -14,7 +14,7 @@ begin
     cutoff_freq = 2000
     cutoff = sqrt(max(0, min(1, 2 * (1 - cos(pi * cutoff_freq / sample_rate)))))
 
-    out Filter(input, type='low_pass', res=0.3, cutoff)
+    out Filter(input, type=.low_pass, res=0.3, cutoff)
 end
 
 MenuBlipVoice = defmodule freq_mul: constant, begin
@@ -26,7 +26,7 @@ MenuBlipVoice = defmodule freq_mul: constant, begin
         0.02 (freq=60, note_on=false)
         0.08 (freq=40, note_on=true)
         0.10 (freq=40, note_on=false)
-    end 1 begin
+    end, 1 begin
         out MenuInstrument(freq=freq_mul * freq, note_on)
     end
 end
@@ -47,7 +47,7 @@ MenuDingVoice = defmodule begin
         0.08 (freq=40, note_on=true)
         0.09 (freq=20, note_on=true)
         0.10 (freq=30, note_on=false)
-    end 0.8 begin
+    end, 0.8 begin
         out MenuInstrument(freq, note_on)
     end
 end
@@ -65,7 +65,7 @@ MenuBackoffVoice = defmodule begin
         0.05 (freq=95, note_on=true)
         0.06 (freq=100, note_on=true)
         0.07 (freq=105, note_on=false)
-    end 0.8 begin
+    end, 0.8 begin
         out MenuInstrument(freq, note_on)
     end
 end
@@ -78,9 +78,9 @@ WaveBeginInstrument = defmodule
 begin
     out PulseOsc(freq, color=0.5)
       * (0.25 * Envelope(
-        attack='linear'(0.01),
-        decay='linear'(0.1),
-        release='linear'(0.15),
+        attack=.linear(0.01),
+        decay=.linear(0.1),
+        release=.linear(0.15),
         sustain_volume=0.5,
         note_on
       ))
@@ -103,7 +103,7 @@ WaveBeginVoice = defmodule begin
         9.0 (freq=35, note_on=true)
         10.0 (freq=38, note_on=true)
         11.0 (freq=38, note_on=false)
-    end 8 begin
+    end, 8 begin
         out WaveBeginInstrument(freq, note_on)
     end
 end
@@ -121,7 +121,7 @@ AccelerateVoice = defmodule playback_speed: constant, begin
         5.0 (freq=35, note_on=true)
         6.0 (freq=38, note_on=true)
         7.0 (freq=38, note_on=false)
-    end (8 * playback_speed) begin
+    end, 8 * playback_speed begin
         out WaveBeginInstrument(freq=freq * playback_speed, note_on)
     end
 end
@@ -136,12 +136,12 @@ CoinVoice = defmodule freq_mul: constant, begin
         0.000 (freq=750, note_on=true)
         0.045 (freq=1000, note_on=true)
         0.090 (freq=1000, note_on=false)
-    end 1 begin
+    end, 1 begin
         out PulseOsc(freq=freq_mul * freq, color=0.5)
           * (0.25 * Envelope(
-            attack='instantaneous',
-            decay='instantaneous',
-            release='linear'(0.04),
+            attack=.instantaneous,
+            decay=.instantaneous,
+            release=.linear(0.04),
             sustain_volume=1,
             note_on
           ))
@@ -169,18 +169,18 @@ begin
     end
 
     out SineOsc(
-        freq = Curve(function='smoothstep', curve=freq_curve) * freq_mul * carrier_mul,
+        freq = Curve(function=.smoothstep, curve=freq_curve) * freq_mul * carrier_mul,
         phase = SineOsc(
-            freq = Curve(function='smoothstep', curve=freq_curve) * freq_mul * modulator_mul,
+            freq = Curve(function=.smoothstep, curve=freq_curve) * freq_mul * modulator_mul,
             phase = 0
         ) * modulator_rad
-    ) * Curve(function='smoothstep', curve=volume_curve)
+    ) * Curve(function=.smoothstep, curve=volume_curve)
 end
 
 //////////////////////////////////////////////////////////////////////////
 
 ExplosionVoice = defmodule begin
-    cutoff_freq = Curve(function='smoothstep', curve=defcurve
+    cutoff_freq = Curve(function=.smoothstep, curve=defcurve
         0.0  3000
         0.5  1000
         0.7  200
@@ -188,8 +188,8 @@ ExplosionVoice = defmodule begin
 
     cutoff = sqrt(max(0, min(1, 2 * (1 - cos(pi * cutoff_freq / sample_rate)))))
 
-    out Filter(input=Noise(color='white'), type='low_pass', cutoff, res=0)
-      * Curve(function='smoothstep', curve=defcurve
+    out Filter(input=Noise(color=.white), type=.low_pass, cutoff, res=0)
+      * Curve(function=.smoothstep, curve=defcurve
             0.0    0
             0.004  0.75
             0.7    0
@@ -199,7 +199,7 @@ end
 //////////////////////////////////////////////////////////////////////////
 
 PowerUpVoice = defmodule begin
-    freq = Curve(function='linear', curve=defcurve
+    freq = Curve(function=.linear, curve=defcurve
         0.0    360
         0.109  1633
         0.11   360
@@ -208,11 +208,11 @@ PowerUpVoice = defmodule begin
         0.327  1633
     end)
 
-    volume = Curve(function='smoothstep', curve=defcurve
+    volume = Curve(function=.smoothstep, curve=defcurve
         0.0  0.3
         0.2  0.2
         0.3  0.0
     end)
 
-    out Filter(input=PulseOsc(freq, color=0.5) * volume, type='low_pass', cutoff=0.5, res=0)
+    out Filter(input=PulseOsc(freq, color=0.5) * volume, type=.low_pass, cutoff=0.5, res=0)
 end
