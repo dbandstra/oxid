@@ -78,7 +78,7 @@ pub const Menu = union(enum) {
         self: *Menu,
         comptime Params: type,
         params: Params,
-        comptime func: var,
+        comptime func: anytype,
     ) ?Result {
         return switch (self.*) {
             .main_menu => |*menu_state| func(MainMenu, menu_state, params),

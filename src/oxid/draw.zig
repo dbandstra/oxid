@@ -69,7 +69,8 @@ fn getSortedDrawables(
     std.sort.sort(
         *const c.EventDraw,
         sorted_drawables,
-        util.lessThanField(*const c.EventDraw, "z_index"),
+        {},
+        comptime util.lessThanField(*const c.EventDraw, "z_index"),
     );
     return sorted_drawables;
 }

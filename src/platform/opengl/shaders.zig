@@ -31,7 +31,7 @@ pub const InitError = error{
 fn printLog(s: []const u8, comptime indentation: usize) void {
     const held = std.debug.getStderrMutex().acquire();
     defer held.release();
-    const stderr = std.debug.getStderrStream();
+    var stderr = std.io.getStdErr().writer();
     var new_line = true;
     for (s) |ch| {
         if (new_line) stderr.writeByteNTimes(' ', indentation) catch return;

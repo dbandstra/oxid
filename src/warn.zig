@@ -7,7 +7,7 @@ pub const warn = if (builtin.arch == .wasm32)
 else
     std.debug.warn;
 
-fn warnWeb(comptime fmt: []const u8, args: var) void {
+fn warnWeb(comptime fmt: []const u8, args: anytype) void {
     var buf: [1000]u8 = undefined;
     const text = std.fmt.bufPrint(buf[0..], fmt, args) catch {
         web.consoleLog("warn: bufPrint failed. too long? format string:");

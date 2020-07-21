@@ -4,9 +4,9 @@ const math = @import("../common/math.zig");
 
 // TODO - reorganize?
 
-pub fn lessThanField(comptime T: type, comptime field: []const u8) fn (T, T) bool {
+pub fn lessThanField(comptime T: type, comptime field: []const u8) fn (void, T, T) bool {
     const Impl = struct {
-        fn inner(a: T, b: T) bool {
+        fn inner(context: void, a: T, b: T) bool {
             return @field(a, field) < @field(b, field);
         }
     };

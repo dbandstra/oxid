@@ -161,7 +161,7 @@ fn GameSoundWrapper(comptime ModuleType: type) type {
         // this is called on both MenuSoundWrapper objects, as well as Wrapper
         // objects (defined in components.zig). the latter has a few more fields
         // which are not used in this function.
-        fn paint(self: *@This(), span: zang.Span, out_buf: []f32, tmp_bufs: var, sample_rate: f32) void {
+        fn paint(self: *@This(), span: zang.Span, out_buf: []f32, tmp_bufs: anytype, sample_rate: f32) void {
             var temps = tmp_bufs[0..ModuleType.num_temps].*;
 
             comptime {
@@ -214,7 +214,7 @@ fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8)
             return self;
         }
 
-        fn sync(self: *@This(), reset: bool, loaded_samples: *const LoadedSamples, impulse_frame: usize, component_list: var) void {
+        fn sync(self: *@This(), reset: bool, loaded_samples: *const LoadedSamples, impulse_frame: usize, component_list: anytype) void {
             for (self.wrappers) |*wrapper, i| {
                 if (component_list.id[i] == 0) {
                     continue;
@@ -233,7 +233,7 @@ fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8)
             }
         }
 
-        fn paint(self: *@This(), span: zang.Span, out_buf: var, tmp_bufs: var, sample_rate: f32) void {
+        fn paint(self: *@This(), span: zang.Span, out_buf: anytype, tmp_bufs: anytype, sample_rate: f32) void {
             for (self.wrappers) |*wrapper| {
                 wrapper.paint(span, out_buf, tmp_bufs, sample_rate);
             }
