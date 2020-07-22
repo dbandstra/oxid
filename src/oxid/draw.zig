@@ -2,7 +2,7 @@ const std = @import("std");
 const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
-const fontDrawString = @import("../common/font.zig").fontDrawString;
+const fonts = @import("../common/fonts.zig");
 const common = @import("../oxid_common.zig");
 const ECS = @import("game.zig").ECS;
 const GameSession = @import("game.zig").GameSession;
@@ -234,7 +234,7 @@ fn drawHud(
 
     if (gc_maybe) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
-        fontDrawString(ds, &static.font, 0, 0, fbs.getWritten());
+        fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
 
         var player_number: u31 = 0;
@@ -277,9 +277,9 @@ fn drawHud(
                     null;
 
                 if (if (maybe_player_creature) |creature| creature.god_mode else false) {
-                    fontDrawString(ds, &static.font, 8 * 8, y, "(god):");
+                    fonts.drawString(ds, &static.font, 8 * 8, y, "(god):");
                 } else {
-                    fontDrawString(ds, &static.font, 8 * 8, y, "Lives:");
+                    fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
                 }
                 pdraw.end(ds);
 
@@ -287,20 +287,20 @@ fn drawHud(
                 pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
-                    fontDrawString(ds, &static.font, (14 + i) * 8, y, "\x1E"); // heart
+                    fonts.drawString(ds, &static.font, (14 + i) * 8, y, "\x1E"); // heart
                 }
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
                     const skull_font_color = getColor(static, skull_font_color_index);
                     pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                    fontDrawString(ds, &static.font, 14 * 8, y, "\x1F"); // skull
+                    fonts.drawString(ds, &static.font, 14 * 8, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
                 pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-                fontDrawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
+                fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
                 fbs.reset();
             }
         }
@@ -308,13 +308,13 @@ fn drawHud(
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
-                fontDrawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
+                fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fontDrawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
+    fonts.drawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.end(ds);

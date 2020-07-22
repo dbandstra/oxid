@@ -1,3 +1,4 @@
+const build_options = @import("build_options");
 const std = @import("std");
 const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
@@ -5,8 +6,7 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
 const platform_draw = @import("platform/opengl/draw.zig");
 const draw = @import("common/draw.zig");
-const Font = @import("common/font.zig").Font;
-const loadFont = @import("common/font.zig").loadFont;
+const fonts = @import("common/fonts.zig");
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
@@ -62,7 +62,7 @@ pub const MainState = struct {
 pub const GameStatic = struct {
     tileset: draw.Tileset,
     palette: [48]u8,
-    font: Font,
+    font: fonts.Font,
 };
 
 pub const MenuSounds = struct {
@@ -87,7 +87,15 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
     self.high_scores = root.loadHighScores(&self.hunk.low());
 
-    loadFont(&self.hunk.low(), &self.static.font) catch |err| {
+    fonts.load(&self.hunk.low(), &self.static.font, .{
+        .filename = build_options.assets_path ++ "/font.pcx",
+        .first_char = 0,
+        .char_width = 8,
+        .char_height = 8,
+        .num_cols = 16,
+        .num_rows = 8,
+        .spacing = 0,
+    }) catch |err| {
         warn("Failed to load font: {}\n", .{err});
         return false;
     };
