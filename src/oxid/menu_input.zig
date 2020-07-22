@@ -16,11 +16,11 @@ const MenuInputContext = struct {
 
     pub fn setPositionTop(self: *@This()) void {}
     pub fn title(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {}
-    pub fn label(self: *@This(), comptime fmt: []const u8, args: ...) void {}
+    pub fn label(self: *@This(), comptime fmt: []const u8, args: var) void {}
     pub fn vspacer(self: *@This()) void {}
 
     const OptionInnerResult = enum { left, right, enter };
-    fn optionInner(self: *@This(), is_slider: bool, comptime fmt: []const u8, args: ...) ?OptionInnerResult {
+    fn optionInner(self: *@This(), is_slider: bool, comptime fmt: []const u8, args: var) ?OptionInnerResult {
         defer self.option_index += 1;
 
         if (self.option_index == self.cursor_pos) {
