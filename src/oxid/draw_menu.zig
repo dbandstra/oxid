@@ -46,7 +46,7 @@ pub const DrawMenuContext = struct {
 
     fn textHelper(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
         const w = blk: {
-            const base_w = @intCast(u31, s.len) * self.static.font.char_width;
+            const base_w = fonts.stringWidth(&self.static.font, s);
             break :blk switch (alignment) {
                 .left => base_w + 32, // pad both sides
                 .center => base_w,
@@ -104,7 +104,7 @@ pub const DrawMenuContext = struct {
             pdraw.end(self.ds);
         }
         self.option_index += 1;
-        self.w = std.math.max(self.w, @intCast(u31, s.len) * self.static.font.char_width + 32); // pad both sides
+        self.w = std.math.max(self.w, fonts.stringWidth(&self.static.font, s) + 32); // pad both sides
         self.h += self.static.font.char_height;
         self.bottom_margin = 2;
         return false;

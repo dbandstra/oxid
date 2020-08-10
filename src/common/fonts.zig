@@ -1,5 +1,5 @@
+const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-
 const pdraw = @import("pdraw");
 const draw = @import("draw.zig");
 const pcx_helper = @import("pcx_helper.zig");
@@ -39,6 +39,17 @@ pub fn load(hunk_side: *HunkSide, font: *Font, comptime def: FontDef) !void {
         .char_height = def.char_height,
         .spacing = def.spacing,
     };
+}
+
+pub fn stringWidth(font: *const Font, string: []const u8) u31 {
+    var x: i32 = 0;
+    for (string) |char, i| {
+        if (i > 0) {
+            x += font.spacing;
+        }
+        x += @as(i32, font.char_width);
+    }
+    return @intCast(u31, std.math.max(0, x));
 }
 
 pub fn drawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, string: []const u8) void {

@@ -94,7 +94,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         .char_height = 8,
         .num_cols = 16,
         .num_rows = 8,
-        .spacing = 0,
+        .spacing = -1,
     }) catch |err| {
         warn("Failed to load font: {}\n", .{err});
         return false;
