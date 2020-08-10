@@ -21,6 +21,7 @@ pub const Graphic = enum {
     mon_spark1,
     mon_spark2,
     floor,
+    floor_shadow,
     man_icons,
     man1_walk1,
     man1_walk2,
@@ -65,6 +66,7 @@ pub fn getGraphicTile(graphic: Graphic) draw.Tile {
     return switch (graphic) {
         .pit => .{ .tx = 1, .ty = 0 },
         .floor => .{ .tx = 2, .ty = 0 },
+        .floor_shadow => .{ .tx = 2, .ty = 6 },
         .wall => .{ .tx = 3, .ty = 0 },
         .wall2 => .{ .tx = 4, .ty = 0 },
         .evilwall_tl => .{ .tx = 0, .ty = 6 },

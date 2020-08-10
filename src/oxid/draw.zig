@@ -83,6 +83,7 @@ fn drawMapTile(
     const gridpos = math.Vec2.init(x, y);
     if (switch (levels.level1.getGridValue(gridpos).?) {
         0x00 => Graphic.floor,
+        0x01 => Graphic.floor_shadow,
         0x80 => Graphic.wall,
         0x81 => Graphic.wall2,
         0x82 => Graphic.pit,
