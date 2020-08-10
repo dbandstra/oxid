@@ -230,6 +230,7 @@ fn drawHud(
     );
     pdraw.end(ds);
 
+    const font_shadow_color = getColor(static, 0);
     const font_color = getColor(static, primary_font_color_index);
     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
@@ -284,18 +285,20 @@ fn drawHud(
                 }
                 pdraw.end(ds);
 
+                const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
+
                 const heart_font_color = getColor(static, heart_font_color_index);
                 pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
-                    fonts.drawString(ds, &static.font, (14 + i) * 8, y, "\x1E"); // heart
+                    fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
                 }
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
                     const skull_font_color = getColor(static, skull_font_color_index);
                     pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                    fonts.drawString(ds, &static.font, 14 * 8, y, "\x1F"); // skull
+                    fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
@@ -309,6 +312,15 @@ fn drawHud(
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
+
+                pdraw.end(ds);
+                pdraw.begin(ds, static.font.tileset.texture.handle, font_shadow_color, 1.0, false);
+
+                fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
+
+                pdraw.end(ds);
+                pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+
                 fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
