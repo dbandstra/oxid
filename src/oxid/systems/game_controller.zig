@@ -1,7 +1,7 @@
 const std = @import("std");
 const math = @import("../../common/math.zig");
 const audio = @import("../audio.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const levels = @import("../levels.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
@@ -17,14 +17,14 @@ const SystemData = struct {
     voice_wave_begin: *c.VoiceWaveBegin,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         think(gs, self);
     }
 }
 
-fn think(gs: *GameSession, self: SystemData) void {
+fn think(gs: *game.Session, self: SystemData) void {
     // if all non-persistent monsters are dead, prepare next wave
     if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
         self.gc.next_wave_timer = constants.next_wave_time;
@@ -83,7 +83,7 @@ fn think(gs: *GameSession, self: SystemData) void {
     }
 }
 
-fn countNonPersistentMonsters(gs: *GameSession) u32 {
+fn countNonPersistentMonsters(gs: *game.Session) u32 {
     var count: u32 = 0;
     var it = gs.ecs.iter(struct {
         monster: *const c.Monster,
@@ -95,7 +95,7 @@ fn countNonPersistentMonsters(gs: *GameSession) u32 {
     return count;
 }
 
-fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const waves.Wave) void {
+fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void {
     const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
     const coins = (wave.spiders + wave.knights) / 3;
     std.debug.assert(count <= 100);
@@ -120,7 +120,7 @@ fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const waves.Wave) void {
     }
 }
 
-fn spawnPickup(gs: *GameSession, pickup_type: constants.PickupType) void {
+fn spawnPickup(gs: *game.Session, pickup_type: constants.PickupType) void {
     const spawn_loc = pickSpawnLocation(gs) orelse return;
     const pos = math.Vec2.scale(spawn_loc, levels.subpixels_per_tile);
     _ = p.Pickup.spawn(gs, .{

@@ -10,7 +10,6 @@ const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const levels = @import("oxid/levels.zig");
 const constants = @import("oxid/constants.zig");
-const GameSession = @import("oxid/game.zig").GameSession;
 const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
 const gameInit = @import("oxid/frame.zig").gameInit;
 const gameFrame = @import("oxid/frame.zig").gameFrame;

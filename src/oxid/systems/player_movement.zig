@@ -4,7 +4,7 @@ const math = @import("../../common/math.zig");
 const constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
 const GameFrameContext = @import("../frame.zig").GameFrameContext;
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
@@ -22,7 +22,7 @@ const SystemData = struct {
     voice_sampler: *c.VoiceSampler,
 };
 
-pub fn run(gs: *GameSession, context: GameFrameContext) void {
+pub fn run(gs: *game.Session, context: GameFrameContext) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
@@ -61,13 +61,13 @@ pub fn run(gs: *GameSession, context: GameFrameContext) void {
     }
 }
 
-fn playerUpdate(gs: *GameSession, self: SystemData) void {
+fn playerUpdate(gs: *game.Session, self: SystemData) void {
     if (self.creature.invulnerability_timer == 0) {
         self.phys.illusory = false;
     }
 }
 
-fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) void {
+fn playerShoot(gs: *game.Session, self: SystemData, context: GameFrameContext) void {
     if (self.player.in_shoot) {
         if (self.player.trigger_released) {
             // the player can only have a certain amount of bullets in play at a
@@ -117,7 +117,7 @@ fn playerShoot(gs: *GameSession, self: SystemData, context: GameFrameContext) vo
     }
 }
 
-fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
+fn isTouchingWeb(gs: *game.Session, self: SystemData) bool {
     var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
@@ -136,7 +136,7 @@ fn isTouchingWeb(gs: *GameSession, self: SystemData) bool {
     return false;
 }
 
-fn playerMove(gs: *GameSession, self: SystemData) void {
+fn playerMove(gs: *game.Session, self: SystemData) void {
     var move_speed = switch (self.player.speed_level) {
         .one => constants.player_move_speed[0],
         .two => constants.player_move_speed[1],
@@ -242,7 +242,7 @@ fn tryPush(
     }
 }
 
-fn playerUpdateLineOfFire(gs: *GameSession, self: SystemData) void {
+fn playerUpdateLineOfFire(gs: *game.Session, self: SystemData) void {
     // create a box that represents the path of a bullet fired by the player in
     // the current frame, ignoring monsters.
     // certain monster behaviours will use this in order to try to get out of the

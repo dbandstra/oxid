@@ -1,5 +1,5 @@
 const std = @import("std");
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
 
 pub const Wave = struct {
@@ -20,7 +20,7 @@ const WaveChoice = struct {
     squid_basecount: u31,
 };
 
-pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
+pub fn createWave(gs: *game.Session, gc: *c.GameController) Wave {
     const wavenum = gc.wave_number;
 
     var spiders: u31 = 0;

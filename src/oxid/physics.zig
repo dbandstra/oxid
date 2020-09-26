@@ -4,8 +4,7 @@ const warn = @import("../warn.zig").warn;
 const math = @import("../common/math.zig");
 const constants = @import("constants.zig");
 const levels = @import("levels.zig");
-const ECS = @import("game.zig").ECS;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
@@ -27,12 +26,12 @@ const MoveGroup = struct {
     is_active: bool,
 };
 
-const max_phys_objects = comptime ECS.getCapacity(c.PhysObject);
+const max_phys_objects = comptime game.ECS.getCapacity(c.PhysObject);
 
 var move_group_members: [max_phys_objects]MoveGroupMember = undefined;
 var move_groups: [max_phys_objects]MoveGroup = undefined;
 
-pub fn physicsFrame(gs: *GameSession) void {
+pub fn physicsFrame(gs: *game.Session) void {
     // calculate move bboxes
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
@@ -263,7 +262,7 @@ pub fn physicsFrame(gs: *GameSession) void {
     assertNoOverlaps(gs);
 }
 
-fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
+fn collide(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
@@ -284,7 +283,7 @@ fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void
 }
 
 fn findCollisionEvent(
-    gs: *GameSession,
+    gs: *game.Session,
     self_id: gbe.EntityId,
     other_id: gbe.EntityId,
 ) ?*c.EventCollide {
@@ -364,7 +363,7 @@ fn couldObjectsCollide(
     return true;
 }
 
-fn assertNoOverlaps(gs: *GameSession) void {
+fn assertNoOverlaps(gs: *game.Session) void {
     const T = struct {
         id: gbe.EntityId,
         phys: *const c.PhysObject,

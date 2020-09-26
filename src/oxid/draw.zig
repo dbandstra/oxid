@@ -4,8 +4,7 @@ const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
 const common = @import("../oxid_common.zig");
-const ECS = @import("game.zig").ECS;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
 const config = @import("config.zig");
@@ -21,14 +20,14 @@ const skull_font_color_index = 10; // light grey
 pub fn drawGame(
     ds: *pdraw.DrawState,
     static: *const common.GameStatic,
-    gs: *GameSession,
+    gs: *game.Session,
     cfg: config.Config,
     high_score: u32,
 ) void {
     const mc = gs.ecs.findFirstComponent(c.MainController) orelse return;
 
     if (mc.game_running_state) |grs| {
-        const max_drawables = comptime ECS.getCapacity(c.EventDraw);
+        const max_drawables = comptime game.ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
 
@@ -52,7 +51,7 @@ pub fn drawGame(
 ///////////////////////////////////////
 
 fn getSortedDrawables(
-    gs: *GameSession,
+    gs: *game.Session,
     sort_buffer: []*const c.EventDraw,
 ) []*const c.EventDraw {
     perf.begin(.draw_sort);
@@ -166,7 +165,7 @@ fn drawEntities(
     }
 }
 
-fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
+fn drawBoxes(ds: *pdraw.DrawState, gs: *game.Session) void {
     var it = gs.ecs.componentIter(c.EventDrawBox);
     while (it.next()) |event| {
         const abs_bbox = event.box;
@@ -204,7 +203,7 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
 fn drawHud(
     ds: *pdraw.DrawState,
     static: *const common.GameStatic,
-    gs: *GameSession,
+    gs: *game.Session,
     high_score: u32,
 ) void {
     perf.begin(.draw_hud);

@@ -41,16 +41,16 @@ pub const ComponentLists = struct {
 
 pub const ECS = gbe.ECS(ComponentLists);
 
-pub const GameSession = struct {
+pub const Session = struct {
     ecs: ECS,
     prng: std.rand.DefaultPrng,
 
-    pub fn init(self: *GameSession, rand_seed: u32) void {
+    pub fn init(self: *Session, rand_seed: u32) void {
         self.ecs.init();
         self.prng = std.rand.DefaultPrng.init(rand_seed);
     }
 
-    pub fn getRand(self: *GameSession) *std.rand.Random {
+    pub fn getRand(self: *Session) *std.rand.Random {
         return &self.prng.random;
     }
 };

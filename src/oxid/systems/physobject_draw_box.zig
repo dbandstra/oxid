@@ -1,8 +1,8 @@
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         phys: *const c.PhysObject,
     });

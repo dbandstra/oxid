@@ -2,7 +2,7 @@ const zang = @import("zang");
 const gbe = @import("gbe");
 const math = @import("../common/math.zig");
 const graphics = @import("graphics.zig");
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const levels = @import("levels.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
@@ -38,7 +38,7 @@ pub const bullet_bbox = blk: {
 };
 
 pub const MainController = struct {
-    pub fn spawn(gs: *GameSession) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -55,7 +55,7 @@ pub const GameController = struct {
         num_players: u32,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -90,7 +90,7 @@ pub const PlayerController = struct {
         player_number: u32,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -113,7 +113,7 @@ pub const Player = struct {
         pos: math.Vec2,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -173,7 +173,7 @@ pub const PlayerCorpse = struct {
         pos: math.Vec2,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -199,7 +199,7 @@ pub const Monster = struct {
         has_coin: bool,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const monster_values = constants.getMonsterValues(params.monster_type);
 
         const entity_id = gs.ecs.spawn();
@@ -267,7 +267,7 @@ pub const Web = struct {
         pos: math.Vec2,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -316,7 +316,7 @@ pub const Bullet = struct {
         friendly_fire: bool,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -380,7 +380,7 @@ pub const Animation = struct {
         z_index: u32,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -405,7 +405,7 @@ pub const Pickup = struct {
         pickup_type: constants.PickupType,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const pickup_values = constants.getPickupValues(params.pickup_type);
 
         const entity_id = gs.ecs.spawn();
@@ -457,7 +457,7 @@ pub const Sparks = struct {
         impact_sound: bool,
     };
 
-    pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, params: Params) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -483,7 +483,7 @@ pub const Sparks = struct {
 };
 
 pub const Explosion = struct {
-    pub fn spawn(gs: *GameSession, pos: math.Vec2) !gbe.EntityId {
+    pub fn spawn(gs: *game.Session, pos: math.Vec2) !gbe.EntityId {
         const entity_id = gs.ecs.spawn();
         errdefer gs.ecs.undoSpawn(entity_id);
 
@@ -508,7 +508,7 @@ pub const Explosion = struct {
 
 fn Event(comptime T: type) type {
     return struct {
-        pub fn spawn(gs: *GameSession, body: T) !gbe.EntityId {
+        pub fn spawn(gs: *game.Session, body: T) !gbe.EntityId {
             const entity_id = gs.ecs.spawn();
             errdefer gs.ecs.undoSpawn(entity_id);
 

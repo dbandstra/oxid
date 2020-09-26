@@ -1,6 +1,6 @@
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const levels = @import("../levels.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -11,7 +11,7 @@ const SystemData = struct {
     pc: *c.PlayerController,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         if (util.decrementTimer(&self.pc.respawn_timer)) {
@@ -20,7 +20,7 @@ pub fn run(gs: *GameSession) void {
     }
 }
 
-fn spawnPlayer(gs: *GameSession, self: SystemData) void {
+fn spawnPlayer(gs: *game.Session, self: SystemData) void {
     if (p.Player.spawn(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,

@@ -1,7 +1,7 @@
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
 const constants = @import("../constants.zig");
@@ -18,7 +18,7 @@ const SystemData = struct {
     voice_laser: ?*c.VoiceLaser,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         if (util.decrementTimer(&self.monster.spawning_timer)) {
@@ -35,7 +35,7 @@ pub fn run(gs: *GameSession) void {
     }
 }
 
-fn monsterMove(gs: *GameSession, self: SystemData) void {
+fn monsterMove(gs: *game.Session, self: SystemData) void {
     const gc = gs.ecs.findFirstComponent(c.GameController).?;
 
     self.phys.push_dir = null;
@@ -120,7 +120,7 @@ fn monsterMove(gs: *GameSession, self: SystemData) void {
     self.phys.speed = move_speed;
 }
 
-fn monsterAttack(gs: *GameSession, self: SystemData) void {
+fn monsterAttack(gs: *game.Session, self: SystemData) void {
     const gc = gs.ecs.findFirstComponent(c.GameController).?;
     if (gc.freeze_monsters_timer > 0) {
         return;
@@ -162,7 +162,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
 }
 
 // this function needs more args if this is going to be any good
-fn getChaseTarget(gs: *GameSession, self_pos: math.Vec2) ?math.Vec2 {
+fn getChaseTarget(gs: *game.Session, self_pos: math.Vec2) ?math.Vec2 {
     // choose the nearest player
     var nearest: ?math.Vec2 = null;
     var nearest_dist: u32 = 0;
@@ -181,7 +181,7 @@ fn getChaseTarget(gs: *GameSession, self_pos: math.Vec2) ?math.Vec2 {
 }
 
 fn chooseTurn(
-    gs: *GameSession,
+    gs: *game.Session,
     personality: c.Monster.Personality,
     pos: math.Vec2,
     facing: math.Direction,
@@ -234,7 +234,7 @@ fn chooseTurn(
 
 // return the direction a bullet would be fired, or null if not in the line of
 // fire
-fn isInLineOfFire(gs: *GameSession, self: SystemData) ?math.Direction {
+fn isInLineOfFire(gs: *game.Session, self: SystemData) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 
     var it = gs.ecs.iter(struct {

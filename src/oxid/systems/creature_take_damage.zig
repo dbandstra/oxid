@@ -1,11 +1,11 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const audio = @import("../audio.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         creature: *c.Creature,

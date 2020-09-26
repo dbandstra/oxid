@@ -18,7 +18,6 @@ const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const constants = @import("oxid/constants.zig");
 const menus = @import("oxid/menus.zig");
-const GameSession = @import("oxid/game.zig").GameSession;
 const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
 const gameFrame = @import("oxid/frame.zig").gameFrame;
 const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;

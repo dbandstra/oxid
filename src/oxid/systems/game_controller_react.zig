@@ -1,4 +1,4 @@
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -7,14 +7,14 @@ const SystemData = struct {
     gc: *c.GameController,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         think(gs, self);
     }
 }
 
-fn think(gs: *GameSession, self: SystemData) void {
+fn think(gs: *game.Session, self: SystemData) void {
     if (gs.ecs.findFirstComponent(c.EventPlayerDied) != null) {
         self.gc.freeze_monsters_timer = constants.monster_freeze_time;
     }

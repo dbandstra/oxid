@@ -13,8 +13,7 @@ const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const constants = @import("oxid/constants.zig");
-const ComponentLists = @import("oxid/game.zig").ComponentLists;
-const GameSession = @import("oxid/game.zig").GameSession;
+const game = @import("oxid/game.zig");
 const gameInit = @import("oxid/frame.zig").gameInit;
 const input = @import("oxid/input.zig");
 const levels = @import("oxid/levels.zig");
@@ -44,7 +43,7 @@ pub const MainState = struct {
     draw_state: platform_draw.DrawState,
     audio_module: audio.MainModule,
     static: GameStatic,
-    session: GameSession,
+    session: game.Session,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -329,9 +328,9 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 // they should be created as events and handled by middleware?
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
-pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
+pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         if (field.field_type.ComponentType == c.MainController) continue;
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
@@ -379,7 +378,7 @@ fn resetGame(self: *MainState) void {
     self.session.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
 
     // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         if (field.field_type.ComponentType == c.MainController) continue;
         self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }

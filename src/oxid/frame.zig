@@ -1,7 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
-const ComponentLists = @import("game.zig").ComponentLists;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
@@ -10,12 +9,12 @@ pub const GameFrameContext = struct {
     friendly_fire: bool,
 };
 
-pub fn gameInit(gs: *GameSession) !void {
+pub fn gameInit(gs: *game.Session) !void {
     _ = try p.MainController.spawn(gs);
 }
 
 fn runSystem(
-    gs: *GameSession,
+    gs: *game.Session,
     context: GameFrameContext,
     comptime name: []const u8,
 ) void {
@@ -30,7 +29,7 @@ fn runSystem(
 
 // run before "middleware" (rendering, sound, etc)
 pub fn gameFrame(
-    gs: *GameSession,
+    gs: *game.Session,
     ctx: GameFrameContext,
     draw: bool,
     paused: bool,
@@ -90,9 +89,9 @@ pub fn gameFrame(
 }
 
 // run after "middleware" (rendering, sound, etc)
-pub fn gameFrameCleanup(gs: *GameSession) void {
+pub fn gameFrameCleanup(gs: *game.Session) void {
     // mark all events for removal
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
         if (comptime !std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
             continue;

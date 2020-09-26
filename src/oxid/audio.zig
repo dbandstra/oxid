@@ -4,8 +4,7 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
-const ComponentLists = @import("game.zig").ComponentLists;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
 const MenuSounds = @import("../oxid_common.zig").MenuSounds;
 
@@ -202,7 +201,7 @@ fn GameSoundWrapper(comptime ModuleType: type) type {
 fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8) type {
     return struct {
         const component_name = component_name_;
-        const count = std.meta.fieldInfo(ComponentLists, component_name).field_type.capacity;
+        const count = std.meta.fieldInfo(game.ComponentLists, component_name).field_type.capacity;
 
         wrappers: [count]GameSoundWrapper(T),
 
@@ -306,7 +305,7 @@ pub const MainModule = struct {
 
     // called when audio thread is locked. this is where we communicate
     // information from the main thread to the audio thread.
-    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *GameSession, menu_sounds: *MenuSounds) void {
+    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *game.Session, menu_sounds: *MenuSounds) void {
         const impulse_frame: usize = 0;
 
         self.volume = volume;
