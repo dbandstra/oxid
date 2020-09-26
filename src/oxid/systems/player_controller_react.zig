@@ -46,7 +46,7 @@ fn handlePlayerDied(gs: *game.Session) void {
             if (self.pc.lives > 0) {
                 self.pc.respawn_timer = constants.player_respawn_time;
             } else {
-                p.eventPlayerOutOfLives(gs, .{
+                p.spawnEventPlayerOutOfLives(gs, .{
                     .player_controller_id = self.id,
                 });
             }

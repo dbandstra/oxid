@@ -9,7 +9,7 @@ pub fn run(gs: *game.Session) void {
     while (it.next()) |self| {
         const int = self.phys.internal;
 
-        p.eventDrawBox(gs, .{
+        p.spawnEventDrawBox(gs, .{
             .box = int.move_bbox,
             .color = .{
                 .r = @intCast(u8, 64 + ((int.group_index * 41) % 192)),

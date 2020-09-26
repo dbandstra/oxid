@@ -10,7 +10,7 @@ pub fn run(gs: *game.Session) void {
         simple_graphic: *const c.SimpleGraphic,
     });
     while (it.next()) |self| {
-        p.eventDraw(gs, .{
+        p.spawnEventDraw(gs, .{
             .pos = self.transform.pos,
             .graphic = self.simple_graphic.graphic,
             .transform = if (self.simple_graphic.directional)

@@ -245,7 +245,7 @@ pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?Inpu
             const s = maybe_source orelse continue;
             if (!areInputSourcesEqual(s, source)) continue;
 
-            p.eventGameInput(&main_state.session, .{
+            p.spawnEventGameInput(&main_state.session, .{
                 .player_number = player_number,
                 .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                 .down = down,
@@ -342,13 +342,13 @@ pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     // spawn GameController and PlayerControllers
     const num_players: u32 = if (is_multiplayer) 2 else 1;
 
-    _ = p.GameController.spawn(gs, .{
+    _ = p.spawnGameController(gs, .{
         .num_players = num_players,
     }) catch undefined;
 
     var n: u32 = 0;
     while (n < num_players) : (n += 1) {
-        _ = p.PlayerController.spawn(gs, .{
+        _ = p.spawnPlayerController(gs, .{
             .player_number = n,
         }) catch undefined;
     }

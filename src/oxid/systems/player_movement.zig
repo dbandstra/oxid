@@ -35,7 +35,7 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
         if (self.player.dying_timer > 0) {
             self.player.dying_timer -= 1;
             if (self.player.dying_timer == 0) {
-                _ = p.PlayerCorpse.spawn(gs, .{
+                _ = p.spawnPlayerCorpse(gs, .{
                     .pos = self.transform.pos,
                 }) catch undefined;
 
@@ -97,7 +97,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
     const dir_vec = math.getNormal(self.phys.facing);
     const ofs = math.vec2Scale(dir_vec, levels.subpixels_per_tile / 4);
     const bullet_pos = math.vec2Add(pos, ofs);
-    if (p.Bullet.spawn(gs, .{
+    if (p.spawnBullet(gs, .{
         .inflictor_player_controller_id = self.player.player_controller_id,
         .owner_id = self.id,
         .pos = bullet_pos,

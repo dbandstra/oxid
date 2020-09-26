@@ -217,7 +217,7 @@ pub fn frame(gs: *game.Session) void {
                 var hit_something = false;
 
                 if (inWall(m.phys, new_pos)) {
-                    p.eventCollide(gs, .{
+                    p.spawnEventCollide(gs, .{
                         .self_id = m.entity_id,
                         .other_id = .{ .id = 0 },
                         .propelled = true,
@@ -264,7 +264,7 @@ fn collide(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) voi
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
-        p.eventCollide(gs, .{
+        p.spawnEventCollide(gs, .{
             .self_id = self_id,
             .other_id = other_id,
             .propelled = true,
@@ -272,7 +272,7 @@ fn collide(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) voi
     }
 
     if (findCollisionEvent(gs, other_id, self_id) == null) {
-        p.eventCollide(gs, .{
+        p.spawnEventCollide(gs, .{
             .self_id = other_id,
             .other_id = self_id,
             .propelled = false,

@@ -14,18 +14,18 @@ pub fn run(gs: *game.Session) void {
         const event = self.inbox.one();
         const other_player = gs.ecs.findComponentById(event.other_id, c.Player) orelse continue;
 
-        p.eventConferBonus(gs, .{
+        p.spawnEventConferBonus(gs, .{
             .recipient_id = event.other_id,
             .pickup_type = self.pickup.pickup_type,
         });
 
-        p.eventAwardPoints(gs, .{
+        p.spawnEventAwardPoints(gs, .{
             .player_controller_id = other_player.player_controller_id,
             .points = constants.getPickupValues(self.pickup.pickup_type).get_points,
         });
 
         if (constants.getPickupValues(self.pickup.pickup_type).message) |message| {
-            p.eventShowMessage(gs, .{
+            p.spawnEventShowMessage(gs, .{
                 .message = message,
             });
         }

@@ -107,7 +107,7 @@ fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void 
     std.debug.assert(count <= 100);
     var spawn_locs_buf: [100]math.Vec2 = undefined;
     for (pickSpawnLocations(gs, spawn_locs_buf[0..count])) |loc, i| {
-        _ = p.Monster.spawn(gs, .{
+        _ = p.spawnMonster(gs, .{
             .wave_number = wave_number,
             .pos = math.vec2Scale(loc, levels.subpixels_per_tile),
             .monster_type = if (i < wave.spiders)
@@ -128,7 +128,7 @@ fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void 
 
 fn spawnPickup(gs: *game.Session, pickup_type: constants.PickupType) void {
     const spawn_loc = pickSpawnLocation(gs) orelse return;
-    _ = p.Pickup.spawn(gs, .{
+    _ = p.spawnPickup(gs, .{
         .pos = math.vec2Scale(spawn_loc, levels.subpixels_per_tile),
         .pickup_type = pickup_type,
     }) catch undefined;

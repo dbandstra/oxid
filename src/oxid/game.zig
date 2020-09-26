@@ -52,7 +52,7 @@ pub fn init(gs: *Session, random_seed: u32) !void {
     gs.ecs.init();
     gs.prng = std.rand.DefaultPrng.init(random_seed);
 
-    _ = try p.MainController.spawn(gs);
+    _ = try p.spawnMainController(gs);
 }
 
 pub const FrameContext = struct {

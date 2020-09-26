@@ -26,7 +26,7 @@ fn spawnPlayer(gs: *game.Session, self: SystemData) void {
     const x = 9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2;
     const y = 5 * levels.subpixels_per_tile;
 
-    if (p.Player.spawn(gs, .{
+    if (p.spawnPlayer(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
         .pos = math.vec2(x, y),

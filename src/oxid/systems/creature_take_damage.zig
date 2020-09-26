@@ -55,12 +55,12 @@ pub fn run(gs: *game.Session) void {
 
             self_player.dying_timer = constants.player_death_anim_time;
 
-            p.eventPlayerDied(gs, .{
+            p.spawnEventPlayerDied(gs, .{
                 .player_controller_id = self_player.player_controller_id,
             });
 
             if (self_player.last_pickup) |pickup_type| {
-                _ = p.Pickup.spawn(gs, .{
+                _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = pickup_type,
                 }) catch undefined;
@@ -71,26 +71,28 @@ pub fn run(gs: *game.Session) void {
 
         // something other than a player died
         if (self.monster) |self_monster| {
-            p.eventMonsterDied(gs, .{});
+            p.spawnEventMonsterDied(gs, .{});
 
             // in the case that multiple players shot this monster at the same
             // time, pick one of them at random to award the kill to
             if (self.inbox.one().inflictor_player_controller_id) |player_controller_id| {
-                p.eventAwardPoints(gs, .{
+                p.spawnEventAwardPoints(gs, .{
                     .player_controller_id = player_controller_id,
                     .points = constants.getMonsterValues(self_monster.monster_type).kill_points,
                 });
             }
 
             if (self_monster.has_coin) {
-                _ = p.Pickup.spawn(gs, .{
+                _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = .coin,
                 }) catch undefined;
             }
         }
 
-        _ = p.Explosion.spawn(gs, self.transform.pos) catch undefined;
+        _ = p.spawnExplosion(gs, .{
+            .pos = self.transform.pos,
+        }) catch undefined;
 
         gs.ecs.markForRemoval(self.id);
     }

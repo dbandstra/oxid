@@ -9,7 +9,7 @@ pub fn run(gs: *game.Session) void {
         animation: *const c.Animation,
     });
     while (it.next()) |self| {
-        p.eventDraw(gs, .{
+        p.spawnEventDraw(gs, .{
             .pos = self.transform.pos,
             .graphic = graphics.getSimpleAnim(self.animation.simple_anim).frames[self.animation.frame_index],
             .transform = .identity,

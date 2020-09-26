@@ -9,7 +9,7 @@ pub fn run(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         if (self.player.line_of_fire) |box| {
-            p.eventDrawBox(gs, .{
+            p.spawnEventDrawBox(gs, .{
                 .box = box,
                 .color = draw.black,
             });
