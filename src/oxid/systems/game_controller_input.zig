@@ -1,5 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 
 pub fn run(gs: *GameSession) void {
@@ -27,7 +28,7 @@ pub fn killAllMonsters(gs: *GameSession) void {
         monster: *const c.Monster,
     });
     while (it.next()) |self| {
-        if (self.monster.persistent) {
+        if (constants.getMonsterValues(self.monster.monster_type).persistent) {
             continue;
         }
         gs.ecs.markForRemoval(self.id);

@@ -79,7 +79,7 @@ pub fn run(gs: *GameSession) void {
             if (self.inbox.one().inflictor_player_controller_id) |player_controller_id| {
                 _ = p.EventAwardPoints.spawn(gs, .{
                     .player_controller_id = player_controller_id,
-                    .points = self_monster.kill_points,
+                    .points = constants.getMonsterValues(self_monster.monster_type).kill_points,
                 }) catch undefined;
             }
 

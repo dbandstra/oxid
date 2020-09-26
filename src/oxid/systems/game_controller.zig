@@ -90,7 +90,7 @@ fn countNonPersistentMonsters(gs: *GameSession) u32 {
         monster: *const c.Monster,
     });
     while (it.next()) |entry| {
-        if (entry.monster.persistent) continue;
+        if (constants.getMonsterValues(entry.monster.monster_type).persistent) continue;
         count += 1;
     }
     return count;

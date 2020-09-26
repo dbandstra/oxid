@@ -46,12 +46,9 @@ pub const Monster = struct {
     spawning_timer: u32,
     full_hit_points: u32,
     personality: Personality,
-    kill_points: u32,
     can_shoot: bool,
-    can_drop_webs: bool,
     next_attack_timer: u32,
     has_coin: bool,
-    persistent: bool,
 };
 
 pub const Web = struct {};
@@ -149,8 +146,6 @@ pub const PhysObjectInternal = struct {
 
 pub const Pickup = struct {
     pickup_type: ConstantTypes.PickupType,
-    get_points: u32,
-    message: ?[]const u8,
 };
 
 pub const Player = struct {

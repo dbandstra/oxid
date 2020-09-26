@@ -28,7 +28,7 @@ pub fn run(gs: *GameSession) void {
             self.phys.push_dir = null;
         } else {
             monsterMove(gs, self);
-            if (self.monster.can_shoot or self.monster.can_drop_webs) {
+            if (self.monster.can_shoot or constants.getMonsterValues(self.monster.monster_type).can_drop_webs) {
                 monsterAttack(gs, self);
             }
         }
@@ -151,7 +151,7 @@ fn monsterAttack(gs: *GameSession, self: SystemData) void {
                 .cluster_size = 1,
                 .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
-        } else if (self.monster.can_drop_webs) {
+        } else if (constants.getMonsterValues(self.monster.monster_type).can_drop_webs) {
             _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;

@@ -247,15 +247,12 @@ pub const Monster = struct {
                 c.Monster.Personality.chase
             else
                 c.Monster.Personality.wander,
-            .kill_points = monster_values.kill_points,
             .can_shoot = can_shoot,
-            .can_drop_webs = monster_values.can_drop_webs,
             .next_attack_timer = if (can_shoot or monster_values.can_drop_webs)
                 constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400))
             else
                 0,
             .has_coin = params.has_coin,
-            .persistent = monster_values.persistent,
         });
 
         if (can_shoot) {
@@ -447,8 +444,6 @@ pub const Pickup = struct {
 
         try gs.ecs.addComponent(entity_id, c.Pickup{
             .pickup_type = params.pickup_type,
-            .get_points = pickup_values.get_points,
-            .message = pickup_values.message,
         });
 
         try gs.ecs.addComponent(entity_id, c.RemoveTimer{

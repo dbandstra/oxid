@@ -1,5 +1,6 @@
 const gbe = @import("gbe");
 const GameSession = @import("../game.zig").GameSession;
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -22,10 +23,10 @@ pub fn run(gs: *GameSession) void {
 
         _ = p.EventAwardPoints.spawn(gs, .{
             .player_controller_id = other.player.player_controller_id,
-            .points = self.pickup.get_points,
+            .points = constants.getPickupValues(self.pickup.pickup_type).get_points,
         }) catch undefined;
 
-        if (self.pickup.message) |message| {
+        if (constants.getPickupValues(self.pickup.pickup_type).message) |message| {
             _ = p.EventShowMessage.spawn(gs, .{
                 .message = message,
             }) catch undefined;
