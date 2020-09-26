@@ -21,7 +21,7 @@ pub fn pickSpawnLocations(gs: *game.Session, gridlocs_buf: []math.Vec2) []const 
     while (gy < levels.height) : (gy += 1) {
         gx = 0;
         while (gx < levels.width) : (gx += 1) {
-            const pos = math.Vec2.init(gx, gy);
+            const pos = math.vec2(gx, gy);
             const i = gy * levels.width + gx;
             gridmask[i] = levels.level1.getGridTerrainType(pos) == .floor;
         }
@@ -70,7 +70,7 @@ pub fn pickSpawnLocations(gs: *game.Session, gridlocs_buf: []math.Vec2) []const 
         gx = 0;
         while (gx < levels.width) : (gx += 1) {
             if (gridmask[gy * levels.width + gx]) {
-                candidates[num_candidates] = math.Vec2.init(gx, gy);
+                candidates[num_candidates] = math.vec2(gx, gy);
                 num_candidates += 1;
             }
         }

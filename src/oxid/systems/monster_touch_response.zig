@@ -54,6 +54,6 @@ fn monsterCollide(gs: *game.Session, self: SystemData) void {
 
     if (hit_creature) {
         // reverse direction
-        self.phys.facing = math.Direction.invert(self.phys.facing);
+        self.phys.facing = math.invertDirection(self.phys.facing);
     }
 }

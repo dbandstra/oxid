@@ -46,7 +46,7 @@ pub const Level = struct {
             (offx and offy and self.grid_is_wall(gx0 + 1, gy0 + 1));
     }
 
-    pub fn absBoxInWall(self: *const Level, bbox: math.BoundingBox) bool {
+    pub fn absBoxInWall(self: *const Level, bbox: math.Box) bool {
         std.debug.assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
 
         const gx0 = @divFloor(bbox.mins.x, subpixels_per_tile);
@@ -58,7 +58,7 @@ pub const Level = struct {
         while (gy <= gy1) : (gy += 1) {
             var gx: i32 = gx0;
             while (gx <= gx1) : (gx += 1) {
-                if (self.getGridValue(math.Vec2.init(gx, gy))) |value| {
+                if (self.getGridValue(math.vec2(gx, gy))) |value| {
                     const tt = getTerrainType(value);
                     if (tt == .wall) {
                         return true;
@@ -70,8 +70,8 @@ pub const Level = struct {
         return false;
     }
 
-    pub fn boxInWall(self: *const Level, pos: math.Vec2, bbox: math.BoundingBox) bool {
-        return absBoxInWall(self, math.BoundingBox.move(bbox, pos));
+    pub fn boxInWall(self: *const Level, pos: math.Vec2, bbox: math.Box) bool {
+        return absBoxInWall(self, math.moveBox(bbox, pos));
     }
 
     pub fn getGridValue(self: *const Level, pos: math.Vec2) ?u8 {

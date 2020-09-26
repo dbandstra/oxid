@@ -7,13 +7,13 @@ const levels = @import("levels.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
 
-fn make_bbox(diameter: u31) math.BoundingBox {
+fn make_bbox(diameter: u31) math.Box {
     const graphic_diameter = levels.subpixels_per_tile;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
     return .{
-        .mins = math.Vec2.init(min, min),
-        .maxs = math.Vec2.init(max, max),
+        .mins = math.vec2(min, min),
+        .maxs = math.vec2(max, max),
     };
 }
 
@@ -30,9 +30,9 @@ pub const bullet_bbox = blk: {
     const bullet_size = 4 * levels.pixels_per_tile;
     const min = levels.subpixels_per_tile / 2 - bullet_size / 2;
     const max = min + bullet_size - 1;
-    break :blk math.BoundingBox{
-        .mins = math.Vec2.init(min, min),
-        .maxs = math.Vec2.init(max, max),
+    break :blk math.Box{
+        .mins = math.vec2(min, min),
+        .maxs = math.vec2(max, max),
     };
 };
 
@@ -117,7 +117,7 @@ pub const Player = struct {
         errdefer gs.ecs.undoSpawn(entity_id);
 
         try gs.ecs.addComponent(entity_id, c.Transform{
-            .pos = math.Vec2.init(params.pos.x, params.pos.y + levels.subpixels_per_tile),
+            .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
         });
 
         try gs.ecs.addComponent(entity_id, c.PhysObject{

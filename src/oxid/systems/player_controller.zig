@@ -29,7 +29,7 @@ fn spawnPlayer(gs: *game.Session, self: SystemData) void {
     if (p.Player.spawn(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
-        .pos = math.Vec2.init(x, y),
+        .pos = math.vec2(x, y),
     })) |player_id| {
         self.pc.player_id = player_id;
     } else |_| {

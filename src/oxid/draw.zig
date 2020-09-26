@@ -78,7 +78,7 @@ fn drawMapTile(
     x: u31,
     y: u31,
 ) void {
-    const gridpos = math.Vec2.init(x, y);
+    const gridpos = math.vec2(x, y);
     const maybe_graphic: ?graphics.Graphic = switch (levels.level1.getGridValue(gridpos).?) {
         0x00 => .floor,
         0x01 => .floor_shadow,
@@ -92,7 +92,7 @@ fn drawMapTile(
         else => null,
     };
     if (maybe_graphic) |graphic| {
-        const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
+        const pos = math.vec2Scale(gridpos, levels.subpixels_per_tile);
         const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
         const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height;
         const dw = levels.pixels_per_tile;

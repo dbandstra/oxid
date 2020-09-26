@@ -64,11 +64,11 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
 
     // look ahead for corners
     const pos = self.transform.pos;
-    const fwd = math.Direction.normal(self.phys.facing);
-    const left = math.Direction.rotateCcw(self.phys.facing);
-    const right = math.Direction.rotateCw(self.phys.facing);
-    const left_normal = math.Direction.normal(left);
-    const right_normal = math.Direction.normal(right);
+    const fwd = math.getNormal(self.phys.facing);
+    const left = math.rotateCCW(self.phys.facing);
+    const right = math.rotateCW(self.phys.facing);
+    const left_normal = math.getNormal(left);
+    const right_normal = math.getNormal(right);
 
     var can_go_forward = true;
     var can_go_left = false;
@@ -81,9 +81,9 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
 
     var i: u31 = 0;
     while (i < move_speed) : (i += 1) {
-        const new_pos = math.Vec2.add(pos, math.Vec2.scale(fwd, i));
-        const left_pos = math.Vec2.add(new_pos, left_normal);
-        const right_pos = math.Vec2.add(new_pos, right_normal);
+        const new_pos = math.vec2Add(pos, math.vec2Scale(fwd, i));
+        const left_pos = math.vec2Add(new_pos, left_normal);
+        const right_pos = math.vec2Add(new_pos, right_normal);
 
         if (i > 0 and physInWall(self.phys, new_pos)) {
             can_go_forward = false;
@@ -147,9 +147,9 @@ fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, att
             }
             // spawn the bullet one quarter of a grid cell in front of the monster
             const pos = self.transform.pos;
-            const dir_vec = math.Direction.normal(self.phys.facing);
-            const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
-            const bullet_pos = math.Vec2.add(pos, ofs);
+            const dir_vec = math.getNormal(self.phys.facing);
+            const ofs = math.vec2Scale(dir_vec, levels.subpixels_per_tile / 4);
+            const bullet_pos = math.vec2Add(pos, ofs);
             _ = p.Bullet.spawn(gs, .{
                 .inflictor_player_controller_id = null,
                 .owner_id = self.id,
@@ -179,7 +179,7 @@ fn getChaseTarget(gs: *game.Session, self_pos: math.Vec2) ?math.Vec2 {
         transform: *const c.Transform,
     });
     while (it.next()) |entry| {
-        const dist = math.Vec2.manhattanDistance(entry.transform.pos, self_pos);
+        const dist = math.manhattanDistance(entry.transform.pos, self_pos);
         if (nearest == null or dist < nearest_dist) {
             nearest = entry.transform.pos;
             nearest_dist = dist;
@@ -197,8 +197,8 @@ fn chooseTurn(
     can_go_left: bool,
     can_go_right: bool,
 ) ?math.Direction {
-    const left = math.Direction.rotateCcw(facing);
-    const right = math.Direction.rotateCw(facing);
+    const left = math.rotateCCW(facing);
+    const right = math.rotateCW(facing);
 
     var choices = util.DirectionChoices.init();
 
@@ -208,19 +208,19 @@ fn chooseTurn(
             // the distance between a point one tile ahead of self in that direction, and the
             // target's position.
             if (can_go_forward) {
-                const forward_normal = math.Direction.normal(facing);
-                const forward_point = math.Vec2.add(pos, math.Vec2.scale(forward_normal, levels.subpixels_per_tile));
-                choices.add(facing, math.Vec2.manhattanDistance(forward_point, target_pos));
+                const forward_normal = math.getNormal(facing);
+                const forward_point = math.vec2Add(pos, math.vec2Scale(forward_normal, levels.subpixels_per_tile));
+                choices.add(facing, math.manhattanDistance(forward_point, target_pos));
             }
             if (can_go_left) {
-                const left_normal = math.Direction.normal(left);
-                const left_point = math.Vec2.add(pos, math.Vec2.scale(left_normal, levels.subpixels_per_tile));
-                choices.add(left, math.Vec2.manhattanDistance(left_point, target_pos));
+                const left_normal = math.getNormal(left);
+                const left_point = math.vec2Add(pos, math.vec2Scale(left_normal, levels.subpixels_per_tile));
+                choices.add(left, math.manhattanDistance(left_point, target_pos));
             }
             if (can_go_right) {
-                const right_normal = math.Direction.normal(right);
-                const right_point = math.Vec2.add(pos, math.Vec2.scale(right_normal, levels.subpixels_per_tile));
-                choices.add(right, math.Vec2.manhattanDistance(right_point, target_pos));
+                const right_normal = math.getNormal(right);
+                const right_point = math.vec2Add(pos, math.vec2Scale(right_normal, levels.subpixels_per_tile));
+                choices.add(right, math.manhattanDistance(right_point, target_pos));
             }
             // choose the direction with the lowest score (shortest distance to the target)
             if (choices.chooseLowest()) |best_direction| {
@@ -242,7 +242,7 @@ fn chooseTurn(
 
 // return the direction a bullet would be fired, or null if not in the line of fire
 fn isInLineOfFire(gs: *game.Session, self: SystemData) ?math.Direction {
-    const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
+    const self_absbox = math.moveBox(self.phys.entity_bbox, self.transform.pos);
 
     var it = gs.ecs.iter(struct {
         player: *const c.Player,

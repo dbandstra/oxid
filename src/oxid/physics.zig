@@ -39,10 +39,8 @@ pub fn physicsFrame(gs: *game.Session) void {
         transform: *const c.Transform,
     });
     while (it.next()) |self| {
-        self.phys.internal.move_bbox.mins =
-            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.mins);
-        self.phys.internal.move_bbox.maxs =
-            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.maxs);
+        self.phys.internal.move_bbox.mins = math.vec2Add(self.transform.pos, self.phys.entity_bbox.mins);
+        self.phys.internal.move_bbox.maxs = math.vec2Add(self.transform.pos, self.phys.entity_bbox.maxs);
 
         if (self.phys.speed == 0) {
             continue;
@@ -201,14 +199,14 @@ pub fn physicsFrame(gs: *game.Session) void {
             if (lowest) |m| {
                 // try to move this guy one subpixel
                 const transform = gs.ecs.findComponentById(m.entity_id, c.Transform).?;
-                var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
+                var new_pos = math.vec2Add(transform.pos, math.getNormal(m.phys.facing));
 
                 // if push_dir differs from velocity direction, and we can
                 // move in that direction, redirect velocity to go in that
                 // direction
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
-                        const new_pos2 = math.Vec2.add(transform.pos, math.Direction.normal(push_dir));
+                        const new_pos2 = math.vec2Add(transform.pos, math.getNormal(push_dir));
                         if (!physInWall(m.phys, new_pos2)) {
                             m.phys.facing = push_dir;
                             new_pos = new_pos2;

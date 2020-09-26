@@ -24,7 +24,7 @@ pub const Bullet = struct {
     bullet_type: Type,
     inflictor_player_controller_id: ?gbe.EntityId,
     damage: u32,
-    line_of_fire: ?math.BoundingBox,
+    line_of_fire: ?math.Box,
 };
 
 pub const Creature = struct {
@@ -105,11 +105,11 @@ pub const PhysObject = struct {
     // bounding boxes are relative to transform position. the dimensions of the
     // box will be (maxs - mins + 1).
     // `world_bbox`: the bbox used to collide with the level.
-    world_bbox: math.BoundingBox,
+    world_bbox: math.Box,
 
     // `entity_bbox`: the bbox used to collide with other entities. this may be a
     // bit smaller than the world bbox
-    entity_bbox: math.BoundingBox,
+    entity_bbox: math.Box,
 
     // `facing`: direction of movement (meaningless if `speed` is 0)
     facing: math.Direction,
@@ -138,7 +138,7 @@ pub const PhysObject = struct {
 };
 
 pub const PhysObjectInternal = struct {
-    move_bbox: math.BoundingBox,
+    move_bbox: math.Box,
     group_index: usize,
 };
 
@@ -159,7 +159,7 @@ pub const Player = struct {
     spawn_anim_y_remaining: u31,
     dying_timer: u32,
     last_pickup: ?constants.PickupType,
-    line_of_fire: ?math.BoundingBox,
+    line_of_fire: ?math.Box,
     in_left: bool,
     in_right: bool,
     in_up: bool,
@@ -203,7 +203,7 @@ pub const EventDraw = struct {
 };
 
 pub const EventDrawBox = struct {
-    box: math.BoundingBox,
+    box: math.Box,
     color: draw.Color,
 };
 

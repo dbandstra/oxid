@@ -94,9 +94,9 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
     };
     // spawn the bullet one quarter of a grid cell in front of the player
     const pos = self.transform.pos;
-    const dir_vec = math.Direction.normal(self.phys.facing);
-    const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
-    const bullet_pos = math.Vec2.add(pos, ofs);
+    const dir_vec = math.getNormal(self.phys.facing);
+    const ofs = math.vec2Scale(dir_vec, levels.subpixels_per_tile / 4);
+    const bullet_pos = math.vec2Add(pos, ofs);
     if (p.Bullet.spawn(gs, .{
         .inflictor_player_controller_id = self.player.player_controller_id,
         .owner_id = self.id,
@@ -168,10 +168,10 @@ fn playerMove(gs: *game.Session, self: SystemData) void {
             const secondary_dir: math.Direction = if (ymove < 0) .n else .s;
 
             // prefer to move on the x axis (arbitrary, but i had to pick something)
-            if (!physInWall(self.phys, math.Vec2.add(pos, math.Direction.normal(dir)))) {
+            if (!physInWall(self.phys, math.vec2Add(pos, math.getNormal(dir)))) {
                 self.phys.facing = dir;
                 self.phys.speed = move_speed;
-            } else if (!physInWall(self.phys, math.Vec2.add(pos, math.Direction.normal(secondary_dir)))) {
+            } else if (!physInWall(self.phys, math.vec2Add(pos, math.getNormal(secondary_dir)))) {
                 self.phys.facing = secondary_dir;
                 self.phys.speed = move_speed;
             }
@@ -185,7 +185,7 @@ fn playerMove(gs: *game.Session, self: SystemData) void {
 }
 
 fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysObject) void {
-    const pos1 = math.Vec2.add(pos, math.Direction.normal(dir));
+    const pos1 = math.vec2Add(pos, math.getNormal(dir));
 
     if (!physInWall(self_phys, pos1)) {
         // no need to push, this direction works
@@ -199,21 +199,21 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysOb
     var i: i32 = 1;
     while (i < constants.player_slip_threshold) : (i += 1) {
         if (dir == .w or dir == .e) {
-            if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y - i))) {
+            if (!physInWall(self_phys, math.vec2(pos1.x, pos1.y - i))) {
                 slip_dir = .n;
                 break;
             }
-            if (!physInWall(self_phys, math.Vec2.init(pos1.x, pos1.y + i))) {
+            if (!physInWall(self_phys, math.vec2(pos1.x, pos1.y + i))) {
                 slip_dir = .s;
                 break;
             }
         }
         if (dir == .n or dir == .s) {
-            if (!physInWall(self_phys, math.Vec2.init(pos1.x - i, pos1.y))) {
+            if (!physInWall(self_phys, math.vec2(pos1.x - i, pos1.y))) {
                 slip_dir = .w;
                 break;
             }
-            if (!physInWall(self_phys, math.Vec2.init(pos1.x + i, pos1.y))) {
+            if (!physInWall(self_phys, math.vec2(pos1.x + i, pos1.y))) {
                 slip_dir = .e;
                 break;
             }
@@ -235,9 +235,9 @@ fn playerUpdateLineOfFire(gs: *game.Session, self: SystemData) void {
     // TODO - do this before calling playerShoot. give bullets a line_of_fire as
     // well, and make monsters avoid those too
     const pos = self.transform.pos;
-    const dir_vec = math.Direction.normal(self.phys.facing);
-    const ofs = math.Vec2.scale(dir_vec, levels.subpixels_per_tile / 4);
-    const bullet_pos = math.Vec2.add(pos, ofs);
+    const dir_vec = math.getNormal(self.phys.facing);
+    const ofs = math.vec2Scale(dir_vec, levels.subpixels_per_tile / 4);
+    const bullet_pos = math.vec2Add(pos, ofs);
 
     self.player.line_of_fire = getLineOfFire(bullet_pos, p.bullet_bbox, self.phys.facing);
 }
