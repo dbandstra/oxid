@@ -1,6 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
-const physicsFrame = @import("physics.zig").physicsFrame;
+const physics = @import("physics.zig");
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
@@ -86,7 +86,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
             runSystem(gs, ctx, "creature");
             runSystem(gs, ctx, "remove_timer");
 
-            physicsFrame(gs);
+            physics.frame(gs);
 
             // pickups react to event_collide, spawn event_confer_bonus
             runSystem(gs, ctx, "pickup_collide");

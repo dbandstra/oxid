@@ -9,7 +9,7 @@ const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
 // convenience function
-pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
+pub fn inWall(phys: *c.PhysObject, pos: math.Vec2) bool {
     return levels.level1.boxInWall(pos, phys.world_bbox);
 }
 
@@ -31,7 +31,7 @@ const max_phys_objects = comptime game.ECS.getCapacity(c.PhysObject);
 var move_group_members: [max_phys_objects]MoveGroupMember = undefined;
 var move_groups: [max_phys_objects]MoveGroup = undefined;
 
-pub fn physicsFrame(gs: *game.Session) void {
+pub fn frame(gs: *game.Session) void {
     // calculate move bboxes
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
@@ -207,7 +207,7 @@ pub fn physicsFrame(gs: *game.Session) void {
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
                         const new_pos2 = math.vec2Add(transform.pos, math.getNormal(push_dir));
-                        if (!physInWall(m.phys, new_pos2)) {
+                        if (!inWall(m.phys, new_pos2)) {
                             m.phys.facing = push_dir;
                             new_pos = new_pos2;
                         }
@@ -216,7 +216,7 @@ pub fn physicsFrame(gs: *game.Session) void {
 
                 var hit_something = false;
 
-                if (physInWall(m.phys, new_pos)) {
+                if (inWall(m.phys, new_pos)) {
                     _ = p.EventCollide.spawn(gs, .{
                         .self_id = m.entity_id,
                         .other_id = .{ .id = 0 },

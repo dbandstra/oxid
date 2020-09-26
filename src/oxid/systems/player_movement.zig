@@ -4,10 +4,10 @@ const math = @import("../../common/math.zig");
 const constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
 const game = @import("../game.zig");
-const physInWall = @import("../physics.zig").physInWall;
-const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
+const physics = @import("../physics.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
+const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -168,10 +168,10 @@ fn playerMove(gs: *game.Session, self: SystemData) void {
             const secondary_dir: math.Direction = if (ymove < 0) .n else .s;
 
             // prefer to move on the x axis (arbitrary, but i had to pick something)
-            if (!physInWall(self.phys, math.vec2Add(pos, math.getNormal(dir)))) {
+            if (!physics.inWall(self.phys, math.vec2Add(pos, math.getNormal(dir)))) {
                 self.phys.facing = dir;
                 self.phys.speed = move_speed;
-            } else if (!physInWall(self.phys, math.vec2Add(pos, math.getNormal(secondary_dir)))) {
+            } else if (!physics.inWall(self.phys, math.vec2Add(pos, math.getNormal(secondary_dir)))) {
                 self.phys.facing = secondary_dir;
                 self.phys.speed = move_speed;
             }
@@ -187,7 +187,7 @@ fn playerMove(gs: *game.Session, self: SystemData) void {
 fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysObject) void {
     const pos1 = math.vec2Add(pos, math.getNormal(dir));
 
-    if (!physInWall(self_phys, pos1)) {
+    if (!physics.inWall(self_phys, pos1)) {
         // no need to push, this direction works
         self_phys.facing = dir;
         self_phys.speed = speed;
@@ -199,21 +199,21 @@ fn tryPush(pos: math.Vec2, dir: math.Direction, speed: u31, self_phys: *c.PhysOb
     var i: i32 = 1;
     while (i < constants.player_slip_threshold) : (i += 1) {
         if (dir == .w or dir == .e) {
-            if (!physInWall(self_phys, math.vec2(pos1.x, pos1.y - i))) {
+            if (!physics.inWall(self_phys, math.vec2(pos1.x, pos1.y - i))) {
                 slip_dir = .n;
                 break;
             }
-            if (!physInWall(self_phys, math.vec2(pos1.x, pos1.y + i))) {
+            if (!physics.inWall(self_phys, math.vec2(pos1.x, pos1.y + i))) {
                 slip_dir = .s;
                 break;
             }
         }
         if (dir == .n or dir == .s) {
-            if (!physInWall(self_phys, math.vec2(pos1.x - i, pos1.y))) {
+            if (!physics.inWall(self_phys, math.vec2(pos1.x - i, pos1.y))) {
                 slip_dir = .w;
                 break;
             }
-            if (!physInWall(self_phys, math.vec2(pos1.x + i, pos1.y))) {
+            if (!physics.inWall(self_phys, math.vec2(pos1.x + i, pos1.y))) {
                 slip_dir = .e;
                 break;
             }

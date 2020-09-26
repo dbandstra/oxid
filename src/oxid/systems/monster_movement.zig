@@ -3,7 +3,7 @@ const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 const game = @import("../game.zig");
 const util = @import("../util.zig");
-const physInWall = @import("../physics.zig").physInWall;
+const physics = @import("../physics.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -74,7 +74,7 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
     var can_go_left = false;
     var can_go_right = false;
 
-    if (physInWall(self.phys, pos)) {
+    if (physics.inWall(self.phys, pos)) {
         // stuck in a wall
         return;
     }
@@ -85,13 +85,13 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
         const left_pos = math.vec2Add(new_pos, left_normal);
         const right_pos = math.vec2Add(new_pos, right_normal);
 
-        if (i > 0 and physInWall(self.phys, new_pos)) {
+        if (i > 0 and physics.inWall(self.phys, new_pos)) {
             can_go_forward = false;
         }
-        if (!physInWall(self.phys, left_pos)) {
+        if (!physics.inWall(self.phys, left_pos)) {
             can_go_left = true;
         }
-        if (!physInWall(self.phys, right_pos)) {
+        if (!physics.inWall(self.phys, right_pos)) {
             can_go_right = true;
         }
     }
