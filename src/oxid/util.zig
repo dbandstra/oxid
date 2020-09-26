@@ -14,18 +14,6 @@ pub fn lessThanField(comptime T: type, comptime field: []const u8) fn (T, T) boo
     return Impl.inner;
 }
 
-// decrements the timer. return true if it just hit zero (but not if it was
-// already at zero
-pub fn decrementTimer(timer: *u32) bool {
-    if (timer.* > 0) {
-        timer.* -= 1;
-        if (timer.* == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
 pub fn getDirTransform(direction: math.Direction) draw.Transform {
     return switch (direction) {
         .n => .rotate_ccw,

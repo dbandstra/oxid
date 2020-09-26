@@ -4,7 +4,6 @@ const game = @import("../game.zig");
 const levels = @import("../levels.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const util = @import("../util.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -14,20 +13,23 @@ const SystemData = struct {
 pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
-        if (util.decrementTimer(&self.pc.respawn_timer)) {
-            spawnPlayer(gs, self);
+        if (self.pc.respawn_timer > 0) {
+            self.pc.respawn_timer -= 1;
+            if (self.pc.respawn_timer == 0) {
+                spawnPlayer(gs, self);
+            }
         }
     }
 }
 
 fn spawnPlayer(gs: *game.Session, self: SystemData) void {
+    const x = 9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2;
+    const y = 5 * levels.subpixels_per_tile;
+
     if (p.Player.spawn(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
-        .pos = math.Vec2.init(
-            9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2,
-            5 * levels.subpixels_per_tile,
-        ),
+        .pos = math.Vec2.init(x, y),
     })) |player_id| {
         self.pc.player_id = player_id;
     } else |_| {

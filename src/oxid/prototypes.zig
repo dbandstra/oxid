@@ -6,7 +6,6 @@ const game = @import("game.zig");
 const levels = @import("levels.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
-const audio = @import("audio.zig");
 
 fn make_bbox(diameter: u31) math.BoundingBox {
     const graphic_diameter = levels.subpixels_per_tile;

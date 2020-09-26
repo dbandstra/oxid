@@ -7,7 +7,6 @@ const physInWall = @import("../physics.zig").physInWall;
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const audio = @import("../audio.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
@@ -19,25 +18,33 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *game.Session) void {
+    const gc = gs.ecs.findFirstComponent(c.GameController) orelse return;
+
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
-        if (util.decrementTimer(&self.monster.spawning_timer)) {
-            self.creature.hit_points = self.monster.full_hit_points;
-        } else if (self.monster.spawning_timer > 0) {
-            self.phys.speed = 0;
-            self.phys.push_dir = null;
-        } else {
-            monsterMove(gs, self);
-            if (self.monster.can_shoot or constants.getMonsterValues(self.monster.monster_type).can_drop_webs) {
-                monsterAttack(gs, self);
+        if (self.monster.spawning_timer > 0) {
+            self.monster.spawning_timer -= 1;
+            if (self.monster.spawning_timer == 0) {
+                // completed the spawning animation
+                self.creature.hit_points = self.monster.full_hit_points;
+            } else {
+                self.phys.speed = 0;
+                self.phys.push_dir = null;
             }
+            continue;
+        }
+
+        monsterMove(gs, gc, self);
+
+        if (self.monster.can_shoot) {
+            monsterAttack(gs, gc, self, .shoot);
+        } else if (constants.getMonsterValues(self.monster.monster_type).can_drop_webs) {
+            monsterAttack(gs, gc, self, .drop_web);
         }
     }
 }
 
-fn monsterMove(gs: *game.Session, self: SystemData) void {
-    const gc = gs.ecs.findFirstComponent(c.GameController).?;
-
+fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void {
     self.phys.push_dir = null;
 
     if (gc.freeze_monsters_timer > 0 or self.creature.flinch_timer > 0) {
@@ -120,15 +127,16 @@ fn monsterMove(gs: *game.Session, self: SystemData) void {
     self.phys.speed = move_speed;
 }
 
-fn monsterAttack(gs: *game.Session, self: SystemData) void {
-    const gc = gs.ecs.findFirstComponent(c.GameController).?;
+fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, attack_type: enum { shoot, drop_web }) void {
     if (gc.freeze_monsters_timer > 0) {
         return;
     }
     if (self.monster.next_attack_timer > 0) {
         self.monster.next_attack_timer -= 1;
-    } else {
-        if (self.monster.can_shoot) {
+        return;
+    }
+    switch (attack_type) {
+        .shoot => {
             if (self.voice_laser) |voice_laser| {
                 voice_laser.params = .{
                     .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
@@ -151,14 +159,14 @@ fn monsterAttack(gs: *game.Session, self: SystemData) void {
                 .cluster_size = 1,
                 .friendly_fire = false, // this value is irrelevant for monster bullets
             }) catch undefined;
-        } else if (constants.getMonsterValues(self.monster.monster_type).can_drop_webs) {
+        },
+        .drop_web => {
             _ = p.Web.spawn(gs, .{
                 .pos = self.transform.pos,
             }) catch undefined;
-        }
-        self.monster.next_attack_timer =
-            constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400));
+        },
     }
+    self.monster.next_attack_timer = constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400));
 }
 
 // this function needs more args if this is going to be any good
@@ -232,8 +240,7 @@ fn chooseTurn(
     return choices.chooseRandom(&gs.prng.random);
 }
 
-// return the direction a bullet would be fired, or null if not in the line of
-// fire
+// return the direction a bullet would be fired, or null if not in the line of fire
 fn isInLineOfFire(gs: *game.Session, self: SystemData) ?math.Direction {
     const self_absbox = math.BoundingBox.move(self.phys.entity_bbox, self.transform.pos);
 

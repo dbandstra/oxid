@@ -1,4 +1,3 @@
-const std = @import("std");
 const game = @import("../game.zig");
 const graphics = @import("../graphics.zig");
 const c = @import("../components.zig");
@@ -10,13 +9,9 @@ pub fn run(gs: *game.Session) void {
         animation: *const c.Animation,
     });
     while (it.next()) |self| {
-        const animcfg = graphics.getSimpleAnim(self.animation.simple_anim);
-
-        std.debug.assert(self.animation.frame_index < animcfg.frames.len);
-
         _ = p.EventDraw.spawn(gs, .{
             .pos = self.transform.pos,
-            .graphic = animcfg.frames[self.animation.frame_index],
+            .graphic = graphics.getSimpleAnim(self.animation.simple_anim).frames[self.animation.frame_index],
             .transform = .identity,
             .z_index = self.animation.z_index,
         }) catch undefined;

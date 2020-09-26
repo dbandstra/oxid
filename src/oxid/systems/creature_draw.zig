@@ -25,8 +25,7 @@ pub fn run(gs: *game.Session) void {
 fn think(gs: *game.Session, self: SystemData) void {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
-            //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
-            _ = p.EventDraw.spawn(gs, c.EventDraw{
+            _ = p.EventDraw.spawn(gs, .{
                 .pos = self.transform.pos,
                 .graphic = if (player.dying_timer > constants.duration60(30))
                     if (alternation(u32, player.dying_timer, constants.duration60(2)))
@@ -55,8 +54,7 @@ fn think(gs: *game.Session, self: SystemData) void {
 
     if (self.monster) |monster| {
         if (monster.spawning_timer > 0) {
-            //_ = p.EventDraw.spawn(gs, .{ // this doesn't work
-            _ = p.EventDraw.spawn(gs, c.EventDraw{
+            _ = p.EventDraw.spawn(gs, .{
                 .pos = self.transform.pos,
                 .graphic = if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
                     .spawn1
@@ -112,8 +110,6 @@ fn think(gs: *game.Session, self: SystemData) void {
         });
         return;
     }
-
-    return;
 }
 
 ///////////////////////////////////////
@@ -132,11 +128,7 @@ const DrawCreatureParams = struct {
     z_index: u32,
 };
 
-fn drawCreature(
-    gs: *game.Session,
-    self: SystemData,
-    params: DrawCreatureParams,
-) void {
+fn drawCreature(gs: *game.Session, self: SystemData, params: DrawCreatureParams) void {
     // blink during invulnerability
     if (self.creature.invulnerability_timer > 0) {
         if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {

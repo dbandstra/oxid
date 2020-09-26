@@ -1,6 +1,6 @@
 const game = @import("../game.zig");
-const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 const c = @import("../components.zig");
+const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 
 pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
@@ -9,10 +9,6 @@ pub fn run(gs: *game.Session) void {
         bullet: *c.Bullet,
     });
     while (it.next()) |self| {
-        self.bullet.line_of_fire = getLineOfFire(
-            self.transform.pos,
-            self.phys.entity_bbox,
-            self.phys.facing,
-        );
+        self.bullet.line_of_fire = getLineOfFire(self.transform.pos, self.phys.entity_bbox, self.phys.facing);
     }
 }
