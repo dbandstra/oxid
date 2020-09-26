@@ -26,13 +26,11 @@ fn spawnPlayer(gs: *game.Session, self: SystemData) void {
     const x = 9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2;
     const y = 5 * levels.subpixels_per_tile;
 
-    if (p.spawnPlayer(gs, .{
+    const player_id = p.spawnPlayer(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
         .pos = math.vec2(x, y),
-    })) |player_id| {
-        self.pc.player_id = player_id;
-    } else |_| {
-        // FIXME?
-    }
+    }) catch return;
+
+    self.pc.player_id = player_id;
 }

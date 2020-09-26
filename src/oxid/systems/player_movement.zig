@@ -86,6 +86,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
         }
     } else return;
 
+    self.player.trigger_released = false;
     self.voice_laser.params = .{
         .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
         .carrier_mul = 2.0,
@@ -97,7 +98,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
     const dir_vec = math.getNormal(self.phys.facing);
     const ofs = math.vec2Scale(dir_vec, levels.subpixels_per_tile / 4);
     const bullet_pos = math.vec2Add(pos, ofs);
-    if (p.spawnBullet(gs, .{
+    const bullet_id = p.spawnBullet(gs, .{
         .inflictor_player_controller_id = self.player.player_controller_id,
         .owner_id = self.id,
         .pos = bullet_pos,
@@ -109,10 +110,8 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
             .three => 3,
         },
         .friendly_fire = context.friendly_fire,
-    })) |bullet_entity_id| {
-        bullet_slot.* = bullet_entity_id;
-    } else |_| {}
-    self.player.trigger_released = false;
+    }) catch return;
+    bullet_slot.* = bullet_id;
 }
 
 fn isTouchingWeb(gs: *game.Session, self: SystemData) bool {
