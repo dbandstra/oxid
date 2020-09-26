@@ -6,8 +6,7 @@ const fonts = @import("../common/fonts.zig");
 const common = @import("../oxid_common.zig");
 const ECS = @import("game.zig").ECS;
 const GameSession = @import("game.zig").GameSession;
-const Graphic = @import("graphics.zig").Graphic;
-const getGraphicTile = @import("graphics.zig").getGraphicTile;
+const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
@@ -81,18 +80,19 @@ fn drawMapTile(
     y: u31,
 ) void {
     const gridpos = math.Vec2.init(x, y);
-    if (switch (levels.level1.getGridValue(gridpos).?) {
-        0x00 => Graphic.floor,
-        0x01 => Graphic.floor_shadow,
-        0x80 => Graphic.wall,
-        0x81 => Graphic.wall2,
-        0x82 => Graphic.pit,
-        0x83 => Graphic.evilwall_tl,
-        0x84 => Graphic.evilwall_tr,
-        0x85 => Graphic.evilwall_bl,
-        0x86 => Graphic.evilwall_br,
+    const maybe_graphic: ?graphics.Graphic = switch (levels.level1.getGridValue(gridpos).?) {
+        0x00 => .floor,
+        0x01 => .floor_shadow,
+        0x80 => .wall,
+        0x81 => .wall2,
+        0x82 => .pit,
+        0x83 => .evilwall_tl,
+        0x84 => .evilwall_tr,
+        0x85 => .evilwall_bl,
+        0x86 => .evilwall_br,
         else => null,
-    }) |graphic| {
+    };
+    if (maybe_graphic) |graphic| {
         const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
         const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
         const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height;
@@ -101,7 +101,7 @@ fn drawMapTile(
         pdraw.tile(
             ds,
             static.tileset,
-            getGraphicTile(graphic),
+            graphics.getGraphicTile(graphic),
             dx,
             dy,
             dw,
@@ -156,7 +156,7 @@ fn drawEntities(
         pdraw.tile(
             ds,
             static.tileset,
-            getGraphicTile(drawable.graphic),
+            graphics.getGraphicTile(drawable.graphic),
             x,
             y,
             w,
@@ -262,7 +262,7 @@ fn drawHud(
                     pdraw.tile(
                         ds,
                         static.tileset,
-                        getGraphicTile(.man_icons),
+                        graphics.getGraphicTile(.man_icons),
                         6 * 8 - 2,
                         -1,
                         16,

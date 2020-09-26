@@ -1,9 +1,7 @@
 const zang = @import("zang");
 const gbe = @import("gbe");
 const math = @import("../common/math.zig");
-const Graphic = @import("graphics.zig").Graphic;
-const SimpleAnim = @import("graphics.zig").SimpleAnim;
-const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
+const graphics = @import("graphics.zig");
 const GameSession = @import("game.zig").GameSession;
 const levels = @import("levels.zig");
 const constants = @import("constants.zig");
@@ -360,12 +358,12 @@ pub const Bullet = struct {
 
         try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
             .graphic = switch (params.bullet_type) {
-                .monster_bullet => Graphic.mon_bullet,
-                .player_bullet => switch (params.cluster_size) {
-                    1 => Graphic.pla_bullet,
-                    2 => Graphic.pla_bullet2,
-                    else => Graphic.pla_bullet3,
-                },
+                .monster_bullet => .mon_bullet,
+                .player_bullet => @as(graphics.Graphic, switch (params.cluster_size) {
+                    1 => .pla_bullet,
+                    2 => .pla_bullet2,
+                    else => .pla_bullet3,
+                }),
             },
             .z_index = constants.z_index_bullet,
             .directional = true,
@@ -378,7 +376,7 @@ pub const Bullet = struct {
 pub const Animation = struct {
     pub const Params = struct {
         pos: math.Vec2,
-        simple_anim: SimpleAnim,
+        simple_anim: graphics.SimpleAnim,
         z_index: u32,
     };
 
@@ -393,7 +391,7 @@ pub const Animation = struct {
         try gs.ecs.addComponent(entity_id, c.Animation{
             .simple_anim = params.simple_anim,
             .frame_index = 0,
-            .frame_timer = getSimpleAnim(params.simple_anim).ticks_per_frame,
+            .frame_timer = graphics.getSimpleAnim(params.simple_anim).ticks_per_frame,
             .z_index = params.z_index,
         });
 
@@ -470,7 +468,7 @@ pub const Sparks = struct {
         try gs.ecs.addComponent(entity_id, c.Animation{
             .simple_anim = .pla_sparks,
             .frame_index = 0,
-            .frame_timer = getSimpleAnim(.pla_sparks).ticks_per_frame,
+            .frame_timer = graphics.getSimpleAnim(.pla_sparks).ticks_per_frame,
             .z_index = constants.z_index_sparks,
         });
 
@@ -496,7 +494,7 @@ pub const Explosion = struct {
         try gs.ecs.addComponent(entity_id, c.Animation{
             .simple_anim = .explosion,
             .frame_index = 0,
-            .frame_timer = getSimpleAnim(.explosion).ticks_per_frame,
+            .frame_timer = graphics.getSimpleAnim(.explosion).ticks_per_frame,
             .z_index = constants.z_index_explosion,
         });
 
