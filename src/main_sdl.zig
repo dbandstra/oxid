@@ -763,7 +763,6 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                     switch (key) {
                         .backquote => self.fast_forward = true,
                         .f4 => perf.toggleSpam(),
-                        .f5 => platform_draw.cycleGlitchMode(&self.main_state.draw_state),
                         else => {},
                     }
                 }

@@ -12,12 +12,6 @@ const shaders = @import("shaders.zig");
 const shader_textured = @import("shader_textured.zig");
 const draw = @import("../../common/draw.zig");
 
-pub const GlitchMode = enum {
-    normal,
-    quad_strips,
-    whole_tilesets,
-};
-
 pub const Texture = struct {
     handle: GLuint,
 };
@@ -51,7 +45,6 @@ pub const DrawState = struct {
     blank_tex: Texture,
     blank_tileset: draw.Tileset,
     // some stuff
-    glitch_mode: GlitchMode,
     clear_screen: bool,
 };
 
@@ -136,7 +129,6 @@ pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
         .ytiles = 1,
     };
 
-    ds.glitch_mode = .normal;
     ds.clear_screen = true;
 }
 
@@ -193,17 +185,6 @@ pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     return .{
         .handle = texid,
     };
-}
-
-pub fn cycleGlitchMode(ds: *DrawState) void {
-    const i = @enumToInt(ds.glitch_mode);
-    const count = @typeInfo(GlitchMode).Enum.fields.len;
-    ds.glitch_mode =
-        if (i + 1 < count)
-        @intToEnum(GlitchMode, i + 1)
-    else
-        @intToEnum(GlitchMode, 0);
-    ds.clear_screen = true;
 }
 
 pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
@@ -288,20 +269,10 @@ pub fn tile(
     const fx1 = fx0 + @intToFloat(f32, w);
     const fy1 = fy0 + @intToFloat(f32, h);
 
-    var s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
-    var t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
-    var s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
-    var t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
-
-    if (ds.glitch_mode == .whole_tilesets) {
-        // draw the whole tileset scaled down. with transparency this leads to
-        // smearing. it's interesting how the level itself is "hidden" to begin
-        // with
-        s0 = 0;
-        t0 = 0;
-        s1 = 1;
-        t1 = 1;
-    }
+    const s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
+    const t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
+    const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
+    const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
     // wasm doesn't support quads, so we have to emit two triangles
     const verts_per_tile: usize = if (builtin.arch == .wasm32) 6 else 4;
@@ -356,16 +327,6 @@ pub fn tile(
         );
     }
 
-    if (ds.glitch_mode == .quad_strips and builtin.arch != .wasm32) {
-        // swap last two vertices so that the order becomes top left, bottom left,
-        // top right, bottom right (suitable for quad strips rather than individual
-        // quads)
-        std.mem.swap(GLfloat, &vertex2f[4], &vertex2f[6]);
-        std.mem.swap(GLfloat, &vertex2f[5], &vertex2f[7]);
-        std.mem.swap(GLfloat, &texcoord2f[4], &texcoord2f[6]);
-        std.mem.swap(GLfloat, &texcoord2f[5], &texcoord2f[7]);
-    }
-
     ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
 }
 
@@ -388,12 +349,7 @@ fn flush(ds: *DrawState) void {
     }
 
     glDrawArrays(
-        if (builtin.arch == .wasm32)
-            @as(GLenum, GL_TRIANGLES)
-        else if (ds.glitch_mode == .quad_strips)
-            @as(GLenum, GL_QUAD_STRIP)
-        else
-            @as(GLenum, GL_QUADS),
+        if (builtin.arch == .wasm32) GL_TRIANGLES else GL_QUADS,
         0,
         @intCast(
             if (builtin.arch == .wasm32) c_uint else c_int,
