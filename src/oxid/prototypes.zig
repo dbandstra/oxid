@@ -240,13 +240,13 @@ pub const Monster = struct {
             .full_hit_points = monster_values.hit_points,
             .personality = if (params.monster_type == .juggernaut)
                 c.Monster.Personality.chase
-            else if (gs.getRand().boolean())
+            else if (gs.prng.random.boolean())
                 c.Monster.Personality.chase
             else
                 c.Monster.Personality.wander,
             .can_shoot = can_shoot,
             .next_attack_timer = if (can_shoot or monster_values.can_drop_webs)
-                constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400))
+                constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400))
             else
                 0,
             .has_coin = params.has_coin,

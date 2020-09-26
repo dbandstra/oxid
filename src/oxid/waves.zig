@@ -124,7 +124,7 @@ pub fn createWave(gs: *game.Session, gc: *c.GameController) Wave {
             for (choices) |choice| {
                 total_weight += choice.weight;
             }
-            const r = gs.getRand().intRangeLessThan(u32, 0, total_weight);
+            const r = gs.prng.random.intRangeLessThan(u32, 0, total_weight);
             var sum: u32 = 0;
             for (choices) |choice| {
                 sum += choice.weight;
@@ -135,10 +135,10 @@ pub fn createWave(gs: *game.Session, gc: *c.GameController) Wave {
             unreachable;
         };
 
-        spiders = scaleMonsterCount(gs.getRand(), choice.spider_basecount, wavenum);
-        knights = scaleMonsterCount(gs.getRand(), choice.knight_basecount, wavenum);
-        fastbugs = scaleMonsterCount(gs.getRand(), choice.fastbug_basecount, wavenum);
-        squids = scaleMonsterCount(gs.getRand(), choice.squid_basecount, wavenum);
+        spiders = scaleMonsterCount(&gs.prng.random, choice.spider_basecount, wavenum);
+        knights = scaleMonsterCount(&gs.prng.random, choice.knight_basecount, wavenum);
+        fastbugs = scaleMonsterCount(&gs.prng.random, choice.fastbug_basecount, wavenum);
+        squids = scaleMonsterCount(&gs.prng.random, choice.squid_basecount, wavenum);
     }
 
     return .{

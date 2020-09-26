@@ -57,7 +57,7 @@ fn think(gs: *game.Session, self: SystemData) void {
         self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&self.gc.next_pickup_timer)) {
-        const pickup_type: constants.PickupType = if (gs.getRand().boolean())
+        const pickup_type: constants.PickupType = if (gs.prng.random.boolean())
             .speed_up
         else
             .power_up;

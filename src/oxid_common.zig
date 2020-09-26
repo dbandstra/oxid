@@ -14,7 +14,6 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const constants = @import("oxid/constants.zig");
 const game = @import("oxid/game.zig");
-const gameInit = @import("oxid/frame.zig").gameInit;
 const input = @import("oxid/input.zig");
 const levels = @import("oxid/levels.zig");
 const p = @import("oxid/prototypes.zig");
@@ -113,8 +112,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         break :blk cfg;
     };
 
-    self.session.init(params.random_seed);
-    gameInit(&self.session) catch |err| {
+    game.init(&self.session, params.random_seed) catch |err| {
         warn("Failed to initialize game: {}\n", .{err});
         return false;
     };

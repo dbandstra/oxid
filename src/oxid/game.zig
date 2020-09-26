@@ -1,6 +1,8 @@
 const std = @import("std");
 const gbe = @import("gbe");
+const physicsFrame = @import("physics.zig").physicsFrame;
 const c = @import("components.zig");
+const p = @import("prototypes.zig");
 
 pub const ComponentLists = struct {
     Animation: gbe.ComponentList(c.Animation, 10),
@@ -44,13 +46,95 @@ pub const ECS = gbe.ECS(ComponentLists);
 pub const Session = struct {
     ecs: ECS,
     prng: std.rand.DefaultPrng,
-
-    pub fn init(self: *Session, rand_seed: u32) void {
-        self.ecs.init();
-        self.prng = std.rand.DefaultPrng.init(rand_seed);
-    }
-
-    pub fn getRand(self: *Session) *std.rand.Random {
-        return &self.prng.random;
-    }
 };
+
+pub fn init(gs: *Session, random_seed: u32) !void {
+    gs.ecs.init();
+    gs.prng = std.rand.DefaultPrng.init(random_seed);
+
+    _ = try p.MainController.spawn(gs);
+}
+
+pub const FrameContext = struct {
+    friendly_fire: bool,
+};
+
+fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) void {
+    const func = @import("systems/" ++ name ++ ".zig").run;
+
+    if (@typeInfo(@TypeOf(func)).Fn.args.len == 2) {
+        func(gs, context);
+    } else {
+        func(gs);
+    }
+}
+
+// run before "middleware" (rendering, sound, etc)
+pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
+    runSystem(gs, ctx, "main_controller_input");
+    runSystem(gs, ctx, "game_controller_input");
+    runSystem(gs, ctx, "player_input");
+
+    if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
+        if (!paused) {
+            runSystem(gs, ctx, "game_controller");
+            runSystem(gs, ctx, "player_controller");
+            runSystem(gs, ctx, "animation");
+            runSystem(gs, ctx, "player_movement");
+            runSystem(gs, ctx, "monster_movement");
+            runSystem(gs, ctx, "bullet");
+            runSystem(gs, ctx, "creature");
+            runSystem(gs, ctx, "remove_timer");
+
+            physicsFrame(gs);
+
+            // pickups react to event_collide, spawn event_confer_bonus
+            runSystem(gs, ctx, "pickup_collide");
+            // bullets react to event_collide, spawn event_take_damage
+            runSystem(gs, ctx, "bullet_collide");
+            // monsters react to event_collide, damage others
+            runSystem(gs, ctx, "monster_touch_response");
+            // player reacts to event_confer_bonus, gets bonus effect
+            runSystem(gs, ctx, "player_reaction");
+
+            // creatures react to event_take_damage, die
+            runSystem(gs, ctx, "creature_take_damage");
+
+            // player controller reacts to 'player died' event
+            runSystem(gs, ctx, "player_controller_react");
+            // game controller reacts to 'player died' / 'player out of lives' event
+            runSystem(gs, ctx, "game_controller_react");
+        }
+    }
+
+    gs.ecs.applyRemovals();
+
+    if (draw) {
+        // send draw commands (as events)
+        runSystem(gs, ctx, "animation_draw");
+        runSystem(gs, ctx, "creature_draw");
+        runSystem(gs, ctx, "simple_graphic_draw");
+
+        if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
+            if (grs.render_move_boxes) {
+                runSystem(gs, ctx, "bullet_draw_box");
+                runSystem(gs, ctx, "physobject_draw_box");
+                runSystem(gs, ctx, "player_draw_box");
+            }
+        }
+    }
+}
+
+// run after "middleware" (rendering, sound, etc)
+pub fn frameCleanup(gs: *Session) void {
+    // mark all events for removal
+    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
+        const ComponentType = field.field_type.ComponentType;
+        if (comptime !std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+            continue;
+        }
+        gs.ecs.markAllForRemoval(ComponentType);
+    }
+
+    gs.ecs.applyRemovals();
+}

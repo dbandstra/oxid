@@ -39,7 +39,7 @@ pub fn run(gs: *game.Session) void {
                 },
                 .coin => {
                     self.voice_coin.params = .{
-                        .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                        .freq_mul = 0.95 + 0.1 * gs.prng.random.float(f32),
                     };
                 },
             }

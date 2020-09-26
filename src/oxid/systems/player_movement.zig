@@ -3,7 +3,6 @@ const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
 const constants = @import("../constants.zig");
 const levels = @import("../levels.zig");
-const GameFrameContext = @import("../frame.zig").GameFrameContext;
 const game = @import("../game.zig");
 const util = @import("../util.zig");
 const physInWall = @import("../physics.zig").physInWall;
@@ -22,7 +21,7 @@ const SystemData = struct {
     voice_sampler: *c.VoiceSampler,
 };
 
-pub fn run(gs: *game.Session, context: GameFrameContext) void {
+pub fn run(gs: *game.Session, context: game.FrameContext) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
@@ -67,7 +66,7 @@ fn playerUpdate(gs: *game.Session, self: SystemData) void {
     }
 }
 
-fn playerShoot(gs: *game.Session, self: SystemData, context: GameFrameContext) void {
+fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) void {
     if (self.player.in_shoot) {
         if (self.player.trigger_released) {
             // the player can only have a certain amount of bullets in play at a
@@ -84,7 +83,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: GameFrameContext) v
                 }
             } else null) |slot| {
                 self.voice_laser.params = .{
-                    .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+                    .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
                     .carrier_mul = 2.0,
                     .modulator_mul = 0.5,
                     .modulator_rad = 0.5,

@@ -131,7 +131,7 @@ fn monsterAttack(gs: *game.Session, self: SystemData) void {
         if (self.monster.can_shoot) {
             if (self.voice_laser) |voice_laser| {
                 voice_laser.params = .{
-                    .freq_mul = 0.9 + 0.2 * gs.getRand().float(f32),
+                    .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
                     .carrier_mul = 4.0,
                     .modulator_mul = 0.125,
                     .modulator_rad = 1.0,
@@ -157,7 +157,7 @@ fn monsterAttack(gs: *game.Session, self: SystemData) void {
             }) catch undefined;
         }
         self.monster.next_attack_timer =
-            constants.duration60(gs.getRand().intRangeLessThan(u31, 75, 400));
+            constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400));
     }
 }
 
@@ -229,7 +229,7 @@ fn chooseTurn(
     if (can_go_left) choices.add(left, 1);
     if (can_go_right) choices.add(right, 1);
 
-    return choices.chooseRandom(gs.getRand());
+    return choices.chooseRandom(&gs.prng.random);
 }
 
 // return the direction a bullet would be fired, or null if not in the line of
