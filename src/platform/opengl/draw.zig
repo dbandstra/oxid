@@ -33,8 +33,7 @@ pub const DrawInitParams = struct {
 pub const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
 pub const DrawState = struct {
-    // dimensions of the game viewport, which will be scaled up to fit the system
-    // window
+    // dimensions of the game viewport, which will be scaled up to fit the system window
     virtual_window_width: u32,
     virtual_window_height: u32,
     shader_textured: shader_textured.Shader,

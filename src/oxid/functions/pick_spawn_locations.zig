@@ -23,7 +23,7 @@ pub fn pickSpawnLocations(gs: *game.Session, gridlocs_buf: []math.Vec2) []const 
         while (gx < levels.width) : (gx += 1) {
             const pos = math.vec2(gx, gy);
             const i = gy * levels.width + gx;
-            gridmask[i] = levels.level1.getGridTerrainType(pos) == .floor;
+            gridmask[i] = levels.getGridTerrainType(levels.level1, pos) == .floor;
         }
     }
 

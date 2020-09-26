@@ -19,7 +19,7 @@ pub fn getLineOfFire(bullet_pos: math.Vec2, bullet_bbox: math.Box, facing: math.
             .w => box.mins.x -= 1,
         }
 
-        if (levels.level1.absBoxInWall(box)) {
+        if (levels.absBoxInWall(levels.level1, box)) {
             switch (facing) {
                 .n => box.mins.y += 1,
                 .e => box.maxs.x -= 1,

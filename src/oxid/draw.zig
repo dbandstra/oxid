@@ -79,7 +79,7 @@ fn drawMapTile(
     y: u31,
 ) void {
     const gridpos = math.vec2(x, y);
-    const maybe_graphic: ?graphics.Graphic = switch (levels.level1.getGridValue(gridpos).?) {
+    const maybe_graphic: ?graphics.Graphic = switch (levels.getGridValue(levels.level1, gridpos).?) {
         0x00 => .floor,
         0x01 => .floor_shadow,
         0x80 => .wall,
