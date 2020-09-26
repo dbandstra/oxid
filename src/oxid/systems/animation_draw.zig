@@ -9,11 +9,11 @@ pub fn run(gs: *game.Session) void {
         animation: *const c.Animation,
     });
     while (it.next()) |self| {
-        _ = p.EventDraw.spawn(gs, .{
+        p.eventDraw(gs, .{
             .pos = self.transform.pos,
             .graphic = graphics.getSimpleAnim(self.animation.simple_anim).frames[self.animation.frame_index],
             .transform = .identity,
             .z_index = self.animation.z_index,
-        }) catch undefined;
+        });
     }
 }

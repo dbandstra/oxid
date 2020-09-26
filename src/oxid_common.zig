@@ -245,11 +245,11 @@ pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?Inpu
             const s = maybe_source orelse continue;
             if (!areInputSourcesEqual(s, source)) continue;
 
-            _ = p.EventGameInput.spawn(&main_state.session, .{
+            p.eventGameInput(&main_state.session, .{
                 .player_number = player_number,
                 .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                 .down = down,
-            }) catch undefined;
+            });
 
             return InputSpecial{ .noop = {} };
         }

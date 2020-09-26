@@ -7,7 +7,7 @@ const levels = @import("levels.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
 
-fn make_bbox(diameter: u31) math.Box {
+fn makeBBox(diameter: u31) math.Box {
     const graphic_diameter = levels.subpixels_per_tile;
     const min = graphic_diameter / 2 - diameter / 2;
     const max = graphic_diameter / 2 + diameter / 2 - 1;
@@ -18,13 +18,13 @@ fn make_bbox(diameter: u31) math.Box {
 }
 
 // all entities are full size for colliding with the level
-const world_bbox = make_bbox(levels.subpixels_per_tile);
+const world_bbox = makeBBox(levels.subpixels_per_tile);
 // player's ent-vs-ent bbox is 50% size
-const player_entity_bbox = make_bbox(levels.subpixels_per_tile / 2);
+const player_entity_bbox = makeBBox(levels.subpixels_per_tile / 2);
 // monster's ent-vs-ent bbox is 75% size
-const monster_entity_bbox = make_bbox(levels.subpixels_per_tile * 3 / 4);
+const monster_entity_bbox = makeBBox(levels.subpixels_per_tile * 3 / 4);
 // pickups are 75% size
-const pickup_entity_bbox = make_bbox(levels.subpixels_per_tile * 3 / 4);
+const pickup_entity_bbox = makeBBox(levels.subpixels_per_tile * 3 / 4);
 
 pub const bullet_bbox = blk: {
     const bullet_size = 4 * levels.pixels_per_tile;
@@ -505,29 +505,28 @@ pub const Explosion = struct {
     }
 };
 
-fn Event(comptime T: type) type {
+fn event(comptime T: type) fn (gs: *game.Session, body: T) void {
     return struct {
-        pub fn spawn(gs: *game.Session, body: T) !gbe.EntityId {
+        fn spawn(gs: *game.Session, body: T) void {
             const entity_id = gs.ecs.spawn();
-            errdefer gs.ecs.undoSpawn(entity_id);
-
-            try gs.ecs.addComponent(entity_id, body);
-
-            return entity_id;
+            gs.ecs.addComponent(entity_id, body) catch |err| {
+                // TODO warn?
+                gs.ecs.undoSpawn(entity_id);
+            };
         }
-    };
+    }.spawn;
 }
 
-pub const EventAwardLife = Event(c.EventAwardLife);
-pub const EventAwardPoints = Event(c.EventAwardPoints);
-pub const EventCollide = Event(c.EventCollide);
-pub const EventConferBonus = Event(c.EventConferBonus);
-pub const EventDraw = Event(c.EventDraw);
-pub const EventDrawBox = Event(c.EventDrawBox);
-pub const EventGameInput = Event(c.EventGameInput);
-pub const EventGameOver = Event(c.EventGameOver);
-pub const EventMonsterDied = Event(c.EventMonsterDied);
-pub const EventPlayerDied = Event(c.EventPlayerDied);
-pub const EventPlayerOutOfLives = Event(c.EventPlayerOutOfLives);
-pub const EventShowMessage = Event(c.EventShowMessage);
-pub const EventTakeDamage = Event(c.EventTakeDamage);
+pub const eventAwardLife = event(c.EventAwardLife);
+pub const eventAwardPoints = event(c.EventAwardPoints);
+pub const eventCollide = event(c.EventCollide);
+pub const eventConferBonus = event(c.EventConferBonus);
+pub const eventDraw = event(c.EventDraw);
+pub const eventDrawBox = event(c.EventDrawBox);
+pub const eventGameInput = event(c.EventGameInput);
+pub const eventGameOver = event(c.EventGameOver);
+pub const eventMonsterDied = event(c.EventMonsterDied);
+pub const eventPlayerDied = event(c.EventPlayerDied);
+pub const eventPlayerOutOfLives = event(c.EventPlayerOutOfLives);
+pub const eventShowMessage = event(c.EventShowMessage);
+pub const eventTakeDamage = event(c.EventTakeDamage);

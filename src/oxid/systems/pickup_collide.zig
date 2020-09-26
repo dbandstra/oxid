@@ -14,20 +14,20 @@ pub fn run(gs: *game.Session) void {
         const event = self.inbox.one();
         const other_player = gs.ecs.findComponentById(event.other_id, c.Player) orelse continue;
 
-        _ = p.EventConferBonus.spawn(gs, .{
+        p.eventConferBonus(gs, .{
             .recipient_id = event.other_id,
             .pickup_type = self.pickup.pickup_type,
-        }) catch undefined;
+        });
 
-        _ = p.EventAwardPoints.spawn(gs, .{
+        p.eventAwardPoints(gs, .{
             .player_controller_id = other_player.player_controller_id,
             .points = constants.getPickupValues(self.pickup.pickup_type).get_points,
-        }) catch undefined;
+        });
 
         if (constants.getPickupValues(self.pickup.pickup_type).message) |message| {
-            _ = p.EventShowMessage.spawn(gs, .{
+            p.eventShowMessage(gs, .{
                 .message = message,
-            }) catch undefined;
+            });
         }
 
         gs.ecs.markForRemoval(self.id);

@@ -10,7 +10,7 @@ pub fn run(gs: *game.Session) void {
         simple_graphic: *const c.SimpleGraphic,
     });
     while (it.next()) |self| {
-        _ = p.EventDraw.spawn(gs, .{
+        p.eventDraw(gs, .{
             .pos = self.transform.pos,
             .graphic = self.simple_graphic.graphic,
             .transform = if (self.simple_graphic.directional)
@@ -21,6 +21,6 @@ pub fn run(gs: *game.Session) void {
             else
                 .identity,
             .z_index = self.simple_graphic.z_index,
-        }) catch undefined;
+        });
     }
 }

@@ -23,7 +23,7 @@ fn think(gs: *game.Session, self: SystemData) void {
         if (self.gc.num_players_remaining > 0) {
             self.gc.num_players_remaining -= 1;
             if (self.gc.num_players_remaining == 0) {
-                _ = p.EventGameOver.spawn(gs, .{}) catch undefined;
+                p.eventGameOver(gs, .{});
             }
         }
     }

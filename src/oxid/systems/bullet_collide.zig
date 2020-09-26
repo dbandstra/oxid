@@ -20,11 +20,11 @@ pub fn run(gs: *game.Session) void {
         }) catch undefined;
 
         if (!gbe.EntityId.isZero(event.other_id)) {
-            _ = p.EventTakeDamage.spawn(gs, .{
+            p.eventTakeDamage(gs, .{
                 .inflictor_player_controller_id = self.bullet.inflictor_player_controller_id,
                 .self_id = event.other_id,
                 .amount = self.bullet.damage,
-            }) catch undefined;
+            });
         }
 
         gs.ecs.markForRemoval(self.id);

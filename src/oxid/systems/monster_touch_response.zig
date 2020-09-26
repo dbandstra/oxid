@@ -44,11 +44,11 @@ fn monsterCollide(gs: *game.Session, self: SystemData) void {
 
         // if it's a player creature, inflict damage on it
         if (other.player != null and self.monster.spawning_timer == 0) {
-            _ = p.EventTakeDamage.spawn(gs, .{
+            p.eventTakeDamage(gs, .{
                 .inflictor_player_controller_id = null,
                 .self_id = event.other_id,
                 .amount = 1,
-            }) catch undefined;
+            });
         }
     }
 

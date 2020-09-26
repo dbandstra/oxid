@@ -25,7 +25,7 @@ pub fn run(gs: *game.Session) void {
 fn think(gs: *game.Session, self: SystemData) void {
     if (self.player) |player| {
         if (player.dying_timer > 0) {
-            _ = p.EventDraw.spawn(gs, .{
+            p.eventDraw(gs, .{
                 .pos = self.transform.pos,
                 .graphic = if (player.dying_timer > constants.duration60(30))
                     if (alternation(u32, player.dying_timer, constants.duration60(2)))
@@ -40,7 +40,7 @@ fn think(gs: *game.Session, self: SystemData) void {
                     graphics.Graphic.man_dying5,
                 .transform = .identity,
                 .z_index = constants.z_index_player,
-            }) catch undefined;
+            });
         } else {
             drawCreature(gs, self, .{
                 .graphic1 = if (player.player_number == 0) .man1_walk1 else .man2_walk1,
@@ -54,7 +54,7 @@ fn think(gs: *game.Session, self: SystemData) void {
 
     if (self.monster) |monster| {
         if (monster.spawning_timer > 0) {
-            _ = p.EventDraw.spawn(gs, .{
+            p.eventDraw(gs, .{
                 .pos = self.transform.pos,
                 .graphic = if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
                     .spawn1
@@ -62,7 +62,7 @@ fn think(gs: *game.Session, self: SystemData) void {
                     .spawn2,
                 .transform = .identity,
                 .z_index = constants.z_index_enemy,
-            }) catch undefined;
+            });
         } else {
             drawCreature(gs, self, switch (monster.monster_type) {
                 .spider => .{
@@ -142,7 +142,7 @@ fn drawCreature(gs: *game.Session, self: SystemData, params: DrawCreatureParams)
     };
     const sxpos = @divFloor(xpos, levels.subpixels_per_pixel);
 
-    _ = p.EventDraw.spawn(gs, .{
+    p.eventDraw(gs, .{
         .pos = self.transform.pos,
         .graphic =
         // animate legs every 6 screen pixels
@@ -155,5 +155,5 @@ fn drawCreature(gs: *game.Session, self: SystemData, params: DrawCreatureParams)
         else
             .identity,
         .z_index = params.z_index,
-    }) catch undefined;
+    });
 }

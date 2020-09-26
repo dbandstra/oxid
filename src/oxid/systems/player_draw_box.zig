@@ -9,10 +9,10 @@ pub fn run(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         if (self.player.line_of_fire) |box| {
-            _ = p.EventDrawBox.spawn(gs, .{
+            p.eventDrawBox(gs, .{
                 .box = box,
                 .color = draw.black,
-            }) catch undefined;
+            });
         }
     }
 }

@@ -32,9 +32,9 @@ pub fn run(gs: *game.Session) void {
                 },
                 .life_up => {
                     self.voice_sampler.sample = .extra_life;
-                    _ = p.EventAwardLife.spawn(gs, .{
+                    p.eventAwardLife(gs, .{
                         .player_controller_id = self.player.player_controller_id,
-                    }) catch undefined;
+                    });
                 },
                 .coin => {
                     self.voice_coin.params = .{

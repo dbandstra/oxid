@@ -37,6 +37,8 @@ pub fn ComponentList(comptime T: type, comptime capacity_: usize) type {
     };
 }
 
+pub const AddComponentError = error{NoComponentSlotsAvailable};
+
 pub fn ECS(comptime ComponentLists: type) type {
     std.debug.assert(@typeInfo(ComponentLists) == .Struct);
     //inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
@@ -150,7 +152,7 @@ pub fn ECS(comptime ComponentLists: type) type {
             self: *@This(),
             entity_id: EntityId,
             data: var,
-        ) !void {
+        ) AddComponentError!void {
             var list = &@field(self.components, @typeName(@TypeOf(data)));
             const slot_index = blk: {
                 var i: usize = 0;
