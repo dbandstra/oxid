@@ -1,8 +1,16 @@
 const std = @import("std");
-const ConstantTypes = @import("constant_types.zig");
-const Wave = ConstantTypes.Wave;
 const GameSession = @import("game.zig").GameSession;
 const c = @import("components.zig");
+
+pub const Wave = struct {
+    spiders: u32,
+    knights: u32,
+    fastbugs: u32,
+    squids: u32,
+    juggernauts: u32,
+    speed: u31,
+    message: ?[]const u8,
+};
 
 const WaveChoice = struct {
     weight: u32,

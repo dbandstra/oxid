@@ -2,7 +2,6 @@ const zang = @import("zang");
 const gbe = @import("gbe");
 const Math = @import("../common/math.zig");
 const Draw = @import("../common/draw.zig");
-const ConstantTypes = @import("constant_types.zig");
 const constants = @import("constants.zig");
 const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const Graphic = @import("graphics.zig").Graphic;
@@ -42,7 +41,7 @@ pub const Monster = struct {
         wander,
     };
 
-    monster_type: ConstantTypes.MonsterType,
+    monster_type: constants.MonsterType,
     spawning_timer: u32,
     full_hit_points: u32,
     personality: Personality,
@@ -145,7 +144,7 @@ pub const PhysObjectInternal = struct {
 };
 
 pub const Pickup = struct {
-    pickup_type: ConstantTypes.PickupType,
+    pickup_type: constants.PickupType,
 };
 
 pub const Player = struct {
@@ -160,7 +159,7 @@ pub const Player = struct {
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,
     dying_timer: u32,
-    last_pickup: ?ConstantTypes.PickupType,
+    last_pickup: ?constants.PickupType,
     line_of_fire: ?Math.BoundingBox,
     in_left: bool,
     in_right: bool,
@@ -194,7 +193,7 @@ pub const EventCollide = struct {
 
 pub const EventConferBonus = struct {
     recipient_id: gbe.EntityId,
-    pickup_type: ConstantTypes.PickupType,
+    pickup_type: constants.PickupType,
 };
 
 pub const EventDraw = struct {

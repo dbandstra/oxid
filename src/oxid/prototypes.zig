@@ -6,7 +6,6 @@ const SimpleAnim = @import("graphics.zig").SimpleAnim;
 const getSimpleAnim = @import("graphics.zig").getSimpleAnim;
 const GameSession = @import("game.zig").GameSession;
 const levels = @import("levels.zig");
-const ConstantTypes = @import("constant_types.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
 const audio = @import("audio.zig");
@@ -197,7 +196,7 @@ pub const PlayerCorpse = struct {
 pub const Monster = struct {
     pub const Params = struct {
         wave_number: u32,
-        monster_type: ConstantTypes.MonsterType,
+        monster_type: constants.MonsterType,
         pos: math.Vec2,
         has_coin: bool,
     };
@@ -405,7 +404,7 @@ pub const Animation = struct {
 pub const Pickup = struct {
     pub const Params = struct {
         pos: math.Vec2,
-        pickup_type: ConstantTypes.PickupType,
+        pickup_type: constants.PickupType,
     };
 
     pub fn spawn(gs: *GameSession, params: Params) !gbe.EntityId {

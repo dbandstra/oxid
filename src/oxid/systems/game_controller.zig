@@ -3,14 +3,13 @@ const math = @import("../../common/math.zig");
 const audio = @import("../audio.zig");
 const GameSession = @import("../game.zig").GameSession;
 const levels = @import("../levels.zig");
-const ConstantTypes = @import("../constant_types.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const pickSpawnLocation = @import("../functions/pick_spawn_locations.zig").pickSpawnLocation;
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
 const util = @import("../util.zig");
-const createWave = @import("../wave.zig").createWave;
+const waves = @import("../waves.zig");
 
 const SystemData = struct {
     gc: *c.GameController,
@@ -37,7 +36,7 @@ fn think(gs: *GameSession, self: SystemData) void {
         self.gc.wave_message_timer = constants.duration60(180);
         self.gc.enemy_speed_level = 0;
         self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
-        const wave = createWave(gs, self.gc);
+        const wave = waves.createWave(gs, self.gc);
         spawnWave(gs, self.gc.wave_number, &wave);
         self.gc.enemy_speed_level = wave.speed;
         self.gc.monster_count = countNonPersistentMonsters(gs);
@@ -58,7 +57,7 @@ fn think(gs: *GameSession, self: SystemData) void {
         self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
     if (util.decrementTimer(&self.gc.next_pickup_timer)) {
-        const pickup_type: ConstantTypes.PickupType = if (gs.getRand().boolean())
+        const pickup_type: constants.PickupType = if (gs.getRand().boolean())
             .speed_up
         else
             .power_up;
@@ -96,11 +95,7 @@ fn countNonPersistentMonsters(gs: *GameSession) u32 {
     return count;
 }
 
-fn spawnWave(
-    gs: *GameSession,
-    wave_number: u32,
-    wave: *const ConstantTypes.Wave,
-) void {
+fn spawnWave(gs: *GameSession, wave_number: u32, wave: *const waves.Wave) void {
     const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
     const coins = (wave.spiders + wave.knights) / 3;
     std.debug.assert(count <= 100);
@@ -110,22 +105,22 @@ fn spawnWave(
             .wave_number = wave_number,
             .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
             .monster_type = if (i < wave.spiders)
-                ConstantTypes.MonsterType.spider
+                constants.MonsterType.spider
             else if (i < wave.spiders + wave.knights)
-                ConstantTypes.MonsterType.knight
+                constants.MonsterType.knight
             else if (i < wave.spiders + wave.knights + wave.fastbugs)
-                ConstantTypes.MonsterType.fast_bug
+                constants.MonsterType.fast_bug
             else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
-                ConstantTypes.MonsterType.squid
+                constants.MonsterType.squid
             else
-                ConstantTypes.MonsterType.juggernaut,
+                constants.MonsterType.juggernaut,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
         }) catch undefined;
     }
 }
 
-fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
+fn spawnPickup(gs: *GameSession, pickup_type: constants.PickupType) void {
     const spawn_loc = pickSpawnLocation(gs) orelse return;
     const pos = math.Vec2.scale(spawn_loc, levels.subpixels_per_tile);
     _ = p.Pickup.spawn(gs, .{
