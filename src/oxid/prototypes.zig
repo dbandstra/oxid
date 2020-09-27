@@ -39,7 +39,7 @@ pub const bullet_bbox = blk: {
 // currently, i can't pass a tuple to this function, due to a zig compiler bug (the program will
 // crash at runtime). so the explicit @"0", @"1", etc. syntax i'm using is only there until the
 // bug is fixed.
-inline fn spawnWithComponents(gs: *game.Session, components: var) ?gbe.EntityId {
+inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.EntityId {
     const entity_id = gs.ecs.spawn();
     inline for (@typeInfo(@TypeOf(components)).Struct.fields) |field| {
         if (@typeInfo(field.field_type) == .Optional) {
@@ -63,10 +63,10 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
     num_players: u32,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.GameController,
-            @"1": c.VoiceAccelerate,
-            @"2": c.VoiceWaveBegin,
-        }{
+        @"0": c.GameController,
+        @"1": c.VoiceAccelerate,
+        @"2": c.VoiceWaveBegin,
+    }{
         .@"0" = c.GameController{
             .monster_count = 0,
             .enemy_speed_level = 0,
@@ -93,8 +93,8 @@ pub fn spawnPlayerController(gs: *game.Session, params: struct {
     player_number: u32,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.PlayerController,
-        }{
+        @"0": c.PlayerController,
+    }{
         .@"0" = c.PlayerController{
             .player_number = params.player_number,
             .player_id = null,
@@ -111,15 +111,15 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.PhysObject,
-            @"2": c.Creature,
-            @"3": c.Player,
-            @"4": c.VoiceCoin,
-            @"5": c.VoiceLaser,
-            @"6": c.VoicePowerUp,
-            @"7": c.VoiceSampler,
-        }{
+        @"0": c.Transform,
+        @"1": c.PhysObject,
+        @"2": c.Creature,
+        @"3": c.Player,
+        @"4": c.VoiceCoin,
+        @"5": c.VoiceLaser,
+        @"6": c.VoicePowerUp,
+        @"7": c.VoiceSampler,
+    }{
         .@"0" = c.Transform{
             .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
         },
@@ -169,9 +169,9 @@ pub fn spawnPlayerCorpse(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.SimpleGraphic,
-        }{
+        @"0": c.Transform,
+        @"1": c.SimpleGraphic,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -197,12 +197,12 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
         false;
 
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.PhysObject,
-            @"2": c.Creature,
-            @"3": c.Monster,
-            @"4": ?c.VoiceLaser,
-        }{
+        @"0": c.Transform,
+        @"1": c.PhysObject,
+        @"2": c.Creature,
+        @"3": c.Monster,
+        @"4": ?c.VoiceLaser,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -254,12 +254,12 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.PhysObject,
-            @"2": c.Web,
-            @"3": c.Creature,
-            @"4": c.VoiceSampler,
-        }{
+        @"0": c.Transform,
+        @"1": c.PhysObject,
+        @"2": c.Web,
+        @"3": c.Creature,
+        @"4": c.VoiceSampler,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -298,11 +298,11 @@ pub fn spawnBullet(gs: *game.Session, params: struct {
     friendly_fire: bool,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.PhysObject,
-            @"2": c.Bullet,
-            @"3": c.SimpleGraphic,
-        }{
+        @"0": c.Transform,
+        @"1": c.PhysObject,
+        @"2": c.Bullet,
+        @"3": c.SimpleGraphic,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -357,9 +357,9 @@ pub fn spawnAnimation(gs: *game.Session, params: struct {
     z_index: u32,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.Animation,
-        }{
+        @"0": c.Transform,
+        @"1": c.Animation,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -379,12 +379,12 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
     const pickup_values = constants.getPickupValues(params.pickup_type);
 
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.SimpleGraphic,
-            @"2": c.PhysObject,
-            @"3": c.Pickup,
-            @"4": c.RemoveTimer,
-        }{
+        @"0": c.Transform,
+        @"1": c.SimpleGraphic,
+        @"2": c.PhysObject,
+        @"3": c.Pickup,
+        @"4": c.RemoveTimer,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -424,10 +424,10 @@ pub fn spawnSparks(gs: *game.Session, params: struct {
     impact_sound: bool,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.Animation,
-            @"2": ?c.VoiceSampler,
-        }{
+        @"0": c.Transform,
+        @"1": c.Animation,
+        @"2": ?c.VoiceSampler,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
@@ -450,10 +450,10 @@ pub fn spawnExplosion(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-            @"0": c.Transform,
-            @"1": c.Animation,
-            @"2": c.VoiceExplosion,
-        }{
+        @"0": c.Transform,
+        @"1": c.Animation,
+        @"2": c.VoiceExplosion,
+    }{
         .@"0" = c.Transform{
             .pos = params.pos,
         },
