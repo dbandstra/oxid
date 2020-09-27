@@ -63,7 +63,7 @@ pub fn run(gs: *game.Session) void {
                 _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = pickup_type,
-                }) catch undefined;
+                });
             }
 
             continue;
@@ -86,13 +86,13 @@ pub fn run(gs: *game.Session) void {
                 _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = .coin,
-                }) catch undefined;
+                });
             }
         }
 
         _ = p.spawnExplosion(gs, .{
             .pos = self.transform.pos,
-        }) catch undefined;
+        });
 
         gs.ecs.markForRemoval(self.id);
     }

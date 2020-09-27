@@ -30,7 +30,7 @@ fn spawnPlayer(gs: *game.Session, self: SystemData) void {
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
         .pos = math.vec2(x, y),
-    }) catch return;
+    }) orelse return;
 
     self.pc.player_id = player_id;
 }

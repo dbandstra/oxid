@@ -122,7 +122,7 @@ fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void 
                 constants.MonsterType.juggernaut,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
-        }) catch undefined;
+        });
     }
 }
 
@@ -131,5 +131,5 @@ fn spawnPickup(gs: *game.Session, pickup_type: constants.PickupType) void {
     _ = p.spawnPickup(gs, .{
         .pos = math.vec2Scale(spawn_loc, levels.subpixels_per_tile),
         .pickup_type = pickup_type,
-    }) catch undefined;
+    });
 }

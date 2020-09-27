@@ -344,13 +344,13 @@ pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
 
     _ = p.spawnGameController(gs, .{
         .num_players = num_players,
-    }) catch undefined;
+    });
 
     var n: u32 = 0;
     while (n < num_players) : (n += 1) {
         _ = p.spawnPlayerController(gs, .{
             .player_number = n,
-        }) catch undefined;
+        });
     }
 }
 

@@ -36,140 +36,161 @@ pub const bullet_bbox = blk: {
     };
 };
 
-pub fn spawnMainController(gs: *game.Session) !gbe.EntityId {
+// currently, i can't pass a tuple to this function, due to a zig compiler bug (the program will
+// crash at runtime). so the explicit @"0", @"1", etc. syntax i'm using is only there until the
+// bug is fixed.
+inline fn spawnWithComponents(gs: *game.Session, components: var) ?gbe.EntityId {
     const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.MainController{
-        .game_running_state = null,
-    });
-
+    inline for (@typeInfo(@TypeOf(components)).Struct.fields) |field| {
+        if (@typeInfo(field.field_type) == .Optional) {
+            if (@field(components, field.name)) |value| {
+                gs.ecs.addComponent(entity_id, value) catch {
+                    gs.ecs.undoSpawn(entity_id);
+                    return null;
+                };
+            }
+        } else {
+            gs.ecs.addComponent(entity_id, @field(components, field.name)) catch {
+                gs.ecs.undoSpawn(entity_id);
+                return null;
+            };
+        }
+    }
     return entity_id;
+}
+
+pub fn spawnMainController(gs: *game.Session) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.MainController,
+        }{
+        .@"0" = c.MainController{
+            .game_running_state = null,
+        },
+    });
 }
 
 pub fn spawnGameController(gs: *game.Session, params: struct {
     num_players: u32,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.GameController{
-        .monster_count = 0,
-        .enemy_speed_level = 0,
-        .enemy_speed_timer = constants.enemy_speed_ticks,
-        .wave_number = 0,
-        .next_wave_timer = constants.duration60(90),
-        .next_pickup_timer = constants.duration60(15 * 60),
-        .freeze_monsters_timer = 0,
-        .extra_lives_spawned = 0,
-        .wave_message = null,
-        .wave_message_timer = 0,
-        .num_players_remaining = params.num_players,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.GameController,
+            @"1": c.VoiceAccelerate,
+            @"2": c.VoiceWaveBegin,
+        }{
+        .@"0" = c.GameController{
+            .monster_count = 0,
+            .enemy_speed_level = 0,
+            .enemy_speed_timer = constants.enemy_speed_ticks,
+            .wave_number = 0,
+            .next_wave_timer = constants.duration60(90),
+            .next_pickup_timer = constants.duration60(15 * 60),
+            .freeze_monsters_timer = 0,
+            .extra_lives_spawned = 0,
+            .wave_message = null,
+            .wave_message_timer = 0,
+            .num_players_remaining = params.num_players,
+        },
+        .@"1" = c.VoiceAccelerate{
+            .params = null,
+        },
+        .@"2" = c.VoiceWaveBegin{
+            .params = null,
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.VoiceAccelerate{
-        .params = null,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.VoiceWaveBegin{
-        .params = null,
-    });
-
-    return entity_id;
 }
 
 pub fn spawnPlayerController(gs: *game.Session, params: struct {
     player_number: u32,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.PlayerController{
-        .player_number = params.player_number,
-        .player_id = null,
-        .lives = constants.player_num_lives,
-        .score = 0,
-        .respawn_timer = 1,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.PlayerController,
+        }{
+        .@"0" = c.PlayerController{
+            .player_number = params.player_number,
+            .player_id = null,
+            .lives = constants.player_num_lives,
+            .score = 0,
+            .respawn_timer = 1,
+        },
     });
-
-    return entity_id;
 }
 
 pub fn spawnPlayer(gs: *game.Session, params: struct {
     player_number: u32,
     player_controller_id: gbe.EntityId,
     pos: math.Vec2,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.PhysObject,
+            @"2": c.Creature,
+            @"3": c.Player,
+            @"4": c.VoiceCoin,
+            @"5": c.VoiceLaser,
+            @"6": c.VoicePowerUp,
+            @"7": c.VoiceSampler,
+        }{
+        .@"0" = c.Transform{
+            .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
+        },
+        .@"1" = c.PhysObject{
+            .illusory = true, // illusory during invulnerability stage
+            .world_bbox = world_bbox,
+            .entity_bbox = player_entity_bbox,
+            .facing = .e,
+            .speed = 0,
+            .push_dir = null,
+            .owner_id = gbe.EntityId.zero,
+            .flags = c.PhysObject.FLAG_PLAYER,
+            .ignore_flags = c.PhysObject.FLAG_PLAYER,
+            .internal = undefined,
+        },
+        .@"2" = c.Creature{
+            .invulnerability_timer = constants.invulnerability_time,
+            .hit_points = 1,
+            .flinch_timer = 0,
+            .god_mode = false,
+        },
+        .@"3" = c.Player{
+            .player_number = params.player_number,
+            .player_controller_id = params.player_controller_id,
+            .trigger_released = true,
+            .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
+            .attack_level = .one,
+            .speed_level = .one,
+            .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
+            .dying_timer = 0,
+            .last_pickup = null,
+            .line_of_fire = null,
+            .in_left = false,
+            .in_right = false,
+            .in_up = false,
+            .in_down = false,
+            .in_shoot = false,
+        },
+        .@"4" = c.VoiceCoin{ .params = null },
+        .@"5" = c.VoiceLaser{ .params = null },
+        .@"6" = c.VoicePowerUp{ .params = null },
+        .@"7" = c.VoiceSampler{ .sample = null },
     });
-
-    try gs.ecs.addComponent(entity_id, c.PhysObject{
-        .illusory = true, // illusory during invulnerability stage
-        .world_bbox = world_bbox,
-        .entity_bbox = player_entity_bbox,
-        .facing = .e,
-        .speed = 0,
-        .push_dir = null,
-        .owner_id = gbe.EntityId.zero,
-        .flags = c.PhysObject.FLAG_PLAYER,
-        .ignore_flags = c.PhysObject.FLAG_PLAYER,
-        .internal = undefined,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Creature{
-        .invulnerability_timer = constants.invulnerability_time,
-        .hit_points = 1,
-        .flinch_timer = 0,
-        .god_mode = false,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Player{
-        .player_number = params.player_number,
-        .player_controller_id = params.player_controller_id,
-        .trigger_released = true,
-        .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
-        .attack_level = .one,
-        .speed_level = .one,
-        .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
-        .dying_timer = 0,
-        .last_pickup = null,
-        .line_of_fire = null,
-        .in_left = false,
-        .in_right = false,
-        .in_up = false,
-        .in_down = false,
-        .in_shoot = false,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.VoiceCoin{ .params = null });
-    try gs.ecs.addComponent(entity_id, c.VoiceLaser{ .params = null });
-    try gs.ecs.addComponent(entity_id, c.VoicePowerUp{ .params = null });
-    try gs.ecs.addComponent(entity_id, c.VoiceSampler{ .sample = null });
-
-    return entity_id;
 }
 
 pub fn spawnPlayerCorpse(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.SimpleGraphic,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.SimpleGraphic{
+            .graphic = .man_dying6,
+            .z_index = constants.z_index_corpse,
+            .directional = false,
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
-        .graphic = .man_dying6,
-        .z_index = constants.z_index_corpse,
-        .directional = false,
-    });
-
-    return entity_id;
 }
 
 pub fn spawnMonster(gs: *game.Session, params: struct {
@@ -177,105 +198,104 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
     monster_type: constants.MonsterType,
     pos: math.Vec2,
     has_coin: bool,
-}) !gbe.EntityId {
+}) ?gbe.EntityId {
     const monster_values = constants.getMonsterValues(params.monster_type);
-
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.PhysObject{
-        .illusory = false,
-        .world_bbox = world_bbox,
-        .entity_bbox = monster_entity_bbox,
-        .facing = .e,
-        .speed = 0,
-        .push_dir = null,
-        .owner_id = gbe.EntityId.zero,
-        .flags = c.PhysObject.FLAG_MONSTER,
-        .ignore_flags = 0,
-        .internal = undefined,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Creature{
-        .invulnerability_timer = 0,
-        .hit_points = 999, // invulnerable while spawning
-        .flinch_timer = 0,
-        .god_mode = false,
-    });
 
     const can_shoot = if (monster_values.first_shooting_level) |first_level|
         params.wave_number >= first_level
     else
         false;
 
-    try gs.ecs.addComponent(entity_id, c.Monster{
-        .monster_type = params.monster_type,
-        .spawning_timer = constants.monster_spawn_time,
-        .full_hit_points = monster_values.hit_points,
-        .personality = if (params.monster_type == .juggernaut)
-            c.Monster.Personality.chase
-        else if (gs.prng.random.boolean())
-            c.Monster.Personality.chase
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.PhysObject,
+            @"2": c.Creature,
+            @"3": c.Monster,
+            @"4": ?c.VoiceLaser,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.PhysObject{
+            .illusory = false,
+            .world_bbox = world_bbox,
+            .entity_bbox = monster_entity_bbox,
+            .facing = .e,
+            .speed = 0,
+            .push_dir = null,
+            .owner_id = gbe.EntityId.zero,
+            .flags = c.PhysObject.FLAG_MONSTER,
+            .ignore_flags = 0,
+            .internal = undefined,
+        },
+        .@"2" = c.Creature{
+            .invulnerability_timer = 0,
+            .hit_points = 999, // invulnerable while spawning
+            .flinch_timer = 0,
+            .god_mode = false,
+        },
+        .@"3" = c.Monster{
+            .monster_type = params.monster_type,
+            .spawning_timer = constants.monster_spawn_time,
+            .full_hit_points = monster_values.hit_points,
+            .personality = if (params.monster_type == .juggernaut)
+                c.Monster.Personality.chase
+            else if (gs.prng.random.boolean())
+                c.Monster.Personality.chase
+            else
+                c.Monster.Personality.wander,
+            .can_shoot = can_shoot,
+            .next_attack_timer = if (can_shoot or monster_values.can_drop_webs)
+                constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400))
+            else
+                0,
+            .has_coin = params.has_coin,
+        },
+        .@"4" = if (can_shoot)
+            c.VoiceLaser{
+                .params = null,
+            }
         else
-            c.Monster.Personality.wander,
-        .can_shoot = can_shoot,
-        .next_attack_timer = if (can_shoot or monster_values.can_drop_webs)
-            constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400))
-        else
-            0,
-        .has_coin = params.has_coin,
+            null,
     });
-
-    if (can_shoot) {
-        try gs.ecs.addComponent(entity_id, c.VoiceLaser{
-            .params = null,
-        });
-    }
-
-    return entity_id;
 }
 
 pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.PhysObject,
+            @"2": c.Web,
+            @"3": c.Creature,
+            @"4": c.VoiceSampler,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.PhysObject{
+            .illusory = true,
+            .world_bbox = world_bbox,
+            .entity_bbox = monster_entity_bbox,
+            .facing = .e,
+            .speed = 0,
+            .push_dir = null,
+            .owner_id = gbe.EntityId.zero,
+            .flags = c.PhysObject.FLAG_WEB,
+            .ignore_flags = 0,
+            .internal = undefined,
+        },
+        .@"2" = c.Web{},
+        .@"3" = c.Creature{
+            .invulnerability_timer = 0,
+            .hit_points = 3,
+            .flinch_timer = 0,
+            .god_mode = false,
+        },
+        .@"4" = c.VoiceSampler{
+            .sample = .drop_web,
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.PhysObject{
-        .illusory = true,
-        .world_bbox = world_bbox,
-        .entity_bbox = monster_entity_bbox,
-        .facing = .e,
-        .speed = 0,
-        .push_dir = null,
-        .owner_id = gbe.EntityId.zero,
-        .flags = c.PhysObject.FLAG_WEB,
-        .ignore_flags = 0,
-        .internal = undefined,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Web{});
-
-    try gs.ecs.addComponent(entity_id, c.Creature{
-        .invulnerability_timer = 0,
-        .hit_points = 3,
-        .flinch_timer = 0,
-        .god_mode = false,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.VoiceSampler{
-        .sample = .drop_web,
-    });
-
-    return entity_id;
 }
 
 pub fn spawnBullet(gs: *game.Session, params: struct {
@@ -286,181 +306,177 @@ pub fn spawnBullet(gs: *game.Session, params: struct {
     bullet_type: c.Bullet.Type,
     cluster_size: u32,
     friendly_fire: bool,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.PhysObject{
-        .illusory = true,
-        .world_bbox = bullet_bbox,
-        .entity_bbox = bullet_bbox,
-        .facing = params.facing,
-        .speed = switch (params.bullet_type) {
-            .monster_bullet => constants.monster_bullet_speed,
-            .player_bullet => constants.player_bullet_speed,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.PhysObject,
+            @"2": c.Bullet,
+            @"3": c.SimpleGraphic,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
         },
-        .push_dir = null,
-        .owner_id = params.owner_id,
-        .flags = c.PhysObject.FLAG_BULLET,
-        .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
-            // monster bullets ignore all monsters and webs
-            .monster_bullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
-            // player bullets ignore only the player that shot it (via
-            // `owner_id`), unless friendly fire is disabled.
-            // see also src/oxid/set_friendly_fire.zig, where this value
-            // is changed (called when user toggles friendly fire in the
-            // menu)
-            .player_bullet => if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
+        .@"1" = c.PhysObject{
+            .illusory = true,
+            .world_bbox = bullet_bbox,
+            .entity_bbox = bullet_bbox,
+            .facing = params.facing,
+            .speed = switch (params.bullet_type) {
+                .monster_bullet => constants.monster_bullet_speed,
+                .player_bullet => constants.player_bullet_speed,
+            },
+            .push_dir = null,
+            .owner_id = params.owner_id,
+            .flags = c.PhysObject.FLAG_BULLET,
+            .ignore_flags = c.PhysObject.FLAG_BULLET | switch (params.bullet_type) {
+                // monster bullets ignore all monsters and webs
+                .monster_bullet => c.PhysObject.FLAG_MONSTER | c.PhysObject.FLAG_WEB,
+                // player bullets ignore only the player that shot it (via
+                // `owner_id`), unless friendly fire is disabled.
+                // see also src/oxid/set_friendly_fire.zig, where this value
+                // is changed (called when user toggles friendly fire in the
+                // menu)
+                .player_bullet => if (!params.friendly_fire) c.PhysObject.FLAG_PLAYER else 0,
+            },
+            .internal = undefined,
         },
-        .internal = undefined,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Bullet{
-        .bullet_type = params.bullet_type,
-        .inflictor_player_controller_id = params.inflictor_player_controller_id,
-        .damage = params.cluster_size,
-        .line_of_fire = null,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
-        .graphic = switch (params.bullet_type) {
-            .monster_bullet => .mon_bullet,
-            .player_bullet => @as(graphics.Graphic, switch (params.cluster_size) {
-                1 => .pla_bullet,
-                2 => .pla_bullet2,
-                else => .pla_bullet3,
-            }),
+        .@"2" = c.Bullet{
+            .bullet_type = params.bullet_type,
+            .inflictor_player_controller_id = params.inflictor_player_controller_id,
+            .damage = params.cluster_size,
+            .line_of_fire = null,
         },
-        .z_index = constants.z_index_bullet,
-        .directional = true,
+        .@"3" = c.SimpleGraphic{
+            .graphic = switch (params.bullet_type) {
+                .monster_bullet => .mon_bullet,
+                .player_bullet => @as(graphics.Graphic, switch (params.cluster_size) {
+                    1 => .pla_bullet,
+                    2 => .pla_bullet2,
+                    else => .pla_bullet3,
+                }),
+            },
+            .z_index = constants.z_index_bullet,
+            .directional = true,
+        },
     });
-
-    return entity_id;
 }
 
 pub fn spawnAnimation(gs: *game.Session, params: struct {
     pos: math.Vec2,
     simple_anim: graphics.SimpleAnim,
     z_index: u32,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.Animation,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.Animation{
+            .simple_anim = params.simple_anim,
+            .frame_index = 0,
+            .frame_timer = graphics.getSimpleAnim(params.simple_anim).ticks_per_frame,
+            .z_index = params.z_index,
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.Animation{
-        .simple_anim = params.simple_anim,
-        .frame_index = 0,
-        .frame_timer = graphics.getSimpleAnim(params.simple_anim).ticks_per_frame,
-        .z_index = params.z_index,
-    });
-
-    return entity_id;
 }
 
 pub fn spawnPickup(gs: *game.Session, params: struct {
     pos: math.Vec2,
     pickup_type: constants.PickupType,
-}) !gbe.EntityId {
+}) ?gbe.EntityId {
     const pickup_values = constants.getPickupValues(params.pickup_type);
 
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.SimpleGraphic{
-        .graphic = switch (params.pickup_type) {
-            .power_up => .power_up,
-            .speed_up => .speed_up,
-            .life_up => .life_up,
-            .coin => .coin,
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.SimpleGraphic,
+            @"2": c.PhysObject,
+            @"3": c.Pickup,
+            @"4": c.RemoveTimer,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
         },
-        .z_index = constants.z_index_pickup,
-        .directional = false,
+        .@"1" = c.SimpleGraphic{
+            .graphic = switch (params.pickup_type) {
+                .power_up => .power_up,
+                .speed_up => .speed_up,
+                .life_up => .life_up,
+                .coin => .coin,
+            },
+            .z_index = constants.z_index_pickup,
+            .directional = false,
+        },
+        .@"2" = c.PhysObject{
+            .illusory = true,
+            .world_bbox = world_bbox,
+            .entity_bbox = pickup_entity_bbox,
+            .facing = .e,
+            .speed = 0,
+            .push_dir = null,
+            .owner_id = gbe.EntityId.zero,
+            .flags = 0,
+            .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
+            .internal = undefined,
+        },
+        .@"3" = c.Pickup{
+            .pickup_type = params.pickup_type,
+        },
+        .@"4" = c.RemoveTimer{
+            .timer = pickup_values.lifetime,
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.PhysObject{
-        .illusory = true,
-        .world_bbox = world_bbox,
-        .entity_bbox = pickup_entity_bbox,
-        .facing = .e,
-        .speed = 0,
-        .push_dir = null,
-        .owner_id = gbe.EntityId.zero,
-        .flags = 0,
-        .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
-        .internal = undefined,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.Pickup{
-        .pickup_type = params.pickup_type,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.RemoveTimer{
-        .timer = pickup_values.lifetime,
-    });
-
-    return entity_id;
 }
 
 pub fn spawnSparks(gs: *game.Session, params: struct {
     pos: math.Vec2,
     impact_sound: bool,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.Animation,
+            @"2": ?c.VoiceSampler,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.Animation{
+            .simple_anim = .pla_sparks,
+            .frame_index = 0,
+            .frame_timer = graphics.getSimpleAnim(.pla_sparks).ticks_per_frame,
+            .z_index = constants.z_index_sparks,
+        },
+        .@"2" = if (params.impact_sound)
+            c.VoiceSampler{
+                .sample = .monster_impact,
+            }
+        else
+            null,
     });
-
-    try gs.ecs.addComponent(entity_id, c.Animation{
-        .simple_anim = .pla_sparks,
-        .frame_index = 0,
-        .frame_timer = graphics.getSimpleAnim(.pla_sparks).ticks_per_frame,
-        .z_index = constants.z_index_sparks,
-    });
-
-    if (params.impact_sound) {
-        try gs.ecs.addComponent(entity_id, c.VoiceSampler{
-            .sample = .monster_impact,
-        });
-    }
-
-    return entity_id;
 }
 
 pub fn spawnExplosion(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) !gbe.EntityId {
-    const entity_id = gs.ecs.spawn();
-    errdefer gs.ecs.undoSpawn(entity_id);
-
-    try gs.ecs.addComponent(entity_id, c.Transform{
-        .pos = params.pos,
+}) ?gbe.EntityId {
+    return spawnWithComponents(gs, struct {
+            @"0": c.Transform,
+            @"1": c.Animation,
+            @"2": c.VoiceExplosion,
+        }{
+        .@"0" = c.Transform{
+            .pos = params.pos,
+        },
+        .@"1" = c.Animation{
+            .simple_anim = .explosion,
+            .frame_index = 0,
+            .frame_timer = graphics.getSimpleAnim(.explosion).ticks_per_frame,
+            .z_index = constants.z_index_explosion,
+        },
+        .@"2" = c.VoiceExplosion{
+            .params = .{},
+        },
     });
-
-    try gs.ecs.addComponent(entity_id, c.Animation{
-        .simple_anim = .explosion,
-        .frame_index = 0,
-        .frame_timer = graphics.getSimpleAnim(.explosion).ticks_per_frame,
-        .z_index = constants.z_index_explosion,
-    });
-
-    try gs.ecs.addComponent(entity_id, c.VoiceExplosion{
-        .params = .{},
-    });
-
-    return entity_id;
 }
 
 fn event(comptime T: type) fn (gs: *game.Session, body: T) void {

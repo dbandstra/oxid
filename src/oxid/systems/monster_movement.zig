@@ -158,12 +158,12 @@ fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, att
                 .bullet_type = .monster_bullet,
                 .cluster_size = 1,
                 .friendly_fire = false, // this value is irrelevant for monster bullets
-            }) catch undefined;
+            });
         },
         .drop_web => {
             _ = p.spawnWeb(gs, .{
                 .pos = self.transform.pos,
-            }) catch undefined;
+            });
         },
     }
     self.monster.next_attack_timer = constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400));

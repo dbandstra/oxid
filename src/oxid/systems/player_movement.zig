@@ -37,8 +37,7 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
             if (self.player.dying_timer == 0) {
                 _ = p.spawnPlayerCorpse(gs, .{
                     .pos = self.transform.pos,
-                }) catch undefined;
-
+                });
                 gs.ecs.markForRemoval(self.id);
             } else {
                 if (self.player.dying_timer == constants.duration60(30)) { // yeesh
@@ -110,7 +109,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
             .three => 3,
         },
         .friendly_fire = context.friendly_fire,
-    }) catch return;
+    }) orelse return;
     bullet_slot.* = bullet_id;
 }
 
