@@ -9,7 +9,6 @@ pub const ComponentLists = struct {
     Bullet: gbe.ComponentList(c.Bullet, 10),
     Creature: gbe.ComponentList(c.Creature, 100),
     GameController: gbe.ComponentList(c.GameController, 2),
-    MainController: gbe.ComponentList(c.MainController, 1),
     Monster: gbe.ComponentList(c.Monster, 50),
     PhysObject: gbe.ComponentList(c.PhysObject, 100),
     Pickup: gbe.ComponentList(c.Pickup, 10),
@@ -43,18 +42,20 @@ pub const ComponentLists = struct {
 
 pub const ECS = gbe.ECS(ComponentLists);
 
+pub const RunningState = struct {
+    render_move_boxes: bool,
+};
+
 pub const Session = struct {
     ecs: ECS,
     prng: std.rand.DefaultPrng,
+    running_state: ?RunningState,
 };
 
-pub fn init(gs: *Session, random_seed: u32) !void {
+pub fn init(gs: *Session, random_seed: u32) void {
     gs.ecs.init();
     gs.prng = std.rand.DefaultPrng.init(random_seed);
-
-    if (p.spawnMainController(gs) == null) {
-        return error.FailedToSpawnMainController;
-    }
+    gs.running_state = null;
 }
 
 pub const FrameContext = struct {
@@ -73,11 +74,11 @@ fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) voi
 
 // run before "middleware" (rendering, sound, etc)
 pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
-    runSystem(gs, ctx, "main_controller_input");
+    runSystem(gs, ctx, "global_input");
     runSystem(gs, ctx, "game_controller_input");
     runSystem(gs, ctx, "player_input");
 
-    if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
+    if (gs.running_state) |grs| {
         if (!paused) {
             runSystem(gs, ctx, "game_controller");
             runSystem(gs, ctx, "player_controller");
@@ -117,7 +118,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
         runSystem(gs, ctx, "creature_draw");
         runSystem(gs, ctx, "simple_graphic_draw");
 
-        if (gs.ecs.findFirstComponent(c.MainController).?.game_running_state) |grs| {
+        if (gs.running_state) |grs| {
             if (grs.render_move_boxes) {
                 runSystem(gs, ctx, "bullet_draw_box");
                 runSystem(gs, ctx, "physobject_draw_box");

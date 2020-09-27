@@ -24,9 +24,7 @@ pub fn drawGame(
     cfg: config.Config,
     high_score: u32,
 ) void {
-    const mc = gs.ecs.findFirstComponent(c.MainController) orelse return;
-
-    if (mc.game_running_state) |grs| {
+    if (gs.running_state != null) {
         const max_drawables = comptime game.ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
@@ -213,7 +211,6 @@ fn drawHud(
     var fbs = std.io.fixedBufferStream(&buffer);
     var stream = fbs.outStream();
 
-    const mc = gs.ecs.findFirstComponent(c.MainController).?;
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
     pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);

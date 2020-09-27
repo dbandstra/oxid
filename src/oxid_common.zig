@@ -112,10 +112,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         break :blk cfg;
     };
 
-    game.init(&self.session, params.random_seed) catch |err| {
-        warn("Failed to initialize game: {}\n", .{err});
-        return false;
-    };
+    game.init(&self.session, params.random_seed);
 
     self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_sample_rate, params.audio_buffer_size) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
@@ -327,15 +324,13 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
 pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
-    // remove all entities except the MainController
+    // remove all entities
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 
-    // update MainController (note: this entity was spawned right when the
-    // program was launched)
-    gs.ecs.findFirstComponent(c.MainController).?.game_running_state = .{
+    // set game running state
+    gs.running_state = .{
         .render_move_boxes = false,
     };
 
@@ -373,11 +368,10 @@ pub fn handleGameOver(self: *MainState) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    self.session.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
+    self.session.running_state = null;
 
-    // remove all entities except the MainController
+    // remove all entities
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
         self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 

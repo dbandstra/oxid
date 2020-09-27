@@ -59,16 +59,6 @@ inline fn spawnWithComponents(gs: *game.Session, components: var) ?gbe.EntityId 
     return entity_id;
 }
 
-pub fn spawnMainController(gs: *game.Session) ?gbe.EntityId {
-    return spawnWithComponents(gs, struct {
-            @"0": c.MainController,
-        }{
-        .@"0" = c.MainController{
-            .game_running_state = null,
-        },
-    });
-}
-
 pub fn spawnGameController(gs: *game.Session, params: struct {
     num_players: u32,
 }) ?gbe.EntityId {

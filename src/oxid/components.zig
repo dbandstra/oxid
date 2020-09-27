@@ -7,14 +7,6 @@ const graphics = @import("graphics.zig");
 const input = @import("input.zig");
 const audio = @import("audio.zig");
 
-pub const MainController = struct {
-    pub const GameRunningState = struct {
-        render_move_boxes: bool,
-    };
-
-    game_running_state: ?GameRunningState,
-};
-
 pub const Bullet = struct {
     pub const Type = enum {
         monster_bullet,
