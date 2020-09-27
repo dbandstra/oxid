@@ -114,7 +114,13 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
     game.init(&self.session, params.random_seed);
 
-    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_sample_rate, params.audio_buffer_size) catch |err| {
+    audio.MainModule.init(
+        &self.audio_module,
+        self.hunk,
+        self.cfg.volume,
+        params.audio_sample_rate,
+        params.audio_buffer_size,
+    ) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
