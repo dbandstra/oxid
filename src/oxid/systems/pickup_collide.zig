@@ -1,9 +1,10 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         pickup: *const c.Pickup,
@@ -11,24 +12,22 @@ pub fn run(gs: *GameSession) void {
     });
     while (it.next()) |self| {
         const event = self.inbox.one();
-        const other = gs.ecs.findById(event.other_id, struct {
-            player: *const c.Player,
-        }) orelse continue;
+        const other_player = gs.ecs.findComponentById(event.other_id, c.Player) orelse continue;
 
-        _ = p.EventConferBonus.spawn(gs, .{
+        p.spawnEventConferBonus(gs, .{
             .recipient_id = event.other_id,
             .pickup_type = self.pickup.pickup_type,
-        }) catch undefined;
+        });
 
-        _ = p.EventAwardPoints.spawn(gs, .{
-            .player_controller_id = other.player.player_controller_id,
-            .points = self.pickup.get_points,
-        }) catch undefined;
+        p.spawnEventAwardPoints(gs, .{
+            .player_controller_id = other_player.player_controller_id,
+            .points = constants.getPickupValues(self.pickup.pickup_type).get_points,
+        });
 
-        if (self.pickup.message) |message| {
-            _ = p.EventShowMessage.spawn(gs, .{
+        if (constants.getPickupValues(self.pickup.pickup_type).message) |message| {
+            p.spawnEventShowMessage(gs, .{
                 .message = message,
-            }) catch undefined;
+            });
         }
 
         gs.ecs.markForRemoval(self.id);

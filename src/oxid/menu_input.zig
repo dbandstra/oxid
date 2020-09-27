@@ -1,5 +1,4 @@
 const menus = @import("menus.zig");
-const GameSession = @import("game.zig").GameSession;
 const input = @import("input.zig");
 const InputSource = @import("../common/key.zig").InputSource;
 

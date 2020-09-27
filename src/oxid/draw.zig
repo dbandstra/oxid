@@ -2,12 +2,10 @@ const std = @import("std");
 const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
-const fontDrawString = @import("../common/font.zig").fontDrawString;
+const fonts = @import("../common/fonts.zig");
 const common = @import("../oxid_common.zig");
-const ECS = @import("game.zig").ECS;
-const GameSession = @import("game.zig").GameSession;
-const Graphic = @import("graphics.zig").Graphic;
-const getGraphicTile = @import("graphics.zig").getGraphicTile;
+const game = @import("game.zig");
+const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
@@ -22,14 +20,12 @@ const skull_font_color_index = 10; // light grey
 pub fn drawGame(
     ds: *pdraw.DrawState,
     static: *const common.GameStatic,
-    gs: *GameSession,
+    gs: *game.Session,
     cfg: config.Config,
     high_score: u32,
 ) void {
-    const mc = gs.ecs.findFirstComponent(c.MainController) orelse return;
-
-    if (mc.game_running_state) |grs| {
-        const max_drawables = comptime ECS.getCapacity(c.EventDraw);
+    if (gs.running_state != null) {
+        const max_drawables = comptime game.ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
 
@@ -53,7 +49,7 @@ pub fn drawGame(
 ///////////////////////////////////////
 
 fn getSortedDrawables(
-    gs: *GameSession,
+    gs: *game.Session,
     sort_buffer: []*const c.EventDraw,
 ) []*const c.EventDraw {
     perf.begin(.draw_sort);
@@ -81,19 +77,21 @@ fn drawMapTile(
     x: u31,
     y: u31,
 ) void {
-    const gridpos = math.Vec2.init(x, y);
-    if (switch (levels.level1.getGridValue(gridpos).?) {
-        0x00 => Graphic.floor,
-        0x80 => Graphic.wall,
-        0x81 => Graphic.wall2,
-        0x82 => Graphic.pit,
-        0x83 => Graphic.evilwall_tl,
-        0x84 => Graphic.evilwall_tr,
-        0x85 => Graphic.evilwall_bl,
-        0x86 => Graphic.evilwall_br,
+    const gridpos = math.vec2(x, y);
+    const maybe_graphic: ?graphics.Graphic = switch (levels.getGridValue(levels.level1, gridpos).?) {
+        0x00 => .floor,
+        0x01 => .floor_shadow,
+        0x80 => .wall,
+        0x81 => .wall2,
+        0x82 => .pit,
+        0x83 => .evilwall_tl,
+        0x84 => .evilwall_tr,
+        0x85 => .evilwall_bl,
+        0x86 => .evilwall_br,
         else => null,
-    }) |graphic| {
-        const pos = math.Vec2.scale(gridpos, levels.subpixels_per_tile);
+    };
+    if (maybe_graphic) |graphic| {
+        const pos = math.vec2Scale(gridpos, levels.subpixels_per_tile);
         const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
         const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height;
         const dw = levels.pixels_per_tile;
@@ -101,7 +99,7 @@ fn drawMapTile(
         pdraw.tile(
             ds,
             static.tileset,
-            getGraphicTile(graphic),
+            graphics.getGraphicTile(graphic),
             dx,
             dy,
             dw,
@@ -156,7 +154,7 @@ fn drawEntities(
         pdraw.tile(
             ds,
             static.tileset,
-            getGraphicTile(drawable.graphic),
+            graphics.getGraphicTile(drawable.graphic),
             x,
             y,
             w,
@@ -166,7 +164,7 @@ fn drawEntities(
     }
 }
 
-fn drawBoxes(ds: *pdraw.DrawState, gs: *GameSession) void {
+fn drawBoxes(ds: *pdraw.DrawState, gs: *game.Session) void {
     var it = gs.ecs.componentIter(c.EventDrawBox);
     while (it.next()) |event| {
         const abs_bbox = event.box;
@@ -204,7 +202,7 @@ fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
 fn drawHud(
     ds: *pdraw.DrawState,
     static: *const common.GameStatic,
-    gs: *GameSession,
+    gs: *game.Session,
     high_score: u32,
 ) void {
     perf.begin(.draw_hud);
@@ -214,7 +212,6 @@ fn drawHud(
     var fbs = std.io.fixedBufferStream(&buffer);
     var stream = fbs.outStream();
 
-    const mc = gs.ecs.findFirstComponent(c.MainController).?;
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
     pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
@@ -230,12 +227,13 @@ fn drawHud(
     );
     pdraw.end(ds);
 
+    const font_shadow_color = getColor(static, 0);
     const font_color = getColor(static, primary_font_color_index);
     pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
 
     if (gc_maybe) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
-        fontDrawString(ds, &static.font, 0, 0, fbs.getWritten());
+        fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
 
         var player_number: u31 = 0;
@@ -261,7 +259,7 @@ fn drawHud(
                     pdraw.tile(
                         ds,
                         static.tileset,
-                        getGraphicTile(.man_icons),
+                        graphics.getGraphicTile(.man_icons),
                         6 * 8 - 2,
                         -1,
                         16,
@@ -278,30 +276,32 @@ fn drawHud(
                     null;
 
                 if (if (maybe_player_creature) |creature| creature.god_mode else false) {
-                    fontDrawString(ds, &static.font, 8 * 8, y, "(god):");
+                    fonts.drawString(ds, &static.font, 8 * 8, y, "(god):");
                 } else {
-                    fontDrawString(ds, &static.font, 8 * 8, y, "Lives:");
+                    fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
                 }
                 pdraw.end(ds);
+
+                const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
 
                 const heart_font_color = getColor(static, heart_font_color_index);
                 pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
-                    fontDrawString(ds, &static.font, (14 + i) * 8, y, "\x1E"); // heart
+                    fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
                 }
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
                     const skull_font_color = getColor(static, skull_font_color_index);
                     pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
-                    fontDrawString(ds, &static.font, 14 * 8, y, "\x1F"); // skull
+                    fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
                 pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-                fontDrawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
+                fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
                 fbs.reset();
             }
         }
@@ -309,13 +309,22 @@ fn drawHud(
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
-                fontDrawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
+
+                pdraw.end(ds);
+                pdraw.begin(ds, static.font.tileset.texture.handle, font_shadow_color, 1.0, false);
+
+                fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
+
+                pdraw.end(ds);
+                pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+
+                fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fontDrawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
+    fonts.drawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.end(ds);

@@ -1,10 +1,9 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const audio = @import("../audio.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         player: *c.Player,
         voice_coin: *c.VoiceCoin,
@@ -33,13 +32,13 @@ pub fn run(gs: *GameSession) void {
                 },
                 .life_up => {
                     self.voice_sampler.sample = .extra_life;
-                    _ = p.EventAwardLife.spawn(gs, .{
+                    p.spawnEventAwardLife(gs, .{
                         .player_controller_id = self.player.player_controller_id,
-                    }) catch undefined;
+                    });
                 },
                 .coin => {
                     self.voice_coin.params = .{
-                        .freq_mul = 0.95 + 0.1 * gs.getRand().float(f32),
+                        .freq_mul = 0.95 + 0.1 * gs.prng.random.float(f32),
                     };
                 },
             }

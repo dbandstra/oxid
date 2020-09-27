@@ -1,36 +1,36 @@
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const levels = @import("../levels.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const util = @import("../util.zig");
 
 const SystemData = struct {
     id: gbe.EntityId,
     pc: *c.PlayerController,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
-        if (util.decrementTimer(&self.pc.respawn_timer)) {
-            spawnPlayer(gs, self);
+        if (self.pc.respawn_timer > 0) {
+            self.pc.respawn_timer -= 1;
+            if (self.pc.respawn_timer == 0) {
+                spawnPlayer(gs, self);
+            }
         }
     }
 }
 
-fn spawnPlayer(gs: *GameSession, self: SystemData) void {
-    if (p.Player.spawn(gs, .{
+fn spawnPlayer(gs: *game.Session, self: SystemData) void {
+    const x = 9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2;
+    const y = 5 * levels.subpixels_per_tile;
+
+    const player_id = p.spawnPlayer(gs, .{
         .player_number = self.pc.player_number,
         .player_controller_id = self.id,
-        .pos = math.Vec2.init(
-            9 * levels.subpixels_per_tile + levels.subpixels_per_tile / 2,
-            5 * levels.subpixels_per_tile,
-        ),
-    })) |player_id| {
-        self.pc.player_id = player_id;
-    } else |_| {
-        // FIXME?
-    }
+        .pos = math.vec2(x, y),
+    }) orelse return;
+
+    self.pc.player_id = player_id;
 }

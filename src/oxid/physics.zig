@@ -4,14 +4,13 @@ const warn = @import("../warn.zig").warn;
 const math = @import("../common/math.zig");
 const constants = @import("constants.zig");
 const levels = @import("levels.zig");
-const ECS = @import("game.zig").ECS;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
 const p = @import("prototypes.zig");
 
 // convenience function
-pub fn physInWall(phys: *c.PhysObject, pos: math.Vec2) bool {
-    return levels.level1.boxInWall(pos, phys.world_bbox);
+pub fn inWall(phys: *c.PhysObject, pos: math.Vec2) bool {
+    return levels.boxInWall(levels.level1, pos, phys.world_bbox);
 }
 
 const MoveGroupMember = struct {
@@ -27,12 +26,12 @@ const MoveGroup = struct {
     is_active: bool,
 };
 
-const max_phys_objects = comptime ECS.getCapacity(c.PhysObject);
+const max_phys_objects = comptime game.ECS.getCapacity(c.PhysObject);
 
 var move_group_members: [max_phys_objects]MoveGroupMember = undefined;
 var move_groups: [max_phys_objects]MoveGroup = undefined;
 
-pub fn physicsFrame(gs: *GameSession) void {
+pub fn frame(gs: *game.Session) void {
     // calculate move bboxes
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
@@ -40,10 +39,8 @@ pub fn physicsFrame(gs: *GameSession) void {
         transform: *const c.Transform,
     });
     while (it.next()) |self| {
-        self.phys.internal.move_bbox.mins =
-            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.mins);
-        self.phys.internal.move_bbox.maxs =
-            math.Vec2.add(self.transform.pos, self.phys.entity_bbox.maxs);
+        self.phys.internal.move_bbox.mins = math.vec2Add(self.transform.pos, self.phys.entity_bbox.mins);
+        self.phys.internal.move_bbox.maxs = math.vec2Add(self.transform.pos, self.phys.entity_bbox.maxs);
 
         if (self.phys.speed == 0) {
             continue;
@@ -202,15 +199,15 @@ pub fn physicsFrame(gs: *GameSession) void {
             if (lowest) |m| {
                 // try to move this guy one subpixel
                 const transform = gs.ecs.findComponentById(m.entity_id, c.Transform).?;
-                var new_pos = math.Vec2.add(transform.pos, math.Direction.normal(m.phys.facing));
+                var new_pos = math.vec2Add(transform.pos, math.getNormal(m.phys.facing));
 
                 // if push_dir differs from velocity direction, and we can
                 // move in that direction, redirect velocity to go in that
                 // direction
                 if (m.phys.push_dir) |push_dir| {
                     if (push_dir != m.phys.facing) {
-                        const new_pos2 = math.Vec2.add(transform.pos, math.Direction.normal(push_dir));
-                        if (!physInWall(m.phys, new_pos2)) {
+                        const new_pos2 = math.vec2Add(transform.pos, math.getNormal(push_dir));
+                        if (!inWall(m.phys, new_pos2)) {
                             m.phys.facing = push_dir;
                             new_pos = new_pos2;
                         }
@@ -219,12 +216,12 @@ pub fn physicsFrame(gs: *GameSession) void {
 
                 var hit_something = false;
 
-                if (physInWall(m.phys, new_pos)) {
-                    _ = p.EventCollide.spawn(gs, .{
+                if (inWall(m.phys, new_pos)) {
+                    p.spawnEventCollide(gs, .{
                         .self_id = m.entity_id,
                         .other_id = .{ .id = 0 },
                         .propelled = true,
-                    }) catch undefined;
+                    });
                     hit_something = true;
                 }
 
@@ -263,28 +260,28 @@ pub fn physicsFrame(gs: *GameSession) void {
     assertNoOverlaps(gs);
 }
 
-fn collide(gs: *GameSession, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
+fn collide(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.propelled = true;
     } else {
-        _ = p.EventCollide.spawn(gs, .{
+        p.spawnEventCollide(gs, .{
             .self_id = self_id,
             .other_id = other_id,
             .propelled = true,
-        }) catch undefined;
+        });
     }
 
     if (findCollisionEvent(gs, other_id, self_id) == null) {
-        _ = p.EventCollide.spawn(gs, .{
+        p.spawnEventCollide(gs, .{
             .self_id = other_id,
             .other_id = self_id,
             .propelled = false,
-        }) catch undefined;
+        });
     }
 }
 
 fn findCollisionEvent(
-    gs: *GameSession,
+    gs: *game.Session,
     self_id: gbe.EntityId,
     other_id: gbe.EntityId,
 ) ?*c.EventCollide {
@@ -364,7 +361,7 @@ fn couldObjectsCollide(
     return true;
 }
 
-fn assertNoOverlaps(gs: *GameSession) void {
+fn assertNoOverlaps(gs: *game.Session) void {
     const T = struct {
         id: gbe.EntityId,
         phys: *const c.PhysObject,

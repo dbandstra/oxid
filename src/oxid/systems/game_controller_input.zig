@@ -1,8 +1,9 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
+const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         gc: *c.GameController,
         inbox: gbe.Inbox(16, c.EventGameInput, null),
@@ -21,13 +22,13 @@ pub fn run(gs: *GameSession) void {
     }
 }
 
-pub fn killAllMonsters(gs: *GameSession) void {
+pub fn killAllMonsters(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         monster: *const c.Monster,
     });
     while (it.next()) |self| {
-        if (self.monster.persistent) {
+        if (constants.getMonsterValues(self.monster.monster_type).persistent) {
             continue;
         }
         gs.ecs.markForRemoval(self.id);

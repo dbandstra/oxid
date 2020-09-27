@@ -1,11 +1,10 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
-const audio = @import("../audio.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         creature: *c.Creature,
@@ -56,15 +55,15 @@ pub fn run(gs: *GameSession) void {
 
             self_player.dying_timer = constants.player_death_anim_time;
 
-            _ = p.EventPlayerDied.spawn(gs, .{
+            p.spawnEventPlayerDied(gs, .{
                 .player_controller_id = self_player.player_controller_id,
-            }) catch undefined;
+            });
 
             if (self_player.last_pickup) |pickup_type| {
-                _ = p.Pickup.spawn(gs, .{
+                _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = pickup_type,
-                }) catch undefined;
+                });
             }
 
             continue;
@@ -72,26 +71,28 @@ pub fn run(gs: *GameSession) void {
 
         // something other than a player died
         if (self.monster) |self_monster| {
-            _ = p.EventMonsterDied.spawn(gs, .{}) catch undefined;
+            p.spawnEventMonsterDied(gs, .{});
 
             // in the case that multiple players shot this monster at the same
             // time, pick one of them at random to award the kill to
             if (self.inbox.one().inflictor_player_controller_id) |player_controller_id| {
-                _ = p.EventAwardPoints.spawn(gs, .{
+                p.spawnEventAwardPoints(gs, .{
                     .player_controller_id = player_controller_id,
-                    .points = self_monster.kill_points,
-                }) catch undefined;
+                    .points = constants.getMonsterValues(self_monster.monster_type).kill_points,
+                });
             }
 
             if (self_monster.has_coin) {
-                _ = p.Pickup.spawn(gs, .{
+                _ = p.spawnPickup(gs, .{
                     .pos = self.transform.pos,
                     .pickup_type = .coin,
-                }) catch undefined;
+                });
             }
         }
 
-        _ = p.Explosion.spawn(gs, self.transform.pos) catch undefined;
+        _ = p.spawnExplosion(gs, .{
+            .pos = self.transform.pos,
+        });
 
         gs.ecs.markForRemoval(self.id);
     }

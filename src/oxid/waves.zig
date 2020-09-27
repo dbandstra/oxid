@@ -1,8 +1,16 @@
 const std = @import("std");
-const ConstantTypes = @import("constant_types.zig");
-const Wave = ConstantTypes.Wave;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
+
+pub const Wave = struct {
+    spiders: u32,
+    knights: u32,
+    fastbugs: u32,
+    squids: u32,
+    juggernauts: u32,
+    speed: u31,
+    message: ?[]const u8,
+};
 
 const WaveChoice = struct {
     weight: u32,
@@ -12,7 +20,7 @@ const WaveChoice = struct {
     squid_basecount: u31,
 };
 
-pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
+pub fn createWave(gs: *game.Session, gc: *c.GameController) Wave {
     const wavenum = gc.wave_number;
 
     var spiders: u31 = 0;
@@ -116,7 +124,7 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             for (choices) |choice| {
                 total_weight += choice.weight;
             }
-            const r = gs.getRand().intRangeLessThan(u32, 0, total_weight);
+            const r = gs.prng.random.intRangeLessThan(u32, 0, total_weight);
             var sum: u32 = 0;
             for (choices) |choice| {
                 sum += choice.weight;
@@ -127,10 +135,10 @@ pub fn createWave(gs: *GameSession, gc: *c.GameController) Wave {
             unreachable;
         };
 
-        spiders = scaleMonsterCount(gs.getRand(), choice.spider_basecount, wavenum);
-        knights = scaleMonsterCount(gs.getRand(), choice.knight_basecount, wavenum);
-        fastbugs = scaleMonsterCount(gs.getRand(), choice.fastbug_basecount, wavenum);
-        squids = scaleMonsterCount(gs.getRand(), choice.squid_basecount, wavenum);
+        spiders = scaleMonsterCount(&gs.prng.random, choice.spider_basecount, wavenum);
+        knights = scaleMonsterCount(&gs.prng.random, choice.knight_basecount, wavenum);
+        fastbugs = scaleMonsterCount(&gs.prng.random, choice.fastbug_basecount, wavenum);
+        squids = scaleMonsterCount(&gs.prng.random, choice.squid_basecount, wavenum);
     }
 
     return .{

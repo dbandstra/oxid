@@ -46,7 +46,6 @@ Debug/cheat controls:
 * F2: toggle rendering of move boxes
 * F3: toggle invulnerability
 * F4: toggle profiling spam (not in web version)
-* F5: cycle through preserved graphics glitches (not in web version)
 
 ## Notes
 Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig. Web Assembly code was based on raulgrell's [fork](https://github.com/raulgrell/tetris) of the same project.

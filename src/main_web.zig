@@ -10,12 +10,8 @@ const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const levels = @import("oxid/levels.zig");
 const constants = @import("oxid/constants.zig");
-const GameSession = @import("oxid/game.zig").GameSession;
-const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
-const gameInit = @import("oxid/frame.zig").gameInit;
-const gameFrame = @import("oxid/frame.zig").gameFrame;
-const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
 const p = @import("oxid/prototypes.zig");
+const game = @import("oxid/game.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
@@ -317,11 +313,11 @@ export fn onAnimationFrame(now: c_int) void {
 fn tick(draw: bool) void {
     const paused = g.main_state.menu_stack.len > 0 and !g.main_state.game_over;
 
-    const frame_context: GameFrameContext = .{
+    const frame_context: game.FrameContext = .{
         .friendly_fire = g.main_state.friendly_fire,
     };
 
-    gameFrame(&g.main_state.session, frame_context, draw, paused);
+    game.frame(&g.main_state.session, frame_context, draw, paused);
 
     common.handleGameOver(&g.main_state);
 
@@ -337,5 +333,5 @@ fn tick(draw: bool) void {
         common.drawMain(&g.main_state);
     }
 
-    gameFrameCleanup(&g.main_state.session);
+    game.frameCleanup(&g.main_state.session);
 }

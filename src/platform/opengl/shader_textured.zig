@@ -101,8 +101,8 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\
             \\void main(void)
             \\{
-            \\  FragTexCoord = TexCoord;
-            \\  gl_Position = vec4(VertexPosition, 1.0) * MVP;
+            \\    FragTexCoord = TexCoord;
+            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
             \\}
         ,
         .fragment = first_line ++
@@ -115,7 +115,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\{
             \\
         ++
-            "  " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
+            "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
             \\}
             };
 }
@@ -128,10 +128,7 @@ fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
     };
 }
 
-pub fn create(
-    hunk_side: *HunkSide,
-    glsl_version: shaders.GLSLVersion,
-) shaders.InitError!Shader {
+pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
     errdefer warn("Failed to create textured shader program.\n", .{});
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));

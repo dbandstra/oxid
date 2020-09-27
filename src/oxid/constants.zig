@@ -1,10 +1,3 @@
-const ConstantTypes = @import("constant_types.zig");
-const MonsterType = ConstantTypes.MonsterType;
-const MonsterValues = ConstantTypes.MonsterValues;
-const PickupType = ConstantTypes.PickupType;
-const PickupValues = ConstantTypes.PickupValues;
-const Wave = ConstantTypes.Wave;
-
 // the game updates this many times per second. you should be able to change
 // this value to speed up / slow down the entire game.
 // (high values may cause the speed60/duration60 function results to round down
@@ -36,6 +29,23 @@ pub const player_death_anim_time: u32 = duration60(90); // 1.5 seconds
 pub const player_respawn_time: u32 = duration60(150); // 2.5 seconds
 pub const player_spawn_arise_speed: u31 = speed60(8); // how fast the player "arises" when spawning
 pub const player_num_lives: u32 = 3;
+
+pub const MonsterType = enum {
+    spider,
+    knight,
+    fast_bug,
+    squid,
+    juggernaut,
+};
+
+pub const MonsterValues = struct {
+    hit_points: u32,
+    move_speed: [4]u31,
+    kill_points: u32,
+    first_shooting_level: ?u32,
+    can_drop_webs: bool,
+    persistent: bool,
+};
 
 pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
     return switch (monster_type) {
@@ -106,6 +116,19 @@ pub fn getMonsterValues(monster_type: MonsterType) MonsterValues {
         },
     };
 }
+
+pub const PickupType = enum {
+    coin,
+    life_up,
+    power_up,
+    speed_up,
+};
+
+pub const PickupValues = struct {
+    lifetime: u32,
+    get_points: u32,
+    message: ?[]const u8,
+};
 
 pub fn getPickupValues(pickup_type: PickupType) PickupValues {
     return switch (pickup_type) {

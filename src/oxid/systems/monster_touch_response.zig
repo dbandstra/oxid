@@ -1,6 +1,6 @@
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
@@ -10,14 +10,14 @@ const SystemData = struct {
     monster: *const c.Monster,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         monsterCollide(gs, self);
     }
 }
 
-fn monsterCollide(gs: *GameSession, self: SystemData) void {
+fn monsterCollide(gs: *game.Session, self: SystemData) void {
     var hit_wall = false;
     var hit_creature = false;
 
@@ -44,16 +44,16 @@ fn monsterCollide(gs: *GameSession, self: SystemData) void {
 
         // if it's a player creature, inflict damage on it
         if (other.player != null and self.monster.spawning_timer == 0) {
-            _ = p.EventTakeDamage.spawn(gs, .{
+            p.spawnEventTakeDamage(gs, .{
                 .inflictor_player_controller_id = null,
                 .self_id = event.other_id,
                 .amount = 1,
-            }) catch undefined;
+            });
         }
     }
 
     if (hit_creature) {
         // reverse direction
-        self.phys.facing = math.Direction.invert(self.phys.facing);
+        self.phys.facing = math.invertDirection(self.phys.facing);
     }
 }

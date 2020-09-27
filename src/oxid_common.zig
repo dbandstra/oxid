@@ -1,3 +1,4 @@
+const build_options = @import("build_options");
 const std = @import("std");
 const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
@@ -5,17 +6,14 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
 const platform_draw = @import("platform/opengl/draw.zig");
 const draw = @import("common/draw.zig");
-const Font = @import("common/font.zig").Font;
-const loadFont = @import("common/font.zig").loadFont;
+const fonts = @import("common/fonts.zig");
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
 const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const constants = @import("oxid/constants.zig");
-const ComponentLists = @import("oxid/game.zig").ComponentLists;
-const GameSession = @import("oxid/game.zig").GameSession;
-const gameInit = @import("oxid/frame.zig").gameInit;
+const game = @import("oxid/game.zig");
 const input = @import("oxid/input.zig");
 const levels = @import("oxid/levels.zig");
 const p = @import("oxid/prototypes.zig");
@@ -44,7 +42,7 @@ pub const MainState = struct {
     draw_state: platform_draw.DrawState,
     audio_module: audio.MainModule,
     static: GameStatic,
-    session: GameSession,
+    session: game.Session,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -62,7 +60,7 @@ pub const MainState = struct {
 pub const GameStatic = struct {
     tileset: draw.Tileset,
     palette: [48]u8,
-    font: Font,
+    font: fonts.Font,
 };
 
 pub const MenuSounds = struct {
@@ -87,7 +85,15 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
     self.high_scores = root.loadHighScores(&self.hunk.low());
 
-    loadFont(&self.hunk.low(), &self.static.font) catch |err| {
+    fonts.load(&self.hunk.low(), &self.static.font, .{
+        .filename = build_options.assets_path ++ "/font.pcx",
+        .first_char = 0,
+        .char_width = 8,
+        .char_height = 8,
+        .num_cols = 16,
+        .num_rows = 8,
+        .spacing = -1,
+    }) catch |err| {
         warn("Failed to load font: {}\n", .{err});
         return false;
     };
@@ -106,13 +112,15 @@ pub fn init(self: *MainState, params: InitParams) bool {
         break :blk cfg;
     };
 
-    self.session.init(params.random_seed);
-    gameInit(&self.session) catch |err| {
-        warn("Failed to initialize game: {}\n", .{err});
-        return false;
-    };
+    game.init(&self.session, params.random_seed);
 
-    self.audio_module = audio.MainModule.init(self.hunk, self.cfg.volume, params.audio_sample_rate, params.audio_buffer_size) catch |err| {
+    audio.MainModule.init(
+        &self.audio_module,
+        self.hunk,
+        self.cfg.volume,
+        params.audio_sample_rate,
+        params.audio_buffer_size,
+    ) catch |err| {
         warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
@@ -240,11 +248,11 @@ pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?Inpu
             const s = maybe_source orelse continue;
             if (!areInputSourcesEqual(s, source)) continue;
 
-            _ = p.EventGameInput.spawn(&main_state.session, .{
+            p.spawnEventGameInput(&main_state.session, .{
                 .player_number = player_number,
                 .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
                 .down = down,
-            }) catch undefined;
+            });
 
             return InputSpecial{ .noop = {} };
         }
@@ -321,31 +329,29 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 // they should be created as events and handled by middleware?
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
-pub fn startGame(gs: *GameSession, is_multiplayer: bool) void {
-    // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
+pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
+    // remove all entities
+    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 
-    // update MainController (note: this entity was spawned right when the
-    // program was launched)
-    gs.ecs.findFirstComponent(c.MainController).?.game_running_state = .{
+    // set game running state
+    gs.running_state = .{
         .render_move_boxes = false,
     };
 
     // spawn GameController and PlayerControllers
     const num_players: u32 = if (is_multiplayer) 2 else 1;
 
-    _ = p.GameController.spawn(gs, .{
+    _ = p.spawnGameController(gs, .{
         .num_players = num_players,
-    }) catch undefined;
+    });
 
     var n: u32 = 0;
     while (n < num_players) : (n += 1) {
-        _ = p.PlayerController.spawn(gs, .{
+        _ = p.spawnPlayerController(gs, .{
             .player_number = n,
-        }) catch undefined;
+        });
     }
 }
 
@@ -368,11 +374,10 @@ pub fn handleGameOver(self: *MainState) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    self.session.ecs.findFirstComponent(c.MainController).?.game_running_state = null;
+    self.session.running_state = null;
 
-    // remove all entities except the MainController
-    inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
-        if (field.field_type.ComponentType == c.MainController) continue;
+    // remove all entities
+    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 

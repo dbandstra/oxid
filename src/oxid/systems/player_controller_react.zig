@@ -1,16 +1,16 @@
 const gbe = @import("gbe");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     handleAwardPoints(gs);
     handleAwardLife(gs);
     handlePlayerDied(gs);
 }
 
-fn handleAwardPoints(gs: *GameSession) void {
+fn handleAwardPoints(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(8, c.EventAwardPoints, "player_controller_id"),
@@ -22,7 +22,7 @@ fn handleAwardPoints(gs: *GameSession) void {
     }
 }
 
-fn handleAwardLife(gs: *GameSession) void {
+fn handleAwardLife(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         pc: *c.PlayerController,
         inbox: gbe.Inbox(8, c.EventAwardLife, "player_controller_id"),
@@ -34,7 +34,7 @@ fn handleAwardLife(gs: *GameSession) void {
     }
 }
 
-fn handlePlayerDied(gs: *GameSession) void {
+fn handlePlayerDied(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         id: gbe.EntityId,
         pc: *c.PlayerController,
@@ -46,9 +46,9 @@ fn handlePlayerDied(gs: *GameSession) void {
             if (self.pc.lives > 0) {
                 self.pc.respawn_timer = constants.player_respawn_time;
             } else {
-                _ = p.EventPlayerOutOfLives.spawn(gs, .{
+                p.spawnEventPlayerOutOfLives(gs, .{
                     .player_controller_id = self.id,
-                }) catch undefined;
+                });
             }
         }
     }

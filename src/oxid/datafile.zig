@@ -1,4 +1,3 @@
-const std = @import("std");
 const constants = @import("constants.zig");
 
 pub fn readHighScores(

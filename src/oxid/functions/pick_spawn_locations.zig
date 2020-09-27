@@ -1,7 +1,7 @@
 const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../../common/math.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const levels = @import("../levels.zig");
 const c = @import("../components.zig");
 
@@ -9,7 +9,7 @@ const c = @import("../components.zig");
 // near a player, or colocating with another.
 // the length of `gridlocs_buf` specifies the number of requested spawn
 // locations. fewer may be returned if all available spots are occupied
-pub fn pickSpawnLocations(gs: *GameSession, gridlocs_buf: []math.Vec2) []const math.Vec2 {
+pub fn pickSpawnLocations(gs: *game.Session, gridlocs_buf: []math.Vec2) []const math.Vec2 {
     var gridmask: [levels.width * levels.height]bool = undefined;
 
     // create a mask over all the grid cells - true means it's ok to spawn here.
@@ -21,9 +21,9 @@ pub fn pickSpawnLocations(gs: *GameSession, gridlocs_buf: []math.Vec2) []const m
     while (gy < levels.height) : (gy += 1) {
         gx = 0;
         while (gx < levels.width) : (gx += 1) {
-            const pos = math.Vec2.init(gx, gy);
+            const pos = math.vec2(gx, gy);
             const i = gy * levels.width + gx;
-            gridmask[i] = levels.level1.getGridTerrainType(pos) == .floor;
+            gridmask[i] = levels.getGridTerrainType(levels.level1, pos) == .floor;
         }
     }
 
@@ -70,7 +70,7 @@ pub fn pickSpawnLocations(gs: *GameSession, gridlocs_buf: []math.Vec2) []const m
         gx = 0;
         while (gx < levels.width) : (gx += 1) {
             if (gridmask[gy * levels.width + gx]) {
-                candidates[num_candidates] = math.Vec2.init(gx, gy);
+                candidates[num_candidates] = math.vec2(gx, gy);
                 num_candidates += 1;
             }
         }
@@ -86,7 +86,7 @@ pub fn pickSpawnLocations(gs: *GameSession, gridlocs_buf: []math.Vec2) []const m
 }
 
 // get a single spawn location
-pub fn pickSpawnLocation(gs: *GameSession) ?math.Vec2 {
+pub fn pickSpawnLocation(gs: *game.Session) ?math.Vec2 {
     var buf: [1]math.Vec2 = undefined;
     const locs = pickSpawnLocations(gs, &buf);
     if (locs.len == 0) return null;

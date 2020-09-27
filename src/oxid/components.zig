@@ -1,21 +1,11 @@
 const zang = @import("zang");
 const gbe = @import("gbe");
-const Math = @import("../common/math.zig");
-const Draw = @import("../common/draw.zig");
-const ConstantTypes = @import("constant_types.zig");
+const math = @import("../common/math.zig");
+const draw = @import("../common/draw.zig");
 const constants = @import("constants.zig");
-const SimpleAnim = @import("graphics.zig").SimpleAnim;
-const Graphic = @import("graphics.zig").Graphic;
+const graphics = @import("graphics.zig");
 const input = @import("input.zig");
 const audio = @import("audio.zig");
-
-pub const MainController = struct {
-    pub const GameRunningState = struct {
-        render_move_boxes: bool,
-    };
-
-    game_running_state: ?GameRunningState,
-};
 
 pub const Bullet = struct {
     pub const Type = enum {
@@ -26,7 +16,7 @@ pub const Bullet = struct {
     bullet_type: Type,
     inflictor_player_controller_id: ?gbe.EntityId,
     damage: u32,
-    line_of_fire: ?Math.BoundingBox,
+    line_of_fire: ?math.Box,
 };
 
 pub const Creature = struct {
@@ -42,16 +32,13 @@ pub const Monster = struct {
         wander,
     };
 
-    monster_type: ConstantTypes.MonsterType,
+    monster_type: constants.MonsterType,
     spawning_timer: u32,
     full_hit_points: u32,
     personality: Personality,
-    kill_points: u32,
     can_shoot: bool,
-    can_drop_webs: bool,
     next_attack_timer: u32,
     has_coin: bool,
-    persistent: bool,
 };
 
 pub const Web = struct {};
@@ -81,7 +68,7 @@ pub const PlayerController = struct {
 };
 
 pub const Animation = struct {
-    simple_anim: SimpleAnim,
+    simple_anim: graphics.SimpleAnim,
     frame_index: u32,
     frame_timer: u32,
     z_index: u32,
@@ -92,7 +79,7 @@ pub const RemoveTimer = struct {
 };
 
 pub const SimpleGraphic = struct {
-    graphic: Graphic,
+    graphic: graphics.Graphic,
     z_index: u32,
     directional: bool,
 };
@@ -110,14 +97,14 @@ pub const PhysObject = struct {
     // bounding boxes are relative to transform position. the dimensions of the
     // box will be (maxs - mins + 1).
     // `world_bbox`: the bbox used to collide with the level.
-    world_bbox: Math.BoundingBox,
+    world_bbox: math.Box,
 
     // `entity_bbox`: the bbox used to collide with other entities. this may be a
     // bit smaller than the world bbox
-    entity_bbox: Math.BoundingBox,
+    entity_bbox: math.Box,
 
     // `facing`: direction of movement (meaningless if `speed` is 0)
-    facing: Math.Direction,
+    facing: math.Direction,
 
     // `speed`: velocity along the `facing` direction (diagonal motion is not
     // supported). this is measured in subpixels per tick
@@ -125,7 +112,7 @@ pub const PhysObject = struct {
 
     // `push_dir`: if set, the object will try to redirect to go this way if
     // there is no obstruction.
-    push_dir: ?Math.Direction,
+    push_dir: ?math.Direction,
 
     // `owner_id`: collision will be skipped between an object and its owner.
     // e.g. a bullet is owned by the person who shot it
@@ -143,14 +130,12 @@ pub const PhysObject = struct {
 };
 
 pub const PhysObjectInternal = struct {
-    move_bbox: Math.BoundingBox,
+    move_bbox: math.Box,
     group_index: usize,
 };
 
 pub const Pickup = struct {
-    pickup_type: ConstantTypes.PickupType,
-    get_points: u32,
-    message: ?[]const u8,
+    pickup_type: constants.PickupType,
 };
 
 pub const Player = struct {
@@ -165,8 +150,8 @@ pub const Player = struct {
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,
     dying_timer: u32,
-    last_pickup: ?ConstantTypes.PickupType,
-    line_of_fire: ?Math.BoundingBox,
+    last_pickup: ?constants.PickupType,
+    line_of_fire: ?math.Box,
     in_left: bool,
     in_right: bool,
     in_up: bool,
@@ -175,7 +160,7 @@ pub const Player = struct {
 };
 
 pub const Transform = struct {
-    pos: Math.Vec2,
+    pos: math.Vec2,
 };
 
 pub const EventAwardLife = struct {
@@ -199,19 +184,19 @@ pub const EventCollide = struct {
 
 pub const EventConferBonus = struct {
     recipient_id: gbe.EntityId,
-    pickup_type: ConstantTypes.PickupType,
+    pickup_type: constants.PickupType,
 };
 
 pub const EventDraw = struct {
-    pos: Math.Vec2,
-    graphic: Graphic,
-    transform: Draw.Transform,
+    pos: math.Vec2,
+    graphic: graphics.Graphic,
+    transform: draw.Transform,
     z_index: u32,
 };
 
 pub const EventDrawBox = struct {
-    box: Math.BoundingBox,
-    color: Draw.Color,
+    box: math.Box,
+    color: draw.Color,
 };
 
 pub const EventGameInput = struct {

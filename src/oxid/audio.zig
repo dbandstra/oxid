@@ -4,8 +4,7 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
-const ComponentLists = @import("game.zig").ComponentLists;
-const GameSession = @import("game.zig").GameSession;
+const game = @import("game.zig");
 const c = @import("components.zig");
 const MenuSounds = @import("../oxid_common.zig").MenuSounds;
 
@@ -202,16 +201,15 @@ fn GameSoundWrapper(comptime ModuleType: type) type {
 fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8) type {
     return struct {
         const component_name = component_name_;
-        const count = std.meta.fieldInfo(ComponentLists, component_name).field_type.capacity;
+        const count = std.meta.fieldInfo(game.ComponentLists, component_name).field_type.capacity;
 
         wrappers: [count]GameSoundWrapper(T),
 
-        fn init() @This() {
-            var self: @This() = undefined;
+        // can't return @This() here because it can be pretty big (depending on `count`)
+        fn init(self: *@This()) void {
             for (self.wrappers) |*wrapper| {
                 wrapper.* = GameSoundWrapper(T).init();
             }
-            return self;
         }
 
         fn sync(self: *@This(), reset: bool, loaded_samples: *const LoadedSamples, impulse_frame: usize, component_list: anytype) void {
@@ -277,36 +275,34 @@ pub const MainModule = struct {
     sample_rate: f32,
 
     // call this in the main thread before the audio device is set up
-    pub fn init(hunk: *Hunk, volume: u32, sample_rate: f32, audio_buffer_size: usize) !MainModule {
-        return MainModule{
-            .menu_backoff = GameSoundWrapper(MenuBackoffVoice).init(),
-            .menu_blip = GameSoundWrapper(MenuBlipVoice).init(),
-            .menu_ding = GameSoundWrapper(MenuDingVoice).init(),
-            .voice_accelerate = VoiceAccelerateWrapperArray.init(),
-            .voice_coin = VoiceCoinWrapperArray.init(),
-            .voice_explosion = VoiceExplosionWrapperArray.init(),
-            .voice_laser = VoiceLaserWrapperArray.init(),
-            .voice_power_up = VoicePowerUpWrapperArray.init(),
-            .voice_sampler = VoiceSamplerWrapperArray.init(),
-            .voice_wave_begin = VoiceWaveBeginWrapperArray.init(),
-            // these allocations are never freed (but it's ok because this
-            // object is created once in the main function)
-            .loaded_samples = try LoadedSamples.init(hunk),
-            .out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            .tmp_bufs = .{
-                try hunk.low().allocator.alloc(f32, audio_buffer_size),
-                try hunk.low().allocator.alloc(f32, audio_buffer_size),
-                try hunk.low().allocator.alloc(f32, audio_buffer_size),
-                try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            },
-            .volume = volume,
-            .sample_rate = sample_rate,
+    pub fn init(self: *MainModule, hunk: *Hunk, volume: u32, sample_rate: f32, audio_buffer_size: usize) !void {
+        self.menu_backoff = GameSoundWrapper(MenuBackoffVoice).init();
+        self.menu_blip = GameSoundWrapper(MenuBlipVoice).init();
+        self.menu_ding = GameSoundWrapper(MenuDingVoice).init();
+        VoiceAccelerateWrapperArray.init(&self.voice_accelerate);
+        VoiceCoinWrapperArray.init(&self.voice_coin);
+        VoiceExplosionWrapperArray.init(&self.voice_explosion);
+        VoiceLaserWrapperArray.init(&self.voice_laser);
+        VoicePowerUpWrapperArray.init(&self.voice_power_up);
+        VoiceSamplerWrapperArray.init(&self.voice_sampler);
+        VoiceWaveBeginWrapperArray.init(&self.voice_wave_begin);
+        // these allocations are never freed (but it's ok because this
+        // object is created once in the main function)
+        self.loaded_samples = try LoadedSamples.init(hunk);
+        self.out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size);
+        self.tmp_bufs = .{
+            try hunk.low().allocator.alloc(f32, audio_buffer_size),
+            try hunk.low().allocator.alloc(f32, audio_buffer_size),
+            try hunk.low().allocator.alloc(f32, audio_buffer_size),
+            try hunk.low().allocator.alloc(f32, audio_buffer_size),
         };
+        self.volume = volume;
+        self.sample_rate = sample_rate;
     }
 
     // called when audio thread is locked. this is where we communicate
     // information from the main thread to the audio thread.
-    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *GameSession, menu_sounds: *MenuSounds) void {
+    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *game.Session, menu_sounds: *MenuSounds) void {
         const impulse_frame: usize = 0;
 
         self.volume = volume;

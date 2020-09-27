@@ -1,16 +1,13 @@
 const std = @import("std");
 const math = @import("../../common/math.zig");
-const audio = @import("../audio.zig");
-const GameSession = @import("../game.zig").GameSession;
+const game = @import("../game.zig");
 const levels = @import("../levels.zig");
-const ConstantTypes = @import("../constant_types.zig");
 const constants = @import("../constants.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 const pickSpawnLocation = @import("../functions/pick_spawn_locations.zig").pickSpawnLocation;
 const pickSpawnLocations = @import("../functions/pick_spawn_locations.zig").pickSpawnLocations;
-const util = @import("../util.zig");
-const createWave = @import("../wave.zig").createWave;
+const waves = @import("../waves.zig");
 
 const SystemData = struct {
     gc: *c.GameController,
@@ -18,54 +15,63 @@ const SystemData = struct {
     voice_wave_begin: *c.VoiceWaveBegin,
 };
 
-pub fn run(gs: *GameSession) void {
+pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         think(gs, self);
     }
 }
 
-fn think(gs: *GameSession, self: SystemData) void {
+fn think(gs: *game.Session, self: SystemData) void {
     // if all non-persistent monsters are dead, prepare next wave
     if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
         self.gc.next_wave_timer = constants.next_wave_time;
     }
-    _ = util.decrementTimer(&self.gc.wave_message_timer);
-    if (util.decrementTimer(&self.gc.next_wave_timer)) {
-        self.voice_wave_begin.params = .{};
-        self.gc.wave_number += 1;
-        self.gc.wave_message_timer = constants.duration60(180);
-        self.gc.enemy_speed_level = 0;
-        self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
-        const wave = createWave(gs, self.gc);
-        spawnWave(gs, self.gc.wave_number, &wave);
-        self.gc.enemy_speed_level = wave.speed;
-        self.gc.monster_count = countNonPersistentMonsters(gs);
-        self.gc.wave_message = wave.message;
+    if (self.gc.wave_message_timer > 0) {
+        self.gc.wave_message_timer -= 1;
     }
-    if (util.decrementTimer(&self.gc.enemy_speed_timer)) {
-        if (self.gc.enemy_speed_level < constants.max_enemy_speed_level) {
-            self.gc.enemy_speed_level += 1;
-            self.voice_accelerate.params = .{
-                .playback_speed = switch (self.gc.enemy_speed_level) {
-                    1 => 1.25,
-                    2 => 1.5,
-                    3 => 1.75,
-                    else => 2.0,
-                },
-            };
+    if (self.gc.next_wave_timer > 0) {
+        self.gc.next_wave_timer -= 1;
+        if (self.gc.next_wave_timer == 0) {
+            self.voice_wave_begin.params = .{};
+            self.gc.wave_number += 1;
+            self.gc.wave_message_timer = constants.duration60(180);
+            self.gc.enemy_speed_level = 0;
+            self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
+            const wave = waves.createWave(gs, self.gc);
+            spawnWave(gs, self.gc.wave_number, &wave);
+            self.gc.enemy_speed_level = wave.speed;
+            self.gc.monster_count = countNonPersistentMonsters(gs);
+            self.gc.wave_message = wave.message;
         }
-        self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
     }
-    if (util.decrementTimer(&self.gc.next_pickup_timer)) {
-        const pickup_type: ConstantTypes.PickupType = if (gs.getRand().boolean())
-            .speed_up
-        else
-            .power_up;
-        spawnPickup(gs, pickup_type);
-        self.gc.next_pickup_timer = constants.pickup_spawn_time;
+    if (self.gc.enemy_speed_timer > 0) {
+        self.gc.enemy_speed_timer -= 1;
+        if (self.gc.enemy_speed_timer == 0) {
+            if (self.gc.enemy_speed_level < constants.max_enemy_speed_level) {
+                self.gc.enemy_speed_level += 1;
+                self.voice_accelerate.params = .{
+                    .playback_speed = switch (self.gc.enemy_speed_level) {
+                        1 => 1.25,
+                        2 => 1.5,
+                        3 => 1.75,
+                        else => 2.0,
+                    },
+                };
+            }
+            self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
+        }
     }
-    _ = util.decrementTimer(&self.gc.freeze_monsters_timer);
+    if (self.gc.next_pickup_timer > 0) {
+        self.gc.next_pickup_timer -= 1;
+        if (self.gc.next_pickup_timer == 0) {
+            spawnPickup(gs, if (gs.prng.random.boolean()) .speed_up else .power_up);
+            self.gc.next_pickup_timer = constants.pickup_spawn_time;
+        }
+    }
+    if (self.gc.freeze_monsters_timer > 0) {
+        self.gc.freeze_monsters_timer -= 1;
+    }
 
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
@@ -84,52 +90,46 @@ fn think(gs: *GameSession, self: SystemData) void {
     }
 }
 
-fn countNonPersistentMonsters(gs: *GameSession) u32 {
+fn countNonPersistentMonsters(gs: *game.Session) u32 {
     var count: u32 = 0;
-    var it = gs.ecs.iter(struct {
-        monster: *const c.Monster,
-    });
-    while (it.next()) |entry| {
-        if (entry.monster.persistent) continue;
-        count += 1;
+    var it = gs.ecs.componentIter(c.Monster);
+    while (it.next()) |monster| {
+        if (!constants.getMonsterValues(monster.monster_type).persistent) {
+            count += 1;
+        }
     }
     return count;
 }
 
-fn spawnWave(
-    gs: *GameSession,
-    wave_number: u32,
-    wave: *const ConstantTypes.Wave,
-) void {
+fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void {
     const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
     const coins = (wave.spiders + wave.knights) / 3;
     std.debug.assert(count <= 100);
     var spawn_locs_buf: [100]math.Vec2 = undefined;
     for (pickSpawnLocations(gs, spawn_locs_buf[0..count])) |loc, i| {
-        _ = p.Monster.spawn(gs, .{
+        _ = p.spawnMonster(gs, .{
             .wave_number = wave_number,
-            .pos = math.Vec2.scale(loc, levels.subpixels_per_tile),
+            .pos = math.vec2Scale(loc, levels.subpixels_per_tile),
             .monster_type = if (i < wave.spiders)
-                ConstantTypes.MonsterType.spider
+                constants.MonsterType.spider
             else if (i < wave.spiders + wave.knights)
-                ConstantTypes.MonsterType.knight
+                constants.MonsterType.knight
             else if (i < wave.spiders + wave.knights + wave.fastbugs)
-                ConstantTypes.MonsterType.fast_bug
+                constants.MonsterType.fast_bug
             else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
-                ConstantTypes.MonsterType.squid
+                constants.MonsterType.squid
             else
-                ConstantTypes.MonsterType.juggernaut,
+                constants.MonsterType.juggernaut,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
-        }) catch undefined;
+        });
     }
 }
 
-fn spawnPickup(gs: *GameSession, pickup_type: ConstantTypes.PickupType) void {
+fn spawnPickup(gs: *game.Session, pickup_type: constants.PickupType) void {
     const spawn_loc = pickSpawnLocation(gs) orelse return;
-    const pos = math.Vec2.scale(spawn_loc, levels.subpixels_per_tile);
-    _ = p.Pickup.spawn(gs, .{
-        .pos = pos,
+    _ = p.spawnPickup(gs, .{
+        .pos = math.vec2Scale(spawn_loc, levels.subpixels_per_tile),
         .pickup_type = pickup_type,
-    }) catch undefined;
+    });
 }

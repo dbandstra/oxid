@@ -18,10 +18,7 @@ const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const constants = @import("oxid/constants.zig");
 const menus = @import("oxid/menus.zig");
-const GameSession = @import("oxid/game.zig").GameSession;
-const GameFrameContext = @import("oxid/frame.zig").GameFrameContext;
-const gameFrame = @import("oxid/frame.zig").gameFrame;
-const gameFrameCleanup = @import("oxid/frame.zig").gameFrameCleanup;
+const game = @import("oxid/game.zig");
 const p = @import("oxid/prototypes.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
@@ -595,7 +592,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         self.main_state.menu_anim_time +%= 1;
 
-        const frame_context: GameFrameContext = .{
+        const frame_context: game.FrameContext = .{
             .friendly_fire = self.main_state.friendly_fire,
         };
 
@@ -609,7 +606,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             const paused = self.main_state.menu_stack.len > 0 and !self.main_state.game_over;
 
             perf.begin(.frame);
-            gameFrame(&self.main_state.session, frame_context, draw, paused);
+            game.frame(&self.main_state.session, frame_context, draw, paused);
             perf.end(.frame);
 
             // middleware response to certain events
@@ -623,7 +620,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             }
 
             // delete events
-            gameFrameCleanup(&self.main_state.session);
+            game.frameCleanup(&self.main_state.session);
         }
     }
 
@@ -766,7 +763,6 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                     switch (key) {
                         .backquote => self.fast_forward = true,
                         .f4 => perf.toggleSpam(),
-                        .f5 => platform_draw.cycleGlitchMode(&self.main_state.draw_state),
                         else => {},
                     }
                 }

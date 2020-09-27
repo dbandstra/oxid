@@ -2,16 +2,13 @@ const builtin = @import("builtin");
 const std = @import("std");
 const pdraw = @import("pdraw");
 const draw = @import("../common/draw.zig");
-const fontDrawString = @import("../common/font.zig").fontDrawString;
+const fonts = @import("../common/fonts.zig");
 const InputSource = @import("../common/key.zig").InputSource;
 const common = @import("../oxid_common.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
 const input = @import("input.zig");
-
-const font_char_width = @import("../common/font.zig").font_char_width;
-const font_char_height = @import("../common/font.zig").font_char_height;
 
 const primary_font_color_index = 15; // near-white
 
@@ -49,7 +46,7 @@ pub const DrawMenuContext = struct {
 
     fn textHelper(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
         const w = blk: {
-            const base_w = @intCast(u31, s.len) * font_char_width;
+            const base_w = fonts.stringWidth(&self.static.font, s);
             break :blk switch (alignment) {
                 .left => base_w + 32, // pad both sides
                 .center => base_w,
@@ -64,11 +61,11 @@ pub const DrawMenuContext = struct {
             };
             const font_color = getColor(self.static, primary_font_color_index);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
-            fontDrawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
+            fonts.drawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
         }
         self.w = std.math.max(self.w, w);
-        self.h += font_char_height;
+        self.h += self.static.font.char_height;
     }
 
     pub fn title(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
@@ -101,14 +98,14 @@ pub const DrawMenuContext = struct {
             const font_color = getColor(self.static, primary_font_color_index);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             if (self.cursor_pos == self.option_index) {
-                fontDrawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
+                fonts.drawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
             }
-            fontDrawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + @as(i32, self.h), s);
+            fonts.drawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
         }
         self.option_index += 1;
-        self.w = std.math.max(self.w, @intCast(u31, s.len) * font_char_width + 32); // pad both sides
-        self.h += font_char_height;
+        self.w = std.math.max(self.w, fonts.stringWidth(&self.static.font, s) + 32); // pad both sides
+        self.h += self.static.font.char_height;
         self.bottom_margin = 2;
         return false;
     }
