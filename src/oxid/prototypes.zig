@@ -39,6 +39,7 @@ pub const bullet_bbox = blk: {
 // currently, i can't pass a tuple to this function, due to a zig compiler bug (the program will
 // crash at runtime). so the explicit @"0", @"1", etc. syntax i'm using is only there until the
 // bug is fixed.
+// see https://github.com/ziglang/zig/issues/3915
 inline fn spawnWithComponents(gs: *game.Session, components: var) ?gbe.EntityId {
     const entity_id = gs.ecs.spawn();
     inline for (@typeInfo(@TypeOf(components)).Struct.fields) |field| {
