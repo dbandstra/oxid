@@ -2,9 +2,7 @@
 // the wasm build doesn't use it because it can just scale up the DOM canvas
 
 const builtin = @import("builtin");
-usingnamespace @cImport({
-    @cInclude("epoxy/gl.h");
-});
+usingnamespace @import("gl").namespace;
 const pdraw = @import("draw.zig");
 const draw = @import("../../common/draw.zig");
 

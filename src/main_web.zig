@@ -237,6 +237,7 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
+        .glsl_version = .webgl,
     })) {
         // common.init prints its own errors
         return error.Failed;

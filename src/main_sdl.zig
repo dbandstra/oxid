@@ -1,13 +1,14 @@
 usingnamespace @cImport({
     @cInclude("SDL2/SDL.h");
-    @cInclude("epoxy/gl.h");
 });
 
+const builtin = @import("builtin");
 const std = @import("std");
 const clap = @import("zig-clap");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
+const gl = @import("gl");
 
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
@@ -16,6 +17,7 @@ const JoyAxis = @import("common/key.zig").JoyAxis;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
+const shaders = @import("platform/opengl/shaders.zig");
 const constants = @import("oxid/constants.zig");
 const menus = @import("oxid/menus.zig");
 const game = @import("oxid/game.zig");
@@ -421,6 +423,9 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         break :blk getMaxCanvasScale(w, h);
     };
 
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_CONTEXT_PROFILE_MASK), SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_CONTEXT_MAJOR_VERSION), 2);
+    _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_CONTEXT_MINOR_VERSION), 1);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_DOUBLEBUFFER), 1);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BUFFER_SIZE), 32);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_RED_SIZE), 8);
@@ -484,6 +489,44 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
 
+    const glsl_version: shaders.GLSLVersion = blk: {
+        const glGetString_ptr = SDL_GL_GetProcAddress("glGetString") orelse {
+            std.debug.warn("Failed to get glGetString function pointer.\n", .{});
+            return error.Failed;
+        };
+        const glGetString = @ptrCast(@TypeOf(gl.namespace.glGetString), glGetString_ptr);
+        const v = glGetString(gl.namespace.GL_VERSION);
+
+        if (v != 0) { // null check
+            if (v[1] == '.') {
+                if (v[0] == '2' and v[2] != '0') {
+                    break :blk .v120;
+                } else if (v[0] >= '3' and v[0] <= '9') {
+                    break :blk .v130;
+                }
+            }
+            std.debug.warn("Unsupported OpenGL version \"{s}\" (2.1+ required)\n", .{v});
+        } else {
+            std.debug.warn("Failed to get OpenGL version.\n", .{});
+        }
+        return error.Failed;
+    };
+
+    // note: this feature was added to core in opengl 3.0
+    if (@enumToInt(SDL_GL_ExtensionSupported("GL_ARB_framebuffer_object")) == 0) {
+        std.debug.warn("OpenGL extension GL_ARB_framebuffer_object is required.\n", .{});
+        return error.Failed;
+    }
+
+    // initialize all the gl function pointers. the gl library i'm using
+    // assumes opengl 2.1 + GL_ARB_framebuffer_object.
+    for (gl.commands) |command| {
+        command.ptr.* = SDL_GL_GetProcAddress(command.name) orelse {
+            std.debug.warn("Failed to load GL function \"{}\".", .{command.name});
+            return error.Failed;
+        };
+    }
+
     self.window = window;
     self.requested_vsync = options.vsync;
     self.requested_framerate_scheme = options.framerate_scheme;
@@ -516,6 +559,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
+        .glsl_version = glsl_version,
     })) {
         // common.init prints its own error
         return error.Failed;

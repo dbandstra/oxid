@@ -5,6 +5,7 @@ const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
 const platform_draw = @import("platform/opengl/draw.zig");
+const shaders = @import("platform/opengl/shaders.zig");
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
 const loadTileset = @import("oxid/graphics.zig").loadTileset;
@@ -78,6 +79,7 @@ pub const InitParams = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     sound_enabled: bool,
+    glsl_version: shaders.GLSLVersion,
 };
 
 pub fn init(self: *MainState, params: InitParams) bool {
@@ -131,6 +133,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         .hunk = self.hunk,
         .virtual_window_width = vwin_w,
         .virtual_window_height = vwin_h,
+        .glsl_version = params.glsl_version,
     }) catch |err| {
         warn("platform_draw.init failed: {}\n", .{err});
         return false;
