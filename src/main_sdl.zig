@@ -489,6 +489,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
 
+    // TODO can i just get rid of this? i asked for 2.1 compatibility, so it should always be GLSL 120?
     const glsl_version: shaders.GLSLVersion = blk: {
         const glGetString_ptr = SDL_GL_GetProcAddress("glGetString") orelse {
             std.debug.warn("Failed to get glGetString function pointer.\n", .{});
@@ -512,14 +513,12 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         return error.Failed;
     };
 
-    // note: this feature was added to core in opengl 3.0
-    if (@enumToInt(SDL_GL_ExtensionSupported("GL_ARB_framebuffer_object")) == 0) {
-        std.debug.warn("OpenGL extension GL_ARB_framebuffer_object is required.\n", .{});
-        return error.Failed;
+    for (gl.extensions) |extension| {
+        if (@enumToInt(SDL_GL_ExtensionSupported(extension)) == 0) {
+            std.debug.warn("OpenGL extension \"{}\" is required.\n", .{extension});
+            return error.Failed;
+        }
     }
-
-    // initialize all the gl function pointers. the gl library i'm using
-    // assumes opengl 2.1 + GL_ARB_framebuffer_object.
     for (gl.commands) |command| {
         command.ptr.* = SDL_GL_GetProcAddress(command.name) orelse {
             std.debug.warn("Failed to load GL function \"{}\".", .{command.name});
