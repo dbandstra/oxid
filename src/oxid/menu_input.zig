@@ -15,11 +15,11 @@ const MenuInputContext = struct {
 
     pub fn setPositionTop(self: *@This()) void {}
     pub fn title(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {}
-    pub fn label(self: *@This(), comptime fmt: []const u8, args: var) void {}
+    pub fn label(self: *@This(), comptime fmt: []const u8, args: anytype) void {}
     pub fn vspacer(self: *@This()) void {}
 
     const OptionInnerResult = enum { left, right, enter };
-    fn optionInner(self: *@This(), is_slider: bool, comptime fmt: []const u8, args: var) ?OptionInnerResult {
+    fn optionInner(self: *@This(), is_slider: bool, comptime fmt: []const u8, args: anytype) ?OptionInnerResult {
         defer self.option_index += 1;
 
         if (self.option_index == self.cursor_pos) {
@@ -58,17 +58,17 @@ const MenuInputContext = struct {
         return null;
     }
 
-    pub fn option(self: *@This(), comptime fmt: []const u8, args: var) bool {
+    pub fn option(self: *@This(), comptime fmt: []const u8, args: anytype) bool {
         // for "buttons", only enter key works
         return if (self.optionInner(false, fmt, args)) |result| result == .enter else false;
     }
 
-    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: var) bool {
+    pub fn optionToggle(self: *@This(), comptime fmt: []const u8, args: anytype) bool {
         // for on/off toggles, left, right and enter keys all work
         return self.optionInner(false, fmt, args) != null;
     }
 
-    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: var) ?menus.OptionSliderResult {
+    pub fn optionSlider(self: *@This(), comptime fmt: []const u8, args: anytype) ?menus.OptionSliderResult {
         return if (self.optionInner(true, fmt, args)) |result| switch (result) {
             .left => menus.OptionSliderResult.left,
             .right => menus.OptionSliderResult.right,

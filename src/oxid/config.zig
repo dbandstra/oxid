@@ -160,13 +160,13 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
 fn parseInputSource(value: std.json.Value) !?InputSource {
     switch (value) {
         .Object => |map| {
-            const source_type_value = map.getValue("type") orelse return error.Failed;
+            const source_type_value = map.get("type") orelse return error.Failed;
             const source_type = switch (source_type_value) {
                 .String => |s| s,
                 else => return error.Failed,
             };
             if (std.mem.eql(u8, source_type, "key")) {
-                const key_name_value = map.getValue("key") orelse return error.Failed;
+                const key_name_value = map.get("key") orelse return error.Failed;
                 const key_name = switch (key_name_value) {
                     .String => |s| s,
                     else => return error.Failed,
@@ -179,7 +179,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                     return error.Failed;
                 }
             } else if (std.mem.eql(u8, source_type, "joy_button")) {
-                const button_value = map.getValue("button") orelse return error.Failed;
+                const button_value = map.get("button") orelse return error.Failed;
                 const button = switch (button_value) {
                     .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
                     else => return error.Failed,
@@ -193,7 +193,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
             } else if (std.mem.eql(u8, source_type, "joy_axis_neg") or
                 std.mem.eql(u8, source_type, "joy_axis_pos"))
             {
-                const axis_value = map.getValue("axis") orelse return error.Failed;
+                const axis_value = map.get("axis") orelse return error.Failed;
                 const axis = switch (axis_value) {
                     .Integer => |n| std.math.cast(u32, n) catch return error.Failed,
                     else => return error.Failed,

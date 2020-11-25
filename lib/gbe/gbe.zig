@@ -151,7 +151,7 @@ pub fn ECS(comptime ComponentLists: type) type {
         pub fn addComponent(
             self: *@This(),
             entity_id: EntityId,
-            data: var,
+            data: anytype,
         ) AddComponentError!void {
             var list = &@field(self.components, @typeName(@TypeOf(data)));
             const slot_index = blk: {
