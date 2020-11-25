@@ -1,7 +1,7 @@
 # Oxid
 Oxid is an arcade-style game where you fight waves of monsters in a fixed-screen maze. This is more or less a clone of [Verminian Trap](http://locomalito.com/verminian_trap.php) (2013, Locomalito). Verminian Trap was originally inspired by [Wizard of Wor](https://en.wikipedia.org/wiki/Wizard_of_Wor) (1980, Midway).
 
-Oxid is written in the [Zig](https://ziglang.org) programming language (requires version 0.6.0).
+Oxid is written in the [Zig](https://ziglang.org) programming language (requires version 0.7.0).
 
 [Play online here!](https://dbandstra.github.io/oxid/)
 
