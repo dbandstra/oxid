@@ -299,7 +299,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         clap.parseParam("--novsync               Disable vsync") catch unreachable,
     };
 
-    var args = try clap.parse(clap.Help, &params, allocator);
+    var args = try clap.parse(clap.Help, &params, allocator, null);
     defer args.deinit();
 
     if (args.flag("--help")) {
