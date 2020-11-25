@@ -2,9 +2,7 @@ const builtin = @import("builtin");
 usingnamespace if (builtin.arch == .wasm32)
     @import("../../web.zig")
 else
-    @cImport({
-        @cInclude("epoxy/gl.h");
-    });
+    @import("gl").namespace;
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const warn = @import("../../warn.zig").warn;
@@ -28,6 +26,7 @@ pub const DrawInitParams = struct {
     hunk: *Hunk,
     virtual_window_width: u32,
     virtual_window_height: u32,
+    glsl_version: shaders.GLSLVersion,
 };
 
 pub const buffer_vertices = 4 * 512; // render up to 512 quads at once
@@ -62,36 +61,8 @@ pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
     }
 }
 
-pub const InitError = error{UnsupportedOpenGLVersion} || shaders.InitError;
-
-fn detectGLSLVersion() InitError!shaders.GLSLVersion {
-    if (builtin.arch == .wasm32) {
-        return .webgl;
-    } else {
-        const v = glGetString(GL_VERSION);
-
-        if (v != 0) { // null check
-            if (v[1] == '.') {
-                if (v[0] == '2' and v[2] != '0') {
-                    return .v120;
-                } else if (v[0] >= '3' and v[0] <= '9') {
-                    return .v130;
-                }
-            }
-
-            warn("Unsupported OpenGL version: {}\n", .{std.mem.spanZ(v)});
-        } else {
-            warn("Failed to get OpenGL version.\n", .{});
-        }
-
-        return error.UnsupportedOpenGLVersion;
-    }
-}
-
-pub fn init(ds: *DrawState, params: DrawInitParams) InitError!void {
-    const glsl_version = try detectGLSLVersion();
-
-    ds.shader_textured = try shader_textured.create(&params.hunk.low(), glsl_version);
+pub fn init(ds: *DrawState, params: DrawInitParams) shaders.InitError!void {
+    ds.shader_textured = try shader_textured.create(&params.hunk.low(), params.glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);
 
     if (builtin.arch == .wasm32) {

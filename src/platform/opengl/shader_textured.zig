@@ -2,9 +2,7 @@ const builtin = @import("builtin");
 usingnamespace if (builtin.arch == .wasm32)
     @import("../../web.zig")
 else
-    @cImport({
-        @cInclude("epoxy/gl.h");
-    });
+    @import("gl").namespace;
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;

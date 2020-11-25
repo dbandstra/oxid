@@ -17,7 +17,6 @@ pub fn build(b: *std.build.Builder) !void {
     main.setOutputDir("zig-cache");
     main.setBuildMode(b.standardReleaseOptions());
     main.linkSystemLibrary("SDL2");
-    main.linkSystemLibrary("epoxy");
     main.linkSystemLibrary("c");
     main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
     try addCommonRequirements(b, main);
@@ -37,6 +36,7 @@ pub fn build(b: *std.build.Builder) !void {
 }
 
 fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !void {
+    o.addPackagePath("gl", "lib/gl.zig");
     o.addPackagePath("zang", "lib/zang/src/zang.zig");
     o.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
