@@ -213,7 +213,7 @@ fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8)
         }
 
         fn sync(self: *@This(), reset: bool, loaded_samples: *const LoadedSamples, impulse_frame: usize, component_list: anytype) void {
-            for (self.wrappers) |*wrapper, i| {
+            for (self.wrappers[0..component_list.count]) |*wrapper, i| {
                 if (component_list.id[i] == 0) {
                     continue;
                 }
