@@ -3,3 +3,4 @@ zig-cache/
 /js/oxid_webgl.js
 /src/web/webgl_generated.zig
 /oxid.wasm
+/oxid.o.wasm
