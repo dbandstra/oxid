@@ -89,6 +89,7 @@ pub fn init(ds: *DrawState, params: DrawInitParams) shaders.InitError!void {
 
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
+    ds.draw_buffer.active = false;
     ds.draw_buffer.num_vertices = 0;
 
     const blank_tex_pixels = &[_]u8{ 255, 255, 255, 255 };
