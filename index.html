@@ -11,6 +11,47 @@
             Loading...
         </div>
         <canvas id="canvasgl" width="320" height="240"></canvas>
+        <div class="belowtext">
+            <div>
+                menu: <span class="key">arrows</span>, <span class="key">enter</span>, <span class="key">esc</span>.
+                &nbsp;
+                game (defaults): <span class="key">arrows</span>, <span class="key">space</span>.
+                &nbsp;
+                turn on sound in menu
+            </div>
+            <div>
+                <a href="#" id="diagnostics-toggle">diagnostics</a>
+                |
+                <a href="https://github.com/dbandstra/oxid">github</a>
+            </div>
+        </div>
+        <div id="diagnostics">
+            <table class="diagnostics-table">
+                <thead><tr><th>Feature</th><th>Available</th><th>Notes</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>WebGL</td>
+                        <td id="diagnostics-webgl"></td>
+                        <td><code>canvas.getContext('webgl', {antialias: false, preserveDrawingBuffer: true})</code></td>
+                    </tr>
+                    <tr>
+                        <td>Fullscreen support</td>
+                        <td id="diagnostics-fullscreen"></td>
+                        <td><code>canvas.requestFullscreen</code></td>
+                    </tr>
+                    <tr>
+                        <td>Persistent storage (for high scores &amp; config)</td>
+                        <td id="diagnostics-storage">...</td>
+                        <td><code>window.localStorage</code></td>
+                    </tr>
+                    <tr>
+                        <td>Audio support</td>
+                        <td id="diagnostics-audio"></td>
+                        <td><code>window.AudioContext || window.webkitAudioContext</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <script src="js/base64js.min.js"></script>
         <script src="js/oxid_webgl.js"></script>
         <script src="js/oxid.js"></script>

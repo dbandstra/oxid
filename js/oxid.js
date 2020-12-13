@@ -1,60 +1,61 @@
 (() => {
     const canvas_element = document.getElementById('canvasgl');
+    const diagnostics_element = document.getElementById('diagnostics');
+    const diagnostics_audio_element = document.getElementById('diagnostics-audio');
+    const diagnostics_fullscreen_element = document.getElementById('diagnostics-fullscreen');
+    const diagnostics_storage_element = document.getElementById('diagnostics-storage');
+    const diagnostics_webgl_element = document.getElementById('diagnostics-webgl');
     const loading_text_element = document.getElementById('loading-text');
 
-    // this will be set to a `WebAssembly.Memory` object (it comes from
-    // `instance.exports.memory`). when zig code calls an extern function
-    // passing it a pointer, that value on the js side is an index into
-    // `memory`.
-    let memory;
+    document.getElementById('diagnostics-toggle').addEventListener('click', (e) => {
+        if (diagnostics_element.style.display) {
+            diagnostics_element.style.display = '';
+        } else {
+            diagnostics_element.style.display = 'block';
+        }
+        e.preventDefault();
+    });
 
-    // these match same values in main_web.zig
-    const NOP               = 1;
-    const TOGGLE_SOUND      = 2;
-    const TOGGLE_FULLSCREEN = 3;
-    const SET_CANVAS_SCALE  = 100;
+    // storage service, for persisting high scores and game config. will use
+    // window.localStorage if available, otherwise will just store in memory.
+    // all values should be Uint8Array objects.
+    const createMemoryStorage = () => {
+        const dict = {};
+        return {
+            setItem: (key, value) => { dict[key] = value; },
+            getItem: (key) => key in dict ? dict[key] : null,
+        };
+    };
+    const createLocalStorage = (local_storage) => {
+        return {
+            setItem: (key, value) => {
+                local_storage.setItem(key, base64js.fromByteArray(value));
+            },
+            getItem: (key) => {
+                const value_encoded = local_storage.getItem(key);
+                if (value_encoded !== null) {
+                    return base64js.toByteArray(value_encoded);
+                } else {
+                    return null;
+                }
+            },
+        };
+    };
+    const storage = (() => {
+        let local_storage = null;
+        try {
+            local_storage = window.localStorage;
+        } catch (_) {} // could be SecurityError
+        if (!local_storage) {
+            diagnostics_storage_element.textContent = 'unavailable';
+            return createMemoryStorage();
+        }
+        diagnostics_storage_element.textContent = 'yes';
+        return createLocalStorage(local_storage);
+    })();
 
-    // these are implementations of extern functions called from the zig side
-    const env = {
-        // WebGL functions
-        // `memory` isn't initialized yet so we wrap in a getter function
-        ...getWebGLEnv(canvas_element, () => memory),
-        // additional functions
-        getRandomSeed() {
-            return Math.floor(Math.random() * 2147483647);
-        },
-        consoleLog_(ptr, len) {
-            console.log(new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, len)));
-        },
-        getLocalStorage_(name_ptr, name_len, value_ptr, value_maxlen) {
-            const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
-            const value = base64js.toByteArray(window.localStorage.getItem(name) || '');
-            try {
-                new Uint8Array(memory.buffer, value_ptr, value_maxlen).set(value);
-            } catch (err) {
-                console.warn('getLocalStorage_:', err);
-                return -1;
-            }
-            return value.length;
-        },
-        setLocalStorage_(name_ptr, name_len, value_ptr, value_len) {
-            const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
-            const value = base64js.fromByteArray(new Uint8Array(memory.buffer, value_ptr, value_len));
-            window.localStorage.setItem(name, value);
-        },
-        getAsset_(name_ptr, name_len, result_address_ptr, result_address_len_ptr) {
-            const name = new TextDecoder().decode(new Uint8Array(memory.buffer, name_ptr, name_len));
-            if (name in assets_dict) {
-                const mem_result_address = new DataView(memory.buffer, result_address_ptr, 4);
-                mem_result_address.setUint32(0, assets_dict[name].ptr, true);
-                const mem_result_address_len = new DataView(memory.buffer, result_address_len_ptr, 4);
-                mem_result_address_len.setUint32(0, assets_dict[name].len, true);
-                return true;
-            } else {
-                return false;
-            }
-        },
-    }
+    diagnostics_fullscreen_element.textContent =
+        canvas_element.requestFullscreen ? 'yes' : 'unavailable';
 
     const assets = [
         'assets/player_death.wav',
@@ -64,6 +65,12 @@
         'assets/sfx_sounds_powerup4.wav',
     ];
 
+    // these match same values in main_web.zig
+    const NOP               = 1;
+    const TOGGLE_SOUND      = 2;
+    const TOGGLE_FULLSCREEN = 3;
+    const SET_CANVAS_SCALE  = 100;
+
     // this will be filled out when assets are loaded
     const assets_dict = {};
 
@@ -72,6 +79,72 @@
 
     let is_fullscreen = false;
     let fullscreen_waiting = false;
+
+    // this will be set to a `WebAssembly.Memory` object (it comes from
+    // `instance.exports.memory`). when zig code calls an extern function
+    // passing it a pointer, that value on the js side is an index into
+    // `memory`.
+    let memory;
+
+    const readByteArray = (ptr, len) =>
+        new Uint8Array(memory.buffer, ptr, len);
+    const readString = (ptr, len) =>
+        new TextDecoder().decode(readByteArray(ptr, len));
+
+    const gl = canvas_element.getContext('webgl', {
+        antialias: false,
+        preserveDrawingBuffer: true,
+    });
+    if (!gl) {
+        loading_text_element.textContent = 'This browser does not support WebGL.';
+        diagnostics_webgl_element.textContent = 'unavailable';
+        return;
+    }
+    diagnostics_webgl_element.textContent = 'yes';
+
+    // these are implementations of extern functions called from the zig side
+    const env = {
+        // WebGL functions
+        // `memory` isn't initialized yet so we wrap in a getter function
+        ...getWebGLEnv(gl, () => memory),
+        // additional functions
+        getRandomSeed() {
+            return Math.floor(Math.random() * 2147483647);
+        },
+        consoleLog(ptr, len) {
+            console.log(readString(ptr, len));
+        },
+        setLocalStorage(name_ptr, name_len, value_ptr, value_len) {
+            const name = readString(name_ptr, name_len);
+            const value = readByteArray(value_ptr, value_len);
+            storage.setItem(name, value);
+        },
+        getLocalStorage(name_ptr, name_len, value_ptr, value_maxlen) {
+            const name = readString(name_ptr, name_len);
+            const value = storage.getItem(name);
+            if (value === null) {
+                return 0;
+            }
+            try {
+                new Uint8Array(memory.buffer, value_ptr, value_maxlen).set(value);
+            } catch (err) {
+                console.warn('getLocalStorage failed to write into program memory:', err);
+                return -1;
+            }
+            return value.length;
+        },
+        getAsset(name_ptr, name_len, result_addr_ptr, result_addr_len_ptr) {
+            const name = readString(name_ptr, name_len);
+            if (!(name in assets_dict)) {
+                return false;
+            }
+            const ptr_view = new DataView(memory.buffer, result_addr_ptr, 4);
+            const len_view = new DataView(memory.buffer, result_addr_len_ptr, 4);
+            ptr_view.setUint32(0, assets_dict[name].ptr, true);
+            len_view.setUint32(0, assets_dict[name].len, true);
+            return true;
+        },
+    }
 
     const fetchBytes = (name) => {
         return fetch(name).then((response) => {
@@ -144,7 +217,8 @@
                     setCanvasScale(instance, result - SET_CANVAS_SCALE);
                     break;
                 }
-                // anything that isn't a known result code will not trigger preventDefault
+                // anything that isn't a known result code will not trigger
+                // preventDefault
                 return;
             }
 
@@ -177,9 +251,10 @@
             // enable sound
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) {
-                alert('AudioContext API not supported.');
+                diagnostics_audio_element.textContent = 'unavailable';
                 return;
             }
+            diagnostics_audio_element.textContent = 'yes';
 
             const audio_buffer_size = instance.exports.getAudioBufferSize();
             const audio_context = new AudioContext();
@@ -214,8 +289,10 @@
     }
 
     function setCanvasScale(instance, scale) {
-        canvas_element.style.width = (canvas_element.getAttribute('width') * scale) + 'px';
-        canvas_element.style.height = (canvas_element.getAttribute('height') * scale) + 'px';
+        const w = canvas_element.getAttribute('width');
+        const h = canvas_element.getAttribute('height');
+        canvas_element.style.width = (w * scale) + 'px';
+        canvas_element.style.height = (h * scale) + 'px';
         instance.exports.onCanvasScaleChange(scale);
     }
 

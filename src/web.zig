@@ -1,28 +1,22 @@
-const builtin = @import("builtin");
-
-// this file contains declarations for functions implemented on the javascript
-// side.
-//
-// note: zig supports giving a namespace(?) to extern functions, like this:
-//
-//   extern "hello" funcName() void;
-//
-// if not specified, it seems to default to "env". this has to match with the
-// JS side.
+const env = @import("web/env.zig");
 
 pub usingnamespace @import("web/webgl.zig");
 pub usingnamespace @import("web/webgl_generated.zig");
 
-pub extern fn getRandomSeed() c_uint;
+// these functions are more zig-friendly wrappers around the "env" functions
+// that are implemented on the javascript side
 
-extern fn consoleLog_(message_ptr: [*]const u8, message_len: c_uint) void;
-pub fn consoleLog(message: []const u8) void {
-    consoleLog_(message.ptr, message.len);
+pub fn getRandomSeed() c_uint {
+    return env.getRandomSeed();
 }
 
-extern fn getLocalStorage_(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
+pub fn consoleLog(message: []const u8) void {
+    env.consoleLog(message.ptr, message.len);
+}
+
+// read some data from persistent storage
 pub fn getLocalStorage(name: []const u8, value: []u8) !usize {
-    const n = getLocalStorage_(name.ptr, @intCast(c_int, name.len), value.ptr, @intCast(c_int, value.len));
+    const n = env.getLocalStorage(name.ptr, @intCast(c_int, name.len), value.ptr, @intCast(c_int, value.len));
     if (n < 0) {
         // probably the value was too big to fit in the slice provided
         return error.GetLocalStorageFailed;
@@ -30,24 +24,19 @@ pub fn getLocalStorage(name: []const u8, value: []u8) !usize {
     return @intCast(usize, n);
 }
 
-extern fn setLocalStorage_(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
+// write some data into persistent storage
 pub fn setLocalStorage(name: []const u8, value: []const u8) void {
-    setLocalStorage_(name.ptr, @intCast(c_int, name.len), value.ptr, @intCast(c_int, value.len));
+    env.setLocalStorage(name.ptr, @intCast(c_int, name.len), value.ptr, @intCast(c_int, value.len));
 }
 
-extern fn getAsset_(name_ptr: [*]const u8, name_len: c_int, result_address_ptr: *[*]const u8, result_address_len_ptr: *c_int) bool;
+// retrieve a game asset (assets are external and are provided from the
+// javascript side)
 pub fn getAsset(name: []const u8) ?[]const u8 {
     var ptr: [*]const u8 = undefined;
     var len: c_int = undefined;
-    if (getAsset_(name.ptr, @intCast(c_int, name.len), &ptr, &len)) {
+    if (env.getAsset(name.ptr, @intCast(c_int, name.len), &ptr, &len)) {
         return ptr[0..@intCast(usize, len)];
     } else {
         return null;
     }
-}
-
-pub fn panic(message: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
-    @setCold(true);
-    consoleLog(message);
-    while (true) {}
 }

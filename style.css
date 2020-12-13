@@ -1,6 +1,7 @@
 body {
     background: black;
     color: #ddd;
+    font-family: sans-serif;
 }
 
 #loading-text {
@@ -19,4 +20,40 @@ body {
     margin: 0 auto;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
+}
+
+.belowtext {
+    max-width: 960px;
+    margin: 0 auto;
+    margin-top: 1.5em;
+    display: flex;
+    justify-content: space-between;
+}
+
+a {
+    color: #ddd;
+}
+
+.key {
+    color: #a0c0f0;
+}
+
+#diagnostics {
+    max-width: 960px;
+    margin: 0 auto;
+    margin-top: 1.5em;
+    display: none;
+}
+
+.diagnostics-table {
+    border: 1px solid #999;
+    border-collapse: collapse;
+    width: 100%;
+}
+.diagnostics-table th {
+    text-align: left;
+}
+.diagnostics-table th, .diagnostics-table td {
+    border: 1px solid #999;
+    padding: 0.25em 0.5em;
 }

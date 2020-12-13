@@ -34,7 +34,7 @@ const zig_top =
 // memory has to be wrapped in a getter because we need the "env" before we can
 // even get the memory
 const js_top =
-    \\function getWebGLEnv(canvas_element, getMemory) {
+    \\function getWebGLEnv(gl, getMemory) {
     \\    const readCharStr = (ptr, len) => {
     \\        const bytes = new Uint8Array(getMemory().buffer, ptr, len);
     \\        let s = "";
@@ -43,15 +43,6 @@ const js_top =
     \\        }
     \\        return s;
     \\    };
-    \\
-    \\    const gl = canvas_element.getContext('webgl', {
-    \\        antialias: false,
-    \\        preserveDrawingBuffer: true,
-    \\    });
-    \\
-    \\    if (!gl) {
-    \\        throw new Error('The browser does not support WebGL');
-    \\    }
     \\
     \\    const glShaders = [];
     \\    const glPrograms = [];
@@ -74,8 +65,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.activeTexture(target);
-            },
+        \\gl.activeTexture(target);
+    },
     Func{
         .name = "glAttachShader",
         .args = &[_]Arg{
@@ -84,8 +75,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.attachShader(glPrograms[program], glShaders[shader]);
-            },
+        \\gl.attachShader(glPrograms[program], glShaders[shader]);
+    },
     // TODO - glBindAttribLocation
     Func{
         .name = "glBindBuffer",
@@ -95,8 +86,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.bindBuffer(type, glBuffers[buffer_id]);
-            },
+        \\gl.bindBuffer(type, glBuffers[buffer_id]);
+    },
     Func{
         .name = "glBindFramebuffer",
         .args = &[_]Arg{
@@ -105,8 +96,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.bindFramebuffer(target, glFramebuffers[framebuffer]);
-            },
+        \\gl.bindFramebuffer(target, glFramebuffers[framebuffer]);
+    },
     // TODO - glBindRenderbuffer
     Func{
         .name = "glBindTexture",
@@ -116,8 +107,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.bindTexture(target, glTextures[texture_id]);
-            },
+        \\gl.bindTexture(target, glTextures[texture_id]);
+    },
     // TODO - glBlendColor
     // TODO - glBlendEquation
     // TODO - glBlendEquationSeparate
@@ -129,8 +120,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.blendFunc(x, y);
-            },
+        \\gl.blendFunc(x, y);
+    },
     // TODO - glBlendFuncSeparate
     Func{
         .name = "glBufferData",
@@ -144,8 +135,8 @@ const funcs = [_]Func{
         .js =
         // TODO - check for NULL?
         \\const floats = new Float32Array(getMemory().buffer, data_ptr, count);
-            \\gl.bufferData(type, floats, draw_type);
-            },
+        \\gl.bufferData(type, floats, draw_type);
+    },
     // TODO - glBufferSubData
     Func{
         .name = "glCheckFramebufferStatus",
@@ -154,8 +145,8 @@ const funcs = [_]Func{
         },
         .ret = "GLenum",
         .js =
-            \\return gl.checkFramebufferStatus(target);
-            },
+        \\return gl.checkFramebufferStatus(target);
+    },
     Func{
         .name = "glClear",
         .args = &[_]Arg{
@@ -163,8 +154,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.clear(mask);
-            },
+        \\gl.clear(mask);
+    },
     Func{
         .name = "glClearColor",
         .args = &[_]Arg{
@@ -175,8 +166,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.clearColor(r, g, b, a);
-            },
+        \\gl.clearColor(r, g, b, a);
+    },
     // TODO - glClearDepth
     // TODO - glClearStencil
     // TODO - glColorMask
@@ -190,10 +181,10 @@ const funcs = [_]Func{
         .js =
         // TODO don't call getShaderParameter here
         \\gl.compileShader(glShaders[shader]);
-            \\if (!gl.getShaderParameter(glShaders[shader], gl.COMPILE_STATUS)) {
-            \\    throw "Error compiling shader:" + gl.getShaderInfoLog(glShaders[shader]);
-            \\}
-            },
+        \\if (!gl.getShaderParameter(glShaders[shader], gl.COMPILE_STATUS)) {
+        \\    throw "Error compiling shader:" + gl.getShaderInfoLog(glShaders[shader]);
+        \\}
+    },
     // TODO - glCompressedTexImage2D
     // TODO - glCompressedTexImage3D
     // TODO - glCompressedTexSubImage2D
@@ -204,25 +195,25 @@ const funcs = [_]Func{
         .args = &[_]Arg{},
         .ret = "c_uint",
         .js =
-            \\glBuffers.push(gl.createBuffer());
-            \\return glBuffers.length - 1;
-            },
+        \\glBuffers.push(gl.createBuffer());
+        \\return glBuffers.length - 1;
+    },
     Func{
         .name = "glCreateFramebuffer",
         .args = &[_]Arg{},
         .ret = "GLuint",
         .js =
-            \\glFramebuffers.push(gl.createFramebuffer());
-            \\return glFramebuffers.length - 1;
-            },
+        \\glFramebuffers.push(gl.createFramebuffer());
+        \\return glFramebuffers.length - 1;
+    },
     Func{
         .name = "glCreateProgram",
         .args = &[_]Arg{},
         .ret = "GLuint",
         .js =
-            \\glPrograms.push(gl.createProgram());
-            \\return glPrograms.length - 1;
-            },
+        \\glPrograms.push(gl.createProgram());
+        \\return glPrograms.length - 1;
+    },
     // TODO - glCreateRenderbuffer
     Func{
         .name = "glCreateShader",
@@ -231,17 +222,17 @@ const funcs = [_]Func{
         },
         .ret = "GLuint",
         .js =
-            \\glShaders.push(gl.createShader(shader_type));
-            \\return glShaders.length - 1;
-            },
+        \\glShaders.push(gl.createShader(shader_type));
+        \\return glShaders.length - 1;
+    },
     Func{
         .name = "glCreateTexture",
         .args = &[_]Arg{},
         .ret = "c_uint",
         .js =
-            \\glTextures.push(gl.createTexture());
-            \\return glTextures.length - 1;
-            },
+        \\glTextures.push(gl.createTexture());
+        \\return glTextures.length - 1;
+    },
     // TODO - glCullFace
     Func{
         .name = "glDeleteBuffer",
@@ -250,9 +241,9 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.deleteBuffer(glBuffers[id]);
-            \\glBuffers[id] = undefined;
-            },
+        \\gl.deleteBuffer(glBuffers[id]);
+        \\glBuffers[id] = undefined;
+    },
     // TODO - glDeleteFramebuffer
     Func{
         .name = "glDeleteProgram",
@@ -261,9 +252,9 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.deleteProgram(glPrograms[id]);
-            \\glPrograms[id] = undefined;
-            },
+        \\gl.deleteProgram(glPrograms[id]);
+        \\glPrograms[id] = undefined;
+    },
     // TODO - glDeleteRenderbuffer
     Func{
         .name = "glDeleteShader",
@@ -272,9 +263,9 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.deleteShader(glShaders[id]);
-            \\glShaders[id] = undefined;
-            },
+        \\gl.deleteShader(glShaders[id]);
+        \\glShaders[id] = undefined;
+    },
     Func{
         .name = "glDeleteTexture",
         .args = &[_]Arg{
@@ -282,9 +273,9 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.deleteTexture(glTextures[id]);
-            \\glTextures[id] = undefined;
-            },
+        \\gl.deleteTexture(glTextures[id]);
+        \\glTextures[id] = undefined;
+    },
     Func{
         .name = "glDepthFunc",
         .args = &[_]Arg{
@@ -292,8 +283,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.depthFunc(x);
-            },
+        \\gl.depthFunc(x);
+    },
     // TODO - glDepthMask
     // TODO - glDepthRange
     Func{
@@ -304,8 +295,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.detachShader(glPrograms[program], glShaders[shader]);
-            },
+        \\gl.detachShader(glPrograms[program], glShaders[shader]);
+    },
     Func{
         .name = "glDisable",
         .args = &[_]Arg{
@@ -313,8 +304,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.disable(cap);
-            },
+        \\gl.disable(cap);
+    },
     // TODO - glDisableVertexAttribArray
     Func{
         .name = "glDrawArrays",
@@ -325,8 +316,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.drawArrays(type, offset, count);
-            },
+        \\gl.drawArrays(type, offset, count);
+    },
     // TODO - glDrawElements
     Func{
         .name = "glEnable",
@@ -335,8 +326,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.enable(x);
-            },
+        \\gl.enable(x);
+    },
     Func{
         .name = "glEnableVertexAttribArray",
         .args = &[_]Arg{
@@ -344,8 +335,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.enableVertexAttribArray(x);
-            },
+        \\gl.enableVertexAttribArray(x);
+    },
     // TODO - glFinish
     // TODO - glFlush
     // TODO - glFramebufferRenderbuffer
@@ -360,8 +351,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.framebufferTexture2D(target, attachment, textarget, glTextures[texture], level);
-            },
+        \\gl.framebufferTexture2D(target, attachment, textarget, glTextures[texture], level);
+    },
     Func{
         .name = "glFrontFace",
         .args = &[_]Arg{
@@ -369,8 +360,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.frontFace(mode);
-            },
+        \\gl.frontFace(mode);
+    },
     // TODO - glGenerateMipmap
     // TODO - glGetActiveAttrib
     // TODO - glGetActiveUniform
@@ -383,8 +374,8 @@ const funcs = [_]Func{
         },
         .ret = "c_int",
         .js =
-            \\return gl.getAttribLocation(glPrograms[program_id], name);
-            },
+        \\return gl.getAttribLocation(glPrograms[program_id], name);
+    },
     // TODO - glGetBufferParameter
     // TODO - glGetContextAttributes
     Func{
@@ -392,8 +383,8 @@ const funcs = [_]Func{
         .args = &[_]Arg{},
         .ret = "c_int",
         .js =
-            \\return gl.getError();
-            },
+        \\return gl.getError();
+    },
     // TODO - glGetExtension
     // TODO - glGetFramebufferAttachmentParameter
     // TODO - glGetParameter
@@ -415,9 +406,9 @@ const funcs = [_]Func{
         },
         .ret = "c_int",
         .js =
-            \\glUniformLocations.push(gl.getUniformLocation(glPrograms[program_id], name));
-            \\return glUniformLocations.length - 1;
-            },
+        \\glUniformLocations.push(gl.getUniformLocation(glPrograms[program_id], name));
+        \\return glUniformLocations.length - 1;
+    },
     // TODO - glGetVertexAttrib
     // TODO - glGetVertexAttribOffset
     // TODO - glHint
@@ -439,10 +430,10 @@ const funcs = [_]Func{
         .js =
         // TODO - don't call getProgramParameter here
         \\gl.linkProgram(glPrograms[program]);
-            \\if (!gl.getProgramParameter(glPrograms[program], gl.LINK_STATUS)) {
-            \\    throw ("Error linking program:" + gl.getProgramInfoLog(glPrograms[program]));
-            \\}
-            },
+        \\if (!gl.getProgramParameter(glPrograms[program], gl.LINK_STATUS)) {
+        \\    throw ("Error linking program:" + gl.getProgramInfoLog(glPrograms[program]));
+        \\}
+    },
     Func{
         .name = "glPixelStorei",
         .args = &[_]Arg{
@@ -451,8 +442,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.pixelStorei(pname, param);
-            },
+        \\gl.pixelStorei(pname, param);
+    },
     // TODO - glPolygonOffset
     // TODO - glReadPixels
     // TODO - glRenderbufferStorage
@@ -466,8 +457,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.shaderSource(glShaders[shader], string);
-            },
+        \\gl.shaderSource(glShaders[shader], string);
+    },
     // TODO - glStencilFunc
     // TODO - glStencilFuncSeparate
     // TODO - glStencilMask
@@ -491,10 +482,10 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\// FIXME - look at data_ptr, not data_len, to determine NULL?
-            \\const data = data_len > 0 ? new Uint8Array(getMemory().buffer, data_ptr, data_len) : null;
-            \\gl.texImage2D(target, level, internal_format, width, height, border, format, type, data);
-            },
+        \\// FIXME - look at data_ptr, not data_len, to determine NULL?
+        \\const data = data_len > 0 ? new Uint8Array(getMemory().buffer, data_ptr, data_len) : null;
+        \\gl.texImage2D(target, level, internal_format, width, height, border, format, type, data);
+    },
     Func{
         .name = "glTexParameterf",
         .args = &[_]Arg{
@@ -504,8 +495,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.texParameterf(target, pname, param);
-            },
+        \\gl.texParameterf(target, pname, param);
+    },
     Func{
         .name = "glTexParameteri",
         .args = &[_]Arg{
@@ -515,8 +506,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.texParameteri(target, pname, param);
-            },
+        \\gl.texParameteri(target, pname, param);
+    },
     // TODO - glTexSubImage2D
     Func{
         .name = "glUniform1f",
@@ -526,8 +517,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.uniform1f(glUniformLocations[location_id], x);
-            },
+        \\gl.uniform1f(glUniformLocations[location_id], x);
+    },
     // TODO - glUniform1fv
     Func{
         .name = "glUniform1i",
@@ -537,8 +528,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.uniform1i(glUniformLocations[location_id], x);
-            },
+        \\gl.uniform1i(glUniformLocations[location_id], x);
+    },
     // TODO - glUniform1iv
     // TODO - glUniform2f
     // TODO - glUniform2fv
@@ -559,8 +550,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.uniform4f(glUniformLocations[location_id], x, y, z, w);
-            },
+        \\gl.uniform4f(glUniformLocations[location_id], x, y, z, w);
+    },
     // TODO - glUniform4fv
     // TODO - glUniform4i
     // TODO - glUniform4iv
@@ -577,9 +568,9 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\const floats = new Float32Array(getMemory().buffer, data_ptr, data_len * 16);
-            \\gl.uniformMatrix4fv(glUniformLocations[location_id], transpose, floats);
-            },
+        \\const floats = new Float32Array(getMemory().buffer, data_ptr, data_len * 16);
+        \\gl.uniformMatrix4fv(glUniformLocations[location_id], transpose, floats);
+    },
     Func{
         .name = "glUseProgram",
         .args = &[_]Arg{
@@ -587,8 +578,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.useProgram(glPrograms[program_id]);
-            },
+        \\gl.useProgram(glPrograms[program_id]);
+    },
     // TODO - glValidateProgram
     // TODO - glVertexAttrib1f
     // TODO - glVertexAttrib1fv
@@ -610,8 +601,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.vertexAttribPointer(attrib_location, size, type, normalize, stride, offset);
-            },
+        \\gl.vertexAttribPointer(attrib_location, size, type, normalize, stride, offset);
+    },
     Func{
         .name = "glViewport",
         .args = &[_]Arg{
@@ -622,8 +613,8 @@ const funcs = [_]Func{
         },
         .ret = "void",
         .js =
-            \\gl.viewport(x, y, width, height);
-            },
+        \\gl.viewport(x, y, width, height);
+    },
 };
 
 fn nextNewline(s: []const u8) usize {
