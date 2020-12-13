@@ -38,22 +38,22 @@ a {
     color: #a0c0f0;
 }
 
-#diagnostics {
-    max-width: 960px;
-    margin: 0 auto;
-    margin-top: 1.5em;
+#diagnostics-table {
     display: none;
-}
-
-.diagnostics-table {
     border: 1px solid #999;
     border-collapse: collapse;
     width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    margin-top: 1.5em;
 }
-.diagnostics-table th {
+#diagnostics-table th {
     text-align: left;
 }
-.diagnostics-table th, .diagnostics-table td {
+#diagnostics-table th, #diagnostics-table td {
     border: 1px solid #999;
     padding: 0.25em 0.5em;
+}
+#diagnostics-table td:nth-child(3) {
+    font-family: monospace;
 }

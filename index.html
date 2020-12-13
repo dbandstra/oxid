@@ -25,34 +25,13 @@
                 <a href="https://github.com/dbandstra/oxid">github</a>
             </div>
         </div>
-        <div id="diagnostics">
-            <table class="diagnostics-table">
-                <thead><tr><th>Feature</th><th>Available</th><th>Notes</th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td>WebGL</td>
-                        <td id="diagnostics-webgl"></td>
-                        <td><code>canvas.getContext('webgl', {antialias: false, preserveDrawingBuffer: true})</code></td>
-                    </tr>
-                    <tr>
-                        <td>Fullscreen support</td>
-                        <td id="diagnostics-fullscreen"></td>
-                        <td><code>canvas.requestFullscreen</code></td>
-                    </tr>
-                    <tr>
-                        <td>Persistent storage (for high scores &amp; config)</td>
-                        <td id="diagnostics-storage">...</td>
-                        <td><code>window.localStorage</code></td>
-                    </tr>
-                    <tr>
-                        <td>Audio support</td>
-                        <td id="diagnostics-audio"></td>
-                        <td><code>window.AudioContext || window.webkitAudioContext</code></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <table id="diagnostics-table">
+            <thead><tr><th>Feature</th><th>Available</th><th>Notes</th></tr></thead>
+            <tbody></tbody>
+        </table>
         <script src="js/base64js.min.js"></script>
+        <script src="js/diagnostics.js"></script>
+        <script src="js/storage.js"></script>
         <script src="js/oxid_webgl.js"></script>
         <script src="js/oxid.js"></script>
     </body>

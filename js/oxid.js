@@ -1,61 +1,16 @@
 (() => {
     const canvas_element = document.getElementById('canvasgl');
-    const diagnostics_element = document.getElementById('diagnostics');
-    const diagnostics_audio_element = document.getElementById('diagnostics-audio');
-    const diagnostics_fullscreen_element = document.getElementById('diagnostics-fullscreen');
-    const diagnostics_storage_element = document.getElementById('diagnostics-storage');
-    const diagnostics_webgl_element = document.getElementById('diagnostics-webgl');
     const loading_text_element = document.getElementById('loading-text');
 
-    document.getElementById('diagnostics-toggle').addEventListener('click', (e) => {
-        if (diagnostics_element.style.display) {
-            diagnostics_element.style.display = '';
-        } else {
-            diagnostics_element.style.display = 'block';
-        }
-        e.preventDefault();
-    });
+    const diagnostics = getDiagnostics(document.getElementById('diagnostics-table'));
+    const diagnostics_webgl = diagnostics.addFeature('WebGL', 'canvas.getContext(\'webgl\', {antialias: false, preserveDrawingBuffer: true})');
+    const diagnostics_fullscreen = diagnostics.addFeature('Fullscreen', 'canvas.requestFullscreen');
+    const diagnostics_storage = diagnostics.addFeature('Persistent storage', 'window.localStorage');
+    const diagnostics_audio = diagnostics.addFeature('Audio', 'window.AudioContext || window.webkitAudioContext');
 
-    // storage service, for persisting high scores and game config. will use
-    // window.localStorage if available, otherwise will just store in memory.
-    // all values should be Uint8Array objects.
-    const createMemoryStorage = () => {
-        const dict = {};
-        return {
-            setItem: (key, value) => { dict[key] = value; },
-            getItem: (key) => key in dict ? dict[key] : null,
-        };
-    };
-    const createLocalStorage = (local_storage) => {
-        return {
-            setItem: (key, value) => {
-                local_storage.setItem(key, base64js.fromByteArray(value));
-            },
-            getItem: (key) => {
-                const value_encoded = local_storage.getItem(key);
-                if (value_encoded !== null) {
-                    return base64js.toByteArray(value_encoded);
-                } else {
-                    return null;
-                }
-            },
-        };
-    };
-    const storage = (() => {
-        let local_storage = null;
-        try {
-            local_storage = window.localStorage;
-        } catch (_) {} // could be SecurityError
-        if (!local_storage) {
-            diagnostics_storage_element.textContent = 'unavailable';
-            return createMemoryStorage();
-        }
-        diagnostics_storage_element.textContent = 'yes';
-        return createLocalStorage(local_storage);
-    })();
+    const storage = getStorage(diagnostics_storage);
 
-    diagnostics_fullscreen_element.textContent =
-        canvas_element.requestFullscreen ? 'yes' : 'unavailable';
+    diagnostics_fullscreen.setAvailability(!!canvas_element.requestFullscreen);
 
     const assets = [
         'assets/player_death.wav',
@@ -95,12 +50,11 @@
         antialias: false,
         preserveDrawingBuffer: true,
     });
+    diagnostics_webgl.setAvailability(!!gl);
     if (!gl) {
         loading_text_element.textContent = 'This browser does not support WebGL.';
-        diagnostics_webgl_element.textContent = 'unavailable';
         return;
     }
-    diagnostics_webgl_element.textContent = 'yes';
 
     // these are implementations of extern functions called from the zig side
     const env = {
@@ -250,11 +204,10 @@
         if (audio_state === null) {
             // enable sound
             const AudioContext = window.AudioContext || window.webkitAudioContext;
+            diagnostics_audio.setAvailability(!!AudioContext);
             if (!AudioContext) {
-                diagnostics_audio_element.textContent = 'unavailable';
                 return;
             }
-            diagnostics_audio_element.textContent = 'yes';
 
             const audio_buffer_size = instance.exports.getAudioBufferSize();
             const audio_context = new AudioContext();
