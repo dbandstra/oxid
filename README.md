@@ -23,7 +23,7 @@ zig build play
 
 To build and run the release build:
 ```
-zig build -Drelease-fast=true
+zig build -Drelease-safe=true
 zig-cache/oxid
 ```
 

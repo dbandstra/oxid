@@ -24,7 +24,7 @@ pub fn build(b: *std.build.Builder) !void {
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     wasm.step.dependOn(&audio_run_step.step);
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
-    wasm.setOutputDir(".");
+    wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
     try addCommonRequirements(b, wasm);

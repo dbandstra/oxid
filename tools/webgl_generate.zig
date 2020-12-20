@@ -739,5 +739,5 @@ fn writeJsFile(filename: []const u8) !void {
 
 pub fn main() !void {
     try writeZigFile("src/web/webgl_generated.zig");
-    try writeJsFile("js/oxid_webgl.js");
+    try writeJsFile("web/js/oxid_webgl.js");
 }
