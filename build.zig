@@ -5,15 +5,18 @@ pub fn build(b: *std.build.Builder) !void {
     const t = b.addTest("test.zig");
     t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
 
-    const audio = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
-    audio.setBuildMode(b.standardReleaseOptions());
-    audio.setOutputDir("zig-cache");
-    audio.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
-    const audio_run_step = audio.run();
-    audio_run_step.addArgs(&[_][]const u8{ "-o", "src/oxid/audio/generated.zig", "src/oxid/audio/script.txt" });
+    const write_version = b.addSystemCommand(&[_][]const u8{ "sh", "tools/write_version.sh" });
+
+    const zangc = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
+    zangc.setBuildMode(b.standardReleaseOptions());
+    zangc.setOutputDir("zig-cache");
+    zangc.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
+    const compile_zangscript = zangc.run();
+    compile_zangscript.addArgs(&[_][]const u8{ "-o", "src/oxid/audio/generated.zig", "src/oxid/audio/script.txt" });
 
     const main = b.addExecutable("oxid", "src/main_sdl.zig");
-    main.step.dependOn(&audio_run_step.step);
+    main.step.dependOn(&compile_zangscript.step);
+    main.step.dependOn(&write_version.step);
     main.setOutputDir("zig-cache");
     main.setBuildMode(b.standardReleaseOptions());
     main.linkSystemLibrary("SDL2");
@@ -22,7 +25,8 @@ pub fn build(b: *std.build.Builder) !void {
     try addCommonRequirements(b, main);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
-    wasm.step.dependOn(&audio_run_step.step);
+    main.step.dependOn(&compile_zangscript.step);
+    wasm.step.dependOn(&write_version.step);
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());

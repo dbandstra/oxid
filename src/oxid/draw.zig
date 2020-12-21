@@ -321,6 +321,9 @@ fn drawHud(
                 fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
+    } else {
+        const version = @embedFile("../../zig-cache/version.txt");
+        fonts.drawString(ds, &static.font, 0, 0, "OXID " ++ version);
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
