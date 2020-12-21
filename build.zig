@@ -2,10 +2,11 @@ const builtin = @import("builtin");
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) !void {
+    const version = try getVersion(b);
+    defer b.allocator.free(version);
+
     const t = b.addTest("test.zig");
     t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
-
-    const write_version = b.addExecutable("write_version", "tools/write_version.zig").run();
 
     const zangc = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
     zangc.setBuildMode(b.standardReleaseOptions());
@@ -16,21 +17,21 @@ pub fn build(b: *std.build.Builder) !void {
 
     const main = b.addExecutable("oxid", "src/main_sdl.zig");
     main.step.dependOn(&compile_zangscript.step);
-    main.step.dependOn(&write_version.step);
     main.setOutputDir("zig-cache");
     main.setBuildMode(b.standardReleaseOptions());
     main.linkSystemLibrary("SDL2");
     main.linkSystemLibrary("c");
     main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
+    main.addBuildOption([]const u8, "version", version);
     try addCommonRequirements(b, main);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     main.step.dependOn(&compile_zangscript.step);
-    wasm.step.dependOn(&write_version.step);
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
+    wasm.addBuildOption([]const u8, "version", version);
     try addCommonRequirements(b, wasm);
 
     b.step("test", "Run all tests").dependOn(&t.step);
@@ -49,4 +50,23 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
     const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{ b.build_root, "assets" });
     o.addBuildOption([]const u8, "assets_path", assets_path);
+}
+
+fn getVersion(b: *std.build.Builder) ![]const u8 {
+    const argv = &[_][]const u8{ "git", "describe", "--tags" };
+    const child = try std.ChildProcess.init(argv, b.allocator);
+    defer child.deinit();
+
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Pipe;
+
+    try child.spawn();
+
+    const version = try child.stdout.?.reader().readAllAlloc(b.allocator, 1024);
+    errdefer b.allocator.free(version);
+
+    switch (try child.wait()) {
+        .Exited => return version,
+        else => return error.UncleanExit,
+    }
 }

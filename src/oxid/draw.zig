@@ -1,3 +1,4 @@
+const build_options = @import("build_options");
 const std = @import("std");
 const pdraw = @import("pdraw");
 const math = @import("../common/math.zig");
@@ -322,8 +323,7 @@ fn drawHud(
             }
         }
     } else {
-        const version = @embedFile("../../zig-cache/version.txt");
-        fonts.drawString(ds, &static.font, 0, 0, "OXID " ++ version);
+        fonts.drawString(ds, &static.font, 0, 0, "OXID " ++ build_options.version);
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
