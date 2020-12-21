@@ -5,7 +5,7 @@ pub fn build(b: *std.build.Builder) !void {
     const t = b.addTest("test.zig");
     t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
 
-    const write_version = b.addSystemCommand(&[_][]const u8{ "sh", "tools/write_version.sh" });
+    const write_version = b.addExecutable("write_version", "tools/write_version.zig").run();
 
     const zangc = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
     zangc.setBuildMode(b.standardReleaseOptions());
