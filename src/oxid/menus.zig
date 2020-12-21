@@ -134,7 +134,7 @@ pub const MainMenu = struct {
             return;
         }
 
-        ctx.title(.left, "OXID");
+        ctx.title(.left, "MAIN MENU");
 
         if (ctx.option("New game", .{})) {
             ctx.setEffect(.{ .start_new_game = false });
