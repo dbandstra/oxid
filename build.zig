@@ -26,7 +26,7 @@ pub fn build(b: *std.build.Builder) !void {
     try addCommonRequirements(b, main);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
-    main.step.dependOn(&compile_zangscript.step);
+    wasm.step.dependOn(&compile_zangscript.step);
     wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());
