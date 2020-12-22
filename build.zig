@@ -2,7 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) !void {
-    const version = try getVersion(b);
+    const version = try getVersion(b.allocator);
     defer b.allocator.free(version);
 
     const t = b.addTest("test.zig");
@@ -52,9 +52,9 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addBuildOption([]const u8, "assets_path", assets_path);
 }
 
-fn getVersion(b: *std.build.Builder) ![]const u8 {
+fn getVersion(allocator: *std.mem.Allocator) ![]const u8 {
     const argv = &[_][]const u8{ "git", "describe", "--tags" };
-    const child = try std.ChildProcess.init(argv, b.allocator);
+    const child = try std.ChildProcess.init(argv, allocator);
     defer child.deinit();
 
     child.stdout_behavior = .Pipe;
@@ -62,8 +62,8 @@ fn getVersion(b: *std.build.Builder) ![]const u8 {
 
     try child.spawn();
 
-    const version = try child.stdout.?.reader().readAllAlloc(b.allocator, 1024);
-    errdefer b.allocator.free(version);
+    const version = try child.stdout.?.reader().readAllAlloc(allocator, 1024);
+    errdefer allocator.free(version);
 
     switch (try child.wait()) {
         .Exited => return version,
