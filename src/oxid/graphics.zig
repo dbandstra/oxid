@@ -10,6 +10,35 @@ const constants = @import("constants.zig");
 const graphics_filename = build_options.assets_path ++ "/mytiles.pcx";
 const transparent_color_index = 27;
 
+// named colors for the dawnbringer palette
+pub const Color = enum {
+    black,
+    burgundy,
+    navy,
+    darkgray,
+    brown,
+    darkgreen,
+    salmon,
+    mediumgray,
+    skyblue,
+    orange,
+    lightgray,
+    lightgreen,
+    cyan,
+    lightcyan,
+    yellow,
+    white,
+};
+
+pub fn getColor(palette: [48]u8, color: Color) draw.Color {
+    const index: usize = @enumToInt(color);
+    return .{
+        .r = palette[index * 3 + 0],
+        .g = palette[index * 3 + 1],
+        .b = palette[index * 3 + 2],
+    };
+}
+
 pub const Graphic = enum {
     pit,
     pla_bullet,
@@ -147,10 +176,8 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 pub fn loadTileset(
     hunk_side: *HunkSide,
     out_tileset: *draw.Tileset,
-    out_palette: []u8,
+    out_palette: *[48]u8,
 ) pcx_helper.LoadPcxError!void {
-    std.debug.assert(out_palette.len == 48);
-
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -164,5 +191,5 @@ pub fn loadTileset(
     out_tileset.xtiles = 8;
     out_tileset.ytiles = 8;
 
-    std.mem.copy(u8, out_palette, img.palette[0..]);
+    std.mem.copy(u8, out_palette, &img.palette);
 }

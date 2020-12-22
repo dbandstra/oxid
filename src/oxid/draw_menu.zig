@@ -9,7 +9,7 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
 const input = @import("input.zig");
-const palette = @import("palette.zig");
+const graphics = @import("graphics.zig");
 
 pub const DrawMenuContext = struct {
     ds: *pdraw.DrawState,
@@ -48,7 +48,7 @@ pub const DrawMenuContext = struct {
                 .left => self.box_x + 16,
                 .center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
             };
-            const font_color = palette.getColor(self.static.palette, .white);
+            const font_color = graphics.getColor(self.static.palette, .white);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             fonts.drawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
@@ -84,7 +84,7 @@ pub const DrawMenuContext = struct {
 
         self.h += self.bottom_margin;
         if (self.draw) {
-            const font_color = palette.getColor(self.static.palette, .white);
+            const font_color = graphics.getColor(self.static.palette, .white);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             if (self.cursor_pos == self.option_index) {
                 fonts.drawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
@@ -160,7 +160,7 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     else
         32;
 
-    const black = palette.getColor(params.static.palette, .black);
+    const black = graphics.getColor(params.static.palette, .black);
     pdraw.begin(params.ds, params.ds.blank_tex.handle, black, 1.0, false);
     pdraw.tile(
         params.ds,

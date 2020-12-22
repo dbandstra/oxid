@@ -12,7 +12,6 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
-const palette = @import("palette.zig");
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 pub fn drawGame(
@@ -196,10 +195,10 @@ fn drawHud(
     perf.begin(.draw_hud);
     defer perf.end(.draw_hud);
 
-    const black = palette.getColor(static.palette, .black);
-    const salmon = palette.getColor(static.palette, .salmon);
-    const lightgray = palette.getColor(static.palette, .lightgray);
-    const white = palette.getColor(static.palette, .white);
+    const black = graphics.getColor(static.palette, .black);
+    const salmon = graphics.getColor(static.palette, .salmon);
+    const lightgray = graphics.getColor(static.palette, .lightgray);
+    const white = graphics.getColor(static.palette, .white);
 
     var buffer: [40]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buffer);

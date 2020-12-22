@@ -8,7 +8,7 @@ const platform_draw = @import("platform/opengl/draw.zig");
 const shaders = @import("platform/opengl/shaders.zig");
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
-const loadTileset = @import("oxid/graphics.zig").loadTileset;
+const graphics = @import("oxid/graphics.zig");
 const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
 const perf = @import("oxid/perf.zig");
@@ -100,7 +100,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         return false;
     };
 
-    loadTileset(&self.hunk.low(), &self.static.tileset, self.static.palette[0..]) catch |err| {
+    graphics.loadTileset(&self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
         warn("Failed to load tileset: {}\n", .{err});
         return false;
     };
