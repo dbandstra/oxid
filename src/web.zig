@@ -1,9 +1,18 @@
-const env = @import("web/env.zig");
+const env = struct {
+    // declarations for functions implemented on the javascript side.
+    // note: zig supports giving a namespace(?) to extern functions, e.g.
+    // `extern "c" fn f() void`. if not specified, it seems to default to
+    // "env". this has to match with the JS side.
+    extern fn getRandomSeed() c_uint;
+    extern fn consoleLog(message_ptr: [*]const u8, message_len: c_uint) void;
+    extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
+    extern fn setLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
+    extern fn getAsset(name_ptr: [*]const u8, name_len: c_int, result_addr_ptr: *[*]const u8, result_addr_len_ptr: *c_int) bool;
+};
+
+// following are more zig-friendly wrappers around the extern functions.
 
 pub usingnamespace @import("zig-webgl");
-
-// these functions are more zig-friendly wrappers around the "env" functions
-// that are implemented on the javascript side
 
 pub fn getRandomSeed() c_uint {
     return env.getRandomSeed();
