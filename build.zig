@@ -13,7 +13,11 @@ pub fn build(b: *std.build.Builder) !void {
     zangc.setOutputDir("zig-cache");
     zangc.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
     const compile_zangscript = zangc.run();
-    compile_zangscript.addArgs(&[_][]const u8{ "-o", "src/oxid/audio/generated.zig", "src/oxid/audio/script.txt" });
+    compile_zangscript.addArgs(&[_][]const u8{
+        "-o",
+        "src/oxid/audio/generated.zig",
+        "src/oxid/audio/script.txt",
+    });
 
     const main = b.addExecutable("oxid", "src/main_sdl.zig");
     main.step.dependOn(&compile_zangscript.step);
@@ -27,10 +31,10 @@ pub fn build(b: *std.build.Builder) !void {
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     wasm.step.dependOn(&compile_zangscript.step);
-    wasm.step.dependOn(&b.addExecutable("wasm_codegen", "tools/webgl_generate.zig").run().step);
     wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
+    wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
     wasm.addBuildOption([]const u8, "version", version);
     try addCommonRequirements(b, wasm);
 
@@ -48,7 +52,10 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
     o.addPackagePath("gbe", "lib/gbe/gbe.zig");
     o.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
-    const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{ b.build_root, "assets" });
+    const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{
+        b.build_root,
+        "assets",
+    });
     o.addBuildOption([]const u8, "assets_path", assets_path);
 }
 

@@ -1,4 +1,2 @@
 zig-cache/
 *.swp
-/src/web/webgl_generated.zig
-/web/js/oxid_webgl.js

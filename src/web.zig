@@ -1,7 +1,6 @@
 const env = @import("web/env.zig");
 
-pub usingnamespace @import("web/webgl.zig");
-pub usingnamespace @import("web/webgl_generated.zig");
+pub usingnamespace @import("zig-webgl");
 
 // these functions are more zig-friendly wrappers around the "env" functions
 // that are implemented on the javascript side

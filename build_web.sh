@@ -18,4 +18,5 @@ zig build -Drelease-small=true wasm
 mkdir -p "$OUTDIR/assets"
 cp -r assets/*.wav "$OUTDIR/assets/"
 cp -r web/* "$OUTDIR/"
+cp lib/zig-webgl/generated/webgl_bindings.js "$OUTDIR/js/webgl.js"
 cp zig-cache/oxid.wasm "$OUTDIR/"
