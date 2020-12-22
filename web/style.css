@@ -1,6 +1,6 @@
 body {
-    background: black;
-    color: #ddd;
+    background: #140C1C;
+    color: #DEEED6;
     font-family: sans-serif;
 }
 
@@ -31,16 +31,16 @@ body {
 }
 
 a {
-    color: #ddd;
+    color: #DEEED6;
 }
 
 .key {
-    color: #a0c0f0;
+    color: #6DC2CA;
 }
 
 #diagnostics-table {
     display: none;
-    border: 1px solid #999;
+    border: 1px solid #757161;
     border-collapse: collapse;
     width: 100%;
     max-width: 960px;
@@ -51,7 +51,7 @@ a {
     text-align: left;
 }
 #diagnostics-table th, #diagnostics-table td {
-    border: 1px solid #999;
+    border: 1px solid #757161;
     padding: 0.25em 0.5em;
 }
 #diagnostics-table td:nth-child(3) {

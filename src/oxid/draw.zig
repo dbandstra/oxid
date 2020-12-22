@@ -12,11 +12,8 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
+const palette = @import("palette.zig");
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
-
-const primary_font_color_index = 15; // near-white
-const heart_font_color_index = 6; // red
-const skull_font_color_index = 10; // light grey
 
 pub fn drawGame(
     ds: *pdraw.DrawState,
@@ -28,7 +25,7 @@ pub fn drawGame(
     if (gs.running_state != null) {
         const max_drawables = comptime game.ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
-        const sorted_drawables = getSortedDrawables(gs, sort_buffer[0..]);
+        const sorted_drawables = getSortedDrawables(gs, &sort_buffer);
 
         pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
         drawMap(ds, static);
@@ -190,16 +187,6 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *game.Session) void {
     }
 }
 
-fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
-    std.debug.assert(index < 16);
-
-    return .{
-        .r = static.palette[index * 3 + 0],
-        .g = static.palette[index * 3 + 1],
-        .b = static.palette[index * 3 + 2],
-    };
-}
-
 fn drawHud(
     ds: *pdraw.DrawState,
     static: *const common.GameStatic,
@@ -209,13 +196,18 @@ fn drawHud(
     perf.begin(.draw_hud);
     defer perf.end(.draw_hud);
 
+    const black = palette.getColor(static.palette, .black);
+    const salmon = palette.getColor(static.palette, .salmon);
+    const lightgray = palette.getColor(static.palette, .lightgray);
+    const white = palette.getColor(static.palette, .white);
+
     var buffer: [40]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buffer);
     var stream = fbs.outStream();
 
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
-    pdraw.begin(ds, ds.blank_tex.handle, draw.black, 1.0, false);
+    pdraw.begin(ds, ds.blank_tex.handle, black, 1.0, false);
     pdraw.tile(
         ds,
         ds.blank_tileset,
@@ -228,9 +220,7 @@ fn drawHud(
     );
     pdraw.end(ds);
 
-    const font_shadow_color = getColor(static, 0);
-    const font_color = getColor(static, primary_font_color_index);
-    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+    pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
 
     if (gc_maybe) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
@@ -268,7 +258,7 @@ fn drawHud(
                         .identity,
                     );
                     pdraw.end(ds);
-                    pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+                    pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
                 }
 
                 const maybe_player_creature = if (pc.player_id) |player_id|
@@ -285,8 +275,7 @@ fn drawHud(
 
                 const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
 
-                const heart_font_color = getColor(static, heart_font_color_index);
-                pdraw.begin(ds, static.font.tileset.texture.handle, heart_font_color, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture.handle, salmon, 1.0, false);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
                     fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
@@ -294,13 +283,12 @@ fn drawHud(
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
-                    const skull_font_color = getColor(static, skull_font_color_index);
-                    pdraw.begin(ds, static.font.tileset.texture.handle, skull_font_color, 1.0, false);
+                    pdraw.begin(ds, static.font.tileset.texture.handle, lightgray, 1.0, false);
                     fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
-                pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
                 fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
                 fbs.reset();
@@ -312,12 +300,12 @@ fn drawHud(
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
 
                 pdraw.end(ds);
-                pdraw.begin(ds, static.font.tileset.texture.handle, font_shadow_color, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture.handle, black, 1.0, false);
 
                 fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
 
                 pdraw.end(ds);
-                pdraw.begin(ds, static.font.tileset.texture.handle, font_color, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
 
                 fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }

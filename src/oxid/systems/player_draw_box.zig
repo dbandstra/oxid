@@ -11,7 +11,7 @@ pub fn run(gs: *game.Session) void {
         if (self.player.line_of_fire) |box| {
             p.spawnEventDrawBox(gs, .{
                 .box = box,
-                .color = draw.black,
+                .color = draw.pure_black,
             });
         }
     }

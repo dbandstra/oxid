@@ -9,18 +9,7 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
 const input = @import("input.zig");
-
-const primary_font_color_index = 15; // near-white
-
-fn getColor(static: *const common.GameStatic, index: usize) draw.Color {
-    std.debug.assert(index < 16);
-
-    return .{
-        .r = static.palette[index * 3 + 0],
-        .g = static.palette[index * 3 + 1],
-        .b = static.palette[index * 3 + 2],
-    };
-}
+const palette = @import("palette.zig");
 
 pub const DrawMenuContext = struct {
     ds: *pdraw.DrawState,
@@ -59,7 +48,7 @@ pub const DrawMenuContext = struct {
                 .left => self.box_x + 16,
                 .center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
             };
-            const font_color = getColor(self.static, primary_font_color_index);
+            const font_color = palette.getColor(self.static.palette, .white);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             fonts.drawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
             pdraw.end(self.ds);
@@ -95,7 +84,7 @@ pub const DrawMenuContext = struct {
 
         self.h += self.bottom_margin;
         if (self.draw) {
-            const font_color = getColor(self.static, primary_font_color_index);
+            const font_color = palette.getColor(self.static.palette, .white);
             pdraw.begin(self.ds, self.static.font.tileset.texture.handle, font_color, 1.0, false);
             if (self.cursor_pos == self.option_index) {
                 fonts.drawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
@@ -171,7 +160,8 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     else
         32;
 
-    pdraw.begin(params.ds, params.ds.blank_tex.handle, draw.black, 1.0, false);
+    const black = palette.getColor(params.static.palette, .black);
+    pdraw.begin(params.ds, params.ds.blank_tex.handle, black, 1.0, false);
     pdraw.tile(
         params.ds,
         params.ds.blank_tileset,
