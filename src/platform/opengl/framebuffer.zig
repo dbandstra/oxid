@@ -1,10 +1,9 @@
 // this is an optional feature that can be used on top of draw.zig
 // the wasm build doesn't use it because it can just scale up the DOM canvas
 
-const builtin = @import("builtin");
 usingnamespace @import("gl").namespace;
-const pdraw = @import("draw.zig");
 const draw = @import("../../common/draw.zig");
+const pdraw = @import("draw.zig");
 
 pub const BlitRect = struct {
     x: i32,
@@ -22,20 +21,12 @@ pub fn init(fbs: *FramebufferState, w: u31, h: u31) bool {
     var fb: GLuint = 0;
     var rt: GLuint = 0;
 
-    if (builtin.arch == .wasm32) {
-        fb = glCreateFramebuffer();
-    } else {
-        glGenFramebuffers(1, &fb);
-    }
+    glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
     glGenTextures(1, &rt);
     glBindTexture(GL_TEXTURE_2D, rt);
-    if (builtin.arch == .wasm32) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?[*]const u8, 0), 0);
-    } else {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, @intToPtr(?*const c_void, 0));
-    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -58,13 +49,8 @@ pub fn init(fbs: *FramebufferState, w: u31, h: u31) bool {
 }
 
 pub fn deinit(fbs: *FramebufferState) void {
-    if (builtin.arch == .wasm32) {
-        glDeleteTexture(GL_TEXTURE_2D, fbs.render_texture);
-        glDeleteFramebuffer(GL_FRAMEBUFFER, fbs.framebuffer);
-    } else {
-        glDeleteTextures(1, &fbs.render_texture);
-        glDeleteFramebuffers(1, &fbs.framebuffer);
-    }
+    glDeleteTextures(1, &fbs.render_texture);
+    glDeleteFramebuffers(1, &fbs.framebuffer);
 }
 
 pub fn preDraw(fbs: *FramebufferState) void {

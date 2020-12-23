@@ -1,11 +1,13 @@
-const builtin = @import("builtin");
-usingnamespace if (builtin.arch == .wasm32)
+usingnamespace if (@import("builtin").arch == .wasm32)
     @import("../../web.zig")
 else
     @import("gl").namespace;
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;
+const warnWriter = @import("../../warn.zig").warnWriter;
+const flushWarnWriter = @import("../../warn.zig").flushWarnWriter;
+const indentingWriter = @import("../../common/indenting_writer.zig").indentingWriter;
 
 pub const GLSLVersion = enum { v120, v130, webgl };
 
@@ -26,20 +28,11 @@ pub const InitError = error{
     ShaderInvalidAttrib,
 };
 
-fn printLog(s: []const u8, comptime indentation: usize) void {
-    const held = std.debug.getStderrMutex().acquire();
-    defer held.release();
-    var stderr = std.io.getStdErr().writer();
-    var new_line = true;
-    for (s) |ch| {
-        if (new_line) stderr.writeByteNTimes(' ', indentation) catch return;
-        stderr.writeByte(ch) catch return;
-        new_line = ch == '\n';
-    }
-    if (s.len > 0 and s[s.len - 1] != '\n') stderr.writeByte('\n') catch return;
-}
-
-pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) InitError!Program {
+pub fn compileAndLink(
+    hunk_side: *HunkSide,
+    description: []const u8,
+    source: ShaderSource,
+) InitError!Program {
     errdefer warn("Failed to compile and link shader program \"{}\".\n", .{description});
 
     const vertex_id = try compile(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
@@ -50,73 +43,62 @@ pub fn compileAndLink(hunk_side: *HunkSide, description: []const u8, source: Sha
     glAttachShader(program_id, fragment_id);
     glLinkProgram(program_id);
 
-    if (builtin.arch == .wasm32) {
-        // TODO - check program status (currently that's hacked into my webgl bindings)
-        return Program{
-            .program_id = program_id,
-            .vertex_id = vertex_id,
-            .fragment_id = fragment_id,
-        };
-    } else {
-        var ok: GLint = undefined;
-        glGetProgramiv(program_id, GL_LINK_STATUS, &ok);
-        if (ok != 0) {
-            return Program{
-                .program_id = program_id,
-                .vertex_id = vertex_id,
-                .fragment_id = fragment_id,
-            };
-        } else {
-            var error_size: GLint = undefined;
-            glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &error_size);
-            const mark = hunk_side.getMark();
-            defer hunk_side.freeToMark(mark);
-            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
-                glGetProgramInfoLog(program_id, error_size, &error_size, message.ptr);
-                printLog(message[0..@intCast(usize, error_size)], 8);
-            } else |_| {
-                warn("Failed to retrieve program info log (out of memory).\n", .{});
-            }
-            return error.ShaderLinkFailed;
-        }
+    var status: GLint = undefined;
+    glGetProgramiv(program_id, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE) {
+        var buffer_size: GLint = undefined;
+        glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &buffer_size);
+
+        const mark = hunk_side.getMark();
+        defer hunk_side.freeToMark(mark);
+
+        if (hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1)) |buffer| {
+            var len: GLsizei = 0;
+            glGetProgramInfoLog(program_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
+            const log = buffer[0..@intCast(usize, len)];
+            indentingWriter(warnWriter(), 4).writer().writeAll(log) catch {};
+            flushWarnWriter();
+        } else |_| warn("Failed to retrieve program info log (out of memory).\n", .{});
+
+        return error.ShaderLinkFailed;
     }
+
+    return Program{
+        .program_id = program_id,
+        .vertex_id = vertex_id,
+        .fragment_id = fragment_id,
+    };
 }
 
 fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
     errdefer warn("Failed to compile {} shader.\n", .{shader_type});
 
     const shader_id = glCreateShader(kind);
-    if (builtin.arch == .wasm32) {
-        glShaderSource(shader_id, source);
-    } else {
-        const source_ptr: ?[*]const u8 = source.ptr;
-        const source_len = @intCast(GLint, source.len);
-        glShaderSource(shader_id, 1, &source_ptr, &source_len);
-    }
+    const source_len = @intCast(GLint, source.len);
+    glShaderSource(shader_id, 1, &source.ptr, &source_len);
     glCompileShader(shader_id);
 
-    if (builtin.arch == .wasm32) {
-        // TODO - check shader status (currently that's hacked into my webgl bindings)
-        return shader_id;
-    } else {
-        var ok: GLint = undefined;
-        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &ok);
-        if (ok != 0) {
-            return shader_id;
-        } else {
-            var error_size: GLint = undefined;
-            glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &error_size);
-            const mark = hunk_side.getMark();
-            defer hunk_side.freeToMark(mark);
-            if (hunk_side.allocator.alloc(u8, @intCast(usize, error_size) + 1)) |message| {
-                glGetShaderInfoLog(shader_id, error_size, &error_size, message.ptr);
-                printLog(message[0..@intCast(usize, error_size)], 8);
-            } else |_| {
-                warn("Failed to retrieve shader info log (out of memory).\n", .{});
-            }
-            return error.ShaderCompileFailed;
-        }
+    var status: GLint = undefined;
+    glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status);
+    if (status == GL_FALSE) {
+        var buffer_size: GLint = undefined;
+        glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &buffer_size);
+
+        const mark = hunk_side.getMark();
+        defer hunk_side.freeToMark(mark);
+
+        if (hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1)) |buffer| {
+            var len: GLsizei = 0;
+            glGetShaderInfoLog(shader_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
+            const log = buffer[0..@intCast(usize, len)];
+            indentingWriter(warnWriter(), 4).writer().writeAll(log) catch {};
+            flushWarnWriter();
+        } else |_| warn("Failed to retrieve shader info log (out of memory).\n", .{});
+
+        return error.ShaderCompileFailed;
     }
+
+    return shader_id;
 }
 
 pub fn destroy(sp: Program) void {

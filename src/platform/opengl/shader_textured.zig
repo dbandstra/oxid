@@ -1,5 +1,4 @@
-const builtin = @import("builtin");
-usingnamespace if (builtin.arch == .wasm32)
+usingnamespace if (@import("builtin").arch == .wasm32)
     @import("../../web.zig")
 else
     @import("gl").namespace;
@@ -7,7 +6,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("../../warn.zig").warn;
 const shaders = @import("shaders.zig");
-const updateVbo = @import("draw.zig").updateVbo;
+const updateVBO = @import("draw.zig").updateVBO;
 
 pub const Color = struct {
     r: f32,
@@ -70,11 +69,11 @@ pub const Shader = struct {
     }
 
     pub fn update(self: Shader, params: UpdateParams) void {
-        updateVbo(params.vertex_buffer, params.vertex2f);
+        updateVBO(params.vertex_buffer, params.vertex2f);
         if (self.attrib_position != -1) {
             glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
-        updateVbo(params.texcoord_buffer, params.texcoord2f);
+        updateVBO(params.texcoord_buffer, params.texcoord2f);
         if (self.attrib_texcoord != -1) {
             glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
@@ -97,8 +96,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
             \\uniform mat4 MVP;
             \\
-            \\void main(void)
-            \\{
+            \\void main(void) {
             \\    FragTexCoord = TexCoord;
             \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
             \\}
@@ -109,13 +107,12 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
             \\uniform sampler2D Tex;
             \\uniform vec4 Color;
             \\
-            \\void main(void)
-            \\{
+            \\void main(void) {
             \\
-        ++
+            ++
             "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
             \\}
-            };
+    };
 }
 
 fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {

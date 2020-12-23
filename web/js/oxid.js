@@ -194,7 +194,7 @@
         window.requestAnimationFrame(step);
     }).catch(err => {
         console.error(err);
-        alert(err);
+        alert(err); // TODO don't do this...
     });
 
     function toggleSound(instance) {

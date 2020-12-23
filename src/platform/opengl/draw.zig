@@ -10,6 +10,8 @@ const shaders = @import("shaders.zig");
 const shader_textured = @import("shader_textured.zig");
 const draw = @import("../../common/draw.zig");
 
+const buffer_vertices = 4 * 512; // render up to 512 quads at once
+
 pub const Texture = struct {
     handle: GLuint,
 };
@@ -21,15 +23,6 @@ const DrawBuffer = struct {
     texcoord2f: [2 * buffer_vertices]GLfloat,
     num_vertices: usize,
 };
-
-pub const DrawInitParams = struct {
-    hunk: *Hunk,
-    virtual_window_width: u32,
-    virtual_window_height: u32,
-    glsl_version: shaders.GLSLVersion,
-};
-
-pub const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
 pub const DrawState = struct {
     // dimensions of the game viewport, which will be scaled up to fit the system window
@@ -46,40 +39,32 @@ pub const DrawState = struct {
     clear_screen: bool,
 };
 
-pub fn updateVbo(vbo: GLuint, maybe_data2f: ?[]f32) void {
+pub fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
     const size = buffer_vertices * 2 * @sizeOf(GLfloat);
-    const null_data = if (builtin.arch == .wasm32)
-        @intToPtr(?[*]const f32, 0)
-    else
-        @intToPtr(?*const c_void, 0);
-
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, size, null_data, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, size, null, GL_STREAM_DRAW);
     if (maybe_data2f) |data2f| {
         std.debug.assert(data2f.len == 2 * buffer_vertices);
         glBufferData(GL_ARRAY_BUFFER, size, &data2f[0], GL_STREAM_DRAW);
     }
 }
 
-pub fn init(ds: *DrawState, params: DrawInitParams) shaders.InitError!void {
+pub fn init(ds: *DrawState, params: struct {
+    hunk: *Hunk,
+    virtual_window_width: u32,
+    virtual_window_height: u32,
+    glsl_version: shaders.GLSLVersion,
+}) shaders.InitError!void {
     ds.shader_textured = try shader_textured.create(&params.hunk.low(), params.glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);
 
-    if (builtin.arch == .wasm32) {
-        ds.dyn_vertex_buffer = glCreateBuffer();
-    } else {
-        glGenBuffers(1, &ds.dyn_vertex_buffer);
-    }
-    updateVbo(ds.dyn_vertex_buffer, null);
+    glGenBuffers(1, &ds.dyn_vertex_buffer);
     errdefer glDeleteBuffers(1, &ds.dyn_vertex_buffer);
+    updateVBO(ds.dyn_vertex_buffer, null);
 
-    if (builtin.arch == .wasm32) {
-        ds.dyn_texcoord_buffer = glCreateBuffer();
-    } else {
-        glGenBuffers(1, &ds.dyn_texcoord_buffer);
-    }
-    updateVbo(ds.dyn_texcoord_buffer, null);
+    glGenBuffers(1, &ds.dyn_texcoord_buffer);
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
+    updateVBO(ds.dyn_texcoord_buffer, null);
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -104,55 +89,31 @@ pub fn init(ds: *DrawState, params: DrawInitParams) shaders.InitError!void {
 }
 
 pub fn deinit(ds: *DrawState) void {
-    if (builtin.arch == .wasm32) {
-        glDeleteBuffer(ds.dyn_vertex_buffer);
-        glDeleteBuffer(ds.dyn_texcoord_buffer);
-    } else {
-        glDeleteBuffers(1, &ds.dyn_vertex_buffer);
-        glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
-    }
+    glDeleteBuffers(1, &ds.dyn_vertex_buffer);
+    glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     shaders.destroy(ds.shader_textured.program);
 }
 
 pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     var texid: GLuint = undefined;
-    if (builtin.arch == .wasm32) {
-        texid = glCreateTexture();
-    } else {
-        glGenTextures(1, &texid);
-    }
+    glGenTextures(1, &texid);
     glBindTexture(GL_TEXTURE_2D, texid);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    if (builtin.arch == .wasm32) {
-        glTexImage2D(
-            GL_TEXTURE_2D, // target
-            0, // level
-            GL_RGBA, // internalFormat
-            @intCast(c_int, width),
-            @intCast(c_int, height),
-            0, // border
-            GL_RGBA, // format
-            GL_UNSIGNED_BYTE, // type
-            pixels.ptr,
-            width * height * 4,
-        );
-    } else {
-        glTexImage2D(
-            GL_TEXTURE_2D, // target
-            0, // level
-            GL_RGBA, // internalFormat
-            @intCast(c_int, width),
-            @intCast(c_int, height),
-            0, // border
-            GL_RGBA, // format
-            GL_UNSIGNED_BYTE, // type
-            &pixels[0],
-        );
-    }
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        @intCast(GLsizei, width),
+        @intCast(GLsizei, height),
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        pixels.ptr,
+    );
     return .{
         .handle = texid,
     };
@@ -245,8 +206,7 @@ pub fn tile(
     const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    // wasm doesn't support quads, so we have to emit two triangles
-    const verts_per_tile: usize = if (builtin.arch == .wasm32) 6 else 4;
+    const verts_per_tile: usize = 6; // two triangles
 
     if (ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices) {
         flush(ds);
@@ -257,46 +217,24 @@ pub fn tile(
     const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
     const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
 
-    if (builtin.arch == .wasm32) {
-        // top left, bottom left, bottom right
-        // bottom right, top right, top left
-        // so, compared to quad:
-        // same, same, same, <-dupe, same, (first)
-        std.mem.copy(
-            GLfloat,
-            vertex2f,
-            &[12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 },
-        );
-        std.mem.copy(
-            GLfloat,
-            texcoord2f,
-            switch (transform) {
-                .identity => &[12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
-                .flip_vert => &[12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
-                .flip_horz => &[12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
-                .rotate_cw => &[12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
-                .rotate_ccw => &[12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
-            },
-        );
-    } else {
-        // top left, bottom left, bottom right, top right
-        std.mem.copy(
-            GLfloat,
-            vertex2f,
-            &[8]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy0 },
-        );
-        std.mem.copy(
-            GLfloat,
-            texcoord2f,
-            switch (transform) {
-                .identity => &[8]f32{ s0, t0, s0, t1, s1, t1, s1, t0 },
-                .flip_vert => &[8]f32{ s0, t1, s0, t0, s1, t0, s1, t1 },
-                .flip_horz => &[8]f32{ s1, t0, s1, t1, s0, t1, s0, t0 },
-                .rotate_cw => &[8]f32{ s0, t1, s1, t1, s1, t0, s0, t0 },
-                .rotate_ccw => &[8]f32{ s1, t0, s0, t0, s0, t1, s1, t1 },
-            },
-        );
-    }
+    // top left, bottom left, bottom right
+    // bottom right, top right, top left
+    std.mem.copy(
+        GLfloat,
+        vertex2f,
+        &[12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 },
+    );
+    std.mem.copy(
+        GLfloat,
+        texcoord2f,
+        switch (transform) {
+            .identity => &[12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
+            .flip_vert => &[12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
+            .flip_horz => &[12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
+            .rotate_cw => &[12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
+            .rotate_ccw => &[12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
+        },
+    );
 
     ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
 }
@@ -306,32 +244,23 @@ fn flush(ds: *DrawState) void {
         return;
     }
 
-    ds.shader_textured.update(shader_textured.UpdateParams{
+    ds.shader_textured.update(.{
         .vertex_buffer = ds.dyn_vertex_buffer,
         .vertex2f = ds.draw_buffer.vertex2f[0..],
         .texcoord_buffer = ds.dyn_texcoord_buffer,
         .texcoord2f = ds.draw_buffer.texcoord2f[0..],
     });
 
-    if (builtin.arch != .wasm32) {
-        if (ds.draw_buffer.outline) {
+    if (ds.draw_buffer.outline) {
+        if (builtin.arch == .wasm32) {
+            // webgl does not support glPolygonMode
+        } else {
             glPolygonMode(GL_FRONT, GL_LINE);
-        }
-    }
-
-    glDrawArrays(
-        if (builtin.arch == .wasm32) GL_TRIANGLES else GL_QUADS,
-        0,
-        @intCast(
-            if (builtin.arch == .wasm32) c_uint else c_int,
-            ds.draw_buffer.num_vertices,
-        ),
-    );
-
-    if (builtin.arch != .wasm32) {
-        if (ds.draw_buffer.outline) {
+            glDrawArrays(GL_TRIANGLES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));
             glPolygonMode(GL_FRONT, GL_FILL);
         }
+    } else {
+        glDrawArrays(GL_TRIANGLES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));
     }
 
     ds.draw_buffer.num_vertices = 0;
