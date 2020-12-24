@@ -2,7 +2,10 @@ const std = @import("std");
 // FIXME - how come this doesn't work? it worked in platform/draw...
 //const HunkSide = @import("zig-hunk").HunkSide;
 const HunkSide = @import("../../lib/zig-hunk/hunk.zig").HunkSide;
-const web = @import("../web.zig");
+
+// extern functions implemented in javascript
+extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
+extern fn setLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
 
 pub const ReadableObject = struct {
     buffer: [5000]u8,
@@ -15,14 +18,21 @@ pub const ReadableObject = struct {
     pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
         var buffer: [5000]u8 = undefined;
 
-        const bytes_read = try web.getLocalStorage(key, &buffer);
+        const bytes_read = getLocalStorage(
+            key.ptr,
+            @intCast(c_int, key.len),
+            &buffer,
+            @intCast(c_int, buffer.len),
+        );
+        if (bytes_read < 0)
+            return error.GetLocalStorageFailed;
         if (bytes_read == 0)
             return null;
 
         return ReadableObject{
             .buffer = buffer,
             .pos = 0,
-            .size = bytes_read,
+            .size = @intCast(usize, bytes_read),
         };
     }
 
@@ -64,7 +74,12 @@ pub const WritableObject = struct {
     }
 
     pub fn close(self: WritableObject) void {
-        web.setLocalStorage(self.key, self.buffer[0..self.pos]);
+        setLocalStorage(
+            self.key.ptr,
+            @intCast(c_int, self.key.len),
+            &self.buffer,
+            @intCast(c_int, self.pos),
+        );
     }
 
     pub fn writer(self: *WritableObject) Writer {
