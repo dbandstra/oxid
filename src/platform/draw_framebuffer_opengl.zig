@@ -1,5 +1,8 @@
-// this is an optional feature that can be used on top of draw_opengl.zig
-// the wasm build doesn't use it because it can just scale up the DOM canvas
+// this is an optional feature that can be used on top of draw_opengl.zig.
+// requires either OpenGL 3+ or GL_ARB_framebuffer_object.
+// this allows you to draw to an off-screen framebuffer, then scale it up to
+// fit the window for a pixellated look. note: web builds do not need this
+// because they can just scale up the DOM canvas.
 
 usingnamespace @import("gl").namespace;
 const pdraw = @import("draw_opengl.zig");

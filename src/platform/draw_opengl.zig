@@ -1,3 +1,6 @@
+// simple 2D drawing library implementation, supports OpenGL 2.1 (GLSL v120),
+// OpenGL 3.0 (GLSL v130), and WebGL 1.
+
 const builtin = @import("builtin");
 usingnamespace if (builtin.arch == .wasm32)
     @import("zig-webgl")
@@ -12,7 +15,11 @@ const draw = @import("../common/draw.zig");
 
 const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
-pub const GLSLVersion = enum { v120, v130, webgl };
+pub const GLSLVersion = enum {
+    v120,
+    v130,
+    webgl,
+};
 
 pub const Texture = struct {
     handle: GLuint,
