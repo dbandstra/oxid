@@ -282,15 +282,10 @@ export fn onAnimationFrame(now: c_int) void {
 }
 
 fn tick(draw: bool) void {
-    const paused = g.main_state.menu_stack.len > 0 and !g.main_state.game_over;
-
-    const frame_context: game.FrameContext = .{
+    common.frame(&g.main_state, .{
+        .spawn_draw_events = draw,
         .friendly_fire = g.main_state.friendly_fire,
-    };
-
-    game.frame(&g.main_state.session, frame_context, draw, paused);
-
-    common.handleGameOver(&g.main_state);
+    });
 
     g.main_state.audio_module.sync(
         !g.main_state.sound_enabled,

@@ -477,7 +477,9 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     };
     errdefer pdraw.deinit(&self.draw_state);
 
-    // already set: main_state, window, requested_vsync, requested_framerate_scheme, framerate_scheme, framebuffer_state
+    // already set:
+    // main_state, window, requested_vsync, requested_framerate_scheme,
+    // framerate_scheme, framebuffer_state
     self.display_index = 0;
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
@@ -552,10 +554,6 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
         self.main_state.menu_anim_time +%= 1;
 
-        const frame_context: game.FrameContext = .{
-            .friendly_fire = self.main_state.friendly_fire,
-        };
-
         var frame_index: u32 = 0;
         while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
@@ -563,14 +561,10 @@ fn tick(self: *Main, refresh_rate: u64) void {
             const draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
-            const paused = self.main_state.menu_stack.len > 0 and !self.main_state.game_over;
-
-            perf.begin(.frame);
-            game.frame(&self.main_state.session, frame_context, draw, paused);
-            perf.end(.frame);
-
-            // middleware response to certain events
-            common.handleGameOver(&self.main_state);
+            common.frame(&self.main_state, .{
+                .spawn_draw_events = draw,
+                .friendly_fire = self.main_state.friendly_fire,
+            });
 
             // draw to framebuffer (from events)
             if (draw) {
@@ -584,20 +578,28 @@ fn tick(self: *Main, refresh_rate: u64) void {
         }
     }
 
-    // TODO what's the correct arrangement of the calls to SwapWindow and Lock/UnlockAudioDevice?
-    // they both have the possibility of waiting for something else to finish, unless i'm mistaken.
-    // would be better if i could get them to go at the same time somehow?
+    // TODO what's the correct arrangement of the calls to SwapWindow and
+    // Lock/UnlockAudioDevice? they both have the possibility of waiting for
+    // something else to finish, unless i'm mistaken. would be better if i
+    // could get them to go at the same time somehow?
 
     // (this wraps glxSwapBuffers)
-    // this is where commands are flushed, so this may wait for a while. i think it also waits if vsync is enabled.
+    // this is where commands are flushed, so this may wait for a while. i
+    // think it also waits if vsync is enabled.
     SDL_GL_SwapWindow(self.window);
 
     // TODO count time and see where we are along the mix buffer...
-    // if the audio thread is currently doing a mix, this will wait until it's finished.
+    // if the audio thread is currently doing a mix, this will wait until it's
+    // finished.
     SDL_LockAudioDevice(self.audio_device);
-    // speed up audio mixing frequency if game is being fast forwarded
-    const sample_rate = @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames);
-    self.main_state.audio_module.sync(false, self.main_state.cfg.volume, sample_rate, &self.main_state.session, &self.main_state.menu_sounds);
+    self.main_state.audio_module.sync(
+        false,
+        self.main_state.cfg.volume,
+        // speed up audio mixing frequency if game is being fast forwarded
+        @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames),
+        &self.main_state.session,
+        &self.main_state.menu_sounds,
+    );
     SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {

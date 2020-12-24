@@ -59,6 +59,7 @@ pub fn init(gs: *Session, random_seed: u32) void {
 }
 
 pub const FrameContext = struct {
+    spawn_draw_events: bool,
     friendly_fire: bool,
 };
 
@@ -73,7 +74,7 @@ fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) voi
 }
 
 // run before "middleware" (rendering, sound, etc)
-pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
+pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
     runSystem(gs, ctx, "global_input");
     runSystem(gs, ctx, "game_controller_input");
     runSystem(gs, ctx, "player_input");
@@ -112,7 +113,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, draw: bool, paused: bool) void {
 
     gs.ecs.applyRemovals();
 
-    if (draw) {
+    if (ctx.spawn_draw_events) {
         // send draw commands (as events)
         runSystem(gs, ctx, "animation_draw");
         runSystem(gs, ctx, "creature_draw");

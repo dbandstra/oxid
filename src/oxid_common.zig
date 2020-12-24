@@ -368,22 +368,6 @@ pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     }
 }
 
-// called after every game frame. if EventGameOver is present, post the high
-// score, but leave the monsters running around. (the game state will be
-// cleared when the user hits escape again.)
-pub fn handleGameOver(self: *MainState) void {
-    if (self.session.ecs.findFirstComponent(c.EventGameOver) == null) {
-        return;
-    }
-
-    self.game_over = true;
-    postScores(self);
-
-    self.menu_stack.push(.{
-        .game_over_menu = menus.GameOverMenu.init(),
-    });
-}
-
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
@@ -434,6 +418,28 @@ fn postScores(self: *MainState) void {
             plog.warn("Failed to save high scores: {}\n", .{err});
         };
     }
+}
+
+pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
+    const paused = self.menu_stack.len > 0 and !self.game_over;
+
+    perf.begin(.frame);
+    game.frame(&self.session, frame_context, paused);
+    perf.end(.frame);
+
+    // if EventGameOver is present, post the high score, but leave the
+    // monsters running around. (the game state will be cleared when the user
+    // hits escape again.)
+    if (self.session.ecs.findFirstComponent(c.EventGameOver) != null) {
+        self.game_over = true;
+        postScores(self);
+
+        self.menu_stack.push(.{
+            .game_over_menu = menus.GameOverMenu.init(),
+        });
+    }
+
+    // note: caller still needs to call `game.frameCleanup`
 }
 
 pub fn drawMain(self: *MainState, draw_state: *pdraw.State) void {
