@@ -24,6 +24,7 @@ const common = @import("oxid_common.zig");
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
 pub const pdraw = @import("platform/opengl/draw.zig");
+pub const plog = @import("platform/log_native.zig");
 pub const pstorage = @import("platform/storage_native.zig");
 
 fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {

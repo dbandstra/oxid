@@ -1,6 +1,5 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const warn = @import("warn.zig").warn;
 const web = @import("web.zig");
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
@@ -20,6 +19,7 @@ const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_web.zig");
 pub const pdraw = @import("platform/opengl/draw.zig");
+pub const plog = @import("platform/log_web.zig");
 pub const pstorage = @import("platform/storage_web.zig");
 
 const Main = struct {
@@ -169,13 +169,13 @@ const audio_buffer_size = 1024;
 
 fn init() !void {
     main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200 * 1024) catch |err| {
-        warn("failed to allocate main_memory: {}\n", .{err});
+        plog.warn("failed to allocate main_memory: {}\n", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.free(main_memory);
 
     var hunk = std.heap.page_allocator.create(Hunk) catch |err| {
-        warn("failed to allocate hunk: {}\n", .{err});
+        plog.warn("failed to allocate hunk: {}\n", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.destroy(hunk);

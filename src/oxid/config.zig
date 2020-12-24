@@ -1,7 +1,7 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
-const warn = @import("../warn.zig").warn;
 const Key = @import("../common/key.zig").Key;
 const InputSource = @import("../common/key.zig").InputSource;
 const input = @import("input.zig");
@@ -100,7 +100,7 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
                             cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
                         else => {
-                            warn("Value of \"volume\" must be an integer\n", .{});
+                            plog.warn("Value of \"volume\" must be an integer\n", .{});
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
@@ -110,12 +110,12 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
                 } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
                     readBindings(input.GameCommand, &cfg.game_bindings[1], kv.value);
                 } else {
-                    warn("Unrecognized config field: '{}'\n", .{kv.key});
+                    plog.warn("Unrecognized config field: '{}'\n", .{kv.key});
                 }
             }
         },
         else => {
-            warn("Top-level value must be an object\n", .{});
+            plog.warn("Top-level value must be an object\n", .{});
         },
     }
 
@@ -138,14 +138,14 @@ fn readBindings(
             while (it.next()) |kv| {
                 const command = parseCommand(CommandType, kv.key) orelse continue;
                 const source = parseInputSource(kv.value) catch {
-                    warn("Error parsing input source for command '{}'\n", .{kv.key});
+                    plog.warn("Error parsing input source for command '{}'\n", .{kv.key});
                     continue;
                 };
                 bindings.*[@enumToInt(command)] = source;
             }
         },
         else => {
-            warn("Value of \"menu_bindings\" must be an object\n", .{});
+            plog.warn("Value of \"menu_bindings\" must be an object\n", .{});
         },
     }
 }
@@ -156,7 +156,7 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
             return @intToEnum(CommandType, field.value);
         }
     }
-    warn("Unrecognized {}: '{}'\n", .{ @typeName(CommandType), s });
+    plog.warn("Unrecognized {}: '{}'\n", .{ @typeName(CommandType), s });
     return null;
 }
 

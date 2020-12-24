@@ -21,7 +21,7 @@ pub usingnamespace if (builtin.arch == .wasm32)
 else
     struct {
         const std = @import("std");
-        const warn = @import("../warn.zig").warn;
+        const plog = @import("root").plog;
 
         const num_samples: usize = 60;
         var global_cursor: usize = 0;
@@ -47,7 +47,7 @@ else
             return Timer{
                 .label = label,
                 .timer = std.time.Timer.start() catch |err| {
-                    warn("Failed to initialize \"{}\" perf timer: {}\n", .{ label, err });
+                    plog.warn("Failed to initialize \"{}\" perf timer: {}\n", .{ label, err });
                     return null;
                 },
                 .samples = [1]u64{0} ** num_samples,
@@ -59,7 +59,7 @@ else
         pub fn toggleSpam() void {
             spam = !spam;
             if (!spam) {
-                warn("Perf spam disabled.\n", .{});
+                plog.warn("Perf spam disabled.\n", .{});
                 return;
             }
             for (entries) |*maybe_entry| {
@@ -69,7 +69,7 @@ else
                     entry.filled = false;
                 }
             }
-            warn("Perf spam enabled. Collecting initial {} samples...\n", .{num_samples});
+            plog.warn("Perf spam enabled. Collecting initial {} samples...\n", .{num_samples});
         }
 
         pub fn begin(entry: Entry) void {
@@ -95,7 +95,7 @@ else
             if (!spam) return;
             global_cursor = (global_cursor + 1) % num_samples;
             if (global_cursor != 0) return;
-            warn(".\n", .{});
+            plog.warn(".\n", .{});
             displayOne("`-Frame ......... ", .frame);
             displayOne("`-WholeDraw ..... ", .whole_draw);
             displayOne("  `-Draw ........ ", .draw);
@@ -108,11 +108,11 @@ else
 
         fn displayOne(label: []const u8, entry: Entry) void {
             const self = &(entries[@enumToInt(entry)] orelse {
-                warn("{} - timer error\n", .{label});
+                plog.warn("{} - timer error\n", .{label});
                 return;
             });
             if (!self.filled) {
-                warn("{} - waiting\n", .{label});
+                plog.warn("{} - waiting\n", .{label});
                 return;
             }
             var cum: u64 = 0;
@@ -125,13 +125,13 @@ else
             const avg_us = @intToFloat(f32, avg) / 1000.0;
             // std.fmt api doesn't support alignment
             if (avg_us < 10.0) {
-                warn("{} -    {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
+                plog.warn("{} -    {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else if (avg_us < 100.0) {
-                warn("{} -   {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
+                plog.warn("{} -   {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else if (avg_us < 1000.0) {
-                warn("{} -  {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
+                plog.warn("{} -  {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             } else {
-                warn("{} - {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
+                plog.warn("{} - {d:.3} μs ({} fps)\n", .{ label, avg_us, fps });
             }
         }
     };

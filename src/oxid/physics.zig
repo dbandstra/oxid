@@ -1,6 +1,6 @@
 const std = @import("std");
 const gbe = @import("gbe");
-const warn = @import("../warn.zig").warn;
+const plog = @import("root").plog;
 const math = @import("../common/math.zig");
 const constants = @import("constants.zig");
 const levels = @import("levels.zig");
@@ -386,7 +386,7 @@ fn assertNoOverlaps(gs: *game.Session) void {
                 other.transform.pos,
                 other.phys.entity_bbox,
             )) {
-                warn("who is this joker\n", .{});
+                plog.warn("who is this joker\n", .{});
             }
         }
     }

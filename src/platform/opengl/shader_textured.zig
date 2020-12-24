@@ -4,7 +4,7 @@ else
     @import("gl").namespace;
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const warn = @import("../../warn.zig").warn;
+const plog = @import("root").plog;
 const shaders = @import("shaders.zig");
 const updateVBO = @import("draw.zig").updateVBO;
 
@@ -124,7 +124,7 @@ fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
 }
 
 pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
-    errdefer warn("Failed to create textured shader program.\n", .{});
+    errdefer plog.warn("Failed to create textured shader program.\n", .{});
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));
 

@@ -4,9 +4,7 @@ else
     @import("gl").namespace;
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const warn = @import("../../warn.zig").warn;
-const warnWriter = @import("../../warn.zig").warnWriter;
-const flushWarnWriter = @import("../../warn.zig").flushWarnWriter;
+const plog = @import("root").plog;
 const indentingWriter = @import("../../common/indenting_writer.zig").indentingWriter;
 
 pub const GLSLVersion = enum { v120, v130, webgl };
@@ -33,7 +31,7 @@ pub fn compileAndLink(
     description: []const u8,
     source: ShaderSource,
 ) InitError!Program {
-    errdefer warn("Failed to compile and link shader program \"{}\".\n", .{description});
+    errdefer plog.warn("Failed to compile and link shader program \"{}\".\n", .{description});
 
     const vertex_id = try compile(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
     const fragment_id = try compile(hunk_side, source.fragment, "fragment", GL_FRAGMENT_SHADER);
@@ -56,9 +54,9 @@ pub fn compileAndLink(
             var len: GLsizei = 0;
             glGetProgramInfoLog(program_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
             const log = buffer[0..@intCast(usize, len)];
-            indentingWriter(warnWriter(), 4).writer().writeAll(log) catch {};
-            flushWarnWriter();
-        } else |_| warn("Failed to retrieve program info log (out of memory).\n", .{});
+            indentingWriter(plog.warnWriter(), 4).writer().writeAll(log) catch {};
+            plog.flushWarnWriter();
+        } else |_| plog.warn("Failed to retrieve program info log (out of memory).\n", .{});
 
         return error.ShaderLinkFailed;
     }
@@ -71,7 +69,7 @@ pub fn compileAndLink(
 }
 
 fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) InitError!GLuint {
-    errdefer warn("Failed to compile {} shader.\n", .{shader_type});
+    errdefer plog.warn("Failed to compile {} shader.\n", .{shader_type});
 
     const shader_id = glCreateShader(kind);
     const source_len = @intCast(GLint, source.len);
@@ -91,9 +89,9 @@ fn compile(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, ki
             var len: GLsizei = 0;
             glGetShaderInfoLog(shader_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
             const log = buffer[0..@intCast(usize, len)];
-            indentingWriter(warnWriter(), 4).writer().writeAll(log) catch {};
-            flushWarnWriter();
-        } else |_| warn("Failed to retrieve shader info log (out of memory).\n", .{});
+            indentingWriter(plog.warnWriter(), 4).writer().writeAll(log) catch {};
+            plog.flushWarnWriter();
+        } else |_| plog.warn("Failed to retrieve shader info log (out of memory).\n", .{});
 
         return error.ShaderCompileFailed;
     }
@@ -114,7 +112,7 @@ pub fn destroy(sp: Program) void {
 pub fn getAttribLocation(sp: Program, name: [:0]const u8) GLint {
     const id = glGetAttribLocation(sp.program_id, name);
     if (id == -1) {
-        warn("(warning) invalid attrib: {}\n", .{name});
+        plog.warn("(warning) invalid attrib: {}\n", .{name});
     }
     return id;
 }
@@ -122,7 +120,7 @@ pub fn getAttribLocation(sp: Program, name: [:0]const u8) GLint {
 pub fn getUniformLocation(sp: Program, name: [:0]const u8) GLint {
     const id = glGetUniformLocation(sp.program_id, name);
     if (id == -1) {
-        warn("(warning) invalid uniform: {}\n", .{name});
+        plog.warn("(warning) invalid uniform: {}\n", .{name});
     }
     return id;
 }

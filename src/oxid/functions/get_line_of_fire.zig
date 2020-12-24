@@ -1,5 +1,5 @@
 const std = @import("std");
-const warn = @import("../../warn.zig").warn;
+const plog = @import("root").plog;
 const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 
@@ -31,6 +31,6 @@ pub fn getLineOfFire(bullet_pos: math.Vec2, bullet_bbox: math.Box, facing: math.
         }
     }
 
-    warn("getLineOfFire: infinite loop?\n", .{});
+    plog.warn("getLineOfFire: infinite loop?\n", .{});
     return null;
 }

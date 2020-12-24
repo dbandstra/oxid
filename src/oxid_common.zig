@@ -3,8 +3,8 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
+const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
-const warn = @import("warn.zig").warn;
 const shaders = @import("platform/opengl/shaders.zig"); // FIXME platform specific
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
@@ -89,7 +89,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         // the file exists but there was an error loading it. just continue
         // with an empty high scores list, even though that might mean that
         // the user's legitimate high scores might get wiped out (FIXME?)
-        warn("Failed to load high scores: {}\n", .{err});
+        plog.warn("Failed to load high scores: {}\n", .{err});
         break :blk [1]u32{0} ** constants.num_high_scores;
     };
 
@@ -102,17 +102,17 @@ pub fn init(self: *MainState, params: InitParams) bool {
         .num_rows = 8,
         .spacing = -1,
     }) catch |err| {
-        warn("Failed to load font: {}\n", .{err});
+        plog.warn("Failed to load font: {}\n", .{err});
         return false;
     };
 
     graphics.loadTileset(&self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
-        warn("Failed to load tileset: {}\n", .{err});
+        plog.warn("Failed to load tileset: {}\n", .{err});
         return false;
     };
 
     self.cfg = config.read(&self.hunk.low(), config_filename) catch |err| blk: {
-        warn("Failed to load config: {}\n", .{err});
+        plog.warn("Failed to load config: {}\n", .{err});
         break :blk config.getDefault();
     };
 
@@ -125,7 +125,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         params.audio_sample_rate,
         params.audio_buffer_size,
     ) catch |err| {
-        warn("Failed to load audio module: {}\n", .{err});
+        plog.warn("Failed to load audio module: {}\n", .{err});
         return false;
     };
 
@@ -137,7 +137,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         .virtual_window_height = vwin_h,
         .glsl_version = params.glsl_version,
     }) catch |err| {
-        warn("pdraw.init failed: {}\n", .{err});
+        plog.warn("pdraw.init failed: {}\n", .{err});
         return false;
     };
     // note: if any failure conditions are added to this function below this
@@ -448,7 +448,7 @@ fn postScores(self: *MainState) void {
 
     if (save_high_scores) {
         saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
-            warn("Failed to save high scores: {}\n", .{err});
+            plog.warn("Failed to save high scores: {}\n", .{err});
         };
     }
 }
