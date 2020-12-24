@@ -67,9 +67,9 @@ pub fn getDefault() Config {
 // reading config json
 
 pub fn read(hunk_side: *HunkSide, key: []const u8) !Config {
-    var maybe_object = try pstorage.ReadableObject.init(hunk_side, key);
+    var maybe_object = try pstorage.ReadableObject.open(hunk_side, key);
     var object = maybe_object orelse return getDefault();
-    defer object.deinit();
+    defer object.close();
     return try readFromStream(object.reader(), object.size, hunk_side);
 }
 
@@ -240,8 +240,8 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
 }
 
 pub fn write(hunk_side: *HunkSide, key: []const u8, cfg: Config) !void {
-    const object = try pstorage.WritableObject.init(hunk_side, key);
-    defer object.deinit();
+    const object = try pstorage.WritableObject.open(hunk_side, key);
+    defer object.close();
     try writeToStream(object.writer(), cfg);
 }
 

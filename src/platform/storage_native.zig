@@ -9,7 +9,7 @@ pub const ReadableObject = struct {
     file: std.fs.File,
     size: usize,
 
-    pub fn init(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
+    pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
@@ -32,7 +32,7 @@ pub const ReadableObject = struct {
         };
     }
 
-    pub fn deinit(self: ReadableObject) void {
+    pub fn close(self: ReadableObject) void {
         self.file.close();
     }
 
@@ -44,7 +44,7 @@ pub const ReadableObject = struct {
 pub const WritableObject = struct {
     file: std.fs.File,
 
-    pub fn init(hunk_side: *HunkSide, key: []const u8) !WritableObject {
+    pub fn open(hunk_side: *HunkSide, key: []const u8) !WritableObject {
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
@@ -67,7 +67,7 @@ pub const WritableObject = struct {
         };
     }
 
-    pub fn deinit(self: WritableObject) void {
+    pub fn close(self: WritableObject) void {
         self.file.close();
     }
 

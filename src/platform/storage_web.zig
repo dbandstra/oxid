@@ -12,7 +12,7 @@ pub const ReadableObject = struct {
     pub const ReadError = error{};
     pub const Reader = std.io.Reader(*ReadableObject, ReadError, read);
 
-    pub fn init(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
+    pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
         var buffer: [5000]u8 = undefined;
 
         const bytes_read = try web.getLocalStorage(key, &buffer);
@@ -26,7 +26,7 @@ pub const ReadableObject = struct {
         };
     }
 
-    pub fn deinit(self: ReadableObject) void {}
+    pub fn close(self: ReadableObject) void {}
 
     pub fn reader(self: *ReadableObject) Reader {
         return Reader{ .context = self };
@@ -34,7 +34,7 @@ pub const ReadableObject = struct {
 
     // implementation copied from std.io.FixedBufferStream
     // can't use std.io.FixedBufferStream because there's no way to get it to
-    // point to self.buffer in the init function (since self is returned by
+    // point to self.buffer in the open function (since self is returned by
     // value)
     pub fn read(self: *ReadableObject, dest: []u8) ReadError!usize {
         const size = std.math.min(dest.len, self.size - self.pos);
@@ -55,7 +55,7 @@ pub const WritableObject = struct {
     pub const WriteError = error{NoSpaceLeft};
     pub const Writer = std.io.Writer(*WritableObject, WriteError, write);
 
-    pub fn init(hunk_side: *HunkSide, key: []const u8) !WritableObject {
+    pub fn open(hunk_side: *HunkSide, key: []const u8) !WritableObject {
         return WritableObject{
             .key = key,
             .buffer = undefined,
@@ -63,7 +63,7 @@ pub const WritableObject = struct {
         };
     }
 
-    pub fn deinit(self: WritableObject) void {
+    pub fn close(self: WritableObject) void {
         web.setLocalStorage(self.key, self.buffer[0..self.pos]);
     }
 

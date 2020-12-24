@@ -12,7 +12,6 @@ const fonts = @import("common/fonts.zig");
 const graphics = @import("oxid/graphics.zig");
 const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
-const datafile = @import("oxid/datafile.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const constants = @import("oxid/constants.zig");
@@ -90,22 +89,12 @@ pub const InitParams = struct {
 pub fn init(self: *MainState, params: InitParams) bool {
     self.hunk = params.hunk;
 
-    self.high_scores = blk: {
-        const hunk_side = &self.hunk.low();
-        var maybe_object = pstorage.ReadableObject.init(hunk_side, highscores_filename) catch |err| {
-            // the file exists but there was an error loading it. just continue
-            // with an empty high scores list, even though that might mean that
-            // the user's legitimate high scores might get wiped out (FIXME?)
-            warn("Failed to load high scores: {}\n", .{err});
-            break :blk [1]u32{0} ** constants.num_high_scores;
-        };
-        var object = maybe_object orelse {
-            // this is a normal situation (e.g. game is being played for the
-            // first time)
-            break :blk [1]u32{0} ** constants.num_high_scores;
-        };
-        defer object.deinit();
-        break :blk datafile.readHighScores(object.reader());
+    self.high_scores = loadHighScores(&self.hunk.low()) catch |err| blk: {
+        // the file exists but there was an error loading it. just continue
+        // with an empty high scores list, even though that might mean that
+        // the user's legitimate high scores might get wiped out (FIXME?)
+        warn("Failed to load high scores: {}\n", .{err});
+        break :blk [1]u32{0} ** constants.num_high_scores;
     };
 
     fonts.load(&self.hunk.low(), &self.static.font, .{
@@ -185,6 +174,31 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
 pub fn deinit(self: *MainState) void {
     platform_draw.deinit(&self.draw_state);
+}
+
+fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
+    var maybe_object = try pstorage.ReadableObject.open(hunk_side, highscores_filename);
+    var object = maybe_object orelse return [1]u32{0} ** constants.num_high_scores;
+    defer object.close();
+
+    var reader = object.reader();
+    var high_scores = [1]u32{0} ** constants.num_high_scores;
+    var i: usize = 0;
+    while (i < constants.num_high_scores) : (i += 1) {
+        const score = reader.readIntLittle(u32) catch break;
+        high_scores[i] = score;
+    }
+    return high_scores;
+}
+
+fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
+    var object = try pstorage.WritableObject.open(hunk_side, highscores_filename);
+    defer object.close();
+
+    var writer = object.writer();
+    for (high_scores) |score| {
+        writer.writeIntLittle(u32, score) catch break;
+    }
 }
 
 pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
@@ -436,14 +450,8 @@ fn postScores(self: *MainState) void {
         }
     }
 
-    if (save_high_scores) blk: {
-        const hunk_side = &self.hunk.low();
-        var object = pstorage.WritableObject.init(hunk_side, highscores_filename) catch |err| {
-            warn("Failed to save high scores: {}\n", .{err});
-            break :blk;
-        };
-        defer object.deinit();
-        datafile.writeHighScores(object.writer(), self.high_scores) catch |err| {
+    if (save_high_scores) {
+        saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
             warn("Failed to save high scores: {}\n", .{err});
         };
     }
