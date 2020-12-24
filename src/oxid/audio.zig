@@ -1,9 +1,8 @@
-const builtin = @import("builtin");
-const build_options = @import("build_options");
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
+const passets = @import("root").passets;
 const game = @import("game.zig");
 const c = @import("components.zig");
 const MenuSounds = @import("../oxid_common.zig").MenuSounds;
@@ -38,52 +37,17 @@ fn readWav(hunk: *Hunk, filename: []const u8) !zang.Sample {
     const mark = hunk.getHighMark();
     defer hunk.freeToHighMark(mark);
 
-    if (builtin.arch == .wasm32) {
-        // wasm build: assets were prefetched in JS code and made available via
-        // the getAsset API
-        const web = @import("../web.zig");
+    const contents = try passets.loadAsset(&hunk.low().allocator, &hunk.high(), filename);
 
-        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8{
-            "assets",
-            filename,
-        });
+    var fbs = std.io.fixedBufferStream(contents);
+    var stream = fbs.inStream();
 
-        const buf = web.getAsset(file_path) orelse {
-            return error.AssetNotFound;
-        };
+    const Loader = wav.Loader(@TypeOf(stream), false);
+    const preloaded = try Loader.preload(&stream);
 
-        var fbs = std.io.fixedBufferStream(buf);
-        var stream = fbs.inStream();
-
-        const Loader = wav.Loader(@TypeOf(stream), false);
-        const preloaded = try Loader.preload(&stream);
-
-        // don't need to allocate new memory or call Loader.load, because:
-        // 1. `buf` is always available (provided from the JS side) and
-        //    contains the wav file contents, and
-        // 2. wavs are decoded and ready to go already, so we can just take a
-        //    slice into the file contents.
-        return makeSample(preloaded, buf[fbs.pos .. fbs.pos + preloaded.getNumBytes()]);
-    } else {
-        // non-wasm build: load assets from disk, allocating new memory to
-        // store them
-        const file_path = try std.fs.path.join(&hunk.high().allocator, &[_][]const u8{
-            build_options.assets_path,
-            filename,
-        });
-
-        const file = try std.fs.cwd().openFile(file_path, .{});
-        var stream = file.inStream();
-
-        const Loader = wav.Loader(@TypeOf(stream), true);
-        const preloaded = try Loader.preload(&stream);
-
-        const num_bytes = preloaded.getNumBytes();
-        var data = try hunk.low().allocator.alloc(u8, num_bytes);
-        try Loader.load(&stream, preloaded, data);
-
-        return makeSample(preloaded, data);
-    }
+    // don't need to allocate new memory or call Loader.load, because contents
+    // has already been loaded and we use wav data as-is from the file
+    return makeSample(preloaded, contents[fbs.pos .. fbs.pos + preloaded.getNumBytes()]);
 }
 
 pub const Sample = enum {

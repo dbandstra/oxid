@@ -22,6 +22,7 @@ const config = @import("oxid/config.zig");
 const common = @import("oxid_common.zig");
 
 // drivers that other source files can access via @import("root")
+pub const passets = @import("platform/assets_native.zig");
 pub const pdraw = @import("platform/opengl/draw.zig");
 pub const pstorage = @import("platform/storage_native.zig");
 

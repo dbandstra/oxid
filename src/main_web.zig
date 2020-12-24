@@ -18,6 +18,7 @@ const common = @import("oxid_common.zig");
 const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 
 // drivers that other source files can access via @import("root")
+pub const passets = @import("platform/assets_web.zig");
 pub const pdraw = @import("platform/opengl/draw.zig");
 pub const pstorage = @import("platform/storage_web.zig");
 

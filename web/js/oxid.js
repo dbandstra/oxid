@@ -13,11 +13,11 @@
     diagnostics_fullscreen.setAvailability(!!canvas_element.requestFullscreen);
 
     const assets = [
-        'assets/player_death.wav',
-        'assets/sfx_exp_short_soft10.wav',
-        'assets/sfx_sounds_impact1.wav',
-        'assets/sfx_sounds_interaction5.wav',
-        'assets/sfx_sounds_powerup4.wav',
+        'player_death.wav',
+        'sfx_exp_short_soft10.wav',
+        'sfx_sounds_impact1.wav',
+        'sfx_sounds_interaction5.wav',
+        'sfx_sounds_powerup4.wav',
     ];
 
     // these match same values in main_web.zig
@@ -137,7 +137,7 @@
     // fetch wasm file in parallel with all the assets
     Promise.all([
         fetchBytes('oxid.wasm').then((bytes) => WebAssembly.instantiate(bytes, {env})),
-        ...assets.map(name => fetchBytes(name).then((bytes) => ({name, bytes}))),
+        ...assets.map(name => fetchBytes('assets/' + name).then((bytes) => ({name, bytes}))),
     ]).then(([{instance}, ...assets]) => {
         memory = instance.exports.memory;
 
