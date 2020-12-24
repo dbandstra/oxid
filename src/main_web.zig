@@ -1,6 +1,5 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const web = @import("web.zig");
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
 const constants = @import("oxid/constants.zig");
@@ -21,6 +20,9 @@ pub const passets = @import("platform/assets_web.zig");
 pub const pdraw = @import("platform/opengl/draw.zig");
 pub const plog = @import("platform/log_web.zig");
 pub const pstorage = @import("platform/storage_web.zig");
+
+// extern functions implemented in javascript
+extern fn getRandomSeed() c_uint;
 
 const Main = struct {
     main_state: common.MainState,
@@ -185,7 +187,7 @@ fn init() !void {
 
     if (!common.init(&g.main_state, .{
         .hunk = hunk,
-        .random_seed = web.getRandomSeed(),
+        .random_seed = getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
         .audio_sample_rate = 44100, // will be overridden before first paint
         .fullscreen = false,

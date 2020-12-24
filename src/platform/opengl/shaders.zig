@@ -1,5 +1,5 @@
 usingnamespace if (@import("builtin").arch == .wasm32)
-    @import("../../web.zig")
+    @import("zig-webgl")
 else
     @import("gl").namespace;
 const std = @import("std");
