@@ -28,6 +28,9 @@ const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
 const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
 const root = @import("root");
+const storage = @import("main_sdl_storage.zig");
+
+pub const config_filename = "config.json";
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -105,13 +108,9 @@ pub fn init(self: *MainState, params: InitParams) bool {
         return false;
     };
 
-    self.cfg = blk: {
-        // if config couldn't load, warn and fall back to default config
-        const cfg = root.loadConfig(&self.hunk.low()) catch |err| {
-            warn("Failed to load config: {}\n", .{err});
-            break :blk config.getDefault();
-        };
-        break :blk cfg;
+    self.cfg = config.read(&self.hunk.low(), config_filename) catch |err| blk: {
+        warn("Failed to load config: {}\n", .{err});
+        break :blk config.getDefault();
     };
 
     game.init(&self.session, params.random_seed);

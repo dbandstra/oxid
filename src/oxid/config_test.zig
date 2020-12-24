@@ -95,22 +95,16 @@ const fixture_json =
 test "config.read" {
     // json decoder seems to require a lot of memory...
     var hunk_buf: [50000]u8 = undefined;
-    var hunk = Hunk.init(hunk_buf[0..]);
+    var hunk = Hunk.init(&hunk_buf);
 
-    var stream = std.io.fixedBufferStream(fixture_json).inStream();
-    const cfg = try config.read(
-        @TypeOf(stream),
-        &stream,
-        fixture_json.len,
-        &hunk.low(),
-    );
+    var stream = std.io.fixedBufferStream(fixture_json);
+    const cfg = try config.readFromStream(stream.reader(), fixture_json.len, &hunk.low());
     std.testing.expect(std.meta.eql(getFixtureConfig(), cfg));
 }
 
 test "config.write" {
     var buffer: [4000]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buffer);
-    var stream = fbs.outStream();
-    try config.write(@TypeOf(stream), &stream, getFixtureConfig());
-    std.testing.expectEqualSlices(u8, fixture_json, fbs.getWritten());
+    var stream = std.io.fixedBufferStream(&buffer);
+    try config.writeToStream(stream.writer(), getFixtureConfig());
+    std.testing.expectEqualSlices(u8, fixture_json, stream.getWritten());
 }

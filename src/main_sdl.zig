@@ -28,9 +28,9 @@ const config = @import("oxid/config.zig");
 const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
+const storage = @import("main_sdl_storage.zig");
 
 const datadir = "Oxid";
-const config_filename = "config.json";
 const highscores_filename = "highscore.dat";
 
 fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { read, write }) !std.fs.File {
@@ -53,28 +53,6 @@ fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { read, w
         .read => try std.fs.cwd().openFile(file_path, .{}),
         .write => try std.fs.cwd().createFile(file_path, .{}),
     };
-}
-
-pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
-    const file = openDataFile(hunk_side, config_filename, .read) catch |err| {
-        if (err == error.FileNotFound) {
-            return config.getDefault();
-        }
-        return err;
-    };
-    defer file.close();
-
-    const size = try std.math.cast(usize, try file.getEndPos());
-    var stream = file.inStream();
-    return try config.read(@TypeOf(stream), &stream, size, hunk_side);
-}
-
-pub fn saveConfig(cfg: config.Config, hunk_side: *HunkSide) !void {
-    const file = try openDataFile(hunk_side, config_filename, .write);
-    defer file.close();
-
-    var stream = file.outStream();
-    return try config.write(@TypeOf(stream), &stream, cfg);
 }
 
 pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
@@ -589,7 +567,11 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 fn deinit(self: *Main) void {
     std.debug.warn("Shutting down.\n", .{});
 
-    saveConfig(self.main_state.cfg, &self.main_state.hunk.low()) catch |err| {
+    config.write(
+        &self.main_state.hunk.low(),
+        common.config_filename,
+        self.main_state.cfg,
+    ) catch |err| {
         std.debug.warn("Failed to save config: {}\n", .{err});
     };
 

@@ -1,5 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
+const pstorage = @import("pstorage");
 const warn = @import("../warn.zig").warn;
 const Key = @import("../common/key.zig").Key;
 const InputSource = @import("../common/key.zig").InputSource;
@@ -65,17 +66,19 @@ pub fn getDefault() Config {
 
 // reading config json
 
-pub fn read(
-    comptime InStream: type,
-    stream: *InStream,
-    size: usize,
-    hunk_side: *HunkSide,
-) !Config {
+pub fn read(hunk_side: *HunkSide, key: []const u8) !Config {
+    var maybe_object = try pstorage.ReadableObject.init(hunk_side, key);
+    var object = maybe_object orelse return getDefault();
+    defer object.deinit();
+    return try readFromStream(object.reader(), object.size, hunk_side);
+}
+
+pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
     var contents = try hunk_side.allocator.alloc(u8, size);
-    try stream.readNoEof(contents);
+    try r.readNoEof(contents);
 
     var p = std.json.Parser.init(&hunk_side.allocator, false);
     defer p.deinit();
@@ -236,27 +239,33 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
     unreachable;
 }
 
-pub fn write(comptime OutStream: type, stream: *OutStream, cfg: Config) !void {
-    try stream.print(
+pub fn write(hunk_side: *HunkSide, key: []const u8, cfg: Config) !void {
+    const object = try pstorage.WritableObject.init(hunk_side, key);
+    defer object.deinit();
+    try writeToStream(object.writer(), cfg);
+}
+
+pub fn writeToStream(w: anytype, cfg: Config) !void {
+    try w.print(
         \\{{
         \\    "volume": {},
         \\    "menu_bindings": {{
         \\
     , .{cfg.volume});
-    try writeBindings(OutStream, stream, input.MenuCommand, cfg.menu_bindings);
-    try stream.print(
+    try writeBindings(w, input.MenuCommand, cfg.menu_bindings);
+    try w.print(
         \\    }},
         \\    "game_bindings": {{
         \\
     , .{});
-    try writeBindings(OutStream, stream, input.GameCommand, cfg.game_bindings[0]);
-    try stream.print(
+    try writeBindings(w, input.GameCommand, cfg.game_bindings[0]);
+    try w.print(
         \\    }},
         \\    "game_bindings2": {{
         \\
     , .{});
-    try writeBindings(OutStream, stream, input.GameCommand, cfg.game_bindings[1]);
-    try stream.print(
+    try writeBindings(w, input.GameCommand, cfg.game_bindings[1]);
+    try w.print(
         \\    }}
         \\}}
         \\
@@ -264,8 +273,7 @@ pub fn write(comptime OutStream: type, stream: *OutStream, cfg: Config) !void {
 }
 
 fn writeBindings(
-    comptime OutStream: type,
-    stream: *OutStream,
+    w: anytype,
     comptime CommandType: type,
     bindings: [@typeInfo(CommandType).Enum.fields.len]?InputSource,
 ) !void {
@@ -274,28 +282,28 @@ fn writeBindings(
     for (bindings) |maybe_source, i| {
         const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
         const command_name = getEnumValueName(CommandType, command);
-        try stream.print("        \"{}\": ", .{command_name});
+        try w.print("        \"{}\": ", .{command_name});
         if (maybe_source) |source| {
             switch (source) {
                 .key => |key| {
-                    try stream.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(Key, key)});
+                    try w.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(Key, key)});
                 },
                 .joy_button => |j| {
-                    try stream.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});
+                    try w.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});
                 },
                 .joy_axis_neg => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", .{j.axis});
+                    try w.print("{{\"type\": \"joy_axis_neg\", \"axis\": {}}}", .{j.axis});
                 },
                 .joy_axis_pos => |j| {
-                    try stream.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", .{j.axis});
+                    try w.print("{{\"type\": \"joy_axis_pos\", \"axis\": {}}}", .{j.axis});
                 },
             }
         } else {
-            try stream.print("null", .{});
+            try w.print("null", .{});
         }
         if (i < bindings.len - 1) {
-            try stream.print(",", .{});
+            try w.print(",", .{});
         }
-        try stream.print("\n", .{});
+        try w.print("\n", .{});
     }
 }

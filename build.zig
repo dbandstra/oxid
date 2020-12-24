@@ -21,22 +21,24 @@ pub fn build(b: *std.build.Builder) !void {
 
     const main = b.addExecutable("oxid", "src/main_sdl.zig");
     main.step.dependOn(&compile_zangscript.step);
-    main.setOutputDir("zig-cache");
     main.setBuildMode(b.standardReleaseOptions());
+    main.setOutputDir("zig-cache");
     main.linkSystemLibrary("SDL2");
     main.linkSystemLibrary("c");
-    main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
-    main.addBuildOption([]const u8, "version", version);
     try addCommonRequirements(b, main);
+    main.addBuildOption([]const u8, "version", version);
+    main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
+    main.addPackagePath("pstorage", "src/platform/storage_native.zig");
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     wasm.step.dependOn(&compile_zangscript.step);
-    wasm.setOutputDir("zig-cache");
     wasm.setBuildMode(b.standardReleaseOptions());
+    wasm.setOutputDir("zig-cache");
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
-    wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
-    wasm.addBuildOption([]const u8, "version", version);
     try addCommonRequirements(b, wasm);
+    wasm.addBuildOption([]const u8, "version", version);
+    wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
+    wasm.addPackagePath("pstorage", "src/platform/storage_web.zig");
 
     b.step("test", "Run all tests").dependOn(&t.step);
     b.step("play", "Play the game").dependOn(&main.run().step);

@@ -24,30 +24,11 @@ const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const common = @import("oxid_common.zig");
 const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 
-const config_storagekey = "config";
 const highscores_storagekey = "highscores";
 
 const Main = struct {
     main_state: common.MainState,
 };
-
-pub fn loadConfig(hunk_side: *HunkSide) !config.Config {
-    var buffer: [5000]u8 = undefined;
-    const bytes_read = try web.getLocalStorage(config_storagekey, buffer[0..]);
-    if (bytes_read == 0) {
-        return config.getDefault();
-    }
-    var fbs = std.io.fixedBufferStream(buffer[0..bytes_read]);
-    var stream = fbs.inStream();
-    return try config.read(@TypeOf(stream), &stream, bytes_read, hunk_side);
-}
-
-pub fn saveConfig(cfg: config.Config) !void {
-    var buffer: [5000]u8 = undefined;
-    var dest = std.io.SliceOutStream.init(buffer[0..]);
-    try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg);
-    web.setLocalStorage(config_storagekey, dest.getWritten());
-}
 
 pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
     var buffer: [1000]u8 = undefined;
