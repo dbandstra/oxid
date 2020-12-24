@@ -215,6 +215,7 @@ pub const InputSpecial = union(enum) {
     toggle_sound,
     toggle_fullscreen,
     set_canvas_scale: u31,
+    config_updated,
 };
 
 pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?InputSpecial {
@@ -304,6 +305,7 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
         },
         .set_volume => |value| {
             self.cfg.volume = value;
+            return InputSpecial{ .config_updated = {} };
         },
         .set_canvas_scale => |value| {
             return InputSpecial{ .set_canvas_scale = value };
@@ -317,14 +319,17 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
             setFriendlyFire(&self.session, self.friendly_fire);
         },
         .bind_game_command => |payload| {
-            const command_index = @enumToInt(payload.command);
-            const in_use = if (payload.source) |new_source| for (self.cfg.game_bindings[payload.player_number]) |maybe_source| {
+            const bindings = &self.cfg.game_bindings[payload.player_number];
+            // don't bind if there is already another action bound to this key
+            const in_use = if (payload.source) |new_source| for (bindings) |maybe_source| {
                 const source = maybe_source orelse continue;
                 if (!areInputSourcesEqual(source, new_source)) continue;
                 break true;
             } else false else false;
             if (!in_use) {
-                self.cfg.game_bindings[payload.player_number][command_index] = payload.source;
+                const command_index = @enumToInt(payload.command);
+                bindings[command_index] = payload.source;
+                return InputSpecial{ .config_updated = {} };
             }
         },
         .reset_anim_time => {

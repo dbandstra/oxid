@@ -69,7 +69,7 @@ pub const WritableObject = struct {
         self.file.close();
     }
 
-    pub fn writer(self: WritableObject) std.fs.File.Writer {
+    pub fn writer(self: *WritableObject) std.fs.File.Writer {
         return self.file.writer();
     }
 };

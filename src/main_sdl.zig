@@ -712,6 +712,7 @@ fn inputEvent(self: *Main, source: InputSource, down: bool) void {
         .toggle_sound => {}, // unused in SDL build
         .toggle_fullscreen => self.toggle_fullscreen = true,
         .set_canvas_scale => |scale| self.set_canvas_scale = scale,
+        .config_updated => {}, // do nothing (config is saved when program exits)
     }
 }
 

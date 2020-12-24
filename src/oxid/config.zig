@@ -241,7 +241,7 @@ fn getEnumValueName(comptime T: type, value: T) []const u8 {
 }
 
 pub fn write(hunk_side: *HunkSide, key: []const u8, cfg: Config) !void {
-    const object = try pstorage.WritableObject.open(hunk_side, key);
+    var object = try pstorage.WritableObject.open(hunk_side, key);
     defer object.close();
     try writeToStream(object.writer(), cfg);
 }

@@ -150,6 +150,14 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
         .toggle_sound => return TOGGLE_SOUND,
         .toggle_fullscreen => return TOGGLE_FULLSCREEN,
         .set_canvas_scale => |value| return SET_CANVAS_SCALE + @intCast(c_int, value),
+        .config_updated => {
+            config.write(
+                &g.main_state.hunk.low(),
+                common.config_filename,
+                g.main_state.cfg,
+            ) catch |err| plog.warn("Failed to save config: {}\n", .{err});
+            return NOP;
+        },
     };
 }
 
