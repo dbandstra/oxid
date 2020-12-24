@@ -5,6 +5,8 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
 const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
+const storagekey_config = @import("root").storagekey_config;
+const storagekey_highscores = @import("root").storagekey_highscores;
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
 const graphics = @import("oxid/graphics.zig");
@@ -24,9 +26,6 @@ const audio = @import("oxid/audio.zig");
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
 const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
-
-pub const config_filename = "config.json";
-pub const highscores_filename = "highscore.dat";
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -108,7 +107,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         return false;
     };
 
-    self.cfg = config.read(&self.hunk.low(), config_filename) catch |err| blk: {
+    self.cfg = config.read(&self.hunk.low(), storagekey_config) catch |err| blk: {
         plog.warn("Failed to load config: {}\n", .{err});
         break :blk config.getDefault();
     };
@@ -156,7 +155,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
 pub fn deinit(self: *MainState) void {}
 
 fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
-    var maybe_object = try pstorage.ReadableObject.open(hunk_side, highscores_filename);
+    var maybe_object = try pstorage.ReadableObject.open(hunk_side, storagekey_highscores);
     var object = maybe_object orelse return [1]u32{0} ** constants.num_high_scores;
     defer object.close();
 
@@ -171,7 +170,7 @@ fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
 }
 
 fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
-    var object = try pstorage.WritableObject.open(hunk_side, highscores_filename);
+    var object = try pstorage.WritableObject.open(hunk_side, storagekey_highscores);
     defer object.close();
 
     var writer = object.writer();

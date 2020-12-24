@@ -21,6 +21,9 @@ pub const pdraw = @import("platform/opengl/draw.zig");
 pub const plog = @import("platform/log_web.zig");
 pub const pstorage = @import("platform/storage_web.zig");
 
+pub const storagekey_config = "config";
+pub const storagekey_highscores = "highscores";
+
 // extern functions implemented in javascript
 extern fn getRandomSeed() c_uint;
 
@@ -153,7 +156,7 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
         .config_updated => {
             config.write(
                 &g.main_state.hunk.low(),
-                common.config_filename,
+                storagekey_config,
                 g.main_state.cfg,
             ) catch |err| plog.warn("Failed to save config: {}\n", .{err});
             return NOP;

@@ -27,6 +27,9 @@ pub const plog = @import("platform/log_native.zig");
 pub const pstorage_dirname = "Oxid";
 pub const pstorage = @import("platform/storage_native.zig");
 
+pub const storagekey_config = "config.json";
+pub const storagekey_highscores = "highscore.dat";
+
 fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
     // pick a window size that isn't bigger than the desktop resolution, and
     // is an integer multiple of the virtual window size
@@ -505,7 +508,7 @@ fn deinit(self: *Main) void {
 
     config.write(
         &self.main_state.hunk.low(),
-        common.config_filename,
+        storagekey_config,
         self.main_state.cfg,
     ) catch |err| {
         std.debug.warn("Failed to save config: {}\n", .{err});
