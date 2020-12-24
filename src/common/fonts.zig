@@ -52,7 +52,7 @@ pub fn stringWidth(font: *const Font, string: []const u8) u31 {
     return @intCast(u31, std.math.max(0, x));
 }
 
-pub fn drawString(ds: *pdraw.DrawState, font: *const Font, x: i32, y: i32, string: []const u8) void {
+pub fn drawString(ds: *pdraw.State, font: *const Font, x: i32, y: i32, string: []const u8) void {
     var ix = x;
     for (string) |char| {
         if (char < font.first_char) continue;

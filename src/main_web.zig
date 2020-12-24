@@ -26,7 +26,7 @@ extern fn getRandomSeed() c_uint;
 
 const Main = struct {
     main_state: common.MainState,
-    draw_state: pdraw.DrawState,
+    draw_state: pdraw.State,
 };
 
 fn translateKey(keyCode: c_int) ?Key {

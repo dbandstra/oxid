@@ -104,7 +104,7 @@ const SavedWindowPos = struct {
 
 const Main = struct {
     main_state: common.MainState,
-    draw_state: pdraw.DrawState,
+    draw_state: pdraw.State,
     framebuffer_state: platform_framebuffer.FramebufferState,
     window: *SDL_Window,
     display_index: c_int, // used to detect when the window has been moved to another display

@@ -15,7 +15,7 @@ const util = @import("util.zig");
 const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 pub fn drawGame(
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     gs: *game.Session,
     cfg: config.Config,
@@ -69,7 +69,7 @@ fn getSortedDrawables(
 }
 
 fn drawMapTile(
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     x: u31,
     y: u31,
@@ -106,7 +106,7 @@ fn drawMapTile(
     }
 }
 
-fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
+fn drawMap(ds: *pdraw.State, static: *const common.GameStatic) void {
     perf.begin(.draw_map);
     defer perf.end(.draw_map);
 
@@ -122,7 +122,7 @@ fn drawMap(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
 // make the central 2x2 map tiles a foreground layer, so that the player spawn
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
-fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) void {
+fn drawMapForeground(ds: *pdraw.State, static: *const common.GameStatic) void {
     perf.begin(.draw_map_foreground);
     defer perf.end(.draw_map_foreground);
 
@@ -136,7 +136,7 @@ fn drawMapForeground(ds: *pdraw.DrawState, static: *const common.GameStatic) voi
 }
 
 fn drawEntities(
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     sorted_drawables: []*const c.EventDraw,
 ) void {
@@ -161,7 +161,7 @@ fn drawEntities(
     }
 }
 
-fn drawBoxes(ds: *pdraw.DrawState, gs: *game.Session) void {
+fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
     var it = gs.ecs.componentIter(c.EventDrawBox);
     while (it.next()) |event| {
         const abs_bbox = event.box;
@@ -187,7 +187,7 @@ fn drawBoxes(ds: *pdraw.DrawState, gs: *game.Session) void {
 }
 
 fn drawHud(
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     gs: *game.Session,
     high_score: u32,

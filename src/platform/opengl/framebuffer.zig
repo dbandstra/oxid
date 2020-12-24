@@ -57,7 +57,7 @@ pub fn preDraw(fbs: *FramebufferState) void {
     glBindFramebuffer(GL_FRAMEBUFFER, fbs.framebuffer);
 }
 
-pub fn postDraw(fbs: *FramebufferState, ds: *pdraw.DrawState, blit_rect: BlitRect, blit_alpha: f32) void {
+pub fn postDraw(fbs: *FramebufferState, ds: *pdraw.State, blit_rect: BlitRect, blit_alpha: f32) void {
     // blit renderbuffer to screen
     ds.projection = pdraw.ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

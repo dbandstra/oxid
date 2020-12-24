@@ -12,7 +12,7 @@ const input = @import("input.zig");
 const graphics = @import("graphics.zig");
 
 pub const DrawMenuContext = struct {
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     menu_context: menus.MenuContext,
     cursor_pos: usize,
@@ -113,7 +113,7 @@ pub const DrawMenuContext = struct {
 };
 
 pub const MenuDrawParams = struct {
-    ds: *pdraw.DrawState,
+    ds: *pdraw.State,
     static: *const common.GameStatic,
     menu_context: menus.MenuContext,
 };

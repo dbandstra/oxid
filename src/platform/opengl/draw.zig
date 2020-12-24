@@ -26,7 +26,7 @@ const DrawBuffer = struct {
     num_vertices: usize,
 };
 
-pub const DrawState = struct {
+pub const State = struct {
     // dimensions of the game viewport, which will be scaled up to fit the system window
     virtual_window_width: u32,
     virtual_window_height: u32,
@@ -51,7 +51,7 @@ pub fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
     }
 }
 
-pub fn init(ds: *DrawState, params: struct {
+pub fn init(ds: *State, params: struct {
     hunk: *Hunk,
     virtual_window_width: u32,
     virtual_window_height: u32,
@@ -90,7 +90,7 @@ pub fn init(ds: *DrawState, params: struct {
     ds.clear_screen = true;
 }
 
-pub fn deinit(ds: *DrawState) void {
+pub fn deinit(ds: *State) void {
     glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     shaders.destroy(ds.shader_textured.program);
@@ -130,7 +130,7 @@ pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     };
 }
 
-pub fn prepare(ds: *DrawState) void {
+pub fn prepare(ds: *State) void {
     const w = ds.virtual_window_width;
     const h = ds.virtual_window_height;
     const fw = @intToFloat(f32, w);
@@ -144,7 +144,7 @@ pub fn prepare(ds: *DrawState) void {
     }
 }
 
-pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
+pub fn begin(ds: *State, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
@@ -176,7 +176,7 @@ pub fn begin(ds: *DrawState, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f3
     ds.draw_buffer.outline = outline;
 }
 
-pub fn end(ds: *DrawState) void {
+pub fn end(ds: *State) void {
     std.debug.assert(ds.draw_buffer.active);
 
     flush(ds);
@@ -185,7 +185,7 @@ pub fn end(ds: *DrawState) void {
 }
 
 pub fn tile(
-    ds: *DrawState,
+    ds: *State,
     tileset: draw.Tileset,
     dtile: draw.Tile,
     x0: i32,
@@ -241,7 +241,7 @@ pub fn tile(
     ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
 }
 
-fn flush(ds: *DrawState) void {
+fn flush(ds: *State) void {
     if (ds.draw_buffer.num_vertices == 0) {
         return;
     }
