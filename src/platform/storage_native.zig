@@ -1,7 +1,7 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
-const datadir = "Oxid";
+const dirname = @import("root").pstorage_dirname;
 
 pub const ReadableObject = struct {
     file: std.fs.File,
@@ -11,7 +11,7 @@ pub const ReadableObject = struct {
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
-        const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
+        const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, dirname);
         const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
             dir_path,
             key,
@@ -46,7 +46,7 @@ pub const WritableObject = struct {
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
-        const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
+        const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, dirname);
 
         std.fs.cwd().makeDir(dir_path) catch |err| {
             if (err != error.PathAlreadyExists)
