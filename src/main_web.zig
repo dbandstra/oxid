@@ -16,7 +16,6 @@ const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const menus = @import("oxid/menus.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
@@ -24,33 +23,9 @@ const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const common = @import("oxid_common.zig");
 const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 
-const highscores_storagekey = "highscores";
-
 const Main = struct {
     main_state: common.MainState,
 };
-
-pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
-    var buffer: [1000]u8 = undefined;
-    const bytes_read = web.getLocalStorage(highscores_storagekey, buffer[0..]) catch |err| {
-        // the high scores exist but there was an error loading them. just
-        // continue with an empty high scores list, even though that might mean
-        // that the user's legitimate high scores might get wiped out (FIXME?)
-        warn("Failed to load high scores from local storage: {}\n", .{err});
-        return [1]u32{0} ** constants.num_high_scores;
-    };
-    var fbs = std.io.fixedBufferStream(buffer[0..bytes_read]);
-    var stream = fbs.inStream();
-    return datafile.readHighScores(@TypeOf(stream), &stream);
-}
-
-pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
-    var buffer: [1000]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buffer);
-    var stream = fbs.outStream();
-    try datafile.writeHighScores(@TypeOf(stream), &stream, high_scores);
-    web.setLocalStorage(highscores_storagekey, fbs.getWritten());
-}
 
 fn translateKey(keyCode: c_int) ?Key {
     return switch (keyCode) {

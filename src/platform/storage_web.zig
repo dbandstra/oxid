@@ -4,8 +4,6 @@ const std = @import("std");
 const HunkSide = @import("../../lib/zig-hunk/hunk.zig").HunkSide;
 const web = @import("../web.zig");
 
-const datadir = "Oxid";
-
 pub const ReadableObject = struct {
     buffer: [5000]u8,
     pos: usize,
@@ -34,6 +32,7 @@ pub const ReadableObject = struct {
         return Reader{ .context = self };
     }
 
+    // implementation copied from std.io.FixedBufferStream
     // can't use std.io.FixedBufferStream because there's no way to get it to
     // point to self.buffer in the init function (since self is returned by
     // value)
@@ -48,44 +47,45 @@ pub const ReadableObject = struct {
     }
 };
 
-//pub const WritableObject = struct {
-//    file: std.fs.File,
-//
-//    pub fn init(hunk_side: *HunkSide, key: []const u8) !WritableObject {
-//        const mark = hunk_side.getMark();
-//        defer hunk_side.freeToMark(mark);
-//
-//        const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
-//
-//        std.fs.cwd().makeDir(dir_path) catch |err| {
-//            if (err != error.PathAlreadyExists)
-//                return err;
-//        };
-//
-//        const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
-//            dir_path,
-//            key,
-//        });
-//
-//        const file = try std.fs.cwd().createFile(file_path, .{});
-//
-//        return WritableObject{
-//            .file = file,
-//        };
-//    }
-//
-//    pub fn deinit(self: WritableObject) void {
-//        self.file.close();
-//    }
-//
-//    pub fn writer(self: WritableObject) std.fs.File.Writer {
-//        return self.file.writer();
-//    }
-//};
+pub const WritableObject = struct {
+    key: []const u8,
+    buffer: [5000]u8,
+    pos: usize,
 
-//pub fn saveConfig(cfg: config.Config) !void {
-//    var buffer: [5000]u8 = undefined;
-//    var dest = std.io.SliceOutStream.init(buffer[0..]);
-//    try config.write(std.io.SliceOutStream.Error, &dest.stream, cfg);
-//    web.setLocalStorage(config_storagekey, dest.getWritten());
-//}
+    pub const WriteError = error{NoSpaceLeft};
+    pub const Writer = std.io.Writer(*WritableObject, WriteError, write);
+
+    pub fn init(hunk_side: *HunkSide, key: []const u8) !WritableObject {
+        return WritableObject{
+            .key = key,
+            .buffer = undefined,
+            .pos = 0,
+        };
+    }
+
+    pub fn deinit(self: WritableObject) void {
+        web.setLocalStorage(self.key, self.buffer[0..self.pos]);
+    }
+
+    pub fn writer(self: *WritableObject) Writer {
+        return Writer{ .context = self };
+    }
+
+    // implementation copied from std.io.FixedBufferStream
+    pub fn write(self: *WritableObject, bytes: []const u8) WriteError!usize {
+        if (bytes.len == 0) return 0;
+        if (self.pos >= self.buffer.len) return error.NoSpaceLeft;
+
+        const n = if (self.pos + bytes.len <= self.buffer.len)
+            bytes.len
+        else
+            self.buffer.len - self.pos;
+
+        std.mem.copy(u8, self.buffer[self.pos .. self.pos + n], bytes[0..n]);
+        self.pos += n;
+
+        if (n == 0) return error.NoSpaceLeft;
+
+        return n;
+    }
+};

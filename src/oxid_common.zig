@@ -3,6 +3,7 @@ const std = @import("std");
 const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
+const pstorage = @import("pstorage");
 const warn = @import("warn.zig").warn;
 const platform_draw = @import("platform/opengl/draw.zig");
 const shaders = @import("platform/opengl/shaders.zig");
@@ -11,6 +12,7 @@ const fonts = @import("common/fonts.zig");
 const graphics = @import("oxid/graphics.zig");
 const InputSource = @import("common/key.zig").InputSource;
 const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
+const datafile = @import("oxid/datafile.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const constants = @import("oxid/constants.zig");
@@ -28,9 +30,9 @@ const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
 const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
 const root = @import("root");
-const storage = @import("main_sdl_storage.zig");
 
 pub const config_filename = "config.json";
+pub const highscores_filename = "highscore.dat";
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -88,7 +90,23 @@ pub const InitParams = struct {
 pub fn init(self: *MainState, params: InitParams) bool {
     self.hunk = params.hunk;
 
-    self.high_scores = root.loadHighScores(&self.hunk.low());
+    self.high_scores = blk: {
+        const hunk_side = &self.hunk.low();
+        var maybe_object = pstorage.ReadableObject.init(hunk_side, highscores_filename) catch |err| {
+            // the file exists but there was an error loading it. just continue
+            // with an empty high scores list, even though that might mean that
+            // the user's legitimate high scores might get wiped out (FIXME?)
+            warn("Failed to load high scores: {}\n", .{err});
+            break :blk [1]u32{0} ** constants.num_high_scores;
+        };
+        var object = maybe_object orelse {
+            // this is a normal situation (e.g. game is being played for the
+            // first time)
+            break :blk [1]u32{0} ** constants.num_high_scores;
+        };
+        defer object.deinit();
+        break :blk datafile.readHighScores(object.reader());
+    };
 
     fonts.load(&self.hunk.low(), &self.static.font, .{
         .filename = build_options.assets_path ++ "/font.pcx",
@@ -418,8 +436,14 @@ fn postScores(self: *MainState) void {
         }
     }
 
-    if (save_high_scores) {
-        root.saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
+    if (save_high_scores) blk: {
+        const hunk_side = &self.hunk.low();
+        var object = pstorage.WritableObject.init(hunk_side, highscores_filename) catch |err| {
+            warn("Failed to save high scores: {}\n", .{err});
+            break :blk;
+        };
+        defer object.deinit();
+        datafile.writeHighScores(object.writer(), self.high_scores) catch |err| {
             warn("Failed to save high scores: {}\n", .{err});
         };
     }

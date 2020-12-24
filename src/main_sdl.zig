@@ -9,6 +9,7 @@ const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 const gl = @import("gl");
+const pstorage = @import("pstorage");
 
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
@@ -25,62 +26,8 @@ const p = @import("oxid/prototypes.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const datafile = @import("oxid/datafile.zig");
 const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
-const storage = @import("main_sdl_storage.zig");
-
-const datadir = "Oxid";
-const highscores_filename = "highscore.dat";
-
-fn openDataFile(hunk_side: *HunkSide, filename: []const u8, mode: enum { read, write }) !std.fs.File {
-    const mark = hunk_side.getMark();
-    defer hunk_side.freeToMark(mark);
-
-    const dir_path = try std.fs.getAppDataDir(&hunk_side.allocator, datadir);
-
-    if (mode == .write) {
-        std.fs.cwd().makeDir(dir_path) catch |err| {
-            if (err != error.PathAlreadyExists) {
-                return err;
-            }
-        };
-    }
-
-    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{ dir_path, filename });
-
-    return switch (mode) {
-        .read => try std.fs.cwd().openFile(file_path, .{}),
-        .write => try std.fs.cwd().createFile(file_path, .{}),
-    };
-}
-
-pub fn loadHighScores(hunk_side: *HunkSide) [constants.num_high_scores]u32 {
-    const file = openDataFile(hunk_side, highscores_filename, .read) catch |err| {
-        if (err == error.FileNotFound) {
-            // this is a normal situation (e.g. game is being played for the
-            // first time)
-        } else {
-            // the file exists but there was an error loading it. just continue
-            // with an empty high scores list, even though that might mean that
-            // the user's legitimate high scores might get wiped out (FIXME?)
-            std.debug.warn("Failed to load high scores file: {}\n", .{err});
-        }
-        return [1]u32{0} ** constants.num_high_scores;
-    };
-    defer file.close();
-
-    var stream = file.inStream();
-    return datafile.readHighScores(@TypeOf(stream), &stream);
-}
-
-pub fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]u32) !void {
-    const file = try openDataFile(hunk_side, highscores_filename, .write);
-    defer file.close();
-
-    var stream = file.outStream();
-    try datafile.writeHighScores(@TypeOf(stream), &stream, high_scores);
-}
 
 fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
     // pick a window size that isn't bigger than the desktop resolution, and
