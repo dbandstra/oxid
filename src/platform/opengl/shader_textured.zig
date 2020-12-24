@@ -6,6 +6,7 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const plog = @import("root").plog;
 const shaders = @import("shaders.zig");
+const GLSLVersion = @import("draw.zig").GLSLVersion;
 const updateVBO = @import("draw.zig").updateVBO;
 
 pub const Color = struct {
@@ -80,7 +81,7 @@ pub const Shader = struct {
     }
 };
 
-fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource {
+fn getSourceComptime(comptime version: GLSLVersion) shaders.ShaderSource {
     const first_line = switch (version) {
         .v120 => "#version 120\n",
         .v130 => "#version 130\n",
@@ -115,7 +116,7 @@ fn getSourceComptime(comptime version: shaders.GLSLVersion) shaders.ShaderSource
     };
 }
 
-fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
+fn getSource(version: GLSLVersion) shaders.ShaderSource {
     return switch (version) {
         .v120 => getSourceComptime(.v120),
         .v130 => getSourceComptime(.v130),
@@ -123,7 +124,7 @@ fn getSource(version: shaders.GLSLVersion) shaders.ShaderSource {
     };
 }
 
-pub fn create(hunk_side: *HunkSide, glsl_version: shaders.GLSLVersion) shaders.InitError!Shader {
+pub fn create(hunk_side: *HunkSide, glsl_version: GLSLVersion) shaders.InitError!Shader {
     errdefer plog.warn("Failed to create textured shader program.\n", .{});
 
     const program = try shaders.compileAndLink(hunk_side, "textured", getSource(glsl_version));

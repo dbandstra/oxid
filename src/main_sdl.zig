@@ -13,7 +13,6 @@ const InputSource = @import("common/key.zig").InputSource;
 const JoyButton = @import("common/key.zig").JoyButton;
 const JoyAxis = @import("common/key.zig").JoyAxis;
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
-const shaders = @import("platform/opengl/shaders.zig");
 const constants = @import("oxid/constants.zig");
 const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
@@ -105,6 +104,7 @@ const SavedWindowPos = struct {
 
 const Main = struct {
     main_state: common.MainState,
+    draw_state: pdraw.DrawState,
     framebuffer_state: platform_framebuffer.FramebufferState,
     window: *SDL_Window,
     display_index: c_int, // used to detect when the window has been moved to another display
@@ -357,6 +357,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_BLUE_SIZE), 8);
     _ = SDL_GL_SetAttribute(@intToEnum(SDL_GLattr, SDL_GL_ALPHA_SIZE), 8);
 
+    const glsl_version: pdraw.GLSLVersion = .v120;
+
     // start in windowed mode
     const initial_canvas_scale = std.math.min(max_canvas_scale, 4);
     const window_dims = getWindowDimsForScale(initial_canvas_scale);
@@ -413,30 +415,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     _ = SDL_GL_MakeCurrent(window, glcontext);
 
-    // TODO can i just get rid of this? i asked for 2.1 compatibility, so it should always be GLSL 120?
-    const glsl_version: shaders.GLSLVersion = blk: {
-        const glGetString_ptr = SDL_GL_GetProcAddress("glGetString") orelse {
-            std.debug.warn("Failed to get glGetString function pointer.\n", .{});
-            return error.Failed;
-        };
-        const glGetString = @ptrCast(@TypeOf(gl.namespace.glGetString), glGetString_ptr);
-        const v = glGetString(gl.namespace.GL_VERSION);
-
-        if (v != 0) { // null check
-            if (v[1] == '.') {
-                if (v[0] == '2' and v[2] != '0') {
-                    break :blk .v120;
-                } else if (v[0] >= '3' and v[0] <= '9') {
-                    break :blk .v130;
-                }
-            }
-            std.debug.warn("Unsupported OpenGL version \"{s}\" (2.1+ required)\n", .{v});
-        } else {
-            std.debug.warn("Failed to get OpenGL version.\n", .{});
-        }
-        return error.Failed;
-    };
-
     for (gl.extensions) |extension| {
         if (@enumToInt(SDL_GL_ExtensionSupported(extension)) == 0) {
             std.debug.warn("OpenGL extension \"{}\" is required.\n", .{extension});
@@ -482,12 +460,22 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
-        .glsl_version = glsl_version,
     })) {
         // common.init prints its own error
         return error.Failed;
     }
     errdefer common.deinit(&self.main_state);
+
+    pdraw.init(&self.draw_state, .{
+        .hunk = hunk,
+        .virtual_window_width = common.vwin_w,
+        .virtual_window_height = common.vwin_h,
+        .glsl_version = glsl_version,
+    }) catch |err| {
+        plog.warn("pdraw.init failed: {}\n", .{err});
+        return error.Failed;
+    };
+    errdefer pdraw.deinit(&self.draw_state);
 
     // already set: main_state, window, requested_vsync, requested_framerate_scheme, framerate_scheme, framebuffer_state
     self.display_index = 0;
@@ -522,6 +510,7 @@ fn deinit(self: *Main) void {
     };
 
     SDL_PauseAudioDevice(self.audio_device, 1);
+    pdraw.deinit(&self.draw_state);
     common.deinit(&self.main_state);
     platform_framebuffer.deinit(&self.framebuffer_state);
     SDL_GL_DeleteContext(self.glcontext);
@@ -805,12 +794,12 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
     platform_framebuffer.preDraw(&self.framebuffer_state);
 
     perf.begin(.draw);
-    common.drawMain(&self.main_state);
+    common.drawMain(&self.main_state, &self.draw_state);
     perf.end(.draw);
 
     platform_framebuffer.postDraw(
         &self.framebuffer_state,
-        &self.main_state.draw_state,
+        &self.draw_state,
         self.blit_rect,
         blit_alpha,
     );

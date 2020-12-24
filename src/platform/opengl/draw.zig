@@ -12,6 +12,8 @@ const draw = @import("../../common/draw.zig");
 
 const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
+pub const GLSLVersion = enum { v120, v130, webgl };
+
 pub const Texture = struct {
     handle: GLuint,
 };
@@ -53,7 +55,7 @@ pub fn init(ds: *DrawState, params: struct {
     hunk: *Hunk,
     virtual_window_width: u32,
     virtual_window_height: u32,
-    glsl_version: shaders.GLSLVersion,
+    glsl_version: GLSLVersion,
 }) shaders.InitError!void {
     ds.shader_textured = try shader_textured.create(&params.hunk.low(), params.glsl_version);
     errdefer shaders.destroy(ds.shader_textured.program);

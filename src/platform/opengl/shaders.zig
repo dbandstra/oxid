@@ -7,8 +7,6 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const plog = @import("root").plog;
 const indentingWriter = @import("../../common/indenting_writer.zig").indentingWriter;
 
-pub const GLSLVersion = enum { v120, v130, webgl };
-
 pub const ShaderSource = struct {
     vertex: []const u8,
     fragment: []const u8,

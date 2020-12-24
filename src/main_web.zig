@@ -26,6 +26,7 @@ extern fn getRandomSeed() c_uint;
 
 const Main = struct {
     main_state: common.MainState,
+    draw_state: pdraw.DrawState,
 };
 
 fn translateKey(keyCode: c_int) ?Key {
@@ -194,11 +195,22 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
-        .glsl_version = .webgl,
     })) {
         // common.init prints its own errors
         return error.Failed;
     }
+    errdefer common.deinit(&g.main_state);
+
+    pdraw.init(&g.draw_state, .{
+        .hunk = hunk,
+        .virtual_window_width = common.vwin_w,
+        .virtual_window_height = common.vwin_h,
+        .glsl_version = .webgl,
+    }) catch |err| {
+        plog.warn("pdraw.init failed: {}\n", .{err});
+        return error.Failed;
+    };
+    errdefer pdraw.deinit(&g.draw_state);
 }
 
 export fn onInit() bool {
@@ -207,6 +219,7 @@ export fn onInit() bool {
 }
 
 export fn onDestroy() void {
+    pdraw.deinit(&g.draw_state);
     common.deinit(&g.main_state);
     std.heap.page_allocator.free(main_memory);
 }
@@ -288,7 +301,7 @@ fn tick(draw: bool) void {
     );
 
     if (draw) {
-        common.drawMain(&g.main_state);
+        common.drawMain(&g.main_state, &g.draw_state);
     }
 
     game.frameCleanup(&g.main_state.session);

@@ -1,11 +1,10 @@
-const build_options = @import("build_options");
+const assets_path = @import("build_options").assets_path;
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
 const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
-const shaders = @import("platform/opengl/shaders.zig"); // FIXME platform specific
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
 const graphics = @import("oxid/graphics.zig");
@@ -40,7 +39,6 @@ pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 pub const MainState = struct {
     hunk: *Hunk,
     cfg: config.Config,
-    draw_state: pdraw.DrawState,
     audio_module: audio.MainModule,
     static: GameStatic,
     session: game.Session,
@@ -79,7 +77,6 @@ pub const InitParams = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     sound_enabled: bool,
-    glsl_version: shaders.GLSLVersion,
 };
 
 pub fn init(self: *MainState, params: InitParams) bool {
@@ -94,7 +91,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
     };
 
     fonts.load(&self.hunk.low(), &self.static.font, .{
-        .filename = build_options.assets_path ++ "/font.pcx",
+        .filename = assets_path ++ "/font.pcx",
         .first_char = 0,
         .char_width = 8,
         .char_height = 8,
@@ -131,18 +128,6 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
     perf.init();
 
-    pdraw.init(&self.draw_state, .{
-        .hunk = self.hunk,
-        .virtual_window_width = vwin_w,
-        .virtual_window_height = vwin_h,
-        .glsl_version = params.glsl_version,
-    }) catch |err| {
-        plog.warn("pdraw.init failed: {}\n", .{err});
-        return false;
-    };
-    // note: if any failure conditions are added to this function below this
-    // point, pdraw.deinit will need to be called
-
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
@@ -168,9 +153,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
     return true;
 }
 
-pub fn deinit(self: *MainState) void {
-    pdraw.deinit(&self.draw_state);
-}
+pub fn deinit(self: *MainState) void {}
 
 fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
     var maybe_object = try pstorage.ReadableObject.open(hunk_side, highscores_filename);
@@ -453,11 +436,11 @@ fn postScores(self: *MainState) void {
     }
 }
 
-pub fn drawMain(self: *MainState) void {
-    pdraw.prepare(&self.draw_state);
-    drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
+pub fn drawMain(self: *MainState, draw_state: *pdraw.DrawState) void {
+    pdraw.prepare(draw_state);
+    drawGame(draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
-        .ds = &self.draw_state,
+        .ds = draw_state,
         .static = &self.static,
         .menu_context = makeMenuContext(self),
     });
