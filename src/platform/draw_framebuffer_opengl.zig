@@ -1,9 +1,9 @@
-// this is an optional feature that can be used on top of draw.zig
+// this is an optional feature that can be used on top of draw_opengl.zig
 // the wasm build doesn't use it because it can just scale up the DOM canvas
 
 usingnamespace @import("gl").namespace;
-const draw = @import("../../common/draw.zig");
-const pdraw = @import("draw.zig");
+const pdraw = @import("draw_opengl.zig");
+const draw = @import("../common/draw.zig");
 
 pub const BlitRect = struct {
     x: i32,
