@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const pdraw = @import("pdraw");
+const pdraw = @import("root").pdraw;
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
 const InputSource = @import("../common/key.zig").InputSource;

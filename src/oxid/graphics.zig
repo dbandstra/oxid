@@ -2,7 +2,7 @@ const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
-const pdraw = @import("pdraw");
+const pdraw = @import("root").pdraw;
 const pcx_helper = @import("../common/pcx_helper.zig");
 const draw = @import("../common/draw.zig");
 const constants = @import("constants.zig");

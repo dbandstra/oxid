@@ -1,4 +1,4 @@
-const pdraw = @import("pdraw");
+const pdraw = @import("root").pdraw;
 
 pub const Tileset = struct {
     texture: pdraw.Texture,

@@ -1,6 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const pstorage = @import("pstorage");
+const pstorage = @import("root").pstorage;
 const warn = @import("../warn.zig").warn;
 const Key = @import("../common/key.zig").Key;
 const InputSource = @import("../common/key.zig").InputSource;

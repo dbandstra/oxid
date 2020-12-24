@@ -1,12 +1,11 @@
 const build_options = @import("build_options");
 const std = @import("std");
-const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
-const pstorage = @import("pstorage");
+const pdraw = @import("root").pdraw;
+const pstorage = @import("root").pstorage;
 const warn = @import("warn.zig").warn;
-const platform_draw = @import("platform/opengl/draw.zig");
-const shaders = @import("platform/opengl/shaders.zig");
+const shaders = @import("platform/opengl/shaders.zig"); // FIXME platform specific
 const draw = @import("common/draw.zig");
 const fonts = @import("common/fonts.zig");
 const graphics = @import("oxid/graphics.zig");
@@ -21,14 +20,11 @@ const levels = @import("oxid/levels.zig");
 const p = @import("oxid/prototypes.zig");
 const c = @import("oxid/components.zig");
 const menus = @import("oxid/menus.zig");
-const MenuInputParams = @import("oxid/menu_input.zig").MenuInputParams;
 const menuInput = @import("oxid/menu_input.zig").menuInput;
 const audio = @import("oxid/audio.zig");
-const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const drawGame = @import("oxid/draw.zig").drawGame;
 const setFriendlyFire = @import("oxid/functions/set_friendly_fire.zig").setFriendlyFire;
-const root = @import("root");
 
 pub const config_filename = "config.json";
 pub const highscores_filename = "highscore.dat";
@@ -44,7 +40,7 @@ pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 pub const MainState = struct {
     hunk: *Hunk,
     cfg: config.Config,
-    draw_state: platform_draw.DrawState,
+    draw_state: pdraw.DrawState,
     audio_module: audio.MainModule,
     static: GameStatic,
     session: game.Session,
@@ -135,17 +131,17 @@ pub fn init(self: *MainState, params: InitParams) bool {
 
     perf.init();
 
-    platform_draw.init(&self.draw_state, .{
+    pdraw.init(&self.draw_state, .{
         .hunk = self.hunk,
         .virtual_window_width = vwin_w,
         .virtual_window_height = vwin_h,
         .glsl_version = params.glsl_version,
     }) catch |err| {
-        warn("platform_draw.init failed: {}\n", .{err});
+        warn("pdraw.init failed: {}\n", .{err});
         return false;
     };
     // note: if any failure conditions are added to this function below this
-    // point, platform_draw.deinit will need to be called
+    // point, pdraw.deinit will need to be called
 
     self.game_over = false;
     self.new_high_score = false;
@@ -173,7 +169,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
 }
 
 pub fn deinit(self: *MainState) void {
-    platform_draw.deinit(&self.draw_state);
+    pdraw.deinit(&self.draw_state);
 }
 
 fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
@@ -458,7 +454,7 @@ fn postScores(self: *MainState) void {
 }
 
 pub fn drawMain(self: *MainState) void {
-    platform_draw.prepare(&self.draw_state);
+    pdraw.prepare(&self.draw_state);
     drawGame(&self.draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
         .ds = &self.draw_state,

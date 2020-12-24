@@ -1,16 +1,10 @@
 const std = @import("std");
-const gbe = @import("gbe");
 const Hunk = @import("zig-hunk").Hunk;
-const HunkSide = @import("zig-hunk").HunkSide;
 const warn = @import("warn.zig").warn;
 const web = @import("web.zig");
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
-const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
-const platform_draw = @import("platform/opengl/draw.zig");
-const levels = @import("oxid/levels.zig");
 const constants = @import("oxid/constants.zig");
-const p = @import("oxid/prototypes.zig");
 const game = @import("oxid/game.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
 const audio = @import("oxid/audio.zig");
@@ -22,6 +16,10 @@ const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
 const common = @import("oxid_common.zig");
 const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
+
+// drivers that other source files can access via @import("root")
+pub const pdraw = @import("platform/opengl/draw.zig");
+pub const pstorage = @import("platform/storage_web.zig");
 
 const Main = struct {
     main_state: common.MainState,

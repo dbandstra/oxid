@@ -1,6 +1,6 @@
 const build_options = @import("build_options");
 const std = @import("std");
-const pdraw = @import("pdraw");
+const pdraw = @import("root").pdraw;
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");

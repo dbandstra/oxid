@@ -2,32 +2,28 @@ usingnamespace @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
-const builtin = @import("builtin");
 const std = @import("std");
 const clap = @import("zig-clap");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 const gl = @import("gl");
-const pstorage = @import("pstorage");
-
 const Key = @import("common/key.zig").Key;
 const InputSource = @import("common/key.zig").InputSource;
 const JoyButton = @import("common/key.zig").JoyButton;
 const JoyAxis = @import("common/key.zig").JoyAxis;
-const areInputSourcesEqual = @import("common/key.zig").areInputSourcesEqual;
-const platform_draw = @import("platform/opengl/draw.zig");
 const platform_framebuffer = @import("platform/opengl/framebuffer.zig");
 const shaders = @import("platform/opengl/shaders.zig");
 const constants = @import("oxid/constants.zig");
-const menus = @import("oxid/menus.zig");
 const game = @import("oxid/game.zig");
-const p = @import("oxid/prototypes.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const c = @import("oxid/components.zig");
 const common = @import("oxid_common.zig");
+
+// drivers that other source files can access via @import("root")
+pub const pdraw = @import("platform/opengl/draw.zig");
+pub const pstorage = @import("platform/storage_native.zig");
 
 fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
     // pick a window size that isn't bigger than the desktop resolution, and

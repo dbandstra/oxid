@@ -1,6 +1,6 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-const pdraw = @import("pdraw");
+const pdraw = @import("root").pdraw;
 const draw = @import("draw.zig");
 const pcx_helper = @import("pcx_helper.zig");
 

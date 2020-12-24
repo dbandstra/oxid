@@ -1,7 +1,5 @@
 const std = @import("std");
-// FIXME - how come this doesn't work? it worked in platform/draw...
-//const HunkSide = @import("zig-hunk").HunkSide;
-const HunkSide = @import("../../lib/zig-hunk/hunk.zig").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 
 const datadir = "Oxid";
 

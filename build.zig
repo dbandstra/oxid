@@ -28,7 +28,6 @@ pub fn build(b: *std.build.Builder) !void {
     try addCommonRequirements(b, main);
     main.addBuildOption([]const u8, "version", version);
     main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
-    main.addPackagePath("pstorage", "src/platform/storage_native.zig");
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     wasm.step.dependOn(&compile_zangscript.step);
@@ -38,7 +37,6 @@ pub fn build(b: *std.build.Builder) !void {
     try addCommonRequirements(b, wasm);
     wasm.addBuildOption([]const u8, "version", version);
     wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
-    wasm.addPackagePath("pstorage", "src/platform/storage_web.zig");
 
     b.step("test", "Run all tests").dependOn(&t.step);
     b.step("play", "Play the game").dependOn(&main.run().step);
@@ -53,7 +51,6 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
     o.addPackagePath("gbe", "lib/gbe/gbe.zig");
-    o.addPackagePath("pdraw", "src/platform/opengl/draw.zig");
     const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{
         b.build_root,
         "assets",

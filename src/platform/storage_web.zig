@@ -1,7 +1,5 @@
 const std = @import("std");
-// FIXME - how come this doesn't work? it worked in platform/draw...
-//const HunkSide = @import("zig-hunk").HunkSide;
-const HunkSide = @import("../../lib/zig-hunk/hunk.zig").HunkSide;
+const HunkSide = @import("zig-hunk").HunkSide;
 
 // extern functions implemented in javascript
 extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
