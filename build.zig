@@ -60,9 +60,10 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
 fn getVersion(b: *std.build.Builder) ![]const u8 {
     const argv = &[_][]const u8{ "git", "describe", "--tags" };
     var code: u8 = undefined;
-    return b.execAllowFail(argv, &code, .Ignore) catch |err| {
+    const stdout = b.execAllowFail(argv, &code, .Ignore) catch |err| {
         if (err == error.ExitCodeFailure)
             return ""; // no tags yet - shouldn't cause the build to fail
         return err;
     };
+    return std.mem.trim(u8, stdout, " \n\r");
 }
