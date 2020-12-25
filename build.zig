@@ -2,8 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) !void {
-    const version = try getVersion(b.allocator);
-    defer b.allocator.free(version);
+    const version = try getVersion(b);
 
     const t = b.addTest("test.zig");
     t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
@@ -58,21 +57,12 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addBuildOption([]const u8, "assets_path", assets_path);
 }
 
-fn getVersion(allocator: *std.mem.Allocator) ![]const u8 {
+fn getVersion(b: *std.build.Builder) ![]const u8 {
     const argv = &[_][]const u8{ "git", "describe", "--tags" };
-    const child = try std.ChildProcess.init(argv, allocator);
-    defer child.deinit();
-
-    child.stdout_behavior = .Pipe;
-    child.stderr_behavior = .Pipe;
-
-    try child.spawn();
-
-    const version = try child.stdout.?.reader().readAllAlloc(allocator, 1024);
-    errdefer allocator.free(version);
-
-    switch (try child.wait()) {
-        .Exited => return version,
-        else => return error.UncleanExit,
-    }
+    var code: u8 = undefined;
+    return b.execAllowFail(argv, &code, .Ignore) catch |err| {
+        if (err == error.ExitCodeFailure)
+            return ""; // no tags yet - shouldn't cause the build to fail
+        return err;
+    };
 }
