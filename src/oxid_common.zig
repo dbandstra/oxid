@@ -389,7 +389,7 @@ fn resetGame(self: *MainState) void {
 fn postScores(self: *MainState) void {
     self.new_high_score = false;
 
-    var save_high_scores = true;
+    var save_high_scores = false;
 
     // get players' scores
     var it = self.session.ecs.componentIter(c.PlayerController);
@@ -400,18 +400,24 @@ fn postScores(self: *MainState) void {
         // the list is always sorted highest to lowest
         var i: usize = 0;
         while (i < constants.num_high_scores) : (i += 1) {
-            if (new_score > self.high_scores[i]) {
-                // insert the new score here
-                std.mem.copyBackwards(u32, self.high_scores[i + 1 .. constants.num_high_scores], self.high_scores[i .. constants.num_high_scores - 1]);
-
-                self.high_scores[i] = new_score;
-                if (i == 0) {
-                    self.new_high_score = true;
-                }
-
-                save_high_scores = true;
-                break;
+            if (new_score <= self.high_scores[i]) {
+                continue;
             }
+
+            // insert the new score here
+            std.mem.copyBackwards(
+                u32,
+                self.high_scores[i + 1 .. constants.num_high_scores],
+                self.high_scores[i .. constants.num_high_scores - 1],
+            );
+
+            self.high_scores[i] = new_score;
+            if (i == 0) {
+                self.new_high_score = true;
+            }
+
+            save_high_scores = true;
+            break;
         }
     }
 
