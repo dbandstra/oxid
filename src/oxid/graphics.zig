@@ -95,7 +95,7 @@ pub fn getGraphicTile(graphic: Graphic) draw.Tile {
     return switch (graphic) {
         .pit => .{ .tx = 1, .ty = 0 },
         .floor => .{ .tx = 2, .ty = 0 },
-        .floor_shadow => .{ .tx = 2, .ty = 6 },
+        .floor_shadow => .{ .tx = 5, .ty = 0 },
         .wall => .{ .tx = 3, .ty = 0 },
         .wall2 => .{ .tx = 4, .ty = 0 },
         .evilwall_tl => .{ .tx = 0, .ty = 6 },
@@ -110,7 +110,7 @@ pub fn getGraphicTile(graphic: Graphic) draw.Tile {
         .mon_bullet => .{ .tx = 2, .ty = 3 },
         .mon_spark1 => .{ .tx = 1, .ty = 3 },
         .mon_spark2 => .{ .tx = 0, .ty = 3 },
-        .man_icons => .{ .tx = 5, .ty = 0 },
+        .man_icons => .{ .tx = 5, .ty = 1 },
         .man1_walk1 => .{ .tx = 6, .ty = 1 },
         .man1_walk2 => .{ .tx = 7, .ty = 1 },
         .man2_walk1 => .{ .tx = 6, .ty = 0 },
@@ -141,7 +141,7 @@ pub fn getGraphicTile(graphic: Graphic) draw.Tile {
         .life_up => .{ .tx = 4, .ty = 5 },
         .power_up => .{ .tx = 6, .ty = 5 },
         .speed_up => .{ .tx = 5, .ty = 5 },
-        .coin => .{ .tx = 4, .ty = 6 },
+        .coin => .{ .tx = 0, .ty = 2 },
     };
 }
 
