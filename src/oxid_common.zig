@@ -342,11 +342,9 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
     return InputSpecial{ .noop = {} };
 }
 
-// i feel like these functions are too heavy to be done inline by this system.
-// they should be created as events and handled by middleware?
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
-pub fn startGame(gs: *game.Session, is_multiplayer: bool) void {
+fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     // remove all entities
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
