@@ -75,7 +75,7 @@ fn drawMapTile(
     y: u31,
 ) void {
     const gridpos = math.vec2(x, y);
-    const maybe_graphic: ?graphics.Graphic = switch (levels.getGridValue(levels.level1, gridpos).?) {
+    const graphic: graphics.Graphic = switch (levels.getGridValue(levels.level1, gridpos).?) {
         0x00 => .floor,
         0x01 => .floor_shadow,
         0x80 => .wall,
@@ -85,25 +85,25 @@ fn drawMapTile(
         0x84 => .evilwall_tr,
         0x85 => .evilwall_bl,
         0x86 => .evilwall_br,
-        else => null,
+        0x87 => .station_tl,
+        0x88 => .station_tr,
+        0x89 => .station_bl,
+        0x8A => .station_br,
+        0x02 => .station_sl,
+        0x03 => .station_sr,
+        else => return,
     };
-    if (maybe_graphic) |graphic| {
-        const pos = math.vec2Scale(gridpos, levels.subpixels_per_tile);
-        const dx = @divFloor(pos.x, levels.subpixels_per_pixel);
-        const dy = @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height;
-        const dw = levels.pixels_per_tile;
-        const dh = levels.pixels_per_tile;
-        pdraw.tile(
-            ds,
-            static.tileset,
-            graphics.getGraphicTile(graphic),
-            dx,
-            dy,
-            dw,
-            dh,
-            .identity,
-        );
-    }
+    const pos = math.vec2Scale(gridpos, levels.subpixels_per_tile);
+    pdraw.tile(
+        ds,
+        static.tileset,
+        graphics.getGraphicTile(graphic),
+        @divFloor(pos.x, levels.subpixels_per_pixel),
+        @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height,
+        levels.pixels_per_tile,
+        levels.pixels_per_tile,
+        .identity,
+    );
 }
 
 fn drawMap(ds: *pdraw.State, static: *const common.GameStatic) void {

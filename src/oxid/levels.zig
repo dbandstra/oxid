@@ -88,6 +88,12 @@ const mapping = [_]u8{
     0x86, // spooky block, bottom right
     0x80, // wall
     0x01, // floor with shadow
+    0x87, // station, top left
+    0x88, // station, top right
+    0x89, // station, bottom left
+    0x8A, // station, bottom right
+    0x02, // station, shadow left
+    0x03, // station, shadow right
 };
 
 const build_options = @import("build_options");
