@@ -202,9 +202,13 @@ pub fn loadTileset(
     const w = try std.math.cast(u31, img.width);
     const h = try std.math.cast(u31, img.height);
 
-    out_tileset.texture = try pdraw.uploadTexture(ds, w, h, img.pixels);
+    out_tileset.texture = try pdraw.createTexture(ds, w, h, img.pixels);
     out_tileset.xtiles = 8;
     out_tileset.ytiles = 8;
 
     std.mem.copy(u8, out_palette, &img.palette);
+}
+
+pub fn unloadTileset(tileset: *draw.Tileset) void {
+    pdraw.destroyTexture(tileset.texture);
 }

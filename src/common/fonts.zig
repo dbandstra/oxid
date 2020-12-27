@@ -29,7 +29,7 @@ pub fn load(ds: *pdraw.State, hunk_side: *HunkSide, font: *Font, comptime def: F
     const img = try pcx_helper.loadPcx(hunk_side, def.filename, 0);
     const w = try std.math.cast(u31, img.width);
     const h = try std.math.cast(u31, img.height);
-    const texture = try pdraw.uploadTexture(ds, w, h, img.pixels);
+    const texture = try pdraw.createTexture(ds, w, h, img.pixels);
 
     font.* = .{
         .tileset = .{
@@ -42,6 +42,10 @@ pub fn load(ds: *pdraw.State, hunk_side: *HunkSide, font: *Font, comptime def: F
         .char_height = def.char_height,
         .spacing = def.spacing,
     };
+}
+
+pub fn unload(font: *Font) void {
+    pdraw.destroyTexture(font.tileset.texture);
 }
 
 pub fn stringWidth(font: *const Font, string: []const u8) u31 {

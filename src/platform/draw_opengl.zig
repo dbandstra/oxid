@@ -101,7 +101,7 @@ pub fn deinit(ds: *State) void {
     destroyShaderProgram(ds.shader_solid.program);
 }
 
-pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
+pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     var texid: GLuint = undefined;
     glGenTextures(1, &texid);
     glBindTexture(GL_TEXTURE_2D, texid);
@@ -112,6 +112,10 @@ pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.ptr);
     return Texture{ .handle = texid };
+}
+
+pub fn destroyTexture(texture: Texture) void {
+    glDeleteTextures(1, &texture.handle);
 }
 
 fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {

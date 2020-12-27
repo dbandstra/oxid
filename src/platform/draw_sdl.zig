@@ -15,7 +15,7 @@ pub fn init(ds: *State, renderer: *SDL_Renderer) void {
     ds.renderer = renderer;
 }
 
-pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
+pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     const surface = SDL_CreateRGBSurfaceFrom(
         @intToPtr(*c_void, @ptrToInt(pixels.ptr)), // remove const (FIXME?)
         w,
@@ -30,12 +30,14 @@ pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     );
     defer SDL_FreeSurface(surface);
     const texture = SDL_CreateTextureFromSurface(ds.renderer, surface) orelse {
-        return error.FailedToUploadTexture;
+        return error.FailedToCreateTexture;
     };
     return Texture{ .texture = texture, .w = w, .h = h };
 }
 
-// TODO function to delete texture
+pub fn destroyTexture(texture: Texture) void {
+    SDL_DestroyTexture(texture.texture);
+}
 
 pub fn prepare(ds: *State) void {}
 

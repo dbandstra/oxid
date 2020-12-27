@@ -460,7 +460,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     };
     errdefer pdraw.deinit(&self.draw_state);
 
-    if (!common.init(&self.main_state, &self.draw_state, .{
+    try common.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
@@ -469,10 +469,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
-    })) {
-        // common.init prints its own error
-        return error.Failed;
-    }
+    }); // common.init prints its own error and returns error.Failed
     errdefer common.deinit(&self.main_state);
 
     // already set:

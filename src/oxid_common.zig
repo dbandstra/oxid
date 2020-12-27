@@ -78,7 +78,7 @@ pub const InitParams = struct {
     sound_enabled: bool,
 };
 
-pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) bool {
+pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.hunk = params.hunk;
 
     self.high_scores = loadHighScores(&self.hunk.low()) catch |err| blk: {
@@ -99,13 +99,15 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) bool {
         .spacing = -1,
     }) catch |err| {
         plog.warn("Failed to load font: {}\n", .{err});
-        return false;
+        return error.Failed;
     };
+    errdefer fonts.unload(&self.static.font);
 
     graphics.loadTileset(ds, &self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
         plog.warn("Failed to load tileset: {}\n", .{err});
-        return false;
+        return error.Failed;
     };
+    errdefer graphics.unloadTileset(&self.static.tileset);
 
     self.cfg = config.read(&self.hunk.low(), storagekey_config) catch |err| blk: {
         plog.warn("Failed to load config: {}\n", .{err});
@@ -122,7 +124,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) bool {
         params.audio_buffer_size,
     ) catch |err| {
         plog.warn("Failed to load audio module: {}\n", .{err});
-        return false;
+        return error.Failed;
     };
 
     perf.init();
@@ -148,11 +150,12 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) bool {
         .blip = null,
         .ding = null,
     };
-
-    return true;
 }
 
-pub fn deinit(self: *MainState) void {}
+pub fn deinit(self: *MainState) void {
+    graphics.unloadTileset(&self.static.tileset);
+    fonts.unload(&self.static.font);
+}
 
 fn loadHighScores(hunk_side: *HunkSide) ![constants.num_high_scores]u32 {
     var maybe_object = try pstorage.ReadableObject.open(hunk_side, storagekey_highscores);
