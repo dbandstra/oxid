@@ -61,17 +61,28 @@ pub fn preDraw(fbs: *FramebufferState) void {
 }
 
 pub fn postDraw(fbs: *FramebufferState, ds: *pdraw.State, blit_rect: BlitRect, blit_alpha: f32) void {
+    pdraw.flush(ds);
+
     // blit renderbuffer to screen
     ds.projection = pdraw.ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-    const tileset: draw.Tileset = .{
-        .texture = .{ .handle = fbs.render_texture },
-        .xtiles = 1,
-        .ytiles = 1,
-    };
-    pdraw.setColor(ds, draw.pure_white, blit_alpha);
-    pdraw.tile(ds, tileset, .{ .tx = 0, .ty = 0 }, 0, 0, 1, 1, .flip_vert);
-    pdraw.setColor(ds, draw.pure_white, 1.0);
-    pdraw.flush(ds);
+
+    ds.draw_buffer.vertex2f[0..12].* = .{ 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+    ds.draw_buffer.texcoord2f[0..12].* = .{ 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1 };
+
+    ds.shader_textured.bind(.{
+        .tex = 0,
+        .color = .{ .r = 1, .g = 1, .b = 1, .a = blit_alpha },
+        .mvp = &ds.projection,
+        .vertex_buffer = ds.dyn_vertex_buffer,
+        .vertex2f = &ds.draw_buffer.vertex2f,
+        .texcoord_buffer = ds.dyn_texcoord_buffer,
+        .texcoord2f = &ds.draw_buffer.texcoord2f,
+    });
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fbs.render_texture);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }

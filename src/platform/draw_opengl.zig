@@ -188,11 +188,11 @@ pub fn tile(
         fx1, fy1, fx1, fy0, fx0, fy0,
     };
     ds.draw_buffer.texcoord2f[num_verts * 2 ..][0..12].* = switch (transform) {
-        .identity => [12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
-        .flip_vert => [12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
-        .flip_horz => [12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
-        .rotate_cw => [12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
-        .rotate_ccw => [12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
+        .identity => [12]GLfloat{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
+        .flip_vert => [12]GLfloat{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
+        .flip_horz => [12]GLfloat{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
+        .rotate_cw => [12]GLfloat{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
+        .rotate_ccw => [12]GLfloat{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
     };
 
     ds.draw_buffer.tex_handle = tileset.texture.handle;
@@ -470,7 +470,7 @@ const SolidShader = struct {
     }
 };
 
-const TexturedShader = struct {
+pub const TexturedShader = struct {
     program: ShaderProgram,
     attrib_texcoord: GLint,
     attrib_position: GLint,
@@ -524,7 +524,8 @@ const TexturedShader = struct {
         };
     }
 
-    fn bind(self: TexturedShader, params: struct {
+    // `pub` so it can be used by draw_framebuffer_opengl.zig
+    pub fn bind(self: TexturedShader, params: struct {
         mvp: []f32,
         tex: GLint,
         color: Color,
