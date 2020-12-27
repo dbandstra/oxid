@@ -25,8 +25,16 @@ pub const Texture = struct {
     handle: GLuint,
 };
 
+const Color = struct {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+};
+
 const DrawBuffer = struct {
     tex_handle: GLuint,
+    shader: enum { solid, textured },
     outline: bool,
     vertex2f: [2 * buffer_vertices]GLfloat,
     texcoord2f: [2 * buffer_vertices]GLfloat,
@@ -37,14 +45,13 @@ pub const State = struct {
     // dimensions of the game viewport, which will be scaled up to fit the system window
     virtual_window_width: u32,
     virtual_window_height: u32,
+    shader_solid: SolidShader,
     shader_textured: TexturedShader,
     dyn_vertex_buffer: GLuint,
     dyn_texcoord_buffer: GLuint,
-    color: draw.Color,
-    alpha: f32,
+    color: Color,
     draw_buffer: DrawBuffer,
     projection: [16]f32,
-    blank_tileset: draw.Tileset,
 };
 
 fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
@@ -62,6 +69,8 @@ pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
 }) !void {
+    ds.shader_solid = try SolidShader.create(&params.hunk.low(), glsl_version);
+    errdefer destroyShaderProgram(ds.shader_solid.program);
     ds.shader_textured = try TexturedShader.create(&params.hunk.low(), glsl_version);
     errdefer destroyShaderProgram(ds.shader_textured.program);
 
@@ -75,15 +84,8 @@ pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
 
     ds.virtual_window_width = params.virtual_window_width;
     ds.virtual_window_height = params.virtual_window_height;
-    ds.color = draw.pure_white;
-    ds.alpha = 1.0;
+    ds.color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 };
     ds.draw_buffer.num_vertices = 0;
-
-    ds.blank_tileset = .{
-        .texture = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 }),
-        .xtiles = 1,
-        .ytiles = 1,
-    };
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -96,6 +98,7 @@ pub fn deinit(ds: *State) void {
     glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     destroyShaderProgram(ds.shader_textured.program);
+    destroyShaderProgram(ds.shader_solid.program);
 }
 
 pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
@@ -130,16 +133,21 @@ pub fn prepare(ds: *State) void {
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
 }
 
-pub fn setColor(ds: *State, color: draw.Color, alpha: f32) void {
+pub fn setColor(ds: *State, rgb: draw.Color, a: f32) void {
+    const color: Color = .{
+        .r = @intToFloat(f32, rgb.r) / 255.0,
+        .g = @intToFloat(f32, rgb.g) / 255.0,
+        .b = @intToFloat(f32, rgb.b) / 255.0,
+        .a = a,
+    };
     if (color.r == ds.color.r and color.g == ds.color.g and
-        color.b == ds.color.b and alpha == ds.alpha)
+        color.b == ds.color.b and color.a == ds.color.a)
         return;
     flush(ds);
     ds.color = color;
-    ds.alpha = alpha;
 }
 
-fn tile_(
+pub fn tile(
     ds: *State,
     tileset: draw.Tileset,
     dtile: draw.Tile,
@@ -148,10 +156,22 @@ fn tile_(
     w: i32,
     h: i32,
     transform: draw.Transform,
-    outline: bool,
 ) void {
     if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
         return;
+
+    const verts_per_tile = 6; // two triangles
+
+    if (ds.draw_buffer.num_vertices > 0) {
+        if (ds.draw_buffer.tex_handle != tileset.texture.handle or
+            ds.draw_buffer.outline != false or
+            ds.draw_buffer.shader != .textured or
+            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
+            flush(ds);
+    }
+
+    const num_verts = ds.draw_buffer.num_vertices;
+    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
 
     const fx0 = @intToFloat(f32, x);
     const fy0 = @intToFloat(f32, y);
@@ -163,23 +183,11 @@ fn tile_(
     const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    const verts_per_tile = 6; // two triangles
-
-    if (ds.draw_buffer.num_vertices > 0) {
-        if (ds.draw_buffer.tex_handle != tileset.texture.handle or
-            ds.draw_buffer.outline != outline or
-            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
-            flush(ds);
-    }
-
-    const num_verts = ds.draw_buffer.num_vertices;
-    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
-
-    // top left, bottom left, bottom right - bottom right, top right, top left
-    ds.draw_buffer.vertex2f[num_verts * 2 ..][0 .. verts_per_tile * 2].* =
-        [12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 };
-    ds.draw_buffer.texcoord2f[num_verts * 2 ..][0 .. verts_per_tile * 2].* =
-        switch (transform) {
+    ds.draw_buffer.vertex2f[num_verts * 2 ..][0..12].* = [12]GLfloat{
+        fx0, fy0, fx0, fy1, fx1, fy1,
+        fx1, fy1, fx1, fy0, fx0, fy0,
+    };
+    ds.draw_buffer.texcoord2f[num_verts * 2 ..][0..12].* = switch (transform) {
         .identity => [12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
         .flip_vert => [12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
         .flip_horz => [12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
@@ -188,52 +196,100 @@ fn tile_(
     };
 
     ds.draw_buffer.tex_handle = tileset.texture.handle;
-    ds.draw_buffer.outline = outline;
+    ds.draw_buffer.outline = false;
+    ds.draw_buffer.shader = .textured;
     ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
-pub fn tile(ds: *State, tileset: draw.Tileset, dtile: draw.Tile, x: i32, y: i32, w: i32, h: i32, transform: draw.Transform) void {
-    tile_(ds, tileset, dtile, x, y, w, h, transform, false);
-}
-
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
-    tile_(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity, false);
+    const verts_per_tile = 6; // two triangles
+
+    if (ds.draw_buffer.num_vertices > 0) {
+        if (ds.draw_buffer.outline != false or
+            ds.draw_buffer.shader != .solid or
+            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
+            flush(ds);
+    }
+
+    const num_verts = ds.draw_buffer.num_vertices;
+    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
+
+    const fx0 = @intToFloat(f32, x);
+    const fy0 = @intToFloat(f32, y);
+    const fx1 = fx0 + @intToFloat(f32, w);
+    const fy1 = fy0 + @intToFloat(f32, h);
+
+    ds.draw_buffer.vertex2f[num_verts * 2 ..][0..12].* = [12]GLfloat{
+        fx0, fy0, fx0, fy1, fx1, fy1,
+        fx1, fy1, fx1, fy0, fx0, fy0,
+    };
+
+    ds.draw_buffer.outline = false;
+    ds.draw_buffer.shader = .solid;
+    ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
 pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
-    tile_(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity, true);
+    const verts_per_tile = 8; // for GL_LINES
+
+    if (ds.draw_buffer.num_vertices > 0) {
+        if (ds.draw_buffer.outline != true or
+            ds.draw_buffer.shader != .solid or
+            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
+            flush(ds);
+    }
+
+    const num_verts = ds.draw_buffer.num_vertices;
+    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
+
+    const fx0 = @intToFloat(f32, x);
+    const fy0 = @intToFloat(f32, y);
+    const fx1 = fx0 + @intToFloat(f32, w);
+    const fy1 = fy0 + @intToFloat(f32, h);
+
+    ds.draw_buffer.vertex2f[num_verts * 2 ..][0..16].* = [16]GLfloat{
+        fx0, fy0, fx0, fy1,
+        fx0, fy1, fx1, fy1,
+        fx1, fy1, fx1, fy0,
+        fx1, fy0, fx0, fy0,
+    };
+
+    ds.draw_buffer.outline = true;
+    ds.draw_buffer.shader = .solid;
+    ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
 pub fn flush(ds: *State) void {
     if (ds.draw_buffer.num_vertices == 0)
         return;
 
-    ds.shader_textured.bind(.{
-        .tex = 0,
-        .color = .{
-            .r = @intToFloat(f32, ds.color.r) / 255.0,
-            .g = @intToFloat(f32, ds.color.g) / 255.0,
-            .b = @intToFloat(f32, ds.color.b) / 255.0,
-            .a = ds.alpha,
+    switch (ds.draw_buffer.shader) {
+        .solid => {
+            ds.shader_solid.bind(.{
+                .color = ds.color,
+                .mvp = &ds.projection,
+                .vertex_buffer = ds.dyn_vertex_buffer,
+                .vertex2f = &ds.draw_buffer.vertex2f,
+            });
         },
-        .mvp = &ds.projection,
-        .vertex_buffer = ds.dyn_vertex_buffer,
-        .vertex2f = &ds.draw_buffer.vertex2f,
-        .texcoord_buffer = ds.dyn_texcoord_buffer,
-        .texcoord2f = &ds.draw_buffer.texcoord2f,
-    });
+        .textured => {
+            ds.shader_textured.bind(.{
+                .tex = 0,
+                .color = ds.color,
+                .mvp = &ds.projection,
+                .vertex_buffer = ds.dyn_vertex_buffer,
+                .vertex2f = &ds.draw_buffer.vertex2f,
+                .texcoord_buffer = ds.dyn_texcoord_buffer,
+                .texcoord2f = &ds.draw_buffer.texcoord2f,
+            });
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, ds.draw_buffer.tex_handle);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, ds.draw_buffer.tex_handle);
+        },
+    }
 
     if (ds.draw_buffer.outline) {
-        if (builtin.arch == .wasm32) {
-            // not implemented - webgl does not support glPolygonMode
-        } else {
-            glPolygonMode(GL_FRONT, GL_LINE);
-            glDrawArrays(GL_TRIANGLES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));
-            glPolygonMode(GL_FRONT, GL_FILL);
-        }
+        glDrawArrays(GL_LINES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));
     } else {
         glDrawArrays(GL_TRIANGLES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));
     }
@@ -241,7 +297,7 @@ pub fn flush(ds: *State) void {
     ds.draw_buffer.num_vertices = 0;
 }
 
-// generic shader code
+// shader code
 
 const ShaderSource = struct {
     vertex: []const u8,
@@ -345,7 +401,74 @@ fn getUniformLocation(sp: ShaderProgram, name: [:0]const u8) GLint {
     return id;
 }
 
-// "textured" shader
+const SolidShader = struct {
+    program: ShaderProgram,
+    attrib_position: GLint,
+    uniform_mvp: GLint,
+    uniform_color: GLint,
+
+    fn create(hunk_side: *HunkSide, comptime glsl_version: GLSLVersion) !SolidShader {
+        const first_line = switch (glsl_version) {
+            .v120 => "#version 120\n",
+            .v130 => "#version 130\n",
+            .webgl => "precision mediump float;\n",
+        };
+
+        const old = glsl_version == .v120 or glsl_version == .webgl;
+
+        const source: ShaderSource = .{
+            .vertex = first_line ++
+                (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
+                \\uniform mat4 MVP;
+                \\
+                \\void main(void) {
+                \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+                \\}
+            ,
+            .fragment = first_line ++
+                (if (old) "" else "out vec4 FragColor;\n") ++
+                \\uniform vec4 Color;
+                \\
+                \\void main(void) {
+                \\
+                ++
+                "    " ++ (if (old) "gl_" else "") ++ "FragColor = Color;\n" ++
+                \\}
+        };
+
+        const program = try compileAndLinkShaderProgram(hunk_side, "solid", source);
+
+        return SolidShader{
+            .program = program,
+            .attrib_position = getAttribLocation(program, "VertexPosition"),
+            .uniform_mvp = getUniformLocation(program, "MVP"),
+            .uniform_color = getUniformLocation(program, "Color"),
+        };
+    }
+
+    fn bind(self: SolidShader, params: struct {
+        mvp: []f32,
+        color: Color,
+        vertex_buffer: GLuint,
+        vertex2f: []f32,
+    }) void {
+        glUseProgram(self.program.program_id);
+
+        if (self.uniform_color != -1) {
+            glUniform4f(self.uniform_color, params.color.r, params.color.g, params.color.b, params.color.a);
+        }
+        if (self.uniform_mvp != -1) {
+            std.debug.assert(params.mvp.len == 16);
+            glUniformMatrix4fv(self.uniform_mvp, 1, GL_FALSE, params.mvp.ptr);
+        }
+        if (self.attrib_position != -1) {
+            updateVBO(params.vertex_buffer, params.vertex2f);
+            glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
+            glBindBuffer(GL_ARRAY_BUFFER, params.vertex_buffer);
+            glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
+        }
+    }
+};
 
 const TexturedShader = struct {
     program: ShaderProgram,
@@ -356,8 +479,6 @@ const TexturedShader = struct {
     uniform_color: GLint,
 
     fn create(hunk_side: *HunkSide, comptime glsl_version: GLSLVersion) !TexturedShader {
-        errdefer plog.warn("Failed to create textured shader program.\n", .{});
-
         const first_line = switch (glsl_version) {
             .v120 => "#version 120\n",
             .v130 => "#version 130\n",
@@ -406,7 +527,7 @@ const TexturedShader = struct {
     fn bind(self: TexturedShader, params: struct {
         mvp: []f32,
         tex: GLint,
-        color: struct { r: f32, g: f32, b: f32, a: f32 },
+        color: Color,
         vertex_buffer: GLuint,
         texcoord_buffer: GLuint,
         vertex2f: []f32,
