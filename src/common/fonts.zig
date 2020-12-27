@@ -22,15 +22,18 @@ pub const Font = struct {
     spacing: i32,
 };
 
-pub fn load(hunk_side: *HunkSide, font: *Font, comptime def: FontDef) !void {
+pub fn load(ds: *pdraw.State, hunk_side: *HunkSide, font: *Font, comptime def: FontDef) !void {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
     const img = try pcx_helper.loadPcx(hunk_side, def.filename, 0);
+    const w = try std.math.cast(u31, img.width);
+    const h = try std.math.cast(u31, img.height);
+    const texture = try pdraw.uploadTexture(ds, w, h, img.pixels);
 
     font.* = .{
         .tileset = .{
-            .texture = pdraw.uploadTexture(img.width, img.height, img.pixels),
+            .texture = texture,
             .xtiles = def.num_cols,
             .ytiles = def.num_rows,
         },

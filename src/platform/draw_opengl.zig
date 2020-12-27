@@ -44,8 +44,6 @@ pub const State = struct {
     projection: [16]f32,
     blank_tex: Texture,
     blank_tileset: draw.Tileset,
-    // some stuff
-    clear_screen: bool,
 };
 
 fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
@@ -87,14 +85,12 @@ pub fn init(ds: *State, params: struct {
     ds.draw_buffer.num_vertices = 0;
 
     const blank_tex_pixels = &[_]u8{ 255, 255, 255, 255 };
-    ds.blank_tex = uploadTexture(1, 1, blank_tex_pixels);
+    ds.blank_tex = uploadTexture(ds, 1, 1, blank_tex_pixels) catch Texture{ .handle = 0 };
     ds.blank_tileset = .{
         .texture = ds.blank_tex,
         .xtiles = 1,
         .ytiles = 1,
     };
-
-    ds.clear_screen = true;
 }
 
 pub fn deinit(ds: *State) void {
@@ -103,7 +99,7 @@ pub fn deinit(ds: *State) void {
     destroyShaderProgram(ds.shader_textured.program);
 }
 
-pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
+pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     var texid: GLuint = undefined;
     glGenTextures(1, &texid);
     glBindTexture(GL_TEXTURE_2D, texid);
@@ -112,20 +108,8 @@ pub fn uploadTexture(width: usize, height: usize, pixels: []const u8) Texture {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        @intCast(GLsizei, width),
-        @intCast(GLsizei, height),
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        pixels.ptr,
-    );
-    return .{
-        .handle = texid,
-    };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.ptr);
+    return Texture{ .handle = texid };
 }
 
 // this is only `pub` so `draw_framebuffer_opengl.zig` can access it
@@ -145,14 +129,9 @@ pub fn prepare(ds: *State) void {
     const fh = @intToFloat(f32, h);
     ds.projection = ortho(0, fw, fh, 0);
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
-    if (ds.clear_screen) {
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ds.clear_screen = false;
-    }
 }
 
-pub fn begin(ds: *State, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
+pub fn begin(ds: *State, texture: Texture, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
     std.debug.assert(!ds.draw_buffer.active);
     std.debug.assert(ds.draw_buffer.num_vertices == 0);
 
@@ -172,13 +151,13 @@ pub fn begin(ds: *State, tex_id: GLuint, maybe_color: ?draw.Color, alpha: f32, o
                 .b = 1.0,
                 .a = alpha,
             },
-        .mvp = ds.projection[0..],
+        .mvp = &ds.projection,
         .vertex_buffer = null,
         .texcoord_buffer = null,
     });
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex_id);
+    glBindTexture(GL_TEXTURE_2D, texture.handle);
 
     ds.draw_buffer.active = true;
     ds.draw_buffer.outline = outline;
@@ -196,8 +175,8 @@ pub fn tile(
     ds: *State,
     tileset: draw.Tileset,
     dtile: draw.Tile,
-    x0: i32,
-    y0: i32,
+    x: i32,
+    y: i32,
     w: i32,
     h: i32,
     transform: draw.Transform,
@@ -206,8 +185,8 @@ pub fn tile(
     if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles) {
         return;
     }
-    const fx0 = @intToFloat(f32, x0);
-    const fy0 = @intToFloat(f32, y0);
+    const fx0 = @intToFloat(f32, x);
+    const fy0 = @intToFloat(f32, y);
     const fx1 = fx0 + @intToFloat(f32, w);
     const fy1 = fy0 + @intToFloat(f32, h);
 
@@ -249,6 +228,12 @@ pub fn tile(
     ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
 }
 
+pub fn fill(ds: *State, color: draw.Color, x: i32, y: i32, w: i32, h: i32) void {
+    begin(ds, ds.blank_tex, color, 1.0, false);
+    tile(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity);
+    end(ds);
+}
+
 fn flush(ds: *State) void {
     if (ds.draw_buffer.num_vertices == 0) {
         return;
@@ -256,9 +241,9 @@ fn flush(ds: *State) void {
 
     ds.shader_textured.update(.{
         .vertex_buffer = ds.dyn_vertex_buffer,
-        .vertex2f = ds.draw_buffer.vertex2f[0..],
+        .vertex2f = &ds.draw_buffer.vertex2f,
         .texcoord_buffer = ds.dyn_texcoord_buffer,
-        .texcoord2f = ds.draw_buffer.texcoord2f[0..],
+        .texcoord2f = &ds.draw_buffer.texcoord2f,
     });
 
     if (ds.draw_buffer.outline) {

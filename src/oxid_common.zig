@@ -78,7 +78,7 @@ pub const InitParams = struct {
     sound_enabled: bool,
 };
 
-pub fn init(self: *MainState, params: InitParams) bool {
+pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) bool {
     self.hunk = params.hunk;
 
     self.high_scores = loadHighScores(&self.hunk.low()) catch |err| blk: {
@@ -89,7 +89,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         break :blk [1]u32{0} ** constants.num_high_scores;
     };
 
-    fonts.load(&self.hunk.low(), &self.static.font, .{
+    fonts.load(ds, &self.hunk.low(), &self.static.font, .{
         .filename = assets_path ++ "/font.pcx",
         .first_char = 0,
         .char_width = 8,
@@ -102,7 +102,7 @@ pub fn init(self: *MainState, params: InitParams) bool {
         return false;
     };
 
-    graphics.loadTileset(&self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
+    graphics.loadTileset(ds, &self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
         plog.warn("Failed to load tileset: {}\n", .{err});
         return false;
     };

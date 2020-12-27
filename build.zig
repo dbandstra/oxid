@@ -18,7 +18,7 @@ pub fn build(b: *std.build.Builder) !void {
         "src/oxid/audio/script.txt",
     });
 
-    const main = b.addExecutable("oxid", "src/main_sdl.zig");
+    const main = b.addExecutable("oxid", "src/main_sdl_opengl.zig");
     main.step.dependOn(&compile_zangscript.step);
     main.setBuildMode(b.standardReleaseOptions());
     main.setOutputDir("zig-cache");
@@ -27,6 +27,16 @@ pub fn build(b: *std.build.Builder) !void {
     try addCommonRequirements(b, main);
     main.addBuildOption([]const u8, "version", version);
     main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
+    main.addPackagePath("gl", "lib/gl.zig");
+
+    const main_alt = b.addExecutable("oxid", "src/main_sdl_renderer.zig");
+    main_alt.step.dependOn(&compile_zangscript.step);
+    main_alt.setBuildMode(b.standardReleaseOptions());
+    main_alt.setOutputDir("zig-cache");
+    main_alt.linkSystemLibrary("SDL2");
+    main_alt.linkSystemLibrary("c");
+    try addCommonRequirements(b, main_alt);
+    main_alt.addBuildOption([]const u8, "version", version);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
     wasm.step.dependOn(&compile_zangscript.step);
@@ -39,12 +49,12 @@ pub fn build(b: *std.build.Builder) !void {
 
     b.step("test", "Run all tests").dependOn(&t.step);
     b.step("play", "Play the game").dependOn(&main.run().step);
+    b.step("sdl_renderer", "Build with SDL_Renderer").dependOn(&main_alt.step);
     b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
     b.default_step.dependOn(&main.step);
 }
 
 fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !void {
-    o.addPackagePath("gl", "lib/gl.zig");
     o.addPackagePath("zang", "lib/zang/src/zang.zig");
     o.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");

@@ -197,7 +197,18 @@ fn init() !void {
 
     g = hunk.low().allocator.create(Main) catch unreachable;
 
-    if (!common.init(&g.main_state, .{
+    pdraw.init(&g.draw_state, .{
+        .hunk = hunk,
+        .virtual_window_width = common.vwin_w,
+        .virtual_window_height = common.vwin_h,
+        .glsl_version = .webgl,
+    }) catch |err| {
+        plog.warn("pdraw.init failed: {}\n", .{err});
+        return error.Failed;
+    };
+    errdefer pdraw.deinit(&g.draw_state);
+
+    if (!common.init(&g.main_state, &g.draw_state, .{
         .hunk = hunk,
         .random_seed = getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
@@ -211,17 +222,6 @@ fn init() !void {
         return error.Failed;
     }
     errdefer common.deinit(&g.main_state);
-
-    pdraw.init(&g.draw_state, .{
-        .hunk = hunk,
-        .virtual_window_width = common.vwin_w,
-        .virtual_window_height = common.vwin_h,
-        .glsl_version = .webgl,
-    }) catch |err| {
-        plog.warn("pdraw.init failed: {}\n", .{err});
-        return error.Failed;
-    };
-    errdefer pdraw.deinit(&g.draw_state);
 }
 
 export fn onInit() bool {
@@ -230,8 +230,8 @@ export fn onInit() bool {
 }
 
 export fn onDestroy() void {
-    pdraw.deinit(&g.draw_state);
     common.deinit(&g.main_state);
+    pdraw.deinit(&g.draw_state);
     std.heap.page_allocator.free(main_memory);
 }
 

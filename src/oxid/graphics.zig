@@ -186,10 +186,11 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 }
 
 pub fn loadTileset(
+    ds: *pdraw.State,
     hunk_side: *HunkSide,
     out_tileset: *draw.Tileset,
     out_palette: *[48]u8,
-) pcx_helper.LoadPcxError!void {
+) !void {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -198,8 +199,10 @@ pub fn loadTileset(
         graphics_filename,
         transparent_color_index,
     );
+    const w = try std.math.cast(u31, img.width);
+    const h = try std.math.cast(u31, img.height);
 
-    out_tileset.texture = pdraw.uploadTexture(img.width, img.height, img.pixels);
+    out_tileset.texture = try pdraw.uploadTexture(ds, w, h, img.pixels);
     out_tileset.xtiles = 8;
     out_tileset.ytiles = 8;
 

@@ -26,7 +26,7 @@ pub fn drawGame(
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, &sort_buffer);
 
-        pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+        pdraw.begin(ds, static.tileset.texture, null, 1.0, false);
         drawMap(ds, static);
         drawEntities(ds, static, sorted_drawables);
         drawMapForeground(ds, static);
@@ -35,7 +35,7 @@ pub fn drawGame(
         drawBoxes(ds, gs);
         drawHud(ds, static, gs, high_score);
     } else {
-        pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+        pdraw.begin(ds, static.tileset.texture, null, 1.0, false);
         drawMap(ds, static);
         pdraw.end(ds);
 
@@ -169,20 +169,7 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
         const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
         const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
         const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
-        const w = x1 - x0;
-        const h = y1 - y0;
-        pdraw.begin(ds, ds.blank_tex.handle, event.color, 1.0, true);
-        pdraw.tile(
-            ds,
-            ds.blank_tileset,
-            .{ .tx = 0, .ty = 0 },
-            x0,
-            y0,
-            w,
-            h,
-            .identity,
-        );
-        pdraw.end(ds);
+        pdraw.fill(ds, event.color, x0, y0, x1 - x0, y1 - y0);
     }
 }
 
@@ -206,20 +193,9 @@ fn drawHud(
 
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
-    pdraw.begin(ds, ds.blank_tex.handle, black, 1.0, false);
-    pdraw.tile(
-        ds,
-        ds.blank_tileset,
-        .{ .tx = 0, .ty = 0 },
-        0,
-        0,
-        @intToFloat(f32, common.vwin_w),
-        @intToFloat(f32, common.hud_height),
-        .identity,
-    );
-    pdraw.end(ds);
+    pdraw.fill(ds, black, 0, 0, @intToFloat(f32, common.vwin_w), @intToFloat(f32, common.hud_height));
 
-    pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
+    pdraw.begin(ds, static.font.tileset.texture, white, 1.0, false);
 
     if (gc_maybe) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
@@ -245,7 +221,7 @@ fn drawHud(
                     // multiplayer game: show little colored helmets in the HUD
                     // to make it clear which player is which
                     pdraw.end(ds);
-                    pdraw.begin(ds, static.tileset.texture.handle, null, 1.0, false);
+                    pdraw.begin(ds, static.tileset.texture, null, 1.0, false);
                     pdraw.tile(
                         ds,
                         static.tileset,
@@ -257,7 +233,7 @@ fn drawHud(
                         .identity,
                     );
                     pdraw.end(ds);
-                    pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
+                    pdraw.begin(ds, static.font.tileset.texture, white, 1.0, false);
                 }
 
                 const maybe_player_creature = if (pc.player_id) |player_id|
@@ -274,7 +250,7 @@ fn drawHud(
 
                 const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
 
-                pdraw.begin(ds, static.font.tileset.texture.handle, salmon, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture, salmon, 1.0, false);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
                     fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
@@ -282,12 +258,12 @@ fn drawHud(
                 pdraw.end(ds);
 
                 if (pc.lives == 0) {
-                    pdraw.begin(ds, static.font.tileset.texture.handle, lightgray, 1.0, false);
+                    pdraw.begin(ds, static.font.tileset.texture, lightgray, 1.0, false);
                     fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
                     pdraw.end(ds);
                 }
 
-                pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture, white, 1.0, false);
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
                 fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
                 fbs.reset();
@@ -299,12 +275,12 @@ fn drawHud(
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
 
                 pdraw.end(ds);
-                pdraw.begin(ds, static.font.tileset.texture.handle, black, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture, black, 1.0, false);
 
                 fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
 
                 pdraw.end(ds);
-                pdraw.begin(ds, static.font.tileset.texture.handle, white, 1.0, false);
+                pdraw.begin(ds, static.font.tileset.texture, white, 1.0, false);
 
                 fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
