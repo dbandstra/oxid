@@ -220,10 +220,6 @@ pub fn flush(ds: *State) void {
             .a = ds.alpha,
         },
         .mvp = &ds.projection,
-        .vertex_buffer = null,
-        .texcoord_buffer = null,
-    });
-    ds.shader_textured.update(.{
         .vertex_buffer = ds.dyn_vertex_buffer,
         .vertex2f = &ds.draw_buffer.vertex2f,
         .texcoord_buffer = ds.dyn_texcoord_buffer,
@@ -366,8 +362,10 @@ const TexturedShader = struct {
         mvp: []f32,
         tex: GLint,
         color: struct { r: f32, g: f32, b: f32, a: f32 },
-        vertex_buffer: ?GLuint,
-        texcoord_buffer: ?GLuint,
+        vertex_buffer: GLuint,
+        texcoord_buffer: GLuint,
+        vertex2f: []f32,
+        texcoord2f: []f32,
     }) void {
         glUseProgram(self.program.program_id);
 
@@ -383,33 +381,15 @@ const TexturedShader = struct {
         }
 
         if (self.attrib_position != -1) {
+            updateVBO(params.vertex_buffer, params.vertex2f);
             glEnableVertexAttribArray(@intCast(GLuint, self.attrib_position));
-            if (params.vertex_buffer) |vertex_buffer| {
-                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-                glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
-            }
-        }
-        if (self.attrib_texcoord != -1) {
-            glEnableVertexAttribArray(@intCast(GLuint, self.attrib_texcoord));
-            if (params.texcoord_buffer) |texcoord_buffer| {
-                glBindBuffer(GL_ARRAY_BUFFER, texcoord_buffer);
-                glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
-            }
-        }
-    }
-
-    fn update(self: TexturedShader, params: struct {
-        vertex_buffer: GLuint,
-        texcoord_buffer: GLuint,
-        vertex2f: []f32,
-        texcoord2f: []f32,
-    }) void {
-        updateVBO(params.vertex_buffer, params.vertex2f);
-        if (self.attrib_position != -1) {
+            glBindBuffer(GL_ARRAY_BUFFER, params.vertex_buffer);
             glVertexAttribPointer(@intCast(GLuint, self.attrib_position), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
-        updateVBO(params.texcoord_buffer, params.texcoord2f);
         if (self.attrib_texcoord != -1) {
+            updateVBO(params.texcoord_buffer, params.texcoord2f);
+            glEnableVertexAttribArray(@intCast(GLuint, self.attrib_texcoord));
+            glBindBuffer(GL_ARRAY_BUFFER, params.texcoord_buffer);
             glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
     }
