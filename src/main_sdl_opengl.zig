@@ -19,7 +19,6 @@ const common = @import("oxid_common.zig");
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
 pub const pdraw = @import("platform/draw_opengl.zig");
-pub const pdraw_framebuffer = @import("platform/draw_framebuffer_opengl.zig");
 pub const plog = @import("platform/log_native.zig");
 pub const pstorage_dirname = "Oxid";
 pub const pstorage = @import("platform/storage_native.zig");
@@ -55,7 +54,7 @@ fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
     };
 }
 
-fn getBlitRect(screen_w: u31, screen_h: u31) pdraw_framebuffer.BlitRect {
+fn getBlitRect(screen_w: u31, screen_h: u31) pdraw.Framebuffer.BlitRect {
     // scale the game view up as far as possible, maintaining the aspect ratio
     const scaled_w = screen_h * common.vwin_w / common.vwin_h;
     const scaled_h = screen_w * common.vwin_h / common.vwin_w;
@@ -105,11 +104,11 @@ const SavedWindowPos = struct {
 const Main = struct {
     main_state: common.MainState,
     draw_state: pdraw.State,
-    framebuffer_state: pdraw_framebuffer.FramebufferState,
+    framebuffer: pdraw.Framebuffer,
     window: *SDL_Window,
     display_index: c_int, // used to detect when the window has been moved to another display
     glcontext: SDL_GLContext,
-    blit_rect: pdraw_framebuffer.BlitRect,
+    blit_rect: pdraw.Framebuffer.BlitRect,
     audio_sample_rate: usize,
     audio_device: SDL_AudioDeviceID,
     quit: bool,
@@ -431,13 +430,13 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.window = window;
     self.requested_vsync = options.vsync;
     self.requested_framerate_scheme = options.framerate_scheme;
-    updateFramerateScheme(self); // sets self.framerate_scheme.
+    updateFramerateScheme(self); // sets self.framerate_scheme
 
-    if (!pdraw_framebuffer.init(&self.framebuffer_state, common.vwin_w, common.vwin_h)) {
-        std.debug.warn("pdraw_framebuffer.init failed\n", .{});
+    self.framebuffer = pdraw.Framebuffer.init(common.vwin_w, common.vwin_h) catch |err| {
+        std.debug.warn("pdraw.Framebuffer.init failed: {}\n", .{err});
         return error.Failed;
-    }
-    errdefer pdraw_framebuffer.deinit(&self.framebuffer_state);
+    };
+    errdefer pdraw.Framebuffer.deinit(&self.framebuffer);
 
     {
         const num_joysticks = SDL_NumJoysticks();
@@ -478,7 +477,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     // already set:
     // main_state, window, requested_vsync, requested_framerate_scheme,
-    // framerate_scheme, framebuffer_state
+    // framerate_scheme, framebuffer
     self.display_index = 0;
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
@@ -513,7 +512,7 @@ fn deinit(self: *Main) void {
     SDL_PauseAudioDevice(self.audio_device, 1);
     common.deinit(&self.main_state);
     pdraw.deinit(&self.draw_state);
-    pdraw_framebuffer.deinit(&self.framebuffer_state);
+    pdraw.Framebuffer.deinit(&self.framebuffer);
     SDL_GL_DeleteContext(self.glcontext);
     SDL_CloseAudioDevice(self.audio_device);
     SDL_DestroyWindow(self.window);
@@ -793,14 +792,14 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
 fn drawMain(self: *Main, blit_alpha: f32) void {
     perf.begin(.whole_draw);
 
-    pdraw_framebuffer.preDraw(&self.framebuffer_state);
+    pdraw.Framebuffer.preDraw(&self.framebuffer);
 
     perf.begin(.draw);
     common.drawMain(&self.main_state, &self.draw_state);
     perf.end(.draw);
 
-    pdraw_framebuffer.postDraw(
-        &self.framebuffer_state,
+    pdraw.Framebuffer.postDraw(
+        &self.framebuffer,
         &self.draw_state,
         self.blit_rect,
         blit_alpha,

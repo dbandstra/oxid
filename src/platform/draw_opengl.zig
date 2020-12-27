@@ -114,8 +114,7 @@ pub fn uploadTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     return Texture{ .handle = texid };
 }
 
-// this is only `pub` so `draw_framebuffer_opengl.zig` can access it
-pub fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
+fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     return .{
         2.0 / (right - left), 0.0,                  0.0,  -(right + left) / (right - left),
         0.0,                  2.0 / (top - bottom), 0.0,  -(top + bottom) / (top - bottom),
@@ -470,7 +469,7 @@ const SolidShader = struct {
     }
 };
 
-pub const TexturedShader = struct {
+const TexturedShader = struct {
     program: ShaderProgram,
     attrib_texcoord: GLint,
     attrib_position: GLint,
@@ -524,8 +523,7 @@ pub const TexturedShader = struct {
         };
     }
 
-    // `pub` so it can be used by draw_framebuffer_opengl.zig
-    pub fn bind(self: TexturedShader, params: struct {
+    fn bind(self: TexturedShader, params: struct {
         mvp: []f32,
         tex: GLint,
         color: Color,
@@ -559,5 +557,88 @@ pub const TexturedShader = struct {
             glBindBuffer(GL_ARRAY_BUFFER, params.texcoord_buffer);
             glVertexAttribPointer(@intCast(GLuint, self.attrib_texcoord), 2, GL_FLOAT, GL_FALSE, 0, null);
         }
+    }
+};
+
+// following is an optional feature that allows you to draw to an off-screen
+// framebuffer, then scale it up to fit the window for a pixellated look. note:
+// web builds do not need this because they can just scale up the DOM canvas.
+// requires either OpenGL 3+ or GL_ARB_framebuffer_object.
+
+pub const Framebuffer = struct {
+    framebuffer: GLuint,
+    render_texture: GLuint,
+
+    pub const BlitRect = struct {
+        x: i32,
+        y: i32,
+        w: u31,
+        h: u31,
+    };
+
+    pub fn init(w: u31, h: u31) !Framebuffer {
+        var fb: GLuint = undefined;
+        glGenFramebuffers(1, &fb);
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+
+        var rt: GLuint = undefined;
+        glGenTextures(1, &rt);
+        glBindTexture(GL_TEXTURE_2D, rt);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt, 0);
+
+        glDrawBuffers(1, &[1]GLenum{GL_COLOR_ATTACHMENT0});
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            glDeleteTextures(1, &rt);
+            glDeleteFramebuffers(1, &fb);
+            return error.FramebufferInitFailed;
+        }
+
+        return Framebuffer{
+            .framebuffer = fb,
+            .render_texture = rt,
+        };
+    }
+
+    pub fn deinit(fbs: *Framebuffer) void {
+        glDeleteTextures(1, &fbs.render_texture);
+        glDeleteFramebuffers(1, &fbs.framebuffer);
+    }
+
+    pub fn preDraw(fbs: *Framebuffer) void {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbs.framebuffer);
+    }
+
+    pub fn postDraw(fbs: *Framebuffer, ds: *State, blit_rect: BlitRect, alpha: f32) void {
+        flush(ds);
+
+        // blit renderbuffer to screen
+        ds.projection = ortho(0, 1, 1, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
+
+        ds.draw_buffer.vertex2f[0..12].* = .{ 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+        ds.draw_buffer.texcoord2f[0..12].* = .{ 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1 };
+
+        ds.shader_textured.bind(.{
+            .tex = 0,
+            .color = .{ .r = 1, .g = 1, .b = 1, .a = alpha },
+            .mvp = &ds.projection,
+            .vertex_buffer = ds.dyn_vertex_buffer,
+            .vertex2f = &ds.draw_buffer.vertex2f,
+            .texcoord_buffer = ds.dyn_texcoord_buffer,
+            .texcoord2f = &ds.draw_buffer.texcoord2f,
+        });
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, fbs.render_texture);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 };
