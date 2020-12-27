@@ -164,7 +164,7 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
         const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
         const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
         pdraw.setColor(ds, event.color, 1.0);
-        pdraw.fill(ds, x0, y0, x1 - x0, y1 - y0);
+        pdraw.rect(ds, x0, y0, x1 - x0, y1 - y0);
     }
     pdraw.setColor(ds, draw.pure_white, 1.0);
 }

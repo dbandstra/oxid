@@ -27,6 +27,7 @@ pub const Texture = struct {
 
 const DrawBuffer = struct {
     tex_handle: GLuint,
+    outline: bool,
     vertex2f: [2 * buffer_vertices]GLfloat,
     texcoord2f: [2 * buffer_vertices]GLfloat,
     num_vertices: usize,
@@ -41,9 +42,9 @@ pub const State = struct {
     dyn_texcoord_buffer: GLuint,
     color: draw.Color,
     alpha: f32,
-    outline: bool,
     draw_buffer: DrawBuffer,
     projection: [16]f32,
+    blank_tex: Texture,
     blank_tileset: draw.Tileset,
 };
 
@@ -78,11 +79,11 @@ pub fn init(ds: *State, params: struct {
     ds.virtual_window_height = params.virtual_window_height;
     ds.color = draw.pure_white;
     ds.alpha = 1.0;
-    ds.outline = false;
     ds.draw_buffer.num_vertices = 0;
 
+    ds.blank_tex = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 });
     ds.blank_tileset = .{
-        .texture = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 }),
+        .texture = ds.blank_tex,
         .xtiles = 1,
         .ytiles = 1,
     };
@@ -141,14 +142,7 @@ pub fn setColor(ds: *State, color: draw.Color, alpha: f32) void {
     ds.alpha = alpha;
 }
 
-pub fn setOutline(ds: *State, outline: bool) void {
-    if (outline == ds.outline)
-        return;
-    flush(ds);
-    ds.outline = outline;
-}
-
-pub fn tile(
+fn tile_(
     ds: *State,
     tileset: draw.Tileset,
     dtile: draw.Tile,
@@ -157,6 +151,7 @@ pub fn tile(
     w: i32,
     h: i32,
     transform: draw.Transform,
+    outline: bool,
 ) void {
     if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
         return;
@@ -175,6 +170,7 @@ pub fn tile(
 
     if (ds.draw_buffer.num_vertices > 0) {
         if (ds.draw_buffer.tex_handle != tileset.texture.handle or
+            ds.draw_buffer.outline != outline or
             ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
             flush(ds);
     }
@@ -195,11 +191,20 @@ pub fn tile(
     };
 
     ds.draw_buffer.tex_handle = tileset.texture.handle;
+    ds.draw_buffer.outline = outline;
     ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
+pub fn tile(ds: *State, tileset: draw.Tileset, dtile: draw.Tile, x: i32, y: i32, w: i32, h: i32, transform: draw.Transform) void {
+    tile_(ds, tileset, dtile, x, y, w, h, transform, false);
+}
+
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
-    tile(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity);
+    tile_(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity, false);
+}
+
+pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+    tile_(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity, true);
 }
 
 pub fn flush(ds: *State) void {
@@ -228,9 +233,9 @@ pub fn flush(ds: *State) void {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ds.draw_buffer.tex_handle);
 
-    if (ds.outline) {
+    if (ds.draw_buffer.outline) {
         if (builtin.arch == .wasm32) {
-            // webgl does not support glPolygonMode
+            // not implemented - webgl does not support glPolygonMode
         } else {
             glPolygonMode(GL_FRONT, GL_LINE);
             glDrawArrays(GL_TRIANGLES, 0, @intCast(GLsizei, ds.draw_buffer.num_vertices));

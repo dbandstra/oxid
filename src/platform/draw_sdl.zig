@@ -44,10 +44,6 @@ pub fn setColor(ds: *State, color: draw.Color, alpha: f32) void {
     _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, 0xff);
 }
 
-pub fn setOutline(ds: *State, outline: bool) void {
-    // not implemented
-}
-
 pub fn tile(
     ds: *State,
     tileset: draw.Tileset,
@@ -84,6 +80,10 @@ pub fn tile(
 
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
     _ = SDL_RenderFillRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
+}
+
+pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+    _ = SDL_RenderDrawRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
 }
 
 pub fn flush(ds: *State) void {}
