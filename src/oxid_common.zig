@@ -458,4 +458,5 @@ pub fn drawMain(self: *MainState, draw_state: *pdraw.State) void {
         .static = &self.static,
         .menu_context = makeMenuContext(self),
     });
+    pdraw.flush(draw_state);
 }

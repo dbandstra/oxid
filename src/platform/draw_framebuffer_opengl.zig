@@ -65,7 +65,13 @@ pub fn postDraw(fbs: *FramebufferState, ds: *pdraw.State, blit_rect: BlitRect, b
     ds.projection = pdraw.ortho(0, 1, 1, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-    pdraw.begin(ds, .{ .handle = fbs.render_texture }, draw.pure_white, blit_alpha, false);
-    pdraw.tile(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, 0, 0, 1, 1, .flip_vert);
-    pdraw.end(ds);
+    const tileset: draw.Tileset = .{
+        .texture = .{ .handle = fbs.render_texture },
+        .xtiles = 1,
+        .ytiles = 1,
+    };
+    pdraw.setColor(ds, draw.pure_white, blit_alpha);
+    pdraw.tile(ds, tileset, .{ .tx = 0, .ty = 0 }, 0, 0, 1, 1, .flip_vert);
+    pdraw.setColor(ds, draw.pure_white, 1.0);
+    pdraw.flush(ds);
 }

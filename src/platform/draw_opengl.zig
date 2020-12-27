@@ -26,8 +26,7 @@ pub const Texture = struct {
 };
 
 const DrawBuffer = struct {
-    active: bool,
-    outline: bool,
+    tex_handle: GLuint,
     vertex2f: [2 * buffer_vertices]GLfloat,
     texcoord2f: [2 * buffer_vertices]GLfloat,
     num_vertices: usize,
@@ -40,9 +39,11 @@ pub const State = struct {
     shader_textured: TexturedShader,
     dyn_vertex_buffer: GLuint,
     dyn_texcoord_buffer: GLuint,
+    color: draw.Color,
+    alpha: f32,
+    outline: bool,
     draw_buffer: DrawBuffer,
     projection: [16]f32,
-    blank_tex: Texture,
     blank_tileset: draw.Tileset,
 };
 
@@ -73,29 +74,29 @@ pub fn init(ds: *State, params: struct {
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     updateVBO(ds.dyn_texcoord_buffer, null);
 
+    ds.virtual_window_width = params.virtual_window_width;
+    ds.virtual_window_height = params.virtual_window_height;
+    ds.color = draw.pure_white;
+    ds.alpha = 1.0;
+    ds.outline = false;
+    ds.draw_buffer.num_vertices = 0;
+
+    ds.blank_tileset = .{
+        .texture = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 }),
+        .xtiles = 1,
+        .ytiles = 1,
+    };
+
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
-
-    ds.virtual_window_width = params.virtual_window_width;
-    ds.virtual_window_height = params.virtual_window_height;
-    ds.draw_buffer.active = false;
-    ds.draw_buffer.num_vertices = 0;
-
-    const blank_tex_pixels = &[_]u8{ 255, 255, 255, 255 };
-    ds.blank_tex = uploadTexture(ds, 1, 1, blank_tex_pixels) catch Texture{ .handle = 0 };
-    ds.blank_tileset = .{
-        .texture = ds.blank_tex,
-        .xtiles = 1,
-        .ytiles = 1,
-    };
 }
 
 pub fn deinit(ds: *State) void {
-    glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
+    glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     destroyShaderProgram(ds.shader_textured.program);
 }
 
@@ -131,44 +132,20 @@ pub fn prepare(ds: *State) void {
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
 }
 
-pub fn begin(ds: *State, texture: Texture, maybe_color: ?draw.Color, alpha: f32, outline: bool) void {
-    std.debug.assert(!ds.draw_buffer.active);
-    std.debug.assert(ds.draw_buffer.num_vertices == 0);
-
-    ds.shader_textured.bind(.{
-        .tex = 0,
-        .color = if (maybe_color) |color|
-            .{
-                .r = @intToFloat(f32, color.r) / 255.0,
-                .g = @intToFloat(f32, color.g) / 255.0,
-                .b = @intToFloat(f32, color.b) / 255.0,
-                .a = alpha,
-            }
-        else
-            .{
-                .r = 1.0,
-                .g = 1.0,
-                .b = 1.0,
-                .a = alpha,
-            },
-        .mvp = &ds.projection,
-        .vertex_buffer = null,
-        .texcoord_buffer = null,
-    });
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
-
-    ds.draw_buffer.active = true;
-    ds.draw_buffer.outline = outline;
+pub fn setColor(ds: *State, color: draw.Color, alpha: f32) void {
+    if (color.r == ds.color.r and color.g == ds.color.g and
+        color.b == ds.color.b and alpha == ds.alpha)
+        return;
+    flush(ds);
+    ds.color = color;
+    ds.alpha = alpha;
 }
 
-pub fn end(ds: *State) void {
-    std.debug.assert(ds.draw_buffer.active);
-
+pub fn setOutline(ds: *State, outline: bool) void {
+    if (outline == ds.outline)
+        return;
     flush(ds);
-
-    ds.draw_buffer.active = false;
+    ds.outline = outline;
 }
 
 pub fn tile(
@@ -181,10 +158,9 @@ pub fn tile(
     h: i32,
     transform: draw.Transform,
 ) void {
-    std.debug.assert(ds.draw_buffer.active);
-    if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles) {
+    if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
         return;
-    }
+
     const fx0 = @intToFloat(f32, x);
     const fy0 = @intToFloat(f32, y);
     const fx1 = fx0 + @intToFloat(f32, w);
@@ -195,50 +171,53 @@ pub fn tile(
     const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
     const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
 
-    const verts_per_tile: usize = 6; // two triangles
+    const verts_per_tile = 6; // two triangles
 
-    if (ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices) {
-        flush(ds);
+    if (ds.draw_buffer.num_vertices > 0) {
+        if (ds.draw_buffer.tex_handle != tileset.texture.handle or
+            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
+            flush(ds);
     }
-    const num_vertices = ds.draw_buffer.num_vertices;
-    std.debug.assert(num_vertices + verts_per_tile <= buffer_vertices);
 
-    const vertex2f = ds.draw_buffer.vertex2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
-    const texcoord2f = ds.draw_buffer.texcoord2f[num_vertices * 2 .. (num_vertices + verts_per_tile) * 2];
+    const num_verts = ds.draw_buffer.num_vertices;
+    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
 
-    // top left, bottom left, bottom right
-    // bottom right, top right, top left
-    std.mem.copy(
-        GLfloat,
-        vertex2f,
-        &[12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 },
-    );
-    std.mem.copy(
-        GLfloat,
-        texcoord2f,
+    // top left, bottom left, bottom right - bottom right, top right, top left
+    ds.draw_buffer.vertex2f[num_verts * 2 ..][0 .. verts_per_tile * 2].* =
+        [12]GLfloat{ fx0, fy0, fx0, fy1, fx1, fy1, fx1, fy1, fx1, fy0, fx0, fy0 };
+    ds.draw_buffer.texcoord2f[num_verts * 2 ..][0 .. verts_per_tile * 2].* =
         switch (transform) {
-            .identity => &[12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
-            .flip_vert => &[12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
-            .flip_horz => &[12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
-            .rotate_cw => &[12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
-            .rotate_ccw => &[12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
-        },
-    );
+        .identity => [12]f32{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
+        .flip_vert => [12]f32{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
+        .flip_horz => [12]f32{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
+        .rotate_cw => [12]f32{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
+        .rotate_ccw => [12]f32{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
+    };
 
-    ds.draw_buffer.num_vertices = num_vertices + verts_per_tile;
+    ds.draw_buffer.tex_handle = tileset.texture.handle;
+    ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
-pub fn fill(ds: *State, color: draw.Color, x: i32, y: i32, w: i32, h: i32) void {
-    begin(ds, ds.blank_tex, color, 1.0, false);
+pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
     tile(ds, ds.blank_tileset, .{ .tx = 0, .ty = 0 }, x, y, w, h, .identity);
-    end(ds);
 }
 
-fn flush(ds: *State) void {
-    if (ds.draw_buffer.num_vertices == 0) {
+pub fn flush(ds: *State) void {
+    if (ds.draw_buffer.num_vertices == 0)
         return;
-    }
 
+    ds.shader_textured.bind(.{
+        .tex = 0,
+        .color = .{
+            .r = @intToFloat(f32, ds.color.r) / 255.0,
+            .g = @intToFloat(f32, ds.color.g) / 255.0,
+            .b = @intToFloat(f32, ds.color.b) / 255.0,
+            .a = ds.alpha,
+        },
+        .mvp = &ds.projection,
+        .vertex_buffer = null,
+        .texcoord_buffer = null,
+    });
     ds.shader_textured.update(.{
         .vertex_buffer = ds.dyn_vertex_buffer,
         .vertex2f = &ds.draw_buffer.vertex2f,
@@ -246,7 +225,10 @@ fn flush(ds: *State) void {
         .texcoord2f = &ds.draw_buffer.texcoord2f,
     });
 
-    if (ds.draw_buffer.outline) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ds.draw_buffer.tex_handle);
+
+    if (ds.outline) {
         if (builtin.arch == .wasm32) {
             // webgl does not support glPolygonMode
         } else {

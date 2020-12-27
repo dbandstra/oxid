@@ -113,16 +113,7 @@ fn init(hunk: *Hunk) !*Main {
     }
     errdefer SDL_CloseAudioDevice(device);
 
-    pdraw.init(&self.draw_state, .{
-        .hunk = hunk,
-        .virtual_window_width = common.vwin_w,
-        .virtual_window_height = common.vwin_h,
-        .renderer = renderer,
-    }) catch |err| {
-        plog.warn("pdraw.init failed: {}\n", .{err});
-        return error.Failed;
-    };
-    errdefer pdraw.deinit(&self.draw_state);
+    pdraw.init(&self.draw_state, renderer);
 
     if (!common.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
@@ -161,7 +152,6 @@ fn deinit(self: *Main) void {
 
     SDL_PauseAudioDevice(self.audio_device, 1);
     common.deinit(&self.main_state);
-    pdraw.deinit(&self.draw_state);
     SDL_CloseAudioDevice(self.audio_device);
     SDL_DestroyRenderer(self.renderer);
     SDL_DestroyWindow(self.window);

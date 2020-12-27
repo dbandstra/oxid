@@ -49,9 +49,9 @@ pub const DrawMenuContext = struct {
                 .center => self.box_x + @as(i32, self.box_w / 2) - @as(i32, w / 2),
             };
             const font_color = graphics.getColor(self.static.palette, .white);
-            pdraw.begin(self.ds, self.static.font.tileset.texture, font_color, 1.0, false);
+            pdraw.setColor(self.ds, font_color, 1.0);
             fonts.drawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
-            pdraw.end(self.ds);
+            pdraw.setColor(self.ds, draw.pure_white, 1.0);
         }
         self.w = std.math.max(self.w, w);
         self.h += self.static.font.char_height;
@@ -85,12 +85,12 @@ pub const DrawMenuContext = struct {
         self.h += self.bottom_margin;
         if (self.draw) {
             const font_color = graphics.getColor(self.static.palette, .white);
-            pdraw.begin(self.ds, self.static.font.tileset.texture, font_color, 1.0, false);
+            pdraw.setColor(self.ds, font_color, 1.0);
             if (self.cursor_pos == self.option_index) {
                 fonts.drawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
             }
             fonts.drawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + @as(i32, self.h), s);
-            pdraw.end(self.ds);
+            pdraw.setColor(self.ds, draw.pure_white, 1.0);
         }
         self.option_index += 1;
         self.w = std.math.max(self.w, fonts.stringWidth(&self.static.font, s) + 32); // pad both sides
@@ -161,7 +161,9 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
         32;
 
     const black = graphics.getColor(params.static.palette, .black);
-    pdraw.fill(params.ds, black, box_x, box_y, box_w, box_h);
+    pdraw.setColor(params.ds, black, 1.0);
+    pdraw.fill(params.ds, box_x, box_y, box_w, box_h);
+    pdraw.setColor(params.ds, draw.pure_white, 1.0);
 
     // draw menu content
     ctx = .{
