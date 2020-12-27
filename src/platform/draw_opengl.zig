@@ -44,7 +44,6 @@ pub const State = struct {
     alpha: f32,
     draw_buffer: DrawBuffer,
     projection: [16]f32,
-    blank_tex: Texture,
     blank_tileset: draw.Tileset,
 };
 
@@ -58,13 +57,12 @@ fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
     }
 }
 
-pub fn init(ds: *State, params: struct {
+pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     hunk: *Hunk,
     virtual_window_width: u32,
     virtual_window_height: u32,
-    glsl_version: GLSLVersion,
 }) !void {
-    ds.shader_textured = try createTexturedShader(&params.hunk.low(), params.glsl_version);
+    ds.shader_textured = try createTexturedShader(&params.hunk.low(), glsl_version);
     errdefer destroyShaderProgram(ds.shader_textured.program);
 
     glGenBuffers(1, &ds.dyn_vertex_buffer);
@@ -81,9 +79,8 @@ pub fn init(ds: *State, params: struct {
     ds.alpha = 1.0;
     ds.draw_buffer.num_vertices = 0;
 
-    ds.blank_tex = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 });
     ds.blank_tileset = .{
-        .texture = ds.blank_tex,
+        .texture = try uploadTexture(ds, 1, 1, &[_]u8{ 255, 255, 255, 255 }),
         .xtiles = 1,
         .ytiles = 1,
     };
@@ -430,17 +427,13 @@ fn getTexturedShaderSource(comptime version: GLSLVersion) ShaderSource {
     };
 }
 
-fn createTexturedShader(hunk_side: *HunkSide, glsl_version: GLSLVersion) !TexturedShader {
+fn createTexturedShader(hunk_side: *HunkSide, comptime glsl_version: GLSLVersion) !TexturedShader {
     errdefer plog.warn("Failed to create textured shader program.\n", .{});
 
     const program = try compileAndLinkShaderProgram(
         hunk_side,
         "textured",
-        switch (glsl_version) {
-            .v120 => getTexturedShaderSource(.v120),
-            .v130 => getTexturedShaderSource(.v130),
-            .webgl => getTexturedShaderSource(.webgl),
-        },
+        getTexturedShaderSource(glsl_version),
     );
 
     return TexturedShader{

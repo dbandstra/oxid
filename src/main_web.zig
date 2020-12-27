@@ -197,11 +197,10 @@ fn init() !void {
 
     g = hunk.low().allocator.create(Main) catch unreachable;
 
-    pdraw.init(&g.draw_state, .{
+    pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
         .virtual_window_width = common.vwin_w,
         .virtual_window_height = common.vwin_h,
-        .glsl_version = .webgl,
     }) catch |err| {
         plog.warn("pdraw.init failed: {}\n", .{err});
         return error.Failed;

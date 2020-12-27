@@ -451,11 +451,10 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         }
     }
 
-    pdraw.init(&self.draw_state, .{
+    pdraw.init(&self.draw_state, glsl_version, .{
         .hunk = hunk,
         .virtual_window_width = common.vwin_w,
         .virtual_window_height = common.vwin_h,
-        .glsl_version = glsl_version,
     }) catch |err| {
         plog.warn("pdraw.init failed: {}\n", .{err});
         return error.Failed;
