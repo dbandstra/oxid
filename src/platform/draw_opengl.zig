@@ -62,7 +62,7 @@ pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     virtual_window_width: u32,
     virtual_window_height: u32,
 }) !void {
-    ds.shader_textured = try createTexturedShader(&params.hunk.low(), glsl_version);
+    ds.shader_textured = try TexturedShader.create(&params.hunk.low(), glsl_version);
     errdefer destroyShaderProgram(ds.shader_textured.program);
 
     glGenBuffers(1, &ds.dyn_vertex_buffer);
@@ -355,6 +355,54 @@ const TexturedShader = struct {
     uniform_tex: GLint,
     uniform_color: GLint,
 
+    fn create(hunk_side: *HunkSide, comptime glsl_version: GLSLVersion) !TexturedShader {
+        errdefer plog.warn("Failed to create textured shader program.\n", .{});
+
+        const first_line = switch (glsl_version) {
+            .v120 => "#version 120\n",
+            .v130 => "#version 130\n",
+            .webgl => "precision mediump float;\n",
+        };
+
+        const old = glsl_version == .v120 or glsl_version == .webgl;
+
+        const source: ShaderSource = .{
+            .vertex = first_line ++
+                (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
+                (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
+                (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
+                \\uniform mat4 MVP;
+                \\
+                \\void main(void) {
+                \\    FragTexCoord = TexCoord;
+                \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+                \\}
+            ,
+            .fragment = first_line ++
+                (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
+                (if (old) "" else "out vec4 FragColor;\n") ++
+                \\uniform sampler2D Tex;
+                \\uniform vec4 Color;
+                \\
+                \\void main(void) {
+                \\
+                ++
+                "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
+                \\}
+        };
+
+        const program = try compileAndLinkShaderProgram(hunk_side, "textured", source);
+
+        return TexturedShader{
+            .program = program,
+            .attrib_position = getAttribLocation(program, "VertexPosition"),
+            .attrib_texcoord = getAttribLocation(program, "TexCoord"),
+            .uniform_mvp = getUniformLocation(program, "MVP"),
+            .uniform_tex = getUniformLocation(program, "Tex"),
+            .uniform_color = getUniformLocation(program, "Color"),
+        };
+    }
+
     fn bind(self: TexturedShader, params: struct {
         mvp: []f32,
         tex: GLint,
@@ -391,57 +439,3 @@ const TexturedShader = struct {
         }
     }
 };
-
-fn getTexturedShaderSource(comptime version: GLSLVersion) ShaderSource {
-    const first_line = switch (version) {
-        .v120 => "#version 120\n",
-        .v130 => "#version 130\n",
-        .webgl => "precision mediump float;\n",
-    };
-
-    const old = version == .v120 or version == .webgl;
-
-    return .{
-        .vertex = first_line ++
-            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
-            (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
-            (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
-            \\uniform mat4 MVP;
-            \\
-            \\void main(void) {
-            \\    FragTexCoord = TexCoord;
-            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
-            \\}
-        ,
-        .fragment = first_line ++
-            (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
-            (if (old) "" else "out vec4 FragColor;\n") ++
-            \\uniform sampler2D Tex;
-            \\uniform vec4 Color;
-            \\
-            \\void main(void) {
-            \\
-            ++
-            "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
-            \\}
-    };
-}
-
-fn createTexturedShader(hunk_side: *HunkSide, comptime glsl_version: GLSLVersion) !TexturedShader {
-    errdefer plog.warn("Failed to create textured shader program.\n", .{});
-
-    const program = try compileAndLinkShaderProgram(
-        hunk_side,
-        "textured",
-        getTexturedShaderSource(glsl_version),
-    );
-
-    return TexturedShader{
-        .program = program,
-        .attrib_position = getAttribLocation(program, "VertexPosition"),
-        .attrib_texcoord = getAttribLocation(program, "TexCoord"),
-        .uniform_mvp = getUniformLocation(program, "MVP"),
-        .uniform_tex = getUniformLocation(program, "Tex"),
-        .uniform_color = getUniformLocation(program, "Color"),
-    };
-}
