@@ -25,7 +25,7 @@ const Main = struct {
     draw_state: pdraw.State,
     window: *SDL_Window,
     renderer: *SDL_Renderer,
-    audio_sample_rate: usize,
+    audio_sample_rate: u31,
     audio_device: SDL_AudioDeviceID,
     quit: bool,
 };
@@ -126,24 +126,31 @@ fn init(hunk: *Hunk) !*Main {
     self.window = window;
     self.renderer = renderer;
 
-    const audio_sample_rate = 44100;
-    const audio_buffer_size = 1024;
+    if (SDL_GetCurrentAudioDriver()) |name| {
+        std.debug.warn("Audio driver: {}\n", .{std.mem.spanZ(name)});
+    } else {
+        std.debug.warn("Failed to get audio driver name.\n", .{});
+    }
 
-    var want: SDL_AudioSpec = undefined;
-    want.freq = audio_sample_rate;
+    var want = std.mem.zeroes(SDL_AudioSpec);
+    want.freq = 44100;
     want.format = AUDIO_S16LSB;
     want.channels = 1;
-    want.samples = audio_buffer_size;
+    want.samples = 1024;
     want.callback = audioCallback;
     want.userdata = &self.main_state.audio_module;
 
-    // TODO - allow SDL to pick something different?
+    var have: SDL_AudioSpec = undefined;
+
     const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
-        0, // device name (NULL)
+        0, // device name (NULL to let SDL choose)
         0, // non-zero to open for recording instead of playback
-        &want, // desired output format
-        0, // obtained output format (NULL)
-        0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
+        &want,
+        &have,
+        // tell SDL that we can handle any frequency. however for other
+        // properties, like format, we will let SDL do the resampling if the
+        // system doesn't support it
+        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
     );
     if (device == 0) {
         std.debug.warn("Failed to open audio: {s}\n", .{SDL_GetError()});
@@ -151,14 +158,16 @@ fn init(hunk: *Hunk) !*Main {
     }
     errdefer SDL_CloseAudioDevice(device);
 
+    std.debug.warn("Audio sample rate: {}hz\n", .{have.freq});
+
     pdraw.init(&self.draw_state, renderer);
     // note: platform/draw_sdl has no deinit function
 
     try common.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
-        .audio_buffer_size = audio_buffer_size,
-        .audio_sample_rate = audio_sample_rate,
+        .audio_buffer_size = have.samples,
+        .audio_sample_rate = @intToFloat(f32, have.freq),
         .fullscreen = false,
         .canvas_scale = 1,
         .max_canvas_scale = 1,
@@ -166,7 +175,7 @@ fn init(hunk: *Hunk) !*Main {
     }); // common.init prints its own error and returns error.Failed
     errdefer common.deinit(&self.main_state);
 
-    self.audio_sample_rate = audio_sample_rate;
+    self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
     self.quit = false;
 

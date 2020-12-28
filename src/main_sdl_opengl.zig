@@ -109,7 +109,7 @@ const Main = struct {
     display_index: c_int, // used to detect when the window has been moved to another display
     glcontext: SDL_GLContext,
     blit_rect: pdraw.Framebuffer.BlitRect,
-    audio_sample_rate: usize,
+    audio_sample_rate: u31,
     audio_device: SDL_AudioDeviceID,
     quit: bool,
     toggle_fullscreen: bool,
@@ -123,8 +123,8 @@ const Main = struct {
 };
 
 const Options = struct {
-    audio_sample_rate: usize,
-    audio_buffer_size: usize,
+    audio_sample_rate: u31,
+    audio_buffer_size: u16,
     framerate_scheme: ?FramerateScheme,
     vsync: bool, // if disabled, framerate scheme will be ignored
 };
@@ -239,10 +239,12 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     };
 
     if (args.option("--rate")) |value| {
-        options.audio_sample_rate = try std.fmt.parseInt(usize, value, 10);
+        options.audio_sample_rate = try std.fmt.parseInt(u31, value, 10);
     }
     if (args.option("--bufsize")) |value| {
-        options.audio_buffer_size = try std.fmt.parseInt(usize, value, 10);
+        // note: SDL docs say this value must be a power of two, but it still
+        // seems to run if you give an arbitrary value
+        options.audio_buffer_size = try std.fmt.parseInt(u16, value, 10);
     }
     if (args.option("--refreshrate")) |value| {
         if (std.mem.eql(u8, value, "free")) {
@@ -384,27 +386,39 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         return error.Failed;
     }
 
-    var want: SDL_AudioSpec = undefined;
-    want.freq = @intCast(c_int, options.audio_sample_rate);
+    if (SDL_GetCurrentAudioDriver()) |name| {
+        std.debug.warn("Audio driver: {}\n", .{std.mem.spanZ(name)});
+    } else {
+        std.debug.warn("Failed to get audio driver name.\n", .{});
+    }
+
+    var want = std.mem.zeroes(SDL_AudioSpec);
+    want.freq = options.audio_sample_rate;
     want.format = AUDIO_S16LSB;
     want.channels = 1;
-    want.samples = @intCast(u16, options.audio_buffer_size);
+    want.samples = options.audio_buffer_size;
     want.callback = audioCallback;
     want.userdata = &self.main_state.audio_module;
 
-    // TODO - allow SDL to pick something different?
+    var have: SDL_AudioSpec = undefined;
+
     const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
-        0, // device name (NULL)
+        0, // device name (NULL to let SDL choose)
         0, // non-zero to open for recording instead of playback
-        &want, // desired output format
-        0, // obtained output format (NULL)
-        0, // allowed changes: 0 means `obtained` will not differ from `want`, and SDL will do any necessary resampling behind the scenes
+        &want,
+        &have,
+        // tell SDL that we can handle any frequency. however for other
+        // properties, like format, we will let SDL do the resampling if the
+        // system doesn't support it
+        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
     );
     if (device == 0) {
         std.debug.warn("Failed to open audio: {s}\n", .{SDL_GetError()});
         return error.Failed;
     }
     errdefer SDL_CloseAudioDevice(device);
+
+    std.debug.warn("Audio sample rate: {}hz\n", .{have.freq});
 
     const glcontext = SDL_GL_CreateContext(window) orelse {
         std.debug.warn("SDL_GL_CreateContext failed: {s}\n", .{SDL_GetError()});
@@ -464,7 +478,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
-        .audio_sample_rate = @intToFloat(f32, options.audio_sample_rate),
+        .audio_sample_rate = @intToFloat(f32, have.freq),
         .fullscreen = false,
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
@@ -478,7 +492,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.display_index = 0;
     self.glcontext = glcontext;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
-    self.audio_sample_rate = options.audio_sample_rate;
+    self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
     self.quit = false;
     self.toggle_fullscreen = false;
