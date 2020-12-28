@@ -41,8 +41,7 @@ pub fn destroyTexture(texture: Texture) void {
 
 pub fn prepare(ds: *State) void {}
 
-pub fn setColor(ds: *State, color: draw.Color, alpha: f32) void {
-    // alpha not implemented
+pub fn setColor(ds: *State, color: draw.Color) void {
     _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, 0xff);
 }
 

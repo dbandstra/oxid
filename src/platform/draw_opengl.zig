@@ -136,12 +136,12 @@ pub fn prepare(ds: *State) void {
     glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
 }
 
-pub fn setColor(ds: *State, rgb: draw.Color, a: f32) void {
+pub fn setColor(ds: *State, rgb: draw.Color) void {
     const color: Color = .{
         .r = @intToFloat(f32, rgb.r) / 255.0,
         .g = @intToFloat(f32, rgb.g) / 255.0,
         .b = @intToFloat(f32, rgb.b) / 255.0,
-        .a = a,
+        .a = 1.0,
     };
     if (color.r == ds.color.r and color.g == ds.color.g and
         color.b == ds.color.b and color.a == ds.color.a)

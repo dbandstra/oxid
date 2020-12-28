@@ -163,10 +163,10 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
         const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
         const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
         const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
-        pdraw.setColor(ds, event.color, 1.0);
+        pdraw.setColor(ds, event.color);
         pdraw.rect(ds, x0, y0, x1 - x0, y1 - y0);
     }
-    pdraw.setColor(ds, draw.pure_white, 1.0);
+    pdraw.setColor(ds, draw.pure_white);
 }
 
 fn drawHud(
@@ -189,10 +189,10 @@ fn drawHud(
 
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
-    pdraw.setColor(ds, black, 1.0);
+    pdraw.setColor(ds, black);
     pdraw.fill(ds, 0, 0, @intToFloat(f32, common.vwin_w), @intToFloat(f32, common.hud_height));
 
-    pdraw.setColor(ds, white, 1.0);
+    pdraw.setColor(ds, white);
 
     if (gc_maybe) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
@@ -242,16 +242,16 @@ fn drawHud(
 
                 const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
 
-                pdraw.setColor(ds, salmon, 1.0);
+                pdraw.setColor(ds, salmon);
                 var i: u31 = 0;
                 while (i < pc.lives) : (i += 1) {
                     fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
                 }
                 if (pc.lives == 0) {
-                    pdraw.setColor(ds, lightgray, 1.0);
+                    pdraw.setColor(ds, lightgray);
                     fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
                 }
-                pdraw.setColor(ds, white, 1.0);
+                pdraw.setColor(ds, white);
 
                 _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
                 fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
@@ -263,9 +263,9 @@ fn drawHud(
             if (gc.wave_message_timer > 0) {
                 const x = common.vwin_w / 2 - message.len * 8 / 2;
 
-                pdraw.setColor(ds, black, 1.0);
+                pdraw.setColor(ds, black);
                 fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
-                pdraw.setColor(ds, white, 1.0);
+                pdraw.setColor(ds, white);
                 fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
             }
         }
@@ -277,5 +277,5 @@ fn drawHud(
     fonts.drawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
     fbs.reset();
 
-    pdraw.setColor(ds, draw.pure_white, 1.0);
+    pdraw.setColor(ds, draw.pure_white);
 }
