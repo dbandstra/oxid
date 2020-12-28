@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const pdraw = @import("root").pdraw;
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const inputs = @import("../common/inputs.zig");
 const oxid = @import("oxid.zig");
@@ -51,7 +51,7 @@ pub const DrawMenuContext = struct {
             const font_color = graphics.getColor(self.static.palette, .white);
             pdraw.setColor(self.ds, font_color);
             fonts.drawString(self.ds, &self.static.font, x, self.box_y + @as(i32, self.h), s);
-            pdraw.setColor(self.ds, draw.pure_white);
+            pdraw.setColor(self.ds, drawing.pure_white);
         }
         self.w = std.math.max(self.w, w);
         self.h += self.static.font.char_height;
@@ -90,7 +90,7 @@ pub const DrawMenuContext = struct {
                 fonts.drawString(self.ds, &self.static.font, self.box_x, self.box_y + @as(i32, self.h), ">");
             }
             fonts.drawString(self.ds, &self.static.font, self.box_x + 16, self.box_y + @as(i32, self.h), s);
-            pdraw.setColor(self.ds, draw.pure_white);
+            pdraw.setColor(self.ds, drawing.pure_white);
         }
         self.option_index += 1;
         self.w = std.math.max(self.w, fonts.stringWidth(&self.static.font, s) + 32); // pad both sides
@@ -163,7 +163,7 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     const black = graphics.getColor(params.static.palette, .black);
     pdraw.setColor(params.ds, black);
     pdraw.fill(params.ds, box_x, box_y, box_w, box_h);
-    pdraw.setColor(params.ds, draw.pure_white);
+    pdraw.setColor(params.ds, drawing.pure_white);
 
     // draw menu content
     ctx = .{

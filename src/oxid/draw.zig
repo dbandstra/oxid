@@ -2,7 +2,7 @@ const build_options = @import("build_options");
 const std = @import("std");
 const pdraw = @import("root").pdraw;
 const math = @import("../common/math.zig");
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const oxid = @import("oxid.zig");
 const game = @import("game.zig");
@@ -166,7 +166,7 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
         pdraw.setColor(ds, event.color);
         pdraw.rect(ds, x0, y0, x1 - x0, y1 - y0);
     }
-    pdraw.setColor(ds, draw.pure_white);
+    pdraw.setColor(ds, drawing.pure_white);
 }
 
 fn drawHud(
@@ -277,5 +277,5 @@ fn drawHud(
     fonts.drawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
     fbs.reset();
 
-    pdraw.setColor(ds, draw.pure_white);
+    pdraw.setColor(ds, drawing.pure_white);
 }

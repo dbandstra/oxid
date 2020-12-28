@@ -565,19 +565,19 @@ fn tick(self: *Main, refresh_rate: u64) void {
         while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
             // need to actually draw for the last one of them
-            const draw = i == num_frames_to_simulate - 1;
+            const should_draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
             oxid.frame(&self.main_state, .{
-                .spawn_draw_events = draw,
+                .spawn_draw_events = should_draw,
                 .friendly_fire = self.main_state.friendly_fire,
             });
 
             // draw to framebuffer (from events)
-            if (draw) {
+            if (should_draw) {
                 // this alpha value is calculated to end up with an even blend
                 // of all fast forward frames
-                drawMain(self, 1.0 / @intToFloat(f32, frame_index + 1));
+                draw(self, 1.0 / @intToFloat(f32, frame_index + 1));
             }
 
             // delete events
@@ -798,13 +798,13 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
     }
 }
 
-fn drawMain(self: *Main, blit_alpha: f32) void {
+fn draw(self: *Main, blit_alpha: f32) void {
     perf.begin(.whole_draw);
 
     pdraw.Framebuffer.preDraw(&self.framebuffer);
 
     perf.begin(.draw);
-    oxid.drawMain(&self.main_state, &self.draw_state);
+    oxid.draw(&self.main_state, &self.draw_state);
     perf.end(.draw);
 
     pdraw.Framebuffer.postDraw(

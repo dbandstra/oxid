@@ -281,15 +281,15 @@ export fn onAnimationFrame(now: c_int) void {
     while (i < num_frames_to_simulate) : (i += 1) {
         // if we're simulating multiple frames for one draw cycle, we only
         // need to actually draw for the last one of them
-        const draw = i == num_frames_to_simulate - 1;
+        const should_draw = i == num_frames_to_simulate - 1;
 
-        tick(draw);
+        tick(should_draw);
     }
 }
 
-fn tick(draw: bool) void {
+fn tick(should_draw: bool) void {
     oxid.frame(&g.main_state, .{
-        .spawn_draw_events = draw,
+        .spawn_draw_events = should_draw,
         .friendly_fire = g.main_state.friendly_fire,
     });
 
@@ -301,8 +301,8 @@ fn tick(draw: bool) void {
         &g.main_state.menu_sounds,
     );
 
-    if (draw) {
-        oxid.drawMain(&g.main_state, &g.draw_state);
+    if (should_draw) {
+        oxid.draw(&g.main_state, &g.draw_state);
     }
 
     game.frameCleanup(&g.main_state.session);

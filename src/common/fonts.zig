@@ -1,7 +1,7 @@
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
-const draw = @import("draw.zig");
+const drawing = @import("drawing.zig");
 const pcx_helper = @import("pcx_helper.zig");
 
 pub const FontDef = struct {
@@ -15,7 +15,7 @@ pub const FontDef = struct {
 };
 
 pub const Font = struct {
-    tileset: draw.Tileset,
+    tileset: drawing.Tileset,
     first_char: u8,
     char_width: u31,
     char_height: u31,
@@ -64,7 +64,7 @@ pub fn drawString(ds: *pdraw.State, font: *const Font, x: i32, y: i32, string: [
     for (string) |char| {
         if (char < font.first_char) continue;
         const index = char - font.first_char;
-        const tile: draw.Tile = .{
+        const tile: drawing.Tile = .{
             .tx = index % font.tileset.xtiles,
             .ty = index / font.tileset.xtiles,
         };

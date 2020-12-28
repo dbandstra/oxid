@@ -1,7 +1,7 @@
 const zang = @import("zang");
 const gbe = @import("gbe");
+const drawing = @import("../common/drawing.zig");
 const math = @import("../common/math.zig");
-const draw = @import("../common/draw.zig");
 const constants = @import("constants.zig");
 const graphics = @import("graphics.zig");
 const commands = @import("commands.zig");
@@ -190,13 +190,13 @@ pub const EventConferBonus = struct {
 pub const EventDraw = struct {
     pos: math.Vec2,
     graphic: graphics.Graphic,
-    transform: draw.Transform,
+    transform: drawing.Transform,
     z_index: u32,
 };
 
 pub const EventDrawBox = struct {
     box: math.Box,
-    color: draw.Color,
+    color: drawing.Color,
 };
 
 pub const EventGameInput = struct {

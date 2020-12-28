@@ -224,7 +224,7 @@ fn tick(self: *Main) void {
 
     perf.begin(.whole_draw);
     perf.begin(.draw);
-    oxid.drawMain(&self.main_state, &self.draw_state);
+    oxid.draw(&self.main_state, &self.draw_state);
     perf.end(.draw);
     perf.end(.whole_draw);
 

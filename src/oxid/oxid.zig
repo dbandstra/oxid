@@ -7,7 +7,7 @@ const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
 const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const inputs = @import("../common/inputs.zig");
 const graphics = @import("graphics.zig");
@@ -55,7 +55,7 @@ pub const MainState = struct {
 };
 
 pub const GameStatic = struct {
-    tileset: draw.Tileset,
+    tileset: drawing.Tileset,
     palette: [48]u8,
     font: fonts.Font,
 };
@@ -452,7 +452,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     // note: caller still needs to call `game.frameCleanup`
 }
 
-pub fn drawMain(self: *MainState, draw_state: *pdraw.State) void {
+pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
     drawGame(draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
         .ds = draw_state,

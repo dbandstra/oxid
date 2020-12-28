@@ -1,9 +1,6 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const InputSource = @import("../common/key.zig").InputSource;
-const JoyAxis = @import("../common/key.zig").JoyAxis;
-const JoyButton = @import("../common/key.zig").JoyButton;
-const input = @import("input.zig");
+const commands = @import("commands.zig");
 const config = @import("config.zig");
 
 fn getFixtureConfig() config.Config {
@@ -12,8 +9,8 @@ fn getFixtureConfig() config.Config {
         .menu_bindings = undefined,
         .game_bindings = undefined,
     };
-    inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
-        const value = @intToEnum(input.MenuCommand, field.value);
+    inline for (@typeInfo(commands.MenuCommand).Enum.fields) |field| {
+        const value = @intToEnum(commands.MenuCommand, field.value);
         cfg.menu_bindings[field.value] = switch (value) {
             .left => .{ .key = .left },
             .right => .{ .key = .right },
@@ -25,8 +22,8 @@ fn getFixtureConfig() config.Config {
             .no => .{ .key = .n },
         };
     }
-    inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
-        const value = @intToEnum(input.GameCommand, field.value);
+    inline for (@typeInfo(commands.GameCommand).Enum.fields) |field| {
+        const value = @intToEnum(commands.GameCommand, field.value);
         cfg.game_bindings[0][field.value] = switch (value) {
             .up => .{ .joy_axis_neg = .{ .which = 0, .axis = 1 } },
             .down => .{ .joy_axis_pos = .{ .which = 0, .axis = 1 } },

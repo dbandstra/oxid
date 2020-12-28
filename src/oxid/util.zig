@@ -1,5 +1,5 @@
 const std = @import("std");
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 const math = @import("../common/math.zig");
 
 // TODO - reorganize?
@@ -14,7 +14,7 @@ pub fn lessThanField(comptime T: type, comptime field: []const u8) fn (void, T, 
     return Impl.inner;
 }
 
-pub fn getDirTransform(direction: math.Direction) draw.Transform {
+pub fn getDirTransform(direction: math.Direction) drawing.Transform {
     return switch (direction) {
         .n => .rotate_ccw,
         .e => .identity,

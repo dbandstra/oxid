@@ -10,7 +10,7 @@ const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const plog = @import("root").plog;
 const indentingWriter = @import("../common/indenting_writer.zig").indentingWriter;
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 
 const buffer_vertices = 4 * 512; // render up to 512 quads at once
 
@@ -137,7 +137,7 @@ fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
     };
 }
 
-pub fn setColor(ds: *State, rgb: draw.Color) void {
+pub fn setColor(ds: *State, rgb: drawing.Color) void {
     const color: Color = .{
         .r = @intToFloat(f32, rgb.r) / 255.0,
         .g = @intToFloat(f32, rgb.g) / 255.0,
@@ -149,60 +149,6 @@ pub fn setColor(ds: *State, rgb: draw.Color) void {
         return;
     flush(ds);
     ds.color = color;
-}
-
-pub fn tile(
-    ds: *State,
-    tileset: draw.Tileset,
-    dtile: draw.Tile,
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-    transform: draw.Transform,
-) void {
-    if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
-        return;
-
-    const verts_per_tile = 6; // two triangles
-
-    if (ds.draw_buffer.num_vertices > 0) {
-        if (ds.draw_buffer.tex_handle != tileset.texture.handle or
-            ds.draw_buffer.outline != false or
-            ds.draw_buffer.shader != .textured or
-            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
-            flush(ds);
-    }
-
-    const num_verts = ds.draw_buffer.num_vertices;
-    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
-
-    const fx0 = @intToFloat(f32, x);
-    const fy0 = @intToFloat(f32, y);
-    const fx1 = fx0 + @intToFloat(f32, w);
-    const fy1 = fy0 + @intToFloat(f32, h);
-
-    const s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
-    const t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
-    const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
-    const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
-
-    ds.draw_buffer.vertex2f[num_verts * 2 ..][0..12].* = [12]GLfloat{
-        fx0, fy0, fx0, fy1, fx1, fy1,
-        fx1, fy1, fx1, fy0, fx0, fy0,
-    };
-    ds.draw_buffer.texcoord2f[num_verts * 2 ..][0..12].* = switch (transform) {
-        .identity => [12]GLfloat{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
-        .flip_vert => [12]GLfloat{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
-        .flip_horz => [12]GLfloat{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
-        .rotate_cw => [12]GLfloat{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
-        .rotate_ccw => [12]GLfloat{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
-    };
-
-    ds.draw_buffer.tex_handle = tileset.texture.handle;
-    ds.draw_buffer.outline = false;
-    ds.draw_buffer.shader = .textured;
-    ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
@@ -260,6 +206,60 @@ pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
 
     ds.draw_buffer.outline = true;
     ds.draw_buffer.shader = .solid;
+    ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
+}
+
+pub fn tile(
+    ds: *State,
+    tileset: drawing.Tileset,
+    dtile: drawing.Tile,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+    transform: drawing.Transform,
+) void {
+    if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
+        return;
+
+    const verts_per_tile = 6; // two triangles
+
+    if (ds.draw_buffer.num_vertices > 0) {
+        if (ds.draw_buffer.tex_handle != tileset.texture.handle or
+            ds.draw_buffer.outline != false or
+            ds.draw_buffer.shader != .textured or
+            ds.draw_buffer.num_vertices + verts_per_tile > buffer_vertices)
+            flush(ds);
+    }
+
+    const num_verts = ds.draw_buffer.num_vertices;
+    std.debug.assert(num_verts + verts_per_tile <= buffer_vertices);
+
+    const fx0 = @intToFloat(f32, x);
+    const fy0 = @intToFloat(f32, y);
+    const fx1 = fx0 + @intToFloat(f32, w);
+    const fy1 = fy0 + @intToFloat(f32, h);
+
+    const s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
+    const t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
+    const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
+    const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
+
+    ds.draw_buffer.vertex2f[num_verts * 2 ..][0..12].* = [12]GLfloat{
+        fx0, fy0, fx0, fy1, fx1, fy1,
+        fx1, fy1, fx1, fy0, fx0, fy0,
+    };
+    ds.draw_buffer.texcoord2f[num_verts * 2 ..][0..12].* = switch (transform) {
+        .identity => [12]GLfloat{ s0, t0, s0, t1, s1, t1, s1, t1, s1, t0, s0, t0 },
+        .flip_vert => [12]GLfloat{ s0, t1, s0, t0, s1, t0, s1, t0, s1, t1, s0, t1 },
+        .flip_horz => [12]GLfloat{ s1, t0, s1, t1, s0, t1, s0, t1, s0, t0, s1, t0 },
+        .rotate_cw => [12]GLfloat{ s0, t1, s1, t1, s1, t0, s1, t0, s0, t0, s0, t1 },
+        .rotate_ccw => [12]GLfloat{ s1, t0, s0, t0, s0, t1, s0, t1, s1, t1, s1, t0 },
+    };
+
+    ds.draw_buffer.tex_handle = tileset.texture.handle;
+    ds.draw_buffer.outline = false;
+    ds.draw_buffer.shader = .textured;
     ds.draw_buffer.num_vertices = num_verts + verts_per_tile;
 }
 

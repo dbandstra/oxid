@@ -1,4 +1,4 @@
-const draw = @import("../../common/draw.zig");
+const drawing = @import("../../common/drawing.zig");
 const game = @import("../game.zig");
 const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
@@ -11,7 +11,7 @@ pub fn run(gs: *game.Session) void {
         if (self.player.line_of_fire) |box| {
             p.spawnEventDrawBox(gs, .{
                 .box = box,
-                .color = draw.pure_black,
+                .color = drawing.pure_black,
             });
         }
     }

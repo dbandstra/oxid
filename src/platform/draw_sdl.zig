@@ -1,7 +1,7 @@
 // pdraw implementation backed by SDL2's SDL_render API.
 
 usingnamespace @import("../platform/sdl.zig");
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 
 pub const Texture = struct {
     texture: *SDL_Texture,
@@ -41,19 +41,27 @@ pub fn destroyTexture(texture: Texture) void {
     SDL_DestroyTexture(texture.texture);
 }
 
-pub fn setColor(ds: *State, color: draw.Color) void {
+pub fn setColor(ds: *State, color: drawing.Color) void {
     _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, 0xff);
+}
+
+pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+    _ = SDL_RenderFillRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
+}
+
+pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+    _ = SDL_RenderDrawRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
 }
 
 pub fn tile(
     ds: *State,
-    tileset: draw.Tileset,
-    dtile: draw.Tile,
+    tileset: drawing.Tileset,
+    dtile: drawing.Tile,
     x: i32,
     y: i32,
     w: i32,
     h: i32,
-    transform: draw.Transform,
+    transform: drawing.Transform,
 ) void {
     _ = SDL_RenderCopyEx(
         ds.renderer,
@@ -77,14 +85,6 @@ pub fn tile(
             .flip_vert => @intToEnum(SDL_RendererFlip, SDL_FLIP_VERTICAL),
         },
     );
-}
-
-pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
-    _ = SDL_RenderFillRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
-}
-
-pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
-    _ = SDL_RenderDrawRect(ds.renderer, &SDL_Rect{ .x = x, .y = y, .w = w, .h = h });
 }
 
 pub fn flush(ds: *State) void {}

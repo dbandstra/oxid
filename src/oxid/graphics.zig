@@ -1,10 +1,9 @@
 const build_options = @import("build_options");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
-
 const pdraw = @import("root").pdraw;
 const pcx_helper = @import("../common/pcx_helper.zig");
-const draw = @import("../common/draw.zig");
+const drawing = @import("../common/drawing.zig");
 const constants = @import("constants.zig");
 
 const graphics_filename = build_options.assets_path ++ "/mytiles.pcx";
@@ -30,7 +29,7 @@ pub const Color = enum {
     white,
 };
 
-pub fn getColor(palette: [48]u8, color: Color) draw.Color {
+pub fn getColor(palette: [48]u8, color: Color) drawing.Color {
     const index: usize = @enumToInt(color);
     return .{
         .r = palette[index * 3 + 0],
@@ -97,7 +96,7 @@ pub const Graphic = enum {
     coin,
 };
 
-pub fn getGraphicTile(graphic: Graphic) draw.Tile {
+pub fn getGraphicTile(graphic: Graphic) drawing.Tile {
     return switch (graphic) {
         .pit => .{ .tx = 1, .ty = 0 },
         .floor => .{ .tx = 2, .ty = 0 },
@@ -188,7 +187,7 @@ pub fn getSimpleAnim(simpleAnim: SimpleAnim) SimpleAnimConfig {
 pub fn loadTileset(
     ds: *pdraw.State,
     hunk_side: *HunkSide,
-    out_tileset: *draw.Tileset,
+    out_tileset: *drawing.Tileset,
     out_palette: *[48]u8,
 ) !void {
     const mark = hunk_side.getMark();
@@ -209,6 +208,6 @@ pub fn loadTileset(
     std.mem.copy(u8, out_palette, &img.palette);
 }
 
-pub fn unloadTileset(tileset: *draw.Tileset) void {
+pub fn unloadTileset(tileset: *drawing.Tileset) void {
     pdraw.destroyTexture(tileset.texture);
 }
