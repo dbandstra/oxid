@@ -22,11 +22,10 @@ pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
         h,
         32, // bit depth
         w * 4, // pitch
-        // FIXME - are these mask literals going to work on a big endian machine?
-        0x000000FF, // red mask
-        0x0000FF00, // green mask
-        0x00FF0000, // blue mask
-        0xFF000000, // alpha mask
+        if (SDL_BYTEORDER == SDL_BIG_ENDIAN) 0xFF000000 else 0x000000FF, // red mask
+        if (SDL_BYTEORDER == SDL_BIG_ENDIAN) 0x00FF0000 else 0x0000FF00, // green mask
+        if (SDL_BYTEORDER == SDL_BIG_ENDIAN) 0x0000FF00 else 0x00FF0000, // blue mask
+        if (SDL_BYTEORDER == SDL_BIG_ENDIAN) 0x000000FF else 0xFF000000, // alpha mask
     );
     defer SDL_FreeSurface(surface);
     const texture = SDL_CreateTextureFromSurface(ds.renderer, surface) orelse {
