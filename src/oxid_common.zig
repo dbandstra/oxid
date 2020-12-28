@@ -454,7 +454,6 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 }
 
 pub fn drawMain(self: *MainState, draw_state: *pdraw.State) void {
-    pdraw.prepare(draw_state);
     drawGame(draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
         .ds = draw_state,

@@ -207,7 +207,7 @@ fn init() !void {
     };
     errdefer pdraw.deinit(&g.draw_state);
 
-    if (!common.init(&g.main_state, &g.draw_state, .{
+    try common.init(&g.main_state, &g.draw_state, .{
         .hunk = hunk,
         .random_seed = getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
@@ -216,10 +216,7 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
-    })) {
-        // common.init prints its own errors
-        return error.Failed;
-    }
+    }); // common.init prints its own errors and returns error.Failed
     errdefer common.deinit(&g.main_state);
 }
 

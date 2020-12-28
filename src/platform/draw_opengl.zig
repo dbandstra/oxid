@@ -92,6 +92,8 @@ pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     glFrontFace(GL_CCW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
+
+    setViewport(ds);
 }
 
 pub fn deinit(ds: *State) void {
@@ -99,6 +101,15 @@ pub fn deinit(ds: *State) void {
     glDeleteBuffers(1, &ds.dyn_vertex_buffer);
     destroyShaderProgram(ds.shader_textured.program);
     destroyShaderProgram(ds.shader_solid.program);
+}
+
+fn setViewport(ds: *State) void {
+    const w = ds.virtual_window_width;
+    const h = ds.virtual_window_height;
+    const fw = @intToFloat(f32, w);
+    const fh = @intToFloat(f32, h);
+    ds.projection = ortho(0, fw, fh, 0);
+    glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
 }
 
 pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
@@ -125,15 +136,6 @@ fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
         0.0,                  0.0,                  -1.0, 0.0,
         0.0,                  0.0,                  0.0,  1.0,
     };
-}
-
-pub fn prepare(ds: *State) void {
-    const w = ds.virtual_window_width;
-    const h = ds.virtual_window_height;
-    const fw = @intToFloat(f32, w);
-    const fh = @intToFloat(f32, h);
-    ds.projection = ortho(0, fw, fh, 0);
-    glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
 }
 
 pub fn setColor(ds: *State, rgb: draw.Color) void {
@@ -644,5 +646,8 @@ pub const Framebuffer = struct {
         glBindTexture(GL_TEXTURE_2D, fbs.render_texture);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // reset viewport
+        setViewport(ds);
     }
 };
