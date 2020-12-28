@@ -152,6 +152,7 @@ fn init(hunk: *Hunk) !*Main {
     errdefer SDL_CloseAudioDevice(device);
 
     pdraw.init(&self.draw_state, renderer);
+    // note: platform/draw_sdl has no deinit function
 
     try common.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
