@@ -1,8 +1,7 @@
-// simple 2D drawing library implementation, supports OpenGL 2.1 (GLSL v120),
+// pdraw implementation backed by GL. supports OpenGL 2.1 (GLSL v120),
 // OpenGL 3.0 (GLSL v130), and WebGL 1.
 
-const builtin = @import("builtin");
-usingnamespace if (builtin.arch == .wasm32)
+usingnamespace if (@import("builtin").arch == .wasm32)
     @import("zig-webgl")
 else
     @import("gl").namespace;

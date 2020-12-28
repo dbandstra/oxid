@@ -1,3 +1,5 @@
+// pdraw implementation backed by SDL2's SDL_render API.
+
 usingnamespace @import("../platform/sdl.zig");
 const draw = @import("../common/draw.zig");
 
