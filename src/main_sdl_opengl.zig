@@ -14,7 +14,7 @@ const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const common = @import("oxid_common.zig");
+const oxid = @import("oxid/oxid.zig");
 
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
@@ -36,8 +36,8 @@ fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
 
     var scale: u31 = 1;
     while (scale < scale_limit) : (scale += 1) {
-        const w = (scale + 1) * common.vwin_w;
-        const h = (scale + 1) * common.vwin_h;
+        const w = (scale + 1) * oxid.vwin_w;
+        const h = (scale + 1) * oxid.vwin_h;
 
         if (w > max_w or h > max_h) {
             break;
@@ -49,15 +49,15 @@ fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
 
 fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
     return .{
-        .w = common.vwin_w * scale,
-        .h = common.vwin_h * scale,
+        .w = oxid.vwin_w * scale,
+        .h = oxid.vwin_h * scale,
     };
 }
 
 fn getBlitRect(screen_w: u31, screen_h: u31) pdraw.Framebuffer.BlitRect {
     // scale the game view up as far as possible, maintaining the aspect ratio
-    const scaled_w = screen_h * common.vwin_w / common.vwin_h;
-    const scaled_h = screen_w * common.vwin_h / common.vwin_w;
+    const scaled_w = screen_h * oxid.vwin_w / oxid.vwin_h;
+    const scaled_h = screen_w * oxid.vwin_h / oxid.vwin_w;
 
     if (scaled_w < screen_w) {
         return .{
@@ -102,7 +102,7 @@ const SavedWindowPos = struct {
 };
 
 const Main = struct {
-    main_state: common.MainState,
+    main_state: oxid.MainState,
     draw_state: pdraw.State,
     framebuffer: pdraw.Framebuffer,
     window: *SDL_Window,
@@ -446,7 +446,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.requested_framerate_scheme = options.framerate_scheme;
     updateFramerateScheme(self); // sets self.framerate_scheme
 
-    self.framebuffer = pdraw.Framebuffer.init(common.vwin_w, common.vwin_h) catch |err| {
+    self.framebuffer = pdraw.Framebuffer.init(oxid.vwin_w, oxid.vwin_h) catch |err| {
         std.debug.warn("pdraw.Framebuffer.init failed: {}\n", .{err});
         return error.Failed;
     };
@@ -466,15 +466,15 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     pdraw.init(&self.draw_state, glsl_version, .{
         .hunk = hunk,
-        .virtual_window_width = common.vwin_w,
-        .virtual_window_height = common.vwin_h,
+        .virtual_window_width = oxid.vwin_w,
+        .virtual_window_height = oxid.vwin_h,
     }) catch |err| {
         plog.warn("pdraw.init failed: {}\n", .{err});
         return error.Failed;
     };
     errdefer pdraw.deinit(&self.draw_state);
 
-    try common.init(&self.main_state, &self.draw_state, .{
+    try oxid.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = options.audio_buffer_size,
@@ -483,8 +483,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
-    }); // common.init prints its own error and returns error.Failed
-    errdefer common.deinit(&self.main_state);
+    }); // oxid.init prints its own error and returns error.Failed
+    errdefer oxid.deinit(&self.main_state);
 
     // already set:
     // main_state, window, requested_vsync, requested_framerate_scheme,
@@ -521,7 +521,7 @@ fn deinit(self: *Main) void {
     };
 
     SDL_PauseAudioDevice(self.audio_device, 1);
-    common.deinit(&self.main_state);
+    oxid.deinit(&self.main_state);
     pdraw.deinit(&self.draw_state);
     pdraw.Framebuffer.deinit(&self.framebuffer);
     SDL_GL_DeleteContext(self.glcontext);
@@ -570,7 +570,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             const draw = i == num_frames_to_simulate - 1;
 
             // run simulation and create events for drawing, playing sounds, etc.
-            common.frame(&self.main_state, .{
+            oxid.frame(&self.main_state, .{
                 .spawn_draw_events = draw,
                 .friendly_fire = self.main_state.friendly_fire,
             });
@@ -715,7 +715,7 @@ fn toggleFullscreen(self: *Main) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    switch (common.inputEvent(&self.main_state, source, down) orelse return) {
+    switch (oxid.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,
         .toggle_sound => {}, // unused in SDL build
@@ -806,7 +806,7 @@ fn drawMain(self: *Main, blit_alpha: f32) void {
     pdraw.Framebuffer.preDraw(&self.framebuffer);
 
     perf.begin(.draw);
-    common.drawMain(&self.main_state, &self.draw_state);
+    oxid.drawMain(&self.main_state, &self.draw_state);
     perf.end(.draw);
 
     pdraw.Framebuffer.postDraw(

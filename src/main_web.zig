@@ -12,8 +12,8 @@ const c = @import("oxid/components.zig");
 const menus = @import("oxid/menus.zig");
 const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
 const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
-const common = @import("oxid_common.zig");
 const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
+const oxid = @import("oxid/oxid.zig");
 
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_web.zig");
@@ -28,7 +28,7 @@ pub const storagekey_highscores = "highscores";
 extern fn getRandomSeed() c_uint;
 
 const Main = struct {
-    main_state: common.MainState,
+    main_state: oxid.MainState,
     draw_state: pdraw.State,
 };
 
@@ -146,7 +146,7 @@ const SET_CANVAS_SCALE = 100;
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
     const source: InputSource = .{ .key = key };
-    const special = common.inputEvent(&g.main_state, source, down != 0) orelse return NOP;
+    const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return NOP;
     return switch (special) {
         .noop => NOP,
         .quit => NOP, // unused in web build
@@ -199,15 +199,15 @@ fn init() !void {
 
     pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
-        .virtual_window_width = common.vwin_w,
-        .virtual_window_height = common.vwin_h,
+        .virtual_window_width = oxid.vwin_w,
+        .virtual_window_height = oxid.vwin_h,
     }) catch |err| {
         plog.warn("pdraw.init failed: {}\n", .{err});
         return error.Failed;
     };
     errdefer pdraw.deinit(&g.draw_state);
 
-    try common.init(&g.main_state, &g.draw_state, .{
+    try oxid.init(&g.main_state, &g.draw_state, .{
         .hunk = hunk,
         .random_seed = getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
@@ -216,8 +216,8 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
-    }); // common.init prints its own errors and returns error.Failed
-    errdefer common.deinit(&g.main_state);
+    }); // oxid.init prints its own errors and returns error.Failed
+    errdefer oxid.deinit(&g.main_state);
 }
 
 export fn onInit() bool {
@@ -226,7 +226,7 @@ export fn onInit() bool {
 }
 
 export fn onDestroy() void {
-    common.deinit(&g.main_state);
+    oxid.deinit(&g.main_state);
     pdraw.deinit(&g.draw_state);
     std.heap.page_allocator.free(main_memory);
 }
@@ -289,7 +289,7 @@ export fn onAnimationFrame(now: c_int) void {
 }
 
 fn tick(draw: bool) void {
-    common.frame(&g.main_state, .{
+    oxid.frame(&g.main_state, .{
         .spawn_draw_events = draw,
         .friendly_fire = g.main_state.friendly_fire,
     });
@@ -303,7 +303,7 @@ fn tick(draw: bool) void {
     );
 
     if (draw) {
-        common.drawMain(&g.main_state, &g.draw_state);
+        oxid.drawMain(&g.main_state, &g.draw_state);
     }
 
     game.frameCleanup(&g.main_state.session);

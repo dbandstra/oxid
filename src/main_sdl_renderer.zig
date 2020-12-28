@@ -8,7 +8,7 @@ const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const common = @import("oxid_common.zig");
+const oxid = @import("oxid/oxid.zig");
 
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
@@ -21,7 +21,7 @@ pub const storagekey_config = "config.json";
 pub const storagekey_highscores = "highscore.dat";
 
 const Main = struct {
-    main_state: common.MainState,
+    main_state: oxid.MainState,
     draw_state: pdraw.State,
     window: *SDL_Window,
     renderer: *SDL_Renderer,
@@ -70,8 +70,8 @@ fn init(hunk: *Hunk) !*Main {
         "Oxid",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        common.vwin_w,
-        common.vwin_h,
+        oxid.vwin_w,
+        oxid.vwin_h,
         0,
     ) orelse {
         std.debug.warn("Unable to create window: {s}\n", .{SDL_GetError()});
@@ -163,7 +163,7 @@ fn init(hunk: *Hunk) !*Main {
     pdraw.init(&self.draw_state, renderer);
     // note: platform/draw_sdl has no deinit function
 
-    try common.init(&self.main_state, &self.draw_state, .{
+    try oxid.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
         .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
         .audio_buffer_size = have.samples,
@@ -172,8 +172,8 @@ fn init(hunk: *Hunk) !*Main {
         .canvas_scale = 1,
         .max_canvas_scale = 1,
         .sound_enabled = true,
-    }); // common.init prints its own error and returns error.Failed
-    errdefer common.deinit(&self.main_state);
+    }); // oxid.init prints its own error and returns error.Failed
+    errdefer oxid.deinit(&self.main_state);
 
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
@@ -199,7 +199,7 @@ fn deinit(self: *Main) void {
     };
 
     SDL_PauseAudioDevice(self.audio_device, 1);
-    common.deinit(&self.main_state);
+    oxid.deinit(&self.main_state);
     SDL_CloseAudioDevice(self.audio_device);
     SDL_DestroyRenderer(self.renderer);
     SDL_DestroyWindow(self.window);
@@ -217,14 +217,14 @@ fn tick(self: *Main) void {
 
     self.main_state.menu_anim_time +%= 1;
 
-    common.frame(&self.main_state, .{
+    oxid.frame(&self.main_state, .{
         .spawn_draw_events = true,
         .friendly_fire = self.main_state.friendly_fire,
     });
 
     perf.begin(.whole_draw);
     perf.begin(.draw);
-    common.drawMain(&self.main_state, &self.draw_state);
+    oxid.drawMain(&self.main_state, &self.draw_state);
     perf.end(.draw);
     perf.end(.whole_draw);
 
@@ -246,7 +246,7 @@ fn tick(self: *Main) void {
 }
 
 fn inputEvent(self: *Main, source: InputSource, down: bool) void {
-    switch (common.inputEvent(&self.main_state, source, down) orelse return) {
+    switch (oxid.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,
         .toggle_sound => {}, // unused

@@ -5,7 +5,7 @@ const zang = @import("zang");
 const passets = @import("root").passets;
 const game = @import("game.zig");
 const c = @import("components.zig");
-const MenuSounds = @import("../oxid_common.zig").MenuSounds;
+const MenuSounds = @import("oxid.zig").MenuSounds;
 
 const generated = @import("audio/generated.zig");
 pub const AccelerateVoice = generated.AccelerateVoice;

@@ -4,7 +4,7 @@ const pdraw = @import("root").pdraw;
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
 const InputSource = @import("../common/key.zig").InputSource;
-const common = @import("../oxid_common.zig");
+const oxid = @import("oxid.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
@@ -13,7 +13,7 @@ const graphics = @import("graphics.zig");
 
 pub const DrawMenuContext = struct {
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     menu_context: menus.MenuContext,
     cursor_pos: usize,
     position_top: bool,
@@ -114,7 +114,7 @@ pub const DrawMenuContext = struct {
 
 pub const MenuDrawParams = struct {
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     menu_context: menus.MenuContext,
 };
 
@@ -154,9 +154,9 @@ fn drawMenuInner(comptime T: type, state: *T, params: MenuDrawParams) ?menus.Res
     const pad_vert = 8;
     const box_w = pad_left + pad_right + ctx.w;
     const box_h = pad_vert * 2 + ctx.h;
-    const box_x = @as(i32, common.vwin_w / 2) - @as(i32, box_w / 2);
+    const box_x = @as(i32, oxid.vwin_w / 2) - @as(i32, box_w / 2);
     const box_y = if (!ctx.position_top)
-        @as(i32, common.vwin_h / 2) - @as(i32, box_h / 2)
+        @as(i32, oxid.vwin_h / 2) - @as(i32, box_h / 2)
     else
         32;
 

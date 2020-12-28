@@ -4,7 +4,7 @@ const pdraw = @import("root").pdraw;
 const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
-const common = @import("../oxid_common.zig");
+const oxid = @import("oxid.zig");
 const game = @import("game.zig");
 const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
@@ -16,7 +16,7 @@ const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 pub fn drawGame(
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     gs: *game.Session,
     cfg: config.Config,
     high_score: u32,
@@ -64,7 +64,7 @@ fn getSortedDrawables(
 
 fn drawMapTile(
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     x: u31,
     y: u31,
 ) void {
@@ -93,14 +93,14 @@ fn drawMapTile(
         static.tileset,
         graphics.getGraphicTile(graphic),
         @divFloor(pos.x, levels.subpixels_per_pixel),
-        @divFloor(pos.y, levels.subpixels_per_pixel) + common.hud_height,
+        @divFloor(pos.y, levels.subpixels_per_pixel) + oxid.hud_height,
         levels.pixels_per_tile,
         levels.pixels_per_tile,
         .identity,
     );
 }
 
-fn drawMap(ds: *pdraw.State, static: *const common.GameStatic) void {
+fn drawMap(ds: *pdraw.State, static: *const oxid.GameStatic) void {
     perf.begin(.draw_map);
     defer perf.end(.draw_map);
 
@@ -116,7 +116,7 @@ fn drawMap(ds: *pdraw.State, static: *const common.GameStatic) void {
 // make the central 2x2 map tiles a foreground layer, so that the player spawn
 // anim makes him arise from behind it. (this should probably be implemented as
 // a regular entity later.)
-fn drawMapForeground(ds: *pdraw.State, static: *const common.GameStatic) void {
+fn drawMapForeground(ds: *pdraw.State, static: *const oxid.GameStatic) void {
     perf.begin(.draw_map_foreground);
     defer perf.end(.draw_map_foreground);
 
@@ -131,7 +131,7 @@ fn drawMapForeground(ds: *pdraw.State, static: *const common.GameStatic) void {
 
 fn drawEntities(
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     sorted_drawables: []*const c.EventDraw,
 ) void {
     perf.begin(.draw_entities);
@@ -139,7 +139,7 @@ fn drawEntities(
 
     for (sorted_drawables) |drawable| {
         const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
-        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + common.hud_height;
+        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + oxid.hud_height;
         const w = levels.pixels_per_tile;
         const h = levels.pixels_per_tile;
         pdraw.tile(
@@ -160,9 +160,9 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
     while (it.next()) |event| {
         const abs_bbox = event.box;
         const x0 = @divFloor(abs_bbox.mins.x, levels.subpixels_per_pixel);
-        const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + common.hud_height;
+        const y0 = @divFloor(abs_bbox.mins.y, levels.subpixels_per_pixel) + oxid.hud_height;
         const x1 = @divFloor(abs_bbox.maxs.x + 1, levels.subpixels_per_pixel);
-        const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + common.hud_height;
+        const y1 = @divFloor(abs_bbox.maxs.y + 1, levels.subpixels_per_pixel) + oxid.hud_height;
         pdraw.setColor(ds, event.color);
         pdraw.rect(ds, x0, y0, x1 - x0, y1 - y0);
     }
@@ -171,7 +171,7 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
 
 fn drawHud(
     ds: *pdraw.State,
-    static: *const common.GameStatic,
+    static: *const oxid.GameStatic,
     gs: *game.Session,
     high_score: u32,
 ) void {
@@ -190,7 +190,7 @@ fn drawHud(
     const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
 
     pdraw.setColor(ds, black);
-    pdraw.fill(ds, 0, 0, @intToFloat(f32, common.vwin_w), @intToFloat(f32, common.hud_height));
+    pdraw.fill(ds, 0, 0, @intToFloat(f32, oxid.vwin_w), @intToFloat(f32, oxid.hud_height));
 
     pdraw.setColor(ds, white);
 
@@ -261,7 +261,7 @@ fn drawHud(
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = common.vwin_w / 2 - message.len * 8 / 2;
+                const x = oxid.vwin_w / 2 - message.len * 8 / 2;
 
                 pdraw.setColor(ds, black);
                 fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
