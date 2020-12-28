@@ -19,7 +19,8 @@ pub fn init(ds: *State, renderer: *SDL_Renderer) void {
 
 pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     const surface = SDL_CreateRGBSurfaceFrom(
-        @intToPtr(*c_void, @ptrToInt(pixels.ptr)), // remove const (FIXME?)
+        // cast away const. i don't believe SDL modifies the pixels
+        @intToPtr(*c_void, @ptrToInt(pixels.ptr)),
         w,
         h,
         32, // bit depth
