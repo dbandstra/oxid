@@ -1,7 +1,7 @@
 usingnamespace @import("sdl.zig");
-const Key = @import("../common/key.zig").Key;
+const inputs = @import("../common/inputs.zig");
 
-pub fn translateKey(sym: SDL_Keycode) ?Key {
+pub fn translateKey(sym: SDL_Keycode) ?inputs.Key {
     return switch (sym) {
         SDLK_RETURN => .@"return",
         SDLK_ESCAPE => .escape,

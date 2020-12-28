@@ -1,10 +1,10 @@
+const inputs = @import("../common/inputs.zig");
 const menus = @import("menus.zig");
-const input = @import("input.zig");
-const InputSource = @import("../common/key.zig").InputSource;
+const commands = @import("commands.zig");
 
 const MenuInputContext = struct {
-    source: ?InputSource,
-    command: ?input.MenuCommand,
+    source: ?inputs.Source,
+    command: ?commands.MenuCommand,
     menu_context: menus.MenuContext,
     cursor_pos: usize,
     option_index: usize,
@@ -86,8 +86,8 @@ const MenuInputContext = struct {
 };
 
 pub const MenuInputParams = struct {
-    source: InputSource,
-    maybe_command: ?input.MenuCommand,
+    source: inputs.Source,
+    maybe_command: ?commands.MenuCommand,
     menu_context: menus.MenuContext,
 };
 

@@ -6,9 +6,7 @@ const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const zang = @import("zang");
 const gl = @import("gl");
-const InputSource = @import("common/key.zig").InputSource;
-const JoyButton = @import("common/key.zig").JoyButton;
-const JoyAxis = @import("common/key.zig").JoyAxis;
+const inputs = @import("common/inputs.zig");
 const constants = @import("oxid/constants.zig");
 const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
@@ -714,7 +712,7 @@ fn toggleFullscreen(self: *Main) void {
     self.saved_window_pos = swp;
 }
 
-fn inputEvent(self: *Main, source: InputSource, down: bool) void {
+fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
     switch (oxid.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,
@@ -752,7 +750,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         },
         SDL_JOYAXISMOTION => {
             const threshold = 16384;
-            const joy_axis: JoyAxis = .{
+            const joy_axis: inputs.JoyAxis = .{
                 .which = @intCast(usize, evt.jaxis.which),
                 .axis = evt.jaxis.axis,
             };
@@ -768,7 +766,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
             }
         },
         SDL_JOYBUTTONDOWN, SDL_JOYBUTTONUP => {
-            const joy_button: JoyButton = .{
+            const joy_button: inputs.JoyButton = .{
                 .which = @intCast(usize, evt.jbutton.which),
                 .button = evt.jbutton.button,
             };

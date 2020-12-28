@@ -1,7 +1,6 @@
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
-const Key = @import("common/key.zig").Key;
-const InputSource = @import("common/key.zig").InputSource;
+const inputs = @import("common/inputs.zig");
 const constants = @import("oxid/constants.zig");
 const game = @import("oxid/game.zig");
 const drawGame = @import("oxid/draw.zig").drawGame;
@@ -32,7 +31,7 @@ const Main = struct {
     draw_state: pdraw.State,
 };
 
-fn translateKey(keyCode: c_int) ?Key {
+fn translateKey(keyCode: c_int) ?inputs.Key {
     return switch (keyCode) {
         8 => .backspace,
         9 => .tab,
@@ -145,7 +144,7 @@ const SET_CANVAS_SCALE = 100;
 
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     const key = translateKey(keycode) orelse return 0;
-    const source: InputSource = .{ .key = key };
+    const source: inputs.Source = .{ .key = key };
     const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return NOP;
     return switch (special) {
         .noop => NOP,

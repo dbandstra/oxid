@@ -1,11 +1,9 @@
 const builtin = @import("builtin");
 const std = @import("std");
+const inputs = @import("../common/inputs.zig");
 const constants = @import("constants.zig");
 const config = @import("config.zig");
-const input = @import("input.zig");
-const Key = @import("../common/key.zig").Key;
-const InputSource = @import("../common/key.zig").InputSource;
-const key_names = @import("../common/key.zig").key_names;
+const commands = @import("commands.zig");
 
 pub const TextAlignment = enum {
     left,
@@ -49,8 +47,8 @@ pub const Effect = union(enum) {
 
 pub const BindGameCommand = struct {
     player_number: u32,
-    command: input.GameCommand,
-    source: ?InputSource,
+    command: commands.GameCommand,
+    source: ?inputs.Source,
 };
 
 pub const Sound = enum {
@@ -374,7 +372,7 @@ pub const GameSettingsMenu = struct {
 pub const KeyBindingsMenu = struct {
     cursor_pos: usize,
     for_player: u32,
-    rebinding: ?input.GameCommand,
+    rebinding: ?commands.GameCommand,
 
     pub fn init() @This() {
         return .{
@@ -410,11 +408,11 @@ pub const KeyBindingsMenu = struct {
             }
         }
 
-        const commands = [_]input.GameCommand{ .up, .down, .left, .right, .shoot };
+        const all_commands = [_]commands.GameCommand{ .up, .down, .left, .right, .shoot };
 
         const longest_command_name = comptime blk: {
             var longest: usize = 0;
-            for (commands) |command, i| {
+            for (all_commands) |command, i| {
                 longest = std.math.max(longest, @tagName(command).len);
             }
             break :blk longest;
@@ -432,7 +430,7 @@ pub const KeyBindingsMenu = struct {
 
         ctx.vspacer();
 
-        inline for (commands) |command, i| {
+        inline for (all_commands) |command, i| {
             const command_name = @tagName(command) ++ ":" ++
                 " " ** (longest_command_name - @tagName(command).len);
             self.keyBindingOption(Ctx, ctx, self.for_player, command, command_name);
@@ -451,11 +449,10 @@ pub const KeyBindingsMenu = struct {
         comptime Ctx: type,
         ctx: *Ctx,
         for_player: u32,
-        command: input.GameCommand,
+        command: commands.GameCommand,
         command_name: []const u8,
     ) void {
         const result = if (if (self.rebinding) |rebinding_command| rebinding_command == command else false) blk: {
-            // https://github.com/ziglang/zig/issues/3882
             const dots = switch (ctx.menu_context.anim_time / 16 % 4) {
                 0 => ".  ",
                 1 => ".. ",
@@ -465,7 +462,7 @@ pub const KeyBindingsMenu = struct {
             break :blk ctx.option("{} {}", .{ command_name, dots });
         } else if (ctx.menu_context.cfg.game_bindings[for_player][@enumToInt(command)]) |source|
             (switch (source) {
-                .key => |key| ctx.option("{} {}", .{ command_name, key_names[@enumToInt(key)] }),
+                .key => |key| ctx.option("{} {}", .{ command_name, inputs.key_names[@enumToInt(key)] }),
                 .joy_button => |j| ctx.option("{} Joy{}Button{}", .{ command_name, j.which, j.button }),
                 .joy_axis_pos => |j| ctx.option("{} Joy{}Axis{}+", .{ command_name, j.which, j.axis }),
                 .joy_axis_neg => |j| ctx.option("{} Joy{}Axis{}-", .{ command_name, j.which, j.axis }),

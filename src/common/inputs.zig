@@ -1,3 +1,7 @@
+// canonical data model for input sources (keys, mouse and joystick buttons,
+// etc.) this is what game code uses. the main file should map from platform-
+// specific values to these.
+
 pub const Key = enum {
     @"return",
     escape,
@@ -258,30 +262,30 @@ pub const JoyAxis = struct {
     axis: u32,
 };
 
-pub const InputSource = union(enum) {
+pub const Source = union(enum) {
     key: Key,
     joy_button: JoyButton,
     joy_axis_neg: JoyAxis,
     joy_axis_pos: JoyAxis,
-};
 
-pub fn areInputSourcesEqual(a: InputSource, b: InputSource) bool {
-    return switch (a) {
-        .key => |a_i| switch (b) {
-            .key => |b_i| a_i == b_i,
-            else => false,
-        },
-        .joy_button => |a_i| switch (b) {
-            .joy_button => |b_i| a_i.which == b_i.which and a_i.button == b_i.button,
-            else => false,
-        },
-        .joy_axis_neg => |a_i| switch (b) {
-            .joy_axis_neg => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
-            else => false,
-        },
-        .joy_axis_pos => |a_i| switch (b) {
-            .joy_axis_pos => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
-            else => false,
-        },
-    };
-}
+    pub fn eql(a: Source, b: Source) bool {
+        return switch (a) {
+            .key => |a_i| switch (b) {
+                .key => |b_i| a_i == b_i,
+                else => false,
+            },
+            .joy_button => |a_i| switch (b) {
+                .joy_button => |b_i| a_i.which == b_i.which and a_i.button == b_i.button,
+                else => false,
+            },
+            .joy_axis_neg => |a_i| switch (b) {
+                .joy_axis_neg => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
+                else => false,
+            },
+            .joy_axis_pos => |a_i| switch (b) {
+                .joy_axis_pos => |b_i| a_i.which == b_i.which and a_i.axis == b_i.axis,
+                else => false,
+            },
+        };
+    }
+};

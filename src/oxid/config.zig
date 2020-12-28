@@ -3,16 +3,15 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const plog = if (builtin.is_test) @import("../platform/log_native.zig") else @import("root").plog;
 const pstorage = @import("root").pstorage;
-const Key = @import("../common/key.zig").Key;
-const InputSource = @import("../common/key.zig").InputSource;
-const input = @import("input.zig");
+const inputs = @import("../common/inputs.zig");
+const commands = @import("commands.zig");
 
 pub const num_players = 2; // hardcoded for now
 
 pub const Config = struct {
     volume: u32,
-    menu_bindings: [@typeInfo(input.MenuCommand).Enum.fields.len]?InputSource,
-    game_bindings: [num_players][@typeInfo(input.GameCommand).Enum.fields.len]?InputSource,
+    menu_bindings: [@typeInfo(commands.MenuCommand).Enum.fields.len]?inputs.Source,
+    game_bindings: [num_players][@typeInfo(commands.GameCommand).Enum.fields.len]?inputs.Source,
 };
 
 // this can't be a global constant because of a compiler bug
@@ -22,8 +21,8 @@ pub fn getDefault() Config {
         .menu_bindings = undefined,
         .game_bindings = undefined,
     };
-    inline for (@typeInfo(input.MenuCommand).Enum.fields) |field| {
-        const value = @intToEnum(input.MenuCommand, field.value);
+    inline for (@typeInfo(commands.MenuCommand).Enum.fields) |field| {
+        const value = @intToEnum(commands.MenuCommand, field.value);
         cfg.menu_bindings[field.value] = switch (value) {
             .left => .{ .key = .left },
             .right => .{ .key = .right },
@@ -35,8 +34,8 @@ pub fn getDefault() Config {
             .no => .{ .key = .n },
         };
     }
-    inline for (@typeInfo(input.GameCommand).Enum.fields) |field| {
-        const value = @intToEnum(input.GameCommand, field.value);
+    inline for (@typeInfo(commands.GameCommand).Enum.fields) |field| {
+        const value = @intToEnum(commands.GameCommand, field.value);
         cfg.game_bindings[0][field.value] = switch (value) {
             .up => .{ .key = .up },
             .down => .{ .key = .down },
@@ -105,11 +104,11 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
                         },
                     }
                 } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
-                    readBindings(input.MenuCommand, &cfg.menu_bindings, kv.value);
+                    readBindings(commands.MenuCommand, &cfg.menu_bindings, kv.value);
                 } else if (std.mem.eql(u8, kv.key, "game_bindings")) {
-                    readBindings(input.GameCommand, &cfg.game_bindings[0], kv.value);
+                    readBindings(commands.GameCommand, &cfg.game_bindings[0], kv.value);
                 } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
-                    readBindings(input.GameCommand, &cfg.game_bindings[1], kv.value);
+                    readBindings(commands.GameCommand, &cfg.game_bindings[1], kv.value);
                 } else {
                     plog.warn("Unrecognized config field: '{}'\n", .{kv.key});
                 }
@@ -130,7 +129,7 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
 // implementation)? seems safer to use a pointer.
 fn readBindings(
     comptime CommandType: type,
-    bindings: *[@typeInfo(CommandType).Enum.fields.len]?InputSource,
+    bindings: *[@typeInfo(CommandType).Enum.fields.len]?inputs.Source,
     value: std.json.Value,
 ) void {
     switch (value) {
@@ -161,7 +160,7 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
     return null;
 }
 
-fn parseInputSource(value: std.json.Value) !?InputSource {
+fn parseInputSource(value: std.json.Value) !?inputs.Source {
     switch (value) {
         .Object => |map| {
             const source_type_value = map.get("type") orelse return error.Failed;
@@ -175,9 +174,9 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                     .String => |s| s,
                     else => return error.Failed,
                 };
-                inline for (@typeInfo(Key).Enum.fields) |field| {
+                inline for (@typeInfo(inputs.Key).Enum.fields) |field| {
                     if (std.mem.eql(u8, key_name, field.name)) {
-                        return InputSource{ .key = @intToEnum(Key, field.value) };
+                        return inputs.Source{ .key = @intToEnum(inputs.Key, field.value) };
                     }
                 } else {
                     return error.Failed;
@@ -191,7 +190,7 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // FIXME - doesn't feel right to reset `which` to 0, but it
                 // also doesn't feel right to save which joystick in the
                 // config file?
-                return InputSource{
+                return inputs.Source{
                     .joy_button = .{ .which = 0, .button = button },
                 };
             } else if (std.mem.eql(u8, source_type, "joy_axis_neg") or
@@ -206,11 +205,11 @@ fn parseInputSource(value: std.json.Value) !?InputSource {
                 // also doesn't feel right to save which joystick in the
                 // config file?
                 if (std.mem.eql(u8, source_type, "joy_axis_neg")) {
-                    return InputSource{
+                    return inputs.Source{
                         .joy_axis_neg = .{ .which = 0, .axis = axis },
                     };
                 } else {
-                    return InputSource{
+                    return inputs.Source{
                         .joy_axis_pos = .{ .which = 0, .axis = axis },
                     };
                 }
@@ -253,19 +252,19 @@ pub fn writeToStream(w: anytype, cfg: Config) !void {
         \\    "menu_bindings": {{
         \\
     , .{cfg.volume});
-    try writeBindings(w, input.MenuCommand, cfg.menu_bindings);
+    try writeBindings(w, commands.MenuCommand, cfg.menu_bindings);
     try w.print(
         \\    }},
         \\    "game_bindings": {{
         \\
     , .{});
-    try writeBindings(w, input.GameCommand, cfg.game_bindings[0]);
+    try writeBindings(w, commands.GameCommand, cfg.game_bindings[0]);
     try w.print(
         \\    }},
         \\    "game_bindings2": {{
         \\
     , .{});
-    try writeBindings(w, input.GameCommand, cfg.game_bindings[1]);
+    try writeBindings(w, commands.GameCommand, cfg.game_bindings[1]);
     try w.print(
         \\    }}
         \\}}
@@ -276,7 +275,7 @@ pub fn writeToStream(w: anytype, cfg: Config) !void {
 fn writeBindings(
     w: anytype,
     comptime CommandType: type,
-    bindings: [@typeInfo(CommandType).Enum.fields.len]?InputSource,
+    bindings: [@typeInfo(CommandType).Enum.fields.len]?inputs.Source,
 ) !void {
     // don't bother with backslash escaping strings because we know none of
     // the possible values have characters that would need escaping
@@ -287,7 +286,7 @@ fn writeBindings(
         if (maybe_source) |source| {
             switch (source) {
                 .key => |key| {
-                    try w.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(Key, key)});
+                    try w.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(inputs.Key, key)});
                 },
                 .joy_button => |j| {
                     try w.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});

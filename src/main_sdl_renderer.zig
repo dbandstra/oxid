@@ -3,7 +3,7 @@ const translateKey = @import("platform/sdl_keys.zig").translateKey;
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const zang = @import("zang");
-const InputSource = @import("common/key.zig").InputSource;
+const inputs = @import("common/inputs.zig");
 const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
@@ -245,7 +245,7 @@ fn tick(self: *Main) void {
     perf.display();
 }
 
-fn inputEvent(self: *Main, source: InputSource, down: bool) void {
+fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
     switch (oxid.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,

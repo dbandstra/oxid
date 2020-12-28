@@ -4,7 +4,7 @@ const math = @import("../common/math.zig");
 const draw = @import("../common/draw.zig");
 const constants = @import("constants.zig");
 const graphics = @import("graphics.zig");
-const input = @import("input.zig");
+const commands = @import("commands.zig");
 const audio = @import("audio.zig");
 
 pub const Bullet = struct {
@@ -201,7 +201,7 @@ pub const EventDrawBox = struct {
 
 pub const EventGameInput = struct {
     player_number: u32,
-    command: input.GameCommand,
+    command: commands.GameCommand,
     down: bool,
 };
 

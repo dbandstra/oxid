@@ -3,12 +3,12 @@ const std = @import("std");
 const pdraw = @import("root").pdraw;
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
-const InputSource = @import("../common/key.zig").InputSource;
+const inputs = @import("../common/inputs.zig");
 const oxid = @import("oxid.zig");
 const config = @import("config.zig");
 const c = @import("components.zig");
 const menus = @import("menus.zig");
-const input = @import("input.zig");
+const commands = @import("commands.zig");
 const graphics = @import("graphics.zig");
 
 pub const DrawMenuContext = struct {
@@ -26,8 +26,8 @@ pub const DrawMenuContext = struct {
     bottom_margin: u31,
     draw: bool,
     option_index: usize,
-    source: ?InputSource,
-    command: ?input.MenuCommand,
+    source: ?inputs.Source,
+    command: ?commands.MenuCommand,
 
     pub fn setPositionTop(self: *@This()) void {
         self.position_top = true;

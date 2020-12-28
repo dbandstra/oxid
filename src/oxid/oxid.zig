@@ -9,14 +9,13 @@ const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
 const draw = @import("../common/draw.zig");
 const fonts = @import("../common/fonts.zig");
-const InputSource = @import("../common/key.zig").InputSource;
-const areInputSourcesEqual = @import("../common/key.zig").areInputSourcesEqual;
+const inputs = @import("../common/inputs.zig");
 const graphics = @import("graphics.zig");
 const perf = @import("perf.zig");
 const config = @import("config.zig");
 const constants = @import("constants.zig");
 const game = @import("game.zig");
-const input = @import("input.zig");
+const commands = @import("commands.zig");
 const levels = @import("levels.zig");
 const p = @import("prototypes.zig");
 const c = @import("components.zig");
@@ -220,12 +219,12 @@ pub const InputSpecial = union(enum) {
     config_updated,
 };
 
-pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?InputSpecial {
+pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?InputSpecial {
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
-            if (!areInputSourcesEqual(s, source)) continue;
-            break @intToEnum(input.MenuCommand, @intCast(@TagType(input.MenuCommand), i));
+            if (!inputs.Source.eql(s, source)) continue;
+            break @intToEnum(commands.MenuCommand, @intCast(@TagType(commands.MenuCommand), i));
         } else null;
 
         // if menu is open, input goes to it
@@ -262,11 +261,11 @@ pub fn inputEvent(main_state: *MainState, source: InputSource, down: bool) ?Inpu
     while (player_number < config.num_players) : (player_number += 1) {
         for (main_state.cfg.game_bindings[player_number]) |maybe_source, i| {
             const s = maybe_source orelse continue;
-            if (!areInputSourcesEqual(s, source)) continue;
+            if (!inputs.Source.eql(s, source)) continue;
 
             p.spawnEventGameInput(&main_state.session, .{
                 .player_number = player_number,
-                .command = @intToEnum(input.GameCommand, @intCast(@TagType(input.GameCommand), i)),
+                .command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i)),
                 .down = down,
             });
 
@@ -325,7 +324,7 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
             // don't bind if there is already another action bound to this key
             const in_use = if (payload.source) |new_source| for (bindings) |maybe_source| {
                 const source = maybe_source orelse continue;
-                if (!areInputSourcesEqual(source, new_source)) continue;
+                if (!inputs.Source.eql(source, new_source)) continue;
                 break true;
             } else false else false;
             if (!in_use) {
