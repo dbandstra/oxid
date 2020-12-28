@@ -79,11 +79,49 @@ fn init(hunk: *Hunk) !*Main {
     };
     errdefer SDL_DestroyWindow(window);
 
+    // print available render drivers (just out of curiosity; there's no way
+    // for the user to pick one currently)
+    {
+        const num_drivers = SDL_GetNumRenderDrivers();
+        if (num_drivers < 0) {
+            std.debug.warn("Failed to get number of SDL render drivers: {s}\n", .{SDL_GetError()});
+        } else if (num_drivers == 0) {
+            std.debug.warn("No available SDL render drivers.\n", .{});
+        } else blk: {
+            std.debug.warn("Available SDL render drivers: ", .{});
+            var driver_index: c_int = 0;
+            while (driver_index < num_drivers) : (driver_index += 1) {
+                var info: SDL_RendererInfo = undefined;
+                if (SDL_GetRenderDriverInfo(driver_index, &info) != 0) {
+                    std.debug.warn("\nFailed to get SDL render driver info: {s}\n", .{SDL_GetError()});
+                    break :blk;
+                } else {
+                    if (driver_index > 0)
+                        std.debug.warn(", ", .{});
+                    std.debug.warn("{}", .{std.mem.spanZ(info.name)});
+                }
+            }
+            std.debug.warn("\n", .{});
+        }
+    }
+
+    // ask for vsync support (and hope it's 60hz), because framerate control is
+    // not implemented in this build
     const renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC) orelse {
         std.debug.warn("Unable to create SDL renderer: {s}\n", .{SDL_GetError()});
         return error.Failed;
     };
     errdefer SDL_DestroyRenderer(renderer);
+
+    // print the name of the render driver that SDL picked
+    {
+        var info: SDL_RendererInfo = undefined;
+        if (SDL_GetRendererInfo(renderer, &info) == 0) {
+            std.debug.warn("Chosen SDL render driver: {}\n", .{std.mem.spanZ(info.name)});
+        } else {
+            std.debug.warn("Failed to get SDL renderer info: {s}\n", .{SDL_GetError()});
+        }
+    }
 
     self.window = window;
     self.renderer = renderer;
