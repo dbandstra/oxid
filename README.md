@@ -60,6 +60,9 @@ Debug/cheat controls:
 * F3: toggle invulnerability
 * F4: toggle profiling spam (not available in web version)
 
+## Code organization
+See [docs/Code organization.md](docs/Code%20organization.md)
+
 ## Notes
 Low-level graphics code was originally based on andrewrk's [Tetris](https://github.com/andrewrk/tetris) demo for Zig. WebAssembly code was based on raulgrell's [fork](https://github.com/raulgrell/tetris) of the same project.
 

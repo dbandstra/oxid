@@ -34,7 +34,7 @@ pub const ReadableObject = struct {
         self.file.close();
     }
 
-    pub fn reader(self: ReadableObject) std.fs.File.Reader {
+    pub fn reader(self: *ReadableObject) std.fs.File.Reader {
         return self.file.reader();
     }
 };
