@@ -20,11 +20,41 @@ pub const pstorage = @import("platform/storage_native.zig");
 pub const storagekey_config = "config.json";
 pub const storagekey_highscores = "highscore.dat";
 
+fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
+    // pick a window size that isn't bigger than the desktop resolution, and
+    // is an integer multiple of the virtual window size
+    const max_w = screen_w;
+    const max_h = screen_h - 40; // bias for system menubars/taskbars
+
+    const scale_limit = 8;
+
+    var scale: u31 = 1;
+    while (scale < scale_limit) : (scale += 1) {
+        const w = (scale + 1) * oxid.vwin_w;
+        const h = (scale + 1) * oxid.vwin_h;
+
+        if (w > max_w or h > max_h) {
+            break;
+        }
+    }
+
+    return scale;
+}
+
+fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
+    return .{
+        .w = oxid.vwin_w * scale,
+        .h = oxid.vwin_h * scale,
+    };
+}
+
 const Main = struct {
     main_state: oxid.MainState,
     draw_state: pdraw.State,
     window: *SDL_Window,
     renderer: *SDL_Renderer,
+    display_index: c_int, // used to detect when the window has been moved to another display
+    set_canvas_scale: ?u31,
     audio_sample_rate: u31,
     audio_device: SDL_AudioDeviceID,
     quit: bool,
@@ -66,12 +96,29 @@ fn init(hunk: *Hunk) !*Main {
     }
     errdefer SDL_Quit();
 
+    // determine initial and max canvas scale (note: max canvas scale will be
+    // updated on the fly when the window is moved between displays)
+    const max_canvas_scale: u31 = blk: {
+        // get the usable screen region (for the first display)
+        var bounds: SDL_Rect = undefined;
+        if (SDL_GetDisplayUsableBounds(0, &bounds) < 0) {
+            std.debug.warn("Failed to query desktop display mode.\n", .{});
+            break :blk 1; // stick with a small 1x scale window
+        }
+        const w = @intCast(u31, std.math.max(1, bounds.w));
+        const h = @intCast(u31, std.math.max(1, bounds.h));
+        break :blk getMaxCanvasScale(w, h);
+    };
+
+    const initial_canvas_scale = std.math.min(max_canvas_scale, 4);
+    const window_dims = getWindowDimsForScale(initial_canvas_scale);
     const window = SDL_CreateWindow(
         "Oxid",
+        // note: these macros will place the window on the first display
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        oxid.vwin_w,
-        oxid.vwin_h,
+        window_dims.w,
+        window_dims.h,
         0,
     ) orelse {
         std.debug.warn("Unable to create window: {s}\n", .{SDL_GetError()});
@@ -123,6 +170,8 @@ fn init(hunk: *Hunk) !*Main {
         }
     }
 
+    _ = SDL_RenderSetLogicalSize(renderer, oxid.vwin_w, oxid.vwin_h);
+
     self.window = window;
     self.renderer = renderer;
 
@@ -169,12 +218,14 @@ fn init(hunk: *Hunk) !*Main {
         .audio_buffer_size = have.samples,
         .audio_sample_rate = @intToFloat(f32, have.freq),
         .fullscreen = false,
-        .canvas_scale = 1,
-        .max_canvas_scale = 1,
+        .canvas_scale = initial_canvas_scale,
+        .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
     }); // oxid.init prints its own error and returns error.Failed
     errdefer oxid.deinit(&self.main_state);
 
+    self.display_index = 0;
+    self.set_canvas_scale = null;
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
     self.quit = false;
@@ -242,7 +293,49 @@ fn tick(self: *Main) void {
     );
     SDL_UnlockAudioDevice(self.audio_device);
 
+    if (self.set_canvas_scale) |scale| {
+        setCanvasScale(self, scale);
+    }
+    self.set_canvas_scale = null;
+
     perf.display();
+}
+
+fn setCanvasScale(self: *Main, scale: u31) void {
+    if (self.main_state.fullscreen) return;
+
+    self.main_state.canvas_scale = scale;
+
+    const dims = getWindowDimsForScale(scale);
+
+    const w: i32 = dims.w;
+    const h: i32 = dims.h;
+    SDL_SetWindowSize(self.window, w, h);
+
+    // if resizing the window puts part of it off-screen, push it back on-screen
+    const display_index = SDL_GetWindowDisplayIndex(self.window);
+    if (display_index < 0)
+        return;
+    var bounds: SDL_Rect = undefined;
+    if (SDL_GetDisplayUsableBounds(display_index, &bounds) < 0)
+        return;
+
+    var x: i32 = undefined;
+    var y: i32 = undefined;
+    SDL_GetWindowPosition(self.window, &x, &y);
+
+    const new_x = if (x + w > bounds.x + bounds.w)
+        std.math.max(bounds.x, bounds.x + bounds.w - w)
+    else
+        x;
+
+    const new_y = if (y + h > bounds.y + bounds.h)
+        std.math.max(bounds.y, bounds.y + bounds.h - h)
+    else
+        y;
+
+    if (new_x != x or new_y != y)
+        SDL_SetWindowPosition(self.window, new_x, new_y);
 }
 
 fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
@@ -251,7 +344,7 @@ fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
         .quit => self.quit = true,
         .toggle_sound => {}, // unused
         .toggle_fullscreen => {}, // unused
-        .set_canvas_scale => {}, // unused
+        .set_canvas_scale => |scale| self.set_canvas_scale = scale,
         .config_updated => {}, // do nothing (config is saved when program exits)
     }
 }
@@ -270,6 +363,24 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
         SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
                 inputEvent(self, .{ .key = key }, false);
+            }
+        },
+        SDL_WINDOWEVENT => {
+            if (evt.window.event == SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
+                const display_index = SDL_GetWindowDisplayIndex(self.window);
+                if (self.display_index != display_index) {
+                    // window moved to another display
+                    self.display_index = display_index;
+                    // update max_canvas_scale based on the new display's dimensions.
+                    // (the current canvas scale won't change, but the user won't be
+                    // able to increase it beyond the new maximum.)
+                    var bounds: SDL_Rect = undefined;
+                    if (SDL_GetDisplayUsableBounds(display_index, &bounds) >= 0) {
+                        const w = @intCast(u31, std.math.max(1, bounds.w));
+                        const h = @intCast(u31, std.math.max(1, bounds.h));
+                        self.main_state.max_canvas_scale = getMaxCanvasScale(w, h);
+                    }
+                }
             }
         },
         SDL_QUIT => self.quit = true,
