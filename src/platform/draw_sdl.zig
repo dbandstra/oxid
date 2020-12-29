@@ -11,10 +11,12 @@ pub const Texture = struct {
 
 pub const State = struct {
     renderer: *SDL_Renderer,
+    color: drawing.Color,
 };
 
 pub fn init(ds: *State, renderer: *SDL_Renderer) void {
     ds.renderer = renderer;
+    ds.color = .{ .r = 0xff, .g = 0xff, .b = 0xff };
 }
 
 pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
@@ -42,6 +44,7 @@ pub fn destroyTexture(texture: Texture) void {
 }
 
 pub fn setColor(ds: *State, color: drawing.Color) void {
+    ds.color = color;
     _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, 0xff);
 }
 
@@ -63,6 +66,7 @@ pub fn tile(
     h: i32,
     transform: drawing.Transform,
 ) void {
+    _ = SDL_SetTextureColorMod(tileset.texture.texture, ds.color.r, ds.color.g, ds.color.b);
     _ = SDL_RenderCopyEx(
         ds.renderer,
         tileset.texture.texture,
