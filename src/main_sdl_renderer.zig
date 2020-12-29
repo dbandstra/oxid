@@ -204,7 +204,7 @@ fn init(hunk: *Hunk) !*Main {
 
     var have: SDL_AudioSpec = undefined;
 
-    const device: SDL_AudioDeviceID = SDL_OpenAudioDevice(
+    const device = SDL_OpenAudioDevice(
         0, // device name (NULL to let SDL choose)
         0, // non-zero to open for recording instead of playback
         &want,
