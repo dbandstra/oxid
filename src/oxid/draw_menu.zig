@@ -54,7 +54,7 @@ pub const DrawMenuContext = struct {
             pdraw.setColor(self.ds, drawing.pure_white);
         }
         self.w = std.math.max(self.w, w);
-        self.h += self.static.font.char_height;
+        self.h += self.static.font.tileset.tile_h;
     }
 
     pub fn title(self: *@This(), alignment: menus.TextAlignment, s: []const u8) void {
@@ -94,7 +94,7 @@ pub const DrawMenuContext = struct {
         }
         self.option_index += 1;
         self.w = std.math.max(self.w, fonts.stringWidth(&self.static.font, s) + 32); // pad both sides
-        self.h += self.static.font.char_height;
+        self.h += self.static.font.tileset.tile_h;
         self.bottom_margin = 2;
         return false;
     }

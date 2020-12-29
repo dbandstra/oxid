@@ -9,16 +9,12 @@ pub const FontDef = struct {
     first_char: u8,
     char_width: u31,
     char_height: u31,
-    num_cols: u31,
-    num_rows: u31,
     spacing: i32,
 };
 
 pub const Font = struct {
     tileset: drawing.Tileset,
     first_char: u8,
-    char_width: u31,
-    char_height: u31,
     spacing: i32,
 };
 
@@ -34,12 +30,12 @@ pub fn load(ds: *pdraw.State, hunk_side: *HunkSide, font: *Font, comptime def: F
     font.* = .{
         .tileset = .{
             .texture = texture,
-            .xtiles = def.num_cols,
-            .ytiles = def.num_rows,
+            .num_cols = w / def.char_width,
+            .num_rows = h / def.char_height,
+            .tile_w = def.char_width,
+            .tile_h = def.char_height,
         },
         .first_char = def.first_char,
-        .char_width = def.char_width,
-        .char_height = def.char_height,
         .spacing = def.spacing,
     };
 }
@@ -54,7 +50,7 @@ pub fn stringWidth(font: *const Font, string: []const u8) u31 {
         if (i > 0) {
             x += font.spacing;
         }
-        x += @as(i32, font.char_width);
+        x += @as(i32, font.tileset.tile_w);
     }
     return @intCast(u31, std.math.max(0, x));
 }
@@ -65,10 +61,10 @@ pub fn drawString(ds: *pdraw.State, font: *const Font, x: i32, y: i32, string: [
         if (char < font.first_char) continue;
         const index = char - font.first_char;
         const tile: drawing.Tile = .{
-            .tx = index % font.tileset.xtiles,
-            .ty = index / font.tileset.xtiles,
+            .tx = index % font.tileset.num_cols,
+            .ty = index / font.tileset.num_cols,
         };
-        pdraw.tile(ds, font.tileset, tile, ix, y, font.char_width, font.char_height, .identity);
-        ix += @as(i32, font.char_width) + font.spacing;
+        pdraw.tile(ds, font.tileset, tile, ix, y, .identity);
+        ix += @as(i32, font.tileset.tile_w) + font.spacing;
     }
 }

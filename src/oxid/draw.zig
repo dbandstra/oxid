@@ -94,8 +94,6 @@ fn drawMapTile(
         graphics.getGraphicTile(graphic),
         @divFloor(pos.x, levels.subpixels_per_pixel),
         @divFloor(pos.y, levels.subpixels_per_pixel) + oxid.hud_height,
-        levels.pixels_per_tile,
-        levels.pixels_per_tile,
         .identity,
     );
 }
@@ -138,18 +136,12 @@ fn drawEntities(
     defer perf.end(.draw_entities);
 
     for (sorted_drawables) |drawable| {
-        const x = @divFloor(drawable.pos.x, levels.subpixels_per_pixel);
-        const y = @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + oxid.hud_height;
-        const w = levels.pixels_per_tile;
-        const h = levels.pixels_per_tile;
         pdraw.tile(
             ds,
             static.tileset,
             graphics.getGraphicTile(drawable.graphic),
-            x,
-            y,
-            w,
-            h,
+            @divFloor(drawable.pos.x, levels.subpixels_per_pixel),
+            @divFloor(drawable.pos.y, levels.subpixels_per_pixel) + oxid.hud_height,
             drawable.transform,
         );
     }
@@ -223,8 +215,6 @@ fn drawHud(
                         graphics.getGraphicTile(.man_icons),
                         6 * 8 - 2,
                         -1,
-                        16,
-                        16,
                         .identity,
                     );
                 }

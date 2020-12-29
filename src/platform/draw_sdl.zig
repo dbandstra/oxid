@@ -62,21 +62,22 @@ pub fn tile(
     dtile: drawing.Tile,
     x: i32,
     y: i32,
-    w: i32,
-    h: i32,
     transform: drawing.Transform,
 ) void {
+    if (dtile.tx >= tileset.num_cols or dtile.ty >= tileset.num_rows)
+        return;
+
     _ = SDL_SetTextureColorMod(tileset.texture.texture, ds.color.r, ds.color.g, ds.color.b);
     _ = SDL_RenderCopyEx(
         ds.renderer,
         tileset.texture.texture,
         &SDL_Rect{
-            .x = @intCast(c_int, dtile.tx) * @intCast(c_int, tileset.texture.w / tileset.xtiles),
-            .y = @intCast(c_int, dtile.ty) * @intCast(c_int, tileset.texture.h / tileset.ytiles),
-            .w = w,
-            .h = h,
+            .x = dtile.tx * tileset.tile_w,
+            .y = dtile.ty * tileset.tile_h,
+            .w = tileset.tile_w,
+            .h = tileset.tile_h,
         },
-        &SDL_Rect{ .x = x, .y = y, .w = w, .h = h },
+        &SDL_Rect{ .x = x, .y = y, .w = tileset.tile_w, .h = tileset.tile_h },
         switch (transform) {
             .identity, .flip_horz, .flip_vert => 0,
             .rotate_cw => 90,

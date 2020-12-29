@@ -22,6 +22,8 @@ pub const GLSLVersion = enum {
 
 pub const Texture = struct {
     handle: GLuint,
+    inv_w: f32,
+    inv_h: f32,
 };
 
 const Color = struct {
@@ -121,7 +123,11 @@ pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.ptr);
-    return Texture{ .handle = texid };
+    return Texture{
+        .handle = texid,
+        .inv_w = 1 / @intToFloat(f32, w),
+        .inv_h = 1 / @intToFloat(f32, h),
+    };
 }
 
 pub fn destroyTexture(texture: Texture) void {
@@ -215,11 +221,9 @@ pub fn tile(
     dtile: drawing.Tile,
     x: i32,
     y: i32,
-    w: i32,
-    h: i32,
     transform: drawing.Transform,
 ) void {
-    if (dtile.tx >= tileset.xtiles or dtile.ty >= tileset.ytiles)
+    if (dtile.tx >= tileset.num_cols or dtile.ty >= tileset.num_rows)
         return;
 
     const verts_per_tile = 6; // two triangles
@@ -237,13 +241,13 @@ pub fn tile(
 
     const fx0 = @intToFloat(f32, x);
     const fy0 = @intToFloat(f32, y);
-    const fx1 = fx0 + @intToFloat(f32, w);
-    const fy1 = fy0 + @intToFloat(f32, h);
+    const fx1 = fx0 + @intToFloat(f32, tileset.tile_w);
+    const fy1 = fy0 + @intToFloat(f32, tileset.tile_h);
 
-    const s0 = @intToFloat(f32, dtile.tx) / @intToFloat(f32, tileset.xtiles);
-    const t0 = @intToFloat(f32, dtile.ty) / @intToFloat(f32, tileset.ytiles);
-    const s1 = s0 + 1 / @intToFloat(f32, tileset.xtiles);
-    const t1 = t0 + 1 / @intToFloat(f32, tileset.ytiles);
+    const s0 = @intToFloat(f32, dtile.tx * tileset.tile_w) * tileset.texture.inv_w;
+    const t0 = @intToFloat(f32, dtile.ty * tileset.tile_h) * tileset.texture.inv_h;
+    const s1 = s0 + @intToFloat(f32, tileset.tile_w) * tileset.texture.inv_w;
+    const t1 = t0 + @intToFloat(f32, tileset.tile_h) * tileset.texture.inv_h;
 
     ds.draw_buffer.vertex2f[num_verts * 2 ..][0..12].* = [12]GLfloat{
         fx0, fy0, fx0, fy1, fx1, fy1,

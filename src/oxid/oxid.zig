@@ -93,8 +93,6 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         .first_char = 0,
         .char_width = 8,
         .char_height = 8,
-        .num_cols = 16,
-        .num_rows = 8,
         .spacing = -1,
     }) catch |err| {
         plog.warn("Failed to load font: {}\n", .{err});

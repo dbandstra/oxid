@@ -2,13 +2,15 @@ const pdraw = @import("root").pdraw;
 
 pub const Tileset = struct {
     texture: pdraw.Texture,
-    xtiles: u32,
-    ytiles: u32,
+    num_cols: u31,
+    num_rows: u31,
+    tile_w: u31,
+    tile_h: u31,
 };
 
 pub const Tile = struct {
-    tx: u32,
-    ty: u32,
+    tx: u31,
+    ty: u31,
 };
 
 pub const Transform = enum {

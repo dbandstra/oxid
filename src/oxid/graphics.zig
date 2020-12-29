@@ -201,9 +201,13 @@ pub fn loadTileset(
     const w = try std.math.cast(u31, img.width);
     const h = try std.math.cast(u31, img.height);
 
-    out_tileset.texture = try pdraw.createTexture(ds, w, h, img.pixels);
-    out_tileset.xtiles = 8;
-    out_tileset.ytiles = 8;
+    out_tileset.* = .{
+        .texture = try pdraw.createTexture(ds, w, h, img.pixels),
+        .num_cols = w / 16,
+        .num_rows = h / 16,
+        .tile_w = 16,
+        .tile_h = 16,
+    };
 
     std.mem.copy(u8, out_palette, &img.palette);
 }
