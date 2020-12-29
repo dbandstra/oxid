@@ -48,15 +48,27 @@ fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
     };
 }
 
+// used to save the original position and dimensions of the game window before
+// fullscreen mode was activated. this is what we will return to when
+// fullscreen mode is toggled off
+const SavedWindowPos = struct {
+    x: i32,
+    y: i32,
+    w: u31,
+    h: u31,
+};
+
 const Main = struct {
     main_state: oxid.MainState,
     draw_state: pdraw.State,
     window: *SDL_Window,
     renderer: *SDL_Renderer,
     display_index: c_int, // used to detect when the window has been moved to another display
+    toggle_fullscreen: bool,
     set_canvas_scale: ?u31,
     audio_sample_rate: u31,
     audio_device: SDL_AudioDeviceID,
+    saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
     quit: bool,
 };
 
@@ -171,6 +183,7 @@ fn init(hunk: *Hunk) !*Main {
     }
 
     _ = SDL_RenderSetLogicalSize(renderer, oxid.vwin_w, oxid.vwin_h);
+    // _ = SDL_RenderSetIntegerScale(renderer, @intToEnum(SDL_bool, SDL_TRUE));
 
     self.window = window;
     self.renderer = renderer;
@@ -225,10 +238,12 @@ fn init(hunk: *Hunk) !*Main {
     errdefer oxid.deinit(&self.main_state);
 
     self.display_index = 0;
+    self.toggle_fullscreen = false;
     self.set_canvas_scale = null;
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
     self.quit = false;
+    self.saved_window_pos = null;
 
     SDL_PauseAudioDevice(device, 0); // unpause
     errdefer SDL_PauseAudioDevice(device, 1);
@@ -293,9 +308,12 @@ fn tick(self: *Main) void {
     );
     SDL_UnlockAudioDevice(self.audio_device);
 
-    if (self.set_canvas_scale) |scale| {
+    if (self.toggle_fullscreen) {
+        toggleFullscreen(self);
+    } else if (self.set_canvas_scale) |scale| {
         setCanvasScale(self, scale);
     }
+    self.toggle_fullscreen = false;
     self.set_canvas_scale = null;
 
     perf.display();
@@ -338,12 +356,63 @@ fn setCanvasScale(self: *Main, scale: u31) void {
         SDL_SetWindowPosition(self.window, new_x, new_y);
 }
 
+fn toggleFullscreen(self: *Main) void {
+    if (self.main_state.fullscreen) {
+        // disable fullscreen mode
+        if (SDL_SetWindowFullscreen(self.window, 0) < 0) {
+            std.debug.warn("Failed to disable fullscreen mode", .{});
+            return;
+        }
+        // give the window back its original dimensions
+        const swp = self.saved_window_pos.?; // this field is always set when fullscreen is true
+        SDL_SetWindowSize(self.window, swp.w, swp.h);
+        SDL_SetWindowPosition(self.window, swp.x, swp.y);
+        self.main_state.fullscreen = false;
+        self.saved_window_pos = null;
+        return;
+    }
+    // enabling fullscreen mode. we use SDL's "fake" fullscreen mode to avoid a video mode change.
+    // first get the full window dimensions to use
+    const display_index = SDL_GetWindowDisplayIndex(self.window);
+    if (display_index < 0)
+        return;
+    var mode: SDL_DisplayMode = undefined;
+    if (SDL_GetDesktopDisplayMode(display_index, &mode) < 0)
+        return;
+    const full_w = @intCast(u31, std.math.max(1, mode.w));
+    const full_h = @intCast(u31, std.math.max(1, mode.h));
+    // save the current window pos and size
+    const swp: SavedWindowPos = blk: {
+        var x: i32 = undefined;
+        var y: i32 = undefined;
+        var w: i32 = undefined;
+        var h: i32 = undefined;
+        SDL_GetWindowPosition(self.window, &x, &y);
+        SDL_GetWindowSize(self.window, &w, &h);
+        break :blk .{
+            .x = x,
+            .y = y,
+            .w = @intCast(u31, std.math.max(1, w)),
+            .h = @intCast(u31, std.math.max(1, h)),
+        };
+    };
+    // set new window size and go fullscreen
+    SDL_SetWindowSize(self.window, full_w, full_h);
+    if (SDL_SetWindowFullscreen(self.window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
+        std.debug.warn("Failed to enable fullscreen mode\n", .{});
+        SDL_SetWindowSize(self.window, swp.w, swp.h); // put it back
+        return;
+    }
+    self.main_state.fullscreen = true;
+    self.saved_window_pos = swp;
+}
+
 fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
     switch (oxid.inputEvent(&self.main_state, source, down) orelse return) {
         .noop => {},
         .quit => self.quit = true,
         .toggle_sound => {}, // unused
-        .toggle_fullscreen => {}, // unused
+        .toggle_fullscreen => self.toggle_fullscreen = true,
         .set_canvas_scale => |scale| self.set_canvas_scale = scale,
         .config_updated => {}, // do nothing (config is saved when program exits)
     }

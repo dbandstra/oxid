@@ -17,7 +17,7 @@ Table of contents:
     * `zig build`
 * `src/main_sdl_renderer.zig`
     * Main file for Oxid using SDL2 and the SDL_render implementation of `pdraw`.
-    * Note: compared to the OpenGL build, this main file is missing many features such as framerate control, joystick support, and fullscreen mode.
+    * Note: compared to the OpenGL build, this main file is missing some features such as framerate control and joystick support.
     * `zig build sdl_renderer`
 * `src/main_web.zig`
     * Main file for Oxid WebAssembly build. Also uses the OpenGL implementation of `pdraw` (which supports WebGL 1).
