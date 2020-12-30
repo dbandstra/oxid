@@ -1,3 +1,4 @@
+const math = @import("../../common/math.zig");
 const levels = @import("../levels.zig");
 const game = @import("../game.zig");
 const constants = @import("../constants.zig");
@@ -79,15 +80,17 @@ fn drawPlayers(gs: *game.Session) void {
             });
             continue;
         }
-        drawCreature(gs, .{
-            .transform = self.transform,
-            .phys = self.phys,
-            .creature = self.creature,
-            .graphics = switch (self.player.player_number) {
+        if (invulnerabilityBlink(self.creature.invulnerability_timer))
+            continue;
+        const pos = self.transform.pos;
+        const facing = self.phys.facing;
+        p.spawnEventDraw(gs, .{
+            .pos = pos,
+            .graphic = walkFrame(pos, facing, switch (self.player.player_number) {
                 0 => .{ .man1_walk1, .man1_walk2 },
                 else => .{ .man2_walk1, .man2_walk2 },
-            },
-            .rotates = true,
+            }),
+            .transform = util.getDirTransform(facing),
             .z_index = constants.z_index_player,
         });
     }
@@ -113,18 +116,20 @@ fn drawMonsters(gs: *game.Session) void {
             });
             continue;
         }
-        drawCreature(gs, .{
-            .transform = self.transform,
-            .phys = self.phys,
-            .creature = self.creature,
-            .graphics = switch (self.monster.monster_type) {
-                .spider => .{ .spider1, .spider2 },
-                .knight => .{ .knight1, .knight2 },
-                .fast_bug => .{ .fast_bug1, .fast_bug2 },
-                .squid => .{ .squid1, .squid2 },
-                .juggernaut => .{ .juggernaut, .juggernaut },
+        if (invulnerabilityBlink(self.creature.invulnerability_timer))
+            continue;
+        const pos = self.transform.pos;
+        const facing = self.phys.facing;
+        p.spawnEventDraw(gs, .{
+            .pos = pos,
+            .graphic = switch (self.monster.monster_type) {
+                .spider => walkFrame(pos, facing, .{ .spider1, .spider2 }),
+                .knight => walkFrame(pos, facing, .{ .knight1, .knight2 }),
+                .fast_bug => walkFrame(pos, facing, .{ .fast_bug1, .fast_bug2 }),
+                .squid => walkFrame(pos, facing, .{ .squid1, .squid2 }),
+                .juggernaut => .juggernaut,
             },
-            .rotates = true,
+            .transform = util.getDirTransform(facing),
             .z_index = constants.z_index_enemy,
         });
     }
@@ -133,65 +138,38 @@ fn drawMonsters(gs: *game.Session) void {
 fn drawWebs(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
-        phys: *const c.PhysObject,
         creature: *const c.Creature,
         web: *const c.Web,
     });
     while (it.next()) |self| {
-        drawCreature(gs, .{
-            .transform = self.transform,
-            .phys = self.phys,
-            .creature = self.creature,
-            .graphics = if (self.creature.flinch_timer > 0)
-                .{ .web2, .web2 }
-            else
-                .{ .web1, .web1 },
-            .rotates = false,
+        p.spawnEventDraw(gs, .{
+            .pos = self.transform.pos,
+            .graphic = if (self.creature.flinch_timer > 0) .web2 else .web1,
+            .transform = .identity,
             .z_index = constants.z_index_web,
         });
     }
 }
 
 fn alternation(comptime T: type, variable: T, half_period: T) bool {
-    if (half_period == 0) {
+    if (half_period == 0)
         return false;
-    }
     return @mod(@divFloor(variable, half_period), 2) == 0;
 }
 
-fn drawCreature(gs: *game.Session, params: struct {
-    transform: *const c.Transform,
-    phys: *const c.PhysObject,
-    creature: *const c.Creature,
-    graphics: [2]graphics.Graphic,
-    rotates: bool,
-    z_index: u32,
-}) void {
-    // blink during invulnerability
-    if (params.creature.invulnerability_timer > 0) {
-        if (alternation(u32, params.creature.invulnerability_timer, constants.duration60(2))) {
-            return;
-        }
-    }
+fn invulnerabilityBlink(timer: u32) bool {
+    return timer > 0 and alternation(u32, timer, constants.duration60(2));
+}
 
-    const xpos = switch (params.phys.facing) {
-        .w, .e => params.transform.pos.x,
-        .n, .s => params.transform.pos.y,
+fn walkFrame(pos: math.Vec2, facing: math.Direction, frames: [2]graphics.Graphic) graphics.Graphic {
+    const xpos = switch (facing) {
+        .w, .e => pos.x,
+        .n, .s => pos.y,
     };
     const sxpos = @divFloor(xpos, levels.subpixels_per_pixel);
-
-    p.spawnEventDraw(gs, .{
-        .pos = params.transform.pos,
-        .graphic =
-        // animate legs every 6 screen pixels
-        if (alternation(i32, sxpos, 6))
-            params.graphics[0]
-        else
-            params.graphics[1],
-        .transform = if (params.rotates)
-            util.getDirTransform(params.phys.facing)
-        else
-            .identity,
-        .z_index = params.z_index,
-    });
+    if (alternation(i32, sxpos, 6)) {
+        return frames[0];
+    } else {
+        return frames[1];
+    }
 }
