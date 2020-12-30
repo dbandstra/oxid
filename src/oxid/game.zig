@@ -115,9 +115,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
 
     if (ctx.spawn_draw_events) {
         // send draw commands (as events)
-        runSystem(gs, ctx, "animation_draw");
-        runSystem(gs, ctx, "creature_draw");
-        runSystem(gs, ctx, "simple_graphic_draw");
+        runSystem(gs, ctx, "draw");
 
         if (gs.running_state) |grs| {
             if (grs.render_move_boxes) {
