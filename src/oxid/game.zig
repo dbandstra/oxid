@@ -121,9 +121,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
 
         if (gs.running_state) |grs| {
             if (grs.render_move_boxes) {
-                runSystem(gs, ctx, "bullet_draw_box");
-                runSystem(gs, ctx, "physobject_draw_box");
-                runSystem(gs, ctx, "player_draw_box");
+                runSystem(gs, ctx, "draw_boxes");
             }
         }
     }
