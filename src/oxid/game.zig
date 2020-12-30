@@ -75,9 +75,7 @@ fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) voi
 
 // run before "middleware" (rendering, sound, etc)
 pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
-    runSystem(gs, ctx, "global_input");
-    runSystem(gs, ctx, "game_controller_input");
-    runSystem(gs, ctx, "player_input");
+    runSystem(gs, ctx, "input");
 
     if (gs.running_state) |grs| {
         if (!paused) {
