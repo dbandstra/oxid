@@ -38,7 +38,7 @@ fn think(gs: *game.Session, self: SystemData) void {
             self.gc.wave_message_timer = constants.duration60(180);
             self.gc.enemy_speed_level = 0;
             self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
-            const wave = waves.createWave(gs, self.gc);
+            const wave = waves.createWave(gs, self.gc.wave_number);
             spawnWave(gs, self.gc.wave_number, &wave);
             self.gc.enemy_speed_level = wave.speed;
             self.gc.monster_count = countNonPersistentMonsters(gs);
@@ -102,10 +102,13 @@ fn countNonPersistentMonsters(gs: *game.Session) u32 {
 }
 
 fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void {
-    const count = wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts;
+    const max_count = 100;
+    const count = std.math.min(
+        wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts,
+        max_count,
+    );
     const coins = (wave.spiders + wave.knights) / 3;
-    std.debug.assert(count <= 100);
-    var spawn_locs_buf: [100]math.Vec2 = undefined;
+    var spawn_locs_buf: [max_count]math.Vec2 = undefined;
     for (pickSpawnLocations(gs, spawn_locs_buf[0..count])) |loc, i| {
         _ = p.spawnMonster(gs, .{
             .wave_number = wave_number,

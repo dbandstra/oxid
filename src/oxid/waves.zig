@@ -20,9 +20,7 @@ const WaveChoice = struct {
     squid_basecount: u31,
 };
 
-pub fn createWave(gs: *game.Session, gc: *c.GameController) Wave {
-    const wavenum = gc.wave_number;
-
+pub fn createWave(gs: *game.Session, wavenum: u32) Wave {
     var spiders: u31 = 0;
     var knights: u31 = 0;
     var fastbugs: u31 = 0;
