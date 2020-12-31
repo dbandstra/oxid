@@ -255,14 +255,22 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
     }
 
     // game command?
+    const gc = main_state.session.ecs.componentIter(c.GameController).next() orelse return null;
+
     var player_number: u32 = 0;
     while (player_number < config.num_players) : (player_number += 1) {
         for (main_state.cfg.game_bindings[player_number]) |maybe_source, i| {
             const s = maybe_source orelse continue;
             if (!inputs.Source.eql(s, source)) continue;
 
+            const player_controller_id = switch (player_number) {
+                0 => gc.player1_controller_id orelse continue,
+                1 => gc.player2_controller_id orelse continue,
+                else => continue,
+            };
+
             p.spawnEventGameInput(&main_state.session, .{
-                .player_number = player_number,
+                .player_controller_id = player_controller_id,
                 .command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i)),
                 .down = down,
             });

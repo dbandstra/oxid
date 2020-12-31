@@ -45,34 +45,36 @@ fn killAllMonsters(gs: *game.Session) void {
 
 fn playerInput(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
-        player: *c.Player,
-        creature: *c.Creature,
-        inbox: gbe.Inbox(16, c.EventGameInput, null),
+        pc: *c.PlayerController,
+        inbox: gbe.Inbox(16, c.EventGameInput, "player_controller_id"),
     });
     while (it.next()) |self| {
+        const player_id = self.pc.player_id orelse continue;
+        const player_ent = gs.ecs.findById(player_id, struct {
+            creature: *c.Creature,
+            player: *c.Player,
+        }) orelse continue;
+
         for (self.inbox.all()) |event| {
-            // TODO is it possible to have the event point right to the player id?
-            if (event.player_number != self.player.player_number)
-                continue;
             switch (event.command) {
                 .up => {
-                    self.player.in_up = event.down;
+                    player_ent.player.in_up = event.down;
                 },
                 .down => {
-                    self.player.in_down = event.down;
+                    player_ent.player.in_down = event.down;
                 },
                 .left => {
-                    self.player.in_left = event.down;
+                    player_ent.player.in_left = event.down;
                 },
                 .right => {
-                    self.player.in_right = event.down;
+                    player_ent.player.in_right = event.down;
                 },
                 .shoot => {
-                    self.player.in_shoot = event.down;
+                    player_ent.player.in_shoot = event.down;
                 },
                 .toggle_god_mode => {
                     if (event.down)
-                        self.creature.god_mode = !self.creature.god_mode;
+                        player_ent.creature.god_mode = !player_ent.creature.god_mode;
                 },
                 else => {},
             }

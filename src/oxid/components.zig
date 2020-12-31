@@ -199,7 +199,7 @@ pub const EventDrawBox = struct {
 };
 
 pub const EventGameInput = struct {
-    player_number: u32,
+    player_controller_id: gbe.EntityId,
     command: commands.GameCommand,
     down: bool,
 };
