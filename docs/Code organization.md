@@ -35,8 +35,6 @@ Game-agnostic code which could be reused in other projects.
 * `fonts.zig`
     * Code for loading and drawing fixed-width fonts.
     * Imports `@import("root").pdraw`.
-* `indenting_writer.zig`
-    * A `Writer` implementation that prepends spaces to each line coming from the source stream.
 * `inputs.zig`
     * Canonical, platform-agnostic data models for input sources (keys, mouse/joystick buttons, etc).
 * `math.zig`
@@ -157,25 +155,6 @@ pub const WritableObject = struct {
 |---|---|
 | `storage_web.zig` | Uses extern functions which should be implemented on the JavaScript side. In Oxid, this is backed by the browser's LocalStorage API. |
 | `storage_native.zig` | Uses `@import("root").pstorage_dirname`. This is the name of the subdirectory to create within the user's app data folder, the path to which is retrieved using `std.fs.getAppDataDir`, which yields:<ul><li> Windows: `FOLDERID_LocalAppData` (e.g. `%USERPROFILE%/AppData/Local/`)<li>MacOS: `~/Library/Application Support/`<li>Linux, BSD: `~/.local/share/`</ul>`key` is used as the filename. |
-
-### plog
-Log warnings and diagnostics to the console.
-
-```zig
-// write a line to the console (same signature as `std.debug.warn`).
-pub fn warn(comptime fmt: []const u8, args: anytype) void
-
-// open a stream for writing. make sure to call `flushWarnWriter` at the end.
-pub fn warnWriter() std.io.Writer(// opaque)
-
-// flush anything that is currently queued by `warnWriter`.
-pub fn flushWarnWriter() void
-```
-
-| Implementations |   |
-|---|---|
-| `log_web.zig` | Uses extern function which is intended to backed by JS `console.log` or similar. |
-| `log_native.zig` | Prints to stderr.
 
 ### Other files
 There are a few other files in `src/platform/` that are not part of interface implementations.

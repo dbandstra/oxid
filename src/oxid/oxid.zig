@@ -3,7 +3,6 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
-const plog = @import("root").plog;
 const pstorage = @import("root").pstorage;
 const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
@@ -84,7 +83,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         // the file exists but there was an error loading it. just continue
         // with an empty high scores list, even though that might mean that
         // the user's legitimate high scores might get wiped out (FIXME?)
-        plog.warn("Failed to load high scores: {}\n", .{err});
+        std.log.crit("Failed to load high scores: {}", .{err});
         break :blk [1]u32{0} ** constants.num_high_scores;
     };
 
@@ -95,19 +94,19 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         .char_height = 8,
         .spacing = -1,
     }) catch |err| {
-        plog.warn("Failed to load font: {}\n", .{err});
+        std.log.emerg("Failed to load font: {}", .{err});
         return error.Failed;
     };
     errdefer fonts.unload(&self.static.font);
 
     graphics.loadTileset(ds, &self.hunk.low(), &self.static.tileset, &self.static.palette) catch |err| {
-        plog.warn("Failed to load tileset: {}\n", .{err});
+        std.log.emerg("Failed to load tileset: {}", .{err});
         return error.Failed;
     };
     errdefer graphics.unloadTileset(&self.static.tileset);
 
     self.cfg = config.read(&self.hunk.low(), storagekey_config) catch |err| blk: {
-        plog.warn("Failed to load config: {}\n", .{err});
+        std.log.crit("Failed to load config: {}", .{err});
         break :blk config.getDefault();
     };
 
@@ -120,7 +119,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         params.audio_sample_rate,
         params.audio_buffer_size,
     ) catch |err| {
-        plog.warn("Failed to load audio module: {}\n", .{err});
+        std.log.emerg("Failed to load audio module: {}", .{err});
         return error.Failed;
     };
 
@@ -431,7 +430,7 @@ fn postScores(self: *MainState) void {
 
     if (save_high_scores) {
         saveHighScores(&self.hunk.low(), self.high_scores) catch |err| {
-            plog.warn("Failed to save high scores: {}\n", .{err});
+            std.log.err("Failed to save high scores: {}", .{err});
         };
     }
 }

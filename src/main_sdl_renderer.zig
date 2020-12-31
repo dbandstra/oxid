@@ -1,5 +1,3 @@
-usingnamespace @import("platform/sdl.zig");
-const translateKey = @import("platform/sdl_keys.zig").translateKey;
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const zang = @import("zang");
@@ -10,10 +8,12 @@ const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
 const oxid = @import("oxid/oxid.zig");
 
+const sdl = @import("platform/sdl.zig");
+const translateKey = @import("platform/sdl_keys.zig").translateKey;
+
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
 pub const pdraw = @import("platform/draw_sdl.zig");
-pub const plog = @import("platform/log_native.zig");
 pub const pstorage_dirname = "Oxid";
 pub const pstorage = @import("platform/storage_native.zig");
 
@@ -61,13 +61,13 @@ const SavedWindowPos = struct {
 const Main = struct {
     main_state: oxid.MainState,
     draw_state: pdraw.State,
-    window: *SDL_Window,
-    renderer: *SDL_Renderer,
+    window: *sdl.SDL_Window,
+    renderer: *sdl.SDL_Renderer,
     display_index: c_int, // used to detect when the window has been moved to another display
     toggle_fullscreen: bool,
     set_canvas_scale: ?u31,
     audio_sample_rate: u31,
-    audio_device: SDL_AudioDeviceID,
+    audio_device: sdl.SDL_AudioDeviceID,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
     quit: bool,
 };
@@ -102,19 +102,19 @@ fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C)
 fn init(hunk: *Hunk) !*Main {
     const self = hunk.low().allocator.create(Main) catch unreachable;
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
-        std.debug.warn("Unable to initialize SDL: {s}\n", .{SDL_GetError()});
+    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_AUDIO) != 0) {
+        std.log.emerg("Unable to initialize SDL: {s}", .{sdl.SDL_GetError()});
         return error.Failed;
     }
-    errdefer SDL_Quit();
+    errdefer sdl.SDL_Quit();
 
     // determine initial and max canvas scale (note: max canvas scale will be
     // updated on the fly when the window is moved between displays)
     const max_canvas_scale: u31 = blk: {
         // get the usable screen region (for the first display)
-        var bounds: SDL_Rect = undefined;
-        if (SDL_GetDisplayUsableBounds(0, &bounds) < 0) {
-            std.debug.warn("Failed to query desktop display mode.\n", .{});
+        var bounds: sdl.SDL_Rect = undefined;
+        if (sdl.SDL_GetDisplayUsableBounds(0, &bounds) < 0) {
+            std.log.err("Failed to query desktop display mode.", .{});
             break :blk 1; // stick with a small 1x scale window
         }
         const w = @intCast(u31, std.math.max(1, bounds.w));
@@ -124,87 +124,84 @@ fn init(hunk: *Hunk) !*Main {
 
     const initial_canvas_scale = std.math.min(max_canvas_scale, 4);
     const window_dims = getWindowDimsForScale(initial_canvas_scale);
-    const window = SDL_CreateWindow(
+    const window = sdl.SDL_CreateWindow(
         "Oxid",
         // note: these macros will place the window on the first display
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
+        sdl.SDL_WINDOWPOS_UNDEFINED,
+        sdl.SDL_WINDOWPOS_UNDEFINED,
         window_dims.w,
         window_dims.h,
         0,
     ) orelse {
-        std.debug.warn("Unable to create window: {s}\n", .{SDL_GetError()});
+        std.log.emerg("Unable to create window: {s}", .{sdl.SDL_GetError()});
         return error.Failed;
     };
-    errdefer SDL_DestroyWindow(window);
+    errdefer sdl.SDL_DestroyWindow(window);
 
     // print available render drivers (just out of curiosity; there's no way
     // for the user to pick one currently)
     {
-        const num_drivers = SDL_GetNumRenderDrivers();
+        const num_drivers = sdl.SDL_GetNumRenderDrivers();
         if (num_drivers < 0) {
-            std.debug.warn("Failed to get number of SDL render drivers: {s}\n", .{SDL_GetError()});
+            std.log.warn("Failed to get number of SDL render drivers: {s}", .{sdl.SDL_GetError()});
         } else if (num_drivers == 0) {
-            std.debug.warn("No available SDL render drivers.\n", .{});
+            std.log.notice("No available SDL render drivers.", .{});
         } else blk: {
-            std.debug.warn("Available SDL render drivers: ", .{});
+            std.log.notice("Available SDL render drivers:", .{});
             var driver_index: c_int = 0;
             while (driver_index < num_drivers) : (driver_index += 1) {
-                var info: SDL_RendererInfo = undefined;
-                if (SDL_GetRenderDriverInfo(driver_index, &info) != 0) {
-                    std.debug.warn("\nFailed to get SDL render driver info: {s}\n", .{SDL_GetError()});
+                var info: sdl.SDL_RendererInfo = undefined;
+                if (sdl.SDL_GetRenderDriverInfo(driver_index, &info) != 0) {
+                    std.log.notice("Failed to get SDL render driver info: {s}", .{sdl.SDL_GetError()});
                     break :blk;
                 } else {
-                    if (driver_index > 0)
-                        std.debug.warn(", ", .{});
-                    std.debug.warn("{}", .{std.mem.spanZ(info.name)});
+                    std.log.notice("  - {}", .{std.mem.spanZ(info.name)});
                 }
             }
-            std.debug.warn("\n", .{});
         }
     }
 
     // ask for vsync support (and hope it's 60hz), because framerate control is
     // not implemented in this build
-    const renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC) orelse {
-        std.debug.warn("Unable to create SDL renderer: {s}\n", .{SDL_GetError()});
+    const renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_PRESENTVSYNC) orelse {
+        std.log.emerg("Unable to create SDL renderer: {s}", .{sdl.SDL_GetError()});
         return error.Failed;
     };
-    errdefer SDL_DestroyRenderer(renderer);
+    errdefer sdl.SDL_DestroyRenderer(renderer);
 
     // print the name of the render driver that SDL picked
     {
-        var info: SDL_RendererInfo = undefined;
-        if (SDL_GetRendererInfo(renderer, &info) == 0) {
-            std.debug.warn("Chosen SDL render driver: {}\n", .{std.mem.spanZ(info.name)});
+        var info: sdl.SDL_RendererInfo = undefined;
+        if (sdl.SDL_GetRendererInfo(renderer, &info) == 0) {
+            std.log.notice("Chosen SDL render driver: {}", .{std.mem.spanZ(info.name)});
         } else {
-            std.debug.warn("Failed to get SDL renderer info: {s}\n", .{SDL_GetError()});
+            std.log.warn("Failed to get SDL renderer info: {s}", .{sdl.SDL_GetError()});
         }
     }
 
-    _ = SDL_RenderSetLogicalSize(renderer, oxid.vwin_w, oxid.vwin_h);
-    // _ = SDL_RenderSetIntegerScale(renderer, @intToEnum(SDL_bool, SDL_TRUE));
+    _ = sdl.SDL_RenderSetLogicalSize(renderer, oxid.vwin_w, oxid.vwin_h);
+    // _ = sdl.SDL_RenderSetIntegerScale(renderer, @intToEnum(sdl.SDL_bool, sdl.SDL_TRUE));
 
     self.window = window;
     self.renderer = renderer;
 
-    if (SDL_GetCurrentAudioDriver()) |name| {
-        std.debug.warn("Audio driver: {}\n", .{std.mem.spanZ(name)});
+    if (sdl.SDL_GetCurrentAudioDriver()) |name| {
+        std.log.notice("Audio driver: {}", .{std.mem.spanZ(name)});
     } else {
-        std.debug.warn("Failed to get audio driver name.\n", .{});
+        std.log.warn("Failed to get audio driver name.", .{});
     }
 
-    var want = std.mem.zeroes(SDL_AudioSpec);
+    var want = std.mem.zeroes(sdl.SDL_AudioSpec);
     want.freq = 44100;
-    want.format = AUDIO_S16LSB;
+    want.format = sdl.AUDIO_S16LSB;
     want.channels = 1;
     want.samples = 1024;
     want.callback = audioCallback;
     want.userdata = &self.main_state.audio_module;
 
-    var have: SDL_AudioSpec = undefined;
+    var have: sdl.SDL_AudioSpec = undefined;
 
-    const device = SDL_OpenAudioDevice(
+    const device = sdl.SDL_OpenAudioDevice(
         0, // device name (NULL to let SDL choose)
         0, // non-zero to open for recording instead of playback
         &want,
@@ -212,15 +209,15 @@ fn init(hunk: *Hunk) !*Main {
         // tell SDL that we can handle any frequency. however for other
         // properties, like format, we will let SDL do the resampling if the
         // system doesn't support it
-        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
+        sdl.SDL_AUDIO_ALLOW_FREQUENCY_CHANGE,
     );
     if (device == 0) {
-        std.debug.warn("Failed to open audio: {s}\n", .{SDL_GetError()});
+        std.log.emerg("Failed to open audio: {s}", .{sdl.SDL_GetError()});
         return error.Failed;
     }
-    errdefer SDL_CloseAudioDevice(device);
+    errdefer sdl.SDL_CloseAudioDevice(device);
 
-    std.debug.warn("Audio sample rate: {}hz\n", .{have.freq});
+    std.log.notice("Audio sample rate: {}hz", .{have.freq});
 
     pdraw.init(&self.draw_state, renderer);
     // note: platform/draw_sdl has no deinit function
@@ -245,36 +242,36 @@ fn init(hunk: *Hunk) !*Main {
     self.quit = false;
     self.saved_window_pos = null;
 
-    SDL_PauseAudioDevice(device, 0); // unpause
-    errdefer SDL_PauseAudioDevice(device, 1);
+    sdl.SDL_PauseAudioDevice(device, 0); // unpause
+    errdefer sdl.SDL_PauseAudioDevice(device, 1);
 
-    std.debug.warn("Initialization complete.\n", .{});
+    std.log.notice("Initialization complete.", .{});
 
     return self;
 }
 
 fn deinit(self: *Main) void {
-    std.debug.warn("Shutting down.\n", .{});
+    std.log.notice("Shutting down.", .{});
 
     config.write(
         &self.main_state.hunk.low(),
         storagekey_config,
         self.main_state.cfg,
     ) catch |err| {
-        std.debug.warn("Failed to save config: {}\n", .{err});
+        std.log.err("Failed to save config: {}", .{err});
     };
 
-    SDL_PauseAudioDevice(self.audio_device, 1);
+    sdl.SDL_PauseAudioDevice(self.audio_device, 1);
     oxid.deinit(&self.main_state);
-    SDL_CloseAudioDevice(self.audio_device);
-    SDL_DestroyRenderer(self.renderer);
-    SDL_DestroyWindow(self.window);
-    SDL_Quit();
+    sdl.SDL_CloseAudioDevice(self.audio_device);
+    sdl.SDL_DestroyRenderer(self.renderer);
+    sdl.SDL_DestroyWindow(self.window);
+    sdl.SDL_Quit();
 }
 
 fn tick(self: *Main) void {
-    var evt: SDL_Event = undefined;
-    while (SDL_PollEvent(&evt) != 0) {
+    var evt: sdl.SDL_Event = undefined;
+    while (sdl.SDL_PollEvent(&evt) != 0) {
         handleSDLEvent(self, evt);
         if (self.quit) {
             return;
@@ -296,9 +293,9 @@ fn tick(self: *Main) void {
 
     game.frameCleanup(&self.main_state.session);
 
-    SDL_RenderPresent(self.renderer);
+    sdl.SDL_RenderPresent(self.renderer);
 
-    SDL_LockAudioDevice(self.audio_device);
+    sdl.SDL_LockAudioDevice(self.audio_device);
     self.main_state.audio_module.sync(
         false,
         self.main_state.cfg.volume,
@@ -306,7 +303,7 @@ fn tick(self: *Main) void {
         &self.main_state.session,
         &self.main_state.menu_sounds,
     );
-    SDL_UnlockAudioDevice(self.audio_device);
+    sdl.SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {
         toggleFullscreen(self);
@@ -328,19 +325,19 @@ fn setCanvasScale(self: *Main, scale: u31) void {
 
     const w: i32 = dims.w;
     const h: i32 = dims.h;
-    SDL_SetWindowSize(self.window, w, h);
+    sdl.SDL_SetWindowSize(self.window, w, h);
 
     // if resizing the window puts part of it off-screen, push it back on-screen
-    const display_index = SDL_GetWindowDisplayIndex(self.window);
+    const display_index = sdl.SDL_GetWindowDisplayIndex(self.window);
     if (display_index < 0)
         return;
-    var bounds: SDL_Rect = undefined;
-    if (SDL_GetDisplayUsableBounds(display_index, &bounds) < 0)
+    var bounds: sdl.SDL_Rect = undefined;
+    if (sdl.SDL_GetDisplayUsableBounds(display_index, &bounds) < 0)
         return;
 
     var x: i32 = undefined;
     var y: i32 = undefined;
-    SDL_GetWindowPosition(self.window, &x, &y);
+    sdl.SDL_GetWindowPosition(self.window, &x, &y);
 
     const new_x = if (x + w > bounds.x + bounds.w)
         std.math.max(bounds.x, bounds.x + bounds.w - w)
@@ -353,31 +350,31 @@ fn setCanvasScale(self: *Main, scale: u31) void {
         y;
 
     if (new_x != x or new_y != y)
-        SDL_SetWindowPosition(self.window, new_x, new_y);
+        sdl.SDL_SetWindowPosition(self.window, new_x, new_y);
 }
 
 fn toggleFullscreen(self: *Main) void {
     if (self.main_state.fullscreen) {
         // disable fullscreen mode
-        if (SDL_SetWindowFullscreen(self.window, 0) < 0) {
-            std.debug.warn("Failed to disable fullscreen mode", .{});
+        if (sdl.SDL_SetWindowFullscreen(self.window, 0) < 0) {
+            std.log.err("Failed to disable fullscreen mode", .{});
             return;
         }
         // give the window back its original dimensions
         const swp = self.saved_window_pos.?; // this field is always set when fullscreen is true
-        SDL_SetWindowSize(self.window, swp.w, swp.h);
-        SDL_SetWindowPosition(self.window, swp.x, swp.y);
+        sdl.SDL_SetWindowSize(self.window, swp.w, swp.h);
+        sdl.SDL_SetWindowPosition(self.window, swp.x, swp.y);
         self.main_state.fullscreen = false;
         self.saved_window_pos = null;
         return;
     }
     // enabling fullscreen mode. we use SDL's "fake" fullscreen mode to avoid a video mode change.
     // first get the full window dimensions to use
-    const display_index = SDL_GetWindowDisplayIndex(self.window);
+    const display_index = sdl.SDL_GetWindowDisplayIndex(self.window);
     if (display_index < 0)
         return;
-    var mode: SDL_DisplayMode = undefined;
-    if (SDL_GetDesktopDisplayMode(display_index, &mode) < 0)
+    var mode: sdl.SDL_DisplayMode = undefined;
+    if (sdl.SDL_GetDesktopDisplayMode(display_index, &mode) < 0)
         return;
     const full_w = @intCast(u31, std.math.max(1, mode.w));
     const full_h = @intCast(u31, std.math.max(1, mode.h));
@@ -387,8 +384,8 @@ fn toggleFullscreen(self: *Main) void {
         var y: i32 = undefined;
         var w: i32 = undefined;
         var h: i32 = undefined;
-        SDL_GetWindowPosition(self.window, &x, &y);
-        SDL_GetWindowSize(self.window, &w, &h);
+        sdl.SDL_GetWindowPosition(self.window, &x, &y);
+        sdl.SDL_GetWindowSize(self.window, &w, &h);
         break :blk .{
             .x = x,
             .y = y,
@@ -397,10 +394,10 @@ fn toggleFullscreen(self: *Main) void {
         };
     };
     // set new window size and go fullscreen
-    SDL_SetWindowSize(self.window, full_w, full_h);
-    if (SDL_SetWindowFullscreen(self.window, SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
-        std.debug.warn("Failed to enable fullscreen mode\n", .{});
-        SDL_SetWindowSize(self.window, swp.w, swp.h); // put it back
+    sdl.SDL_SetWindowSize(self.window, full_w, full_h);
+    if (sdl.SDL_SetWindowFullscreen(self.window, sdl.SDL_WINDOW_FULLSCREEN_DESKTOP) < 0) {
+        std.log.err("Failed to enable fullscreen mode", .{});
+        sdl.SDL_SetWindowSize(self.window, swp.w, swp.h); // put it back
         return;
     }
     self.main_state.fullscreen = true;
@@ -418,9 +415,9 @@ fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
     }
 }
 
-fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
+fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
     switch (evt.type) {
-        SDL_KEYDOWN => {
+        sdl.SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
                     inputEvent(self, .{ .key = key }, true);
@@ -429,22 +426,22 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 }
             }
         },
-        SDL_KEYUP => {
+        sdl.SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
                 inputEvent(self, .{ .key = key }, false);
             }
         },
-        SDL_WINDOWEVENT => {
-            if (evt.window.event == SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
-                const display_index = SDL_GetWindowDisplayIndex(self.window);
+        sdl.SDL_WINDOWEVENT => {
+            if (evt.window.event == sdl.SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
+                const display_index = sdl.SDL_GetWindowDisplayIndex(self.window);
                 if (self.display_index != display_index) {
                     // window moved to another display
                     self.display_index = display_index;
                     // update max_canvas_scale based on the new display's dimensions.
                     // (the current canvas scale won't change, but the user won't be
                     // able to increase it beyond the new maximum.)
-                    var bounds: SDL_Rect = undefined;
-                    if (SDL_GetDisplayUsableBounds(display_index, &bounds) >= 0) {
+                    var bounds: sdl.SDL_Rect = undefined;
+                    if (sdl.SDL_GetDisplayUsableBounds(display_index, &bounds) >= 0) {
                         const w = @intCast(u31, std.math.max(1, bounds.w));
                         const h = @intCast(u31, std.math.max(1, bounds.h));
                         self.main_state.max_canvas_scale = getMaxCanvasScale(w, h);
@@ -452,7 +449,7 @@ fn handleSDLEvent(self: *Main, evt: SDL_Event) void {
                 }
             }
         },
-        SDL_QUIT => self.quit = true,
+        sdl.SDL_QUIT => self.quit = true,
         else => {},
     }
 }

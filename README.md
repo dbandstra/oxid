@@ -58,7 +58,7 @@ Debug/cheat controls:
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
 * F3: toggle invulnerability
-* F4: toggle profiling spam (not available in web version)
+* F4: toggle profiling spam (not available in web version or in ReleaseSmall)
 
 ## Code organization
 See [docs/Code organization.md](docs/Code%20organization.md)

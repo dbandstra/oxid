@@ -17,14 +17,33 @@ const oxid = @import("oxid/oxid.zig");
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_web.zig");
 pub const pdraw = @import("platform/draw_opengl.zig");
-pub const plog = @import("platform/log_web.zig");
 pub const pstorage = @import("platform/storage_web.zig");
 
 pub const storagekey_config = "config";
 pub const storagekey_highscores = "highscores";
 
 // extern functions implemented in javascript
+extern fn consoleLog(message_ptr: [*]const u8, message_len: c_uint) void;
 extern fn getRandomSeed() c_uint;
+
+fn logLine(message: []const u8) void {
+    consoleLog(message.ptr, message.len);
+}
+
+pub fn log(
+    comptime message_level: std.log.Level,
+    comptime scope: @Type(.EnumLiteral),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    var buf: [1000]u8 = undefined;
+    const text = std.fmt.bufPrint(&buf, format, args) catch {
+        logLine("warn: bufPrint failed. too long? format string:");
+        logLine(format);
+        return;
+    };
+    logLine(text);
+}
 
 const Main = struct {
     main_state: oxid.MainState,
@@ -157,7 +176,7 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
                 &g.main_state.hunk.low(),
                 storagekey_config,
                 g.main_state.cfg,
-            ) catch |err| plog.warn("Failed to save config: {}\n", .{err});
+            ) catch |err| std.log.err("Failed to save config: {}", .{err});
             return NOP;
         },
     };
@@ -182,13 +201,13 @@ const audio_buffer_size = 1024;
 
 fn init() !void {
     main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200 * 1024) catch |err| {
-        plog.warn("failed to allocate main_memory: {}\n", .{err});
+        std.log.emerg("failed to allocate main_memory: {}", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.free(main_memory);
 
     var hunk = std.heap.page_allocator.create(Hunk) catch |err| {
-        plog.warn("failed to allocate hunk: {}\n", .{err});
+        std.log.emerg("failed to allocate hunk: {}", .{err});
         return error.Failed;
     };
     errdefer std.heap.page_allocator.destroy(hunk);
@@ -201,7 +220,7 @@ fn init() !void {
         .virtual_window_width = oxid.vwin_w,
         .virtual_window_height = oxid.vwin_h,
     }) catch |err| {
-        plog.warn("pdraw.init failed: {}\n", .{err});
+        std.log.emerg("pdraw.init failed: {}", .{err});
         return error.Failed;
     };
     errdefer pdraw.deinit(&g.draw_state);

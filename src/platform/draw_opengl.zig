@@ -8,8 +8,6 @@ else
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
-const plog = @import("root").plog;
-const indentingWriter = @import("../common/indenting_writer.zig").indentingWriter;
 const drawing = @import("../common/drawing.zig");
 
 const buffer_vertices = 4 * 512; // render up to 512 quads at once
@@ -313,20 +311,43 @@ const ShaderSource = struct {
 };
 
 const ShaderProgram = struct {
+    name: []const u8,
     program_id: GLuint,
     vertex_id: GLuint,
     fragment_id: GLuint,
 };
 
-fn compileAndLinkShaderProgram(hunk_side: *HunkSide, description: []const u8, source: ShaderSource) !ShaderProgram {
-    errdefer plog.warn("Failed to compile and link shader program \"{}\".\n", .{description});
+fn compileAndLinkShaderProgram(
+    hunk_side: *HunkSide,
+    name: []const u8,
+    source: ShaderSource,
+) !ShaderProgram {
+    const vertex_id = try compileShader(
+        hunk_side,
+        name,
+        "vertex",
+        GL_VERTEX_SHADER,
+        source.vertex,
+    );
+    errdefer glDeleteShader(vertex_id);
 
-    const vertex_id = try compileShader(hunk_side, source.vertex, "vertex", GL_VERTEX_SHADER);
-    const fragment_id = try compileShader(hunk_side, source.fragment, "fragment", GL_FRAGMENT_SHADER);
+    const fragment_id = try compileShader(
+        hunk_side,
+        name,
+        "fragment",
+        GL_FRAGMENT_SHADER,
+        source.fragment,
+    );
+    errdefer glDeleteShader(fragment_id);
 
     const program_id = glCreateProgram();
+    errdefer glDeleteProgram(program_id);
+
     glAttachShader(program_id, vertex_id);
+    errdefer glDetachShader(program_id, vertex_id);
     glAttachShader(program_id, fragment_id);
+    errdefer glDetachShader(program_id, fragment_id);
+
     glLinkProgram(program_id);
 
     var status: GLint = undefined;
@@ -338,28 +359,41 @@ fn compileAndLinkShaderProgram(hunk_side: *HunkSide, description: []const u8, so
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
-        if (hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1)) |buffer| {
-            var len: GLsizei = 0;
-            glGetProgramInfoLog(program_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
-            const log = buffer[0..@intCast(usize, len)];
-            indentingWriter(plog.warnWriter(), 4).writer().writeAll(log) catch {};
-            plog.flushWarnWriter();
-        } else |_| plog.warn("Failed to retrieve program info log (out of memory).\n", .{});
+        const buffer = hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1) catch {
+            std.log.err("Failed to link \"{}\" shader program.", .{name});
+            std.log.err("Failed to retrieve program info log (out of memory).", .{});
+            return error.ShaderLinkFailed;
+        };
 
+        var len: GLsizei = 0;
+        glGetProgramInfoLog(program_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
+        std.log.err("Failed to link \"{}\" shader program.\n{}\n{}\n{}", .{
+            name,
+            "-" ** 60,
+            std.mem.trimRight(u8, buffer[0..@intCast(usize, len)], "\r\n"),
+            "-" ** 60,
+        });
         return error.ShaderLinkFailed;
     }
 
     return ShaderProgram{
+        .name = name,
         .program_id = program_id,
         .vertex_id = vertex_id,
         .fragment_id = fragment_id,
     };
 }
 
-fn compileShader(hunk_side: *HunkSide, source: []const u8, shader_type: []const u8, kind: GLenum) !GLuint {
-    errdefer plog.warn("Failed to compile {} shader.\n", .{shader_type});
-
+fn compileShader(
+    hunk_side: *HunkSide,
+    name: []const u8,
+    shader_type: []const u8,
+    kind: GLenum,
+    source: []const u8,
+) !GLuint {
     const shader_id = glCreateShader(kind);
+    errdefer glDeleteShader(shader_id);
+
     const source_len = @intCast(GLint, source.len);
     glShaderSource(shader_id, 1, &source.ptr, &source_len);
     glCompileShader(shader_id);
@@ -373,14 +407,21 @@ fn compileShader(hunk_side: *HunkSide, source: []const u8, shader_type: []const 
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
 
-        if (hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1)) |buffer| {
-            var len: GLsizei = 0;
-            glGetShaderInfoLog(shader_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
-            const log = buffer[0..@intCast(usize, len)];
-            indentingWriter(plog.warnWriter(), 4).writer().writeAll(log) catch {};
-            plog.flushWarnWriter();
-        } else |_| plog.warn("Failed to retrieve shader info log (out of memory).\n", .{});
+        const buffer = hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1) catch {
+            std.log.err("Failed to compile \"{}\" {} shader.", .{ name, shader_type });
+            std.log.err("Failed to retrieve shader info log (out of memory).", .{});
+            return error.ShaderCompileFailed;
+        };
 
+        var len: GLsizei = 0;
+        glGetShaderInfoLog(shader_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
+        std.log.err("Failed to compile \"{}\" {} shader.\n{}\n{}\n{}", .{
+            name,
+            shader_type,
+            "-" ** 60,
+            std.mem.trimRight(u8, buffer[0..@intCast(usize, len)], "\r\n"),
+            "-" ** 60,
+        });
         return error.ShaderCompileFailed;
     }
 
@@ -399,13 +440,15 @@ fn destroyShaderProgram(sp: ShaderProgram) void {
 
 fn getAttribLocation(sp: ShaderProgram, name: [:0]const u8) GLint {
     const id = glGetAttribLocation(sp.program_id, name);
-    if (id == -1) plog.warn("(warning) invalid attrib: {}\n", .{name});
+    if (id == -1)
+        std.log.warn("Shader program \"{}\" has no attrib \"{}\".", .{ sp.name, name });
     return id;
 }
 
 fn getUniformLocation(sp: ShaderProgram, name: [:0]const u8) GLint {
     const id = glGetUniformLocation(sp.program_id, name);
-    if (id == -1) plog.warn("(warning) invalid uniform: {}\n", .{name});
+    if (id == -1)
+        std.log.warn("Shader program \"{}\" has no uniform \"{}\".", .{ sp.name, name });
     return id;
 }
 

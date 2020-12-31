@@ -1,6 +1,6 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const gbe = @import("gbe");
-const plog = @import("root").plog;
 const math = @import("../common/math.zig");
 const constants = @import("constants.zig");
 const levels = @import("levels.zig");
@@ -257,7 +257,9 @@ pub fn frame(gs: *game.Session) void {
         }
     }
 
-    assertNoOverlaps(gs);
+    if (builtin.mode == .Debug) {
+        assertNoOverlaps(gs);
+    }
 }
 
 fn collide(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
@@ -386,7 +388,7 @@ fn assertNoOverlaps(gs: *game.Session) void {
                 other.transform.pos,
                 other.phys.entity_bbox,
             )) {
-                plog.warn("who is this joker\n", .{});
+                std.log.debug("who is this joker", .{});
             }
         }
     }
