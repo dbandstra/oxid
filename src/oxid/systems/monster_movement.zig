@@ -18,7 +18,7 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *game.Session) void {
-    const gc = gs.ecs.findFirstComponent(c.GameController) orelse return;
+    const gc = gs.ecs.componentIter(c.GameController).next() orelse return;
 
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {

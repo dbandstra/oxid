@@ -179,7 +179,7 @@ fn drawHud(
     var fbs = std.io.fixedBufferStream(&buffer);
     var stream = fbs.outStream();
 
-    const gc_maybe = gs.ecs.findFirstComponent(c.GameController);
+    const gc_maybe = gs.ecs.componentIter(c.GameController).next();
 
     pdraw.setColor(ds, black);
     pdraw.fill(ds, 0, 0, @intToFloat(f32, oxid.vwin_w), @intToFloat(f32, oxid.hud_height));

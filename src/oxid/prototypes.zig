@@ -61,7 +61,8 @@ inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.Entit
 }
 
 pub fn spawnGameController(gs: *game.Session, params: struct {
-    num_players: u32,
+    player1_controller_id: ?gbe.EntityId,
+    player2_controller_id: ?gbe.EntityId,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
         @"0": c.GameController,
@@ -79,7 +80,8 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
             .extra_lives_spawned = 0,
             .wave_message = null,
             .wave_message_timer = 0,
-            .num_players_remaining = params.num_players,
+            .player1_controller_id = params.player1_controller_id,
+            .player2_controller_id = params.player2_controller_id,
         },
         .@"1" = c.VoiceAccelerate{
             .params = null,
@@ -492,6 +494,5 @@ pub const spawnEventGameInput = event(c.EventGameInput);
 pub const spawnEventGameOver = event(c.EventGameOver);
 pub const spawnEventMonsterDied = event(c.EventMonsterDied);
 pub const spawnEventPlayerDied = event(c.EventPlayerDied);
-pub const spawnEventPlayerOutOfLives = event(c.EventPlayerOutOfLives);
 pub const spawnEventShowMessage = event(c.EventShowMessage);
 pub const spawnEventTakeDamage = event(c.EventTakeDamage);

@@ -124,10 +124,6 @@ pub fn ECS(comptime ComponentLists: type) type {
             return null;
         }
 
-        pub fn findFirstComponent(self: *@This(), comptime T: type) ?*T {
-            return self.componentIter(T).next();
-        }
-
         pub fn spawn(self: *@This()) EntityId {
             const id: EntityId = .{ .id = self.next_entity_id };
             self.next_entity_id += 1; // TODO - reuse these?

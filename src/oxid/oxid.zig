@@ -356,18 +356,18 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     };
 
     // spawn GameController and PlayerControllers
-    const num_players: u32 = if (is_multiplayer) 2 else 1;
+    const player1_controller_id =
+        p.spawnPlayerController(gs, .{ .player_number = 0 });
+    const player2_controller_id = if (is_multiplayer)
+        p.spawnPlayerController(gs, .{ .player_number = 1 })
+    else
+        null;
 
+    // TODO store id to this?
     _ = p.spawnGameController(gs, .{
-        .num_players = num_players,
+        .player1_controller_id = player1_controller_id,
+        .player2_controller_id = player2_controller_id,
     });
-
-    var n: u32 = 0;
-    while (n < num_players) : (n += 1) {
-        _ = p.spawnPlayerController(gs, .{
-            .player_number = n,
-        });
-    }
 }
 
 // clear out all existing game state and open the main menu. this should leave
@@ -438,7 +438,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     // if EventGameOver is present, post the high score, but leave the
     // monsters running around. (the game state will be cleared when the user
     // hits escape again.)
-    if (self.session.ecs.findFirstComponent(c.EventGameOver) != null) {
+    if (self.session.ecs.componentIter(c.EventGameOver).next() != null) {
         self.game_over = true;
         postScores(self);
 

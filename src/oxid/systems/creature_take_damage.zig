@@ -15,27 +15,18 @@ pub fn run(gs: *game.Session) void {
         inbox: gbe.Inbox(8, c.EventTakeDamage, "self_id"),
     });
     while (it.next()) |self| {
-        if (self.creature.invulnerability_timer > 0) {
-            continue;
-        }
-        if (self.creature.god_mode) {
-            continue;
-        }
-        if (self.creature.hit_points <= 0) {
-            continue;
-        }
+        if (self.creature.invulnerability_timer > 0) continue;
+        if (self.creature.god_mode) continue;
+        if (self.creature.hit_points <= 0) continue;
 
         const total_damage = blk: {
             var n: u32 = 0;
-            for (self.inbox.all()) |event| {
+            for (self.inbox.all()) |event|
                 n += event.amount;
-            }
             break :blk n;
         };
 
-        if (total_damage <= 0) {
-            continue;
-        }
+        if (total_damage <= 0) continue;
 
         if (self.creature.hit_points > total_damage) {
             // hurt but not killed
@@ -66,6 +57,8 @@ pub fn run(gs: *game.Session) void {
                 });
             }
 
+            // players don't explode immediately like monsters. they play a
+            // death animation and then are replaced by a corpse entity
             continue;
         }
 

@@ -43,8 +43,6 @@ pub const Monster = struct {
 
 pub const Web = struct {};
 
-// maybe this should just be an object inside MainController?
-// combine with GameRunningState
 pub const GameController = struct {
     monster_count: u32,
     enemy_speed_level: u31,
@@ -56,7 +54,8 @@ pub const GameController = struct {
     extra_lives_spawned: u32,
     wave_message: ?[]const u8,
     wave_message_timer: u32,
-    num_players_remaining: u32,
+    player1_controller_id: ?gbe.EntityId,
+    player2_controller_id: ?gbe.EntityId,
 };
 
 pub const PlayerController = struct {
@@ -210,10 +209,6 @@ pub const EventGameOver = struct {};
 pub const EventMonsterDied = struct {};
 
 pub const EventPlayerDied = struct {
-    player_controller_id: gbe.EntityId,
-};
-
-pub const EventPlayerOutOfLives = struct {
     player_controller_id: gbe.EntityId,
 };
 

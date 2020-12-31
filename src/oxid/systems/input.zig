@@ -38,7 +38,7 @@ fn killAllMonsters(gs: *game.Session) void {
         gs.ecs.markForRemoval(self.id);
     }
 
-    if (gs.ecs.findFirstComponent(c.GameController)) |gc| {
+    if (gs.ecs.componentIter(c.GameController).next()) |gc| {
         gc.next_wave_timer = 1;
     }
 }

@@ -35,7 +35,6 @@ pub const ComponentLists = struct {
     EventGameOver: gbe.ComponentList(c.EventGameOver, 20),
     EventMonsterDied: gbe.ComponentList(c.EventMonsterDied, 20),
     EventPlayerDied: gbe.ComponentList(c.EventPlayerDied, 20),
-    EventPlayerOutOfLives: gbe.ComponentList(c.EventPlayerOutOfLives, 20),
     EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
     EventTakeDamage: gbe.ComponentList(c.EventTakeDamage, 20),
 };
@@ -104,7 +103,7 @@ pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
 
             // player controller reacts to 'player died' event
             runSystem(gs, ctx, "player_controller_react");
-            // game controller reacts to 'player died' / 'player out of lives' event
+            // game controller reacts to 'player died' event
             runSystem(gs, ctx, "game_controller_react");
         }
     }
