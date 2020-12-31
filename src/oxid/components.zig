@@ -54,13 +54,13 @@ pub const GameController = struct {
     extra_lives_spawned: u32,
     wave_message: ?[]const u8,
     wave_message_timer: u32,
-    player1_controller_id: ?gbe.EntityId,
+    player1_controller_id: gbe.EntityId,
     player2_controller_id: ?gbe.EntityId,
 };
 
 pub const PlayerController = struct {
-    player_number: u32, // 0 (first player) or 1 (second player)
     player_id: ?gbe.EntityId,
+    color: constants.PlayerColor,
     lives: u32,
     score: u32,
     respawn_timer: u32,
@@ -141,8 +141,8 @@ pub const Player = struct {
     pub const AttackLevel = enum { one, two, three };
     pub const SpeedLevel = enum { one, two, three };
 
-    player_number: u32,
     player_controller_id: gbe.EntityId,
+    color: constants.PlayerColor,
     trigger_released: bool,
     bullets: [constants.player_max_bullets]?gbe.EntityId,
     attack_level: AttackLevel,

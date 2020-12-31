@@ -86,9 +86,9 @@ fn drawPlayers(gs: *game.Session) void {
         const facing = self.phys.facing;
         p.spawnEventDraw(gs, .{
             .pos = pos,
-            .graphic = walkFrame(pos, facing, switch (self.player.player_number) {
-                0 => .{ .man1_walk1, .man1_walk2 },
-                else => .{ .man2_walk1, .man2_walk2 },
+            .graphic = walkFrame(pos, facing, switch (self.player.color) {
+                .yellow => .{ .man1_walk1, .man1_walk2 },
+                .green => .{ .man2_walk1, .man2_walk2 },
             }),
             .transform = util.getDirTransform(facing),
             .z_index = constants.z_index_player,

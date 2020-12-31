@@ -61,7 +61,7 @@ inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.Entit
 }
 
 pub fn spawnGameController(gs: *game.Session, params: struct {
-    player1_controller_id: ?gbe.EntityId,
+    player1_controller_id: gbe.EntityId,
     player2_controller_id: ?gbe.EntityId,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
@@ -93,14 +93,14 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
 }
 
 pub fn spawnPlayerController(gs: *game.Session, params: struct {
-    player_number: u32,
+    color: constants.PlayerColor,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
         @"0": c.PlayerController,
     }{
         .@"0" = c.PlayerController{
-            .player_number = params.player_number,
             .player_id = null,
+            .color = params.color,
             .lives = constants.player_num_lives,
             .score = 0,
             .respawn_timer = 1,
@@ -109,8 +109,8 @@ pub fn spawnPlayerController(gs: *game.Session, params: struct {
 }
 
 pub fn spawnPlayer(gs: *game.Session, params: struct {
-    player_number: u32,
     player_controller_id: gbe.EntityId,
+    color: constants.PlayerColor,
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
@@ -145,8 +145,8 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .god_mode = false,
         },
         .@"3" = c.Player{
-            .player_number = params.player_number,
             .player_controller_id = params.player_controller_id,
+            .color = params.color,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
             .attack_level = .one,

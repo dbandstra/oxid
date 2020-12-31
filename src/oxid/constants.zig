@@ -30,6 +30,11 @@ pub const player_respawn_time: u32 = duration60(150); // 2.5 seconds
 pub const player_spawn_arise_speed: u31 = speed60(8); // how fast the player "arises" when spawning
 pub const player_num_lives: u32 = 3;
 
+pub const PlayerColor = enum {
+    yellow,
+    green,
+};
+
 pub const MonsterType = enum {
     spider,
     knight,

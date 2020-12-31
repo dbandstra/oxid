@@ -1,5 +1,6 @@
 const build_options = @import("build_options");
 const std = @import("std");
+const gbe = @import("gbe");
 const pdraw = @import("root").pdraw;
 const math = @import("../common/math.zig");
 const drawing = @import("../common/drawing.zig");
@@ -191,62 +192,55 @@ fn drawHud(
         fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
 
-        var player_number: u31 = 0;
-        while (player_number < 2) : (player_number += 1) {
-            const pc_maybe = blk: {
-                var it = gs.ecs.componentIter(c.PlayerController);
-                while (it.next()) |pc| {
-                    if (pc.player_number == player_number) {
-                        break :blk pc;
-                    }
-                }
-                break :blk null;
-            };
+        if (gc.player2_controller_id != null) {
+            // multiplayer game: show little colored helmets in the HUD
+            // to make it clear which player is which
+            pdraw.tile(
+                ds,
+                static.tileset,
+                graphics.getGraphicTile(.man_icons),
+                6 * 8 - 2,
+                -1,
+                .identity,
+            );
+        }
 
-            if (pc_maybe) |pc| {
-                const y = player_number * 8;
+        for ([_]?gbe.EntityId{
+            gc.player1_controller_id,
+            gc.player2_controller_id,
+        }) |maybe_id, player_index| {
+            const id = maybe_id orelse continue;
+            const pc = gs.ecs.findComponentById(id, c.PlayerController) orelse continue;
 
-                if (player_number == 1) {
-                    // multiplayer game: show little colored helmets in the HUD
-                    // to make it clear which player is which
-                    pdraw.tile(
-                        ds,
-                        static.tileset,
-                        graphics.getGraphicTile(.man_icons),
-                        6 * 8 - 2,
-                        -1,
-                        .identity,
-                    );
-                }
+            const y = @intCast(i32, player_index) * 8;
 
-                const maybe_player_creature = if (pc.player_id) |player_id|
-                    gs.ecs.findComponentById(player_id, c.Creature)
-                else
-                    null;
+            const maybe_player_creature = if (pc.player_id) |player_id|
+                gs.ecs.findComponentById(player_id, c.Creature)
+            else
+                null;
 
-                if (if (maybe_player_creature) |creature| creature.god_mode else false) {
-                    fonts.drawString(ds, &static.font, 8 * 8, y, "(god):");
-                } else {
-                    fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
-                }
-
-                const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
-
-                pdraw.setColor(ds, salmon);
-                var i: u31 = 0;
-                while (i < pc.lives) : (i += 1) {
-                    fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
-                }
-                if (pc.lives == 0) {
-                    pdraw.setColor(ds, lightgray);
-                    fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
-                }
-                pdraw.setColor(ds, white);
-
-                _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-                fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
-                fbs.reset();
+            if (if (maybe_player_creature) |creature| creature.god_mode else false) {
+                fonts.drawString(ds, &static.font, 8 * 8, y, "(god):");
+            } else {
+                fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
             }
+
+            const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
+
+            pdraw.setColor(ds, salmon);
+            var i: u31 = 0;
+            while (i < pc.lives) : (i += 1) {
+                fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
+            }
+            if (pc.lives == 0) {
+                pdraw.setColor(ds, lightgray);
+                fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
+            }
+            pdraw.setColor(ds, white);
+
+            _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
+            fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
+            fbs.reset();
         }
 
         if (gc.wave_message) |message| {

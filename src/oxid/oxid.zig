@@ -264,7 +264,7 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
             if (!inputs.Source.eql(s, source)) continue;
 
             const player_controller_id = switch (player_number) {
-                0 => gc.player1_controller_id orelse continue,
+                0 => gc.player1_controller_id,
                 1 => gc.player2_controller_id orelse continue,
                 else => continue,
             };
@@ -365,9 +365,9 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
 
     // spawn GameController and PlayerControllers
     const player1_controller_id =
-        p.spawnPlayerController(gs, .{ .player_number = 0 });
+        p.spawnPlayerController(gs, .{ .color = .yellow }).?;
     const player2_controller_id = if (is_multiplayer)
-        p.spawnPlayerController(gs, .{ .player_number = 1 })
+        p.spawnPlayerController(gs, .{ .color = .green })
     else
         null;
 
