@@ -179,7 +179,7 @@ fn drawHud(
     var stream = fbs.outStream();
 
     pdraw.setColor(ds, black);
-    pdraw.fill(ds, 0, 0, @intToFloat(f32, oxid.vwin_w), @intToFloat(f32, oxid.hud_height));
+    pdraw.fill(ds, 0, 0, oxid.vwin_w, oxid.hud_height);
 
     pdraw.setColor(ds, white);
 
