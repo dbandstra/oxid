@@ -357,6 +357,7 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
+    gs.ecs.applyRemovals();
 
     const player1_controller_id =
         p.spawnPlayerController(gs, .{ .color = .yellow }).?;
@@ -385,6 +386,7 @@ fn resetGame(self: *MainState) void {
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
         self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
+    self.session.ecs.applyRemovals();
 
     self.menu_stack.clear();
     self.menu_stack.push(.{

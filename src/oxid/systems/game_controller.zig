@@ -76,13 +76,11 @@ fn think(gs: *game.Session, self: SystemData) void {
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
     // threshold (so two players does not mean 2x the extra life bonuses)
-    var it = gs.ecs.iter(struct {
-        pc: *const c.PlayerController,
-    });
-    while (it.next()) |entry| {
+    var it = gs.ecs.componentIter(c.PlayerController);
+    while (it.next()) |pc| {
         if (self.gc.extra_lives_spawned < constants.extra_life_score_thresholds.len) {
             const threshold = constants.extra_life_score_thresholds[self.gc.extra_lives_spawned];
-            if (entry.pc.score >= threshold) {
+            if (pc.score >= threshold) {
                 spawnPickup(gs, .life_up);
                 self.gc.extra_lives_spawned += 1;
             }
