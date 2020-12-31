@@ -43,6 +43,7 @@ pub const ECS = gbe.ECS(ComponentLists);
 
 pub const RunningState = struct {
     render_move_boxes: bool,
+    game_controller_id: gbe.EntityId,
 };
 
 pub const Session = struct {
@@ -127,10 +128,9 @@ pub fn frameCleanup(gs: *Session) void {
     // mark all events for removal
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
-        if (comptime !std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
-            continue;
+        if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+            gs.ecs.markAllForRemoval(ComponentType);
         }
-        gs.ecs.markAllForRemoval(ComponentType);
     }
 
     gs.ecs.applyRemovals();

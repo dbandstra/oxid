@@ -358,12 +358,6 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
         gs.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
 
-    // set game running state
-    gs.running_state = .{
-        .render_move_boxes = false,
-    };
-
-    // spawn GameController and PlayerControllers
     const player1_controller_id =
         p.spawnPlayerController(gs, .{ .color = .yellow }).?;
     const player2_controller_id = if (is_multiplayer)
@@ -371,11 +365,15 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
     else
         null;
 
-    // TODO store id to this?
-    _ = p.spawnGameController(gs, .{
+    const game_controller_id = p.spawnGameController(gs, .{
         .player1_controller_id = player1_controller_id,
         .player2_controller_id = player2_controller_id,
-    });
+    }).?;
+
+    gs.running_state = .{
+        .render_move_boxes = false,
+        .game_controller_id = game_controller_id,
+    };
 }
 
 // clear out all existing game state and open the main menu. this should leave

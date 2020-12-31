@@ -38,8 +38,6 @@ pub fn drawGame(
     }
 }
 
-///////////////////////////////////////
-
 fn getSortedDrawables(
     gs: *game.Session,
     sort_buffer: []*const c.EventDraw,
@@ -180,14 +178,12 @@ fn drawHud(
     var fbs = std.io.fixedBufferStream(&buffer);
     var stream = fbs.outStream();
 
-    const gc_maybe = gs.ecs.componentIter(c.GameController).next();
-
     pdraw.setColor(ds, black);
     pdraw.fill(ds, 0, 0, @intToFloat(f32, oxid.vwin_w), @intToFloat(f32, oxid.hud_height));
 
     pdraw.setColor(ds, white);
 
-    if (gc_maybe) |gc| {
+    if (gs.ecs.componentIter(c.GameController).next()) |gc| {
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
         fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
