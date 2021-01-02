@@ -18,6 +18,21 @@ pub const MenuDingVoice = generated.MenuDingVoice;
 pub const PowerUpVoice = generated.PowerUpVoice;
 pub const WaveBeginVoice = generated.WaveBeginVoice;
 
+// crawl all audio modules and get the highest num_temps value
+const max_temps = blk: {
+    var highest: usize = 0;
+    inline for (@typeInfo(generated).Struct.decls) |decl| {
+        switch (decl.data) {
+            .Type => |T| {
+                if (@hasDecl(T, "num_temps") and T.num_temps > highest)
+                    highest = T.num_temps;
+            },
+            else => {},
+        }
+    }
+    break :blk highest;
+};
+
 fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     return .{
         .num_channels = preloaded.num_channels,
@@ -228,10 +243,7 @@ pub const MainModule = struct {
     loaded_samples: LoadedSamples,
 
     out_buf: []f32,
-    // this will fail to compile if there aren't enough temp bufs to supply
-    // each of the sound module types being used
-    // TODO automatically determine this by looking at all the modules
-    tmp_bufs: [4][]f32,
+    tmp_bufs: [max_temps][]f32,
 
     // these fields are owned by the audio thread. they are set in sync and
     // used in the audio callback
