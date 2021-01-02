@@ -252,6 +252,7 @@ pub const MainModule = struct {
 
     // call this in the main thread before the audio device is set up
     pub fn init(self: *MainModule, hunk: *Hunk, volume: u32, sample_rate: f32, audio_buffer_size: usize) !void {
+        // TODO add errdefers?
         self.menu_backoff = GameSoundWrapper(MenuBackoffVoice).init();
         self.menu_blip = GameSoundWrapper(MenuBlipVoice).init();
         self.menu_ding = GameSoundWrapper(MenuDingVoice).init();
@@ -266,12 +267,9 @@ pub const MainModule = struct {
         // object is created once in the main function)
         self.loaded_samples = try LoadedSamples.init(hunk);
         self.out_buf = try hunk.low().allocator.alloc(f32, audio_buffer_size);
-        self.tmp_bufs = .{
-            try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            try hunk.low().allocator.alloc(f32, audio_buffer_size),
-            try hunk.low().allocator.alloc(f32, audio_buffer_size),
-        };
+        for (self.tmp_bufs) |*tmp_buf| {
+            tmp_buf.* = try hunk.low().allocator.alloc(f32, audio_buffer_size);
+        }
         self.volume = volume;
         self.sample_rate = sample_rate;
     }
