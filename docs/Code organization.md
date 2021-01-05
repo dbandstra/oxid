@@ -43,7 +43,7 @@ Game-agnostic code which could be reused in other projects.
     * Function that loads a paletted PCX image at comptime (wrapper around low-level `zig-pcx` library).
 
 ## src/platform/
-Platform-specific implementations of ad-hoc comptime interfaces. Game-agnostic. To use these, import them in your main file, where they can be accessed from other files via `@import("root")`.
+Platform-specific implementations of ad-hoc comptime interfaces. Game-agnostic. For each interface there are multiple implementations (like drivers that are chosen at build time). To use these, import them in your main file, where they can be accessed from other files via `@import("root")`.
 
 ### pdraw
 Very simple 2D graphics API. Imports `src/common/drawing.zig` (which provides some implementation-independent types).
@@ -65,10 +65,10 @@ pub fn destroyTexture(texture: Texture) void
 pub fn setColor(ds: *State, color: drawing.Color) void
 
 // draw a filled rectangle
-pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void
 
 // draw a 1px-outlined rectangle
-pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
+pub fn rect(ds: *State, x: i32, y: i32, w: i32, h: i32) void
 
 // draw a tile from a tileset. it can be mirrored or rotated using the
 // `transform` argument.
@@ -109,7 +109,7 @@ pub fn loadAsset(
 
 |Implementations|   |
 |---|---|
-| `assets_web.zig`| Uses an extern function which should be implemented on the JavaScript side. The idea is that JS code prefetches all assets before the wasm program is initialized, and then can provide them synchronously here. |
+| `assets_web.zig`| Uses an extern function which should be implemented on the JavaScript side. The idea is that JS code prefetches all assets before the wasm program is initialized, and then can provide them synchronously on demand here. |
 | `assets_native.zig` | Loads asset from the filesystem. Uses `@import("build_options").assets_path`, which must be provided in `build.zig`. |
 
 
@@ -123,6 +123,8 @@ pub const ReadableObject = struct {
 
     // other struct fields are opaque
 
+    pub const Reader = std.io.Reader(...); // some type of Reader
+
     // open the storage object specified by `key` for reading. if the object
     // does not yet exist, returns null. `hunk_side` is used for temporary
     // allocations.
@@ -132,11 +134,13 @@ pub const ReadableObject = struct {
     pub fn close(self: ReadableObject) void
 
     // return a std.io.Reader object for reading from this object.
-    pub fn reader(self: *ReadableObject) std.io.Reader(// opaque)
+    pub fn reader(self: *ReadableObject) Reader
 };
 
 pub const WritableObject = struct {
     // struct fields are opaque
+
+    pub const Writer = std.io.Writer(...); // some type of Writer
 
     // open the storage object specified by `key` for writing. if the object
     // does not yet exist, it will be created, `hunk_side` is used for
@@ -147,7 +151,7 @@ pub const WritableObject = struct {
     pub fn close(self: WritableObject) void
 
     // return a std.io.Writer for writing to this object.
-    pub fn writer(self: *WritableObject) std.io.Reader(// opaque)
+    pub fn writer(self: *WritableObject) Writer
 };
 ```
 

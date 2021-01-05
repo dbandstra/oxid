@@ -7,6 +7,8 @@ pub const ReadableObject = struct {
     file: std.fs.File,
     size: usize,
 
+    pub const Reader = std.fs.File.Reader;
+
     pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
         const mark = hunk_side.getMark();
         defer hunk_side.freeToMark(mark);
@@ -34,13 +36,15 @@ pub const ReadableObject = struct {
         self.file.close();
     }
 
-    pub fn reader(self: *ReadableObject) std.fs.File.Reader {
+    pub fn reader(self: *ReadableObject) Reader {
         return self.file.reader();
     }
 };
 
 pub const WritableObject = struct {
     file: std.fs.File,
+
+    pub const Writer = std.fs.File.Writer;
 
     pub fn open(hunk_side: *HunkSide, key: []const u8) !WritableObject {
         const mark = hunk_side.getMark();
@@ -69,7 +73,7 @@ pub const WritableObject = struct {
         self.file.close();
     }
 
-    pub fn writer(self: *WritableObject) std.fs.File.Writer {
+    pub fn writer(self: *WritableObject) Writer {
         return self.file.writer();
     }
 };
