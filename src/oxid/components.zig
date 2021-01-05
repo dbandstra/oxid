@@ -23,7 +23,6 @@ pub const Creature = struct {
     invulnerability_timer: u32,
     hit_points: u32,
     flinch_timer: u32,
-    god_mode: bool,
 };
 
 pub const Monster = struct {

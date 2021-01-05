@@ -43,7 +43,6 @@ pub fn getDefault() Config {
             .shoot => .{ .key = .space },
             .kill_all_monsters => .{ .key = .backspace },
             .toggle_draw_boxes => .{ .key = .f2 },
-            .toggle_god_mode => .{ .key = .f3 },
             .escape => .{ .key = .escape },
         };
         cfg.game_bindings[1][field.value] = switch (value) {
@@ -54,7 +53,6 @@ pub fn getDefault() Config {
             .shoot => .{ .key = .f },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
-            .toggle_god_mode => null,
             .escape => null,
         };
     }

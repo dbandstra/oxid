@@ -32,7 +32,6 @@ fn getFixtureConfig() config.Config {
             .shoot => .{ .joy_button = .{ .which = 0, .button = 1 } },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
-            .toggle_god_mode => null,
             .escape => .{ .key = .escape },
         };
         cfg.game_bindings[1][field.value] = switch (value) {
@@ -43,7 +42,6 @@ fn getFixtureConfig() config.Config {
             .shoot => .{ .key = .f },
             .kill_all_monsters => null,
             .toggle_draw_boxes => null,
-            .toggle_god_mode => null,
             .escape => null,
         };
     }
@@ -69,7 +67,6 @@ const fixture_json =
     \\        "up": {"type": "joy_axis_neg", "axis": 1},
     \\        "down": {"type": "joy_axis_pos", "axis": 1},
     \\        "shoot": {"type": "joy_button", "button": 1},
-    \\        "toggle_god_mode": null,
     \\        "toggle_draw_boxes": null,
     \\        "kill_all_monsters": null,
     \\        "escape": {"type": "key", "key": "escape"}
@@ -80,7 +77,6 @@ const fixture_json =
     \\        "up": {"type": "key", "key": "w"},
     \\        "down": {"type": "key", "key": "s"},
     \\        "shoot": {"type": "key", "key": "f"},
-    \\        "toggle_god_mode": null,
     \\        "toggle_draw_boxes": null,
     \\        "kill_all_monsters": null,
     \\        "escape": null

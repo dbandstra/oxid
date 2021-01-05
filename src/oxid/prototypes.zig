@@ -142,7 +142,6 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .invulnerability_timer = constants.invulnerability_time,
             .hit_points = 1,
             .flinch_timer = 0,
-            .god_mode = false,
         },
         .@"3" = c.Player{
             .player_controller_id = params.player_controller_id,
@@ -225,7 +224,6 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
             .invulnerability_timer = 0,
             .hit_points = 999, // invulnerable while spawning
             .flinch_timer = 0,
-            .god_mode = false,
         },
         .@"3" = c.Monster{
             .monster_type = params.monster_type,
@@ -283,7 +281,6 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
-            .god_mode = false,
         },
         .@"4" = c.VoiceSampler{
             .sample = .drop_web,

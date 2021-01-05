@@ -210,16 +210,7 @@ fn drawHud(
 
             const y = @intCast(i32, player_index) * 8;
 
-            const maybe_player_creature = if (pc.player_id) |player_id|
-                gs.ecs.findComponentById(player_id, c.Creature)
-            else
-                null;
-
-            if (if (maybe_player_creature) |creature| creature.god_mode else false) {
-                fonts.drawString(ds, &static.font, 8 * 8, y, "(god):");
-            } else {
-                fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
-            }
+            fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
 
             const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
 

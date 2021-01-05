@@ -57,7 +57,6 @@ Debug/cheat controls:
 * backquote: fast forward (not available in web version)
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
-* F3: toggle invulnerability
 * F4: toggle profiling spam (not available in web version or in ReleaseSmall)
 
 ## Code organization

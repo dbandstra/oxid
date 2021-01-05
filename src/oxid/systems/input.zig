@@ -50,32 +50,15 @@ fn playerInput(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         const player_id = self.pc.player_id orelse continue;
-        const player_ent = gs.ecs.findById(player_id, struct {
-            creature: *c.Creature,
-            player: *c.Player,
-        }) orelse continue;
+        const player = gs.ecs.findComponentById(player_id, c.Player) orelse continue;
 
         for (self.inbox.all()) |event| {
             switch (event.command) {
-                .up => {
-                    player_ent.player.in_up = event.down;
-                },
-                .down => {
-                    player_ent.player.in_down = event.down;
-                },
-                .left => {
-                    player_ent.player.in_left = event.down;
-                },
-                .right => {
-                    player_ent.player.in_right = event.down;
-                },
-                .shoot => {
-                    player_ent.player.in_shoot = event.down;
-                },
-                .toggle_god_mode => {
-                    if (event.down)
-                        player_ent.creature.god_mode = !player_ent.creature.god_mode;
-                },
+                .up => player.in_up = event.down,
+                .down => player.in_down = event.down,
+                .left => player.in_left = event.down,
+                .right => player.in_right = event.down,
+                .shoot => player.in_shoot = event.down,
                 else => {},
             }
         }

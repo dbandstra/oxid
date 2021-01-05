@@ -16,7 +16,6 @@ pub fn run(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         if (self.creature.invulnerability_timer > 0) continue;
-        if (self.creature.god_mode) continue;
         if (self.creature.hit_points <= 0) continue;
 
         const total_damage = blk: {

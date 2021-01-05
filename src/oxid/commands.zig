@@ -15,7 +15,6 @@ pub const GameCommand = enum {
     up,
     down,
     shoot,
-    toggle_god_mode,
     toggle_draw_boxes,
     kill_all_monsters,
     escape,
