@@ -162,9 +162,13 @@ const TOGGLE_FULLSCREEN = 3;
 const SET_CANVAS_SCALE = 100;
 
 export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
+    // note: if this function returns a non-zero value, event.preventDefault
+    // will be called on the javascript side. so we return zero for anything
+    // that the game doesn't handle. this allows most default browser behaviors
+    // to still work
     const key = translateKey(keycode) orelse return 0;
     const source: inputs.Source = .{ .key = key };
-    const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return NOP;
+    const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return 0;
     return switch (special) {
         .noop => NOP,
         .quit => NOP, // unused in web build

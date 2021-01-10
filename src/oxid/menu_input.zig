@@ -138,8 +138,6 @@ fn menuInputInner(
     state.cursor_pos = ctx.new_cursor_pos;
 
     if (ctx.effect != null or ctx.sound != null) {
-        // FIXME - can't use anonymous struct literal here (for menus.Result)
-        // file an issue?
         return menus.Result{
             .effect = ctx.effect orelse .noop,
             .sound = ctx.sound,
