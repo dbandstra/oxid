@@ -32,6 +32,7 @@ pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
     const file = try std.fs.cwd().createFile(file_path, .{});
     errdefer file.close();
 
+    // TODO also encode whether it's a multiplayer game
     file.writer().print("demo {} {}\n", .{
         build_options.version,
         game_seed,
