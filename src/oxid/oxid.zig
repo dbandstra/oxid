@@ -41,6 +41,7 @@ pub const MainState = struct {
     static: GameStatic,
     session: game.Session,
     recorder: ?record.Recorder,
+    player: ?record.Player,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -127,6 +128,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     perf.init();
 
+    self.player = null;
     self.recorder = null;
     self.game_over = false;
     self.new_high_score = false;
@@ -149,6 +151,16 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         .blip = null,
         .ding = null,
     };
+
+    // start playing a demo
+    self.menu_stack.clear();
+
+    self.player = record.openPlayer(&self.hunk.low()) catch |err| {
+        @panic("failed to open player"); // FIXME
+    };
+    game.reseed(&self.session, self.player.?.game_seed);
+
+    startGame2(self, false);
 }
 
 pub fn deinit(self: *MainState) void {
@@ -361,8 +373,13 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
 fn startGame(self: *MainState, is_multiplayer: bool) void {
+    if (self.player) |*player| {
+        record.closePlayer(player);
+        self.player = null;
+    }
     if (self.recorder) |*recorder| {
         record.close(recorder);
+        self.recorder = null;
     }
 
     // remove all entities
@@ -380,6 +397,10 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 
     game.reseed(&self.session, game_seed);
 
+    startGame2(self, is_multiplayer);
+}
+
+fn startGame2(self: *MainState, is_multiplayer: bool) void {
     const player1_controller_id =
         p.spawnPlayerController(&self.session, .{ .color = .yellow }).?;
     const player2_controller_id = if (is_multiplayer)
@@ -401,10 +422,14 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
+    if (self.player) |*player| {
+        record.closePlayer(player);
+        self.player = null;
+    }
     if (self.recorder) |*recorder| {
         record.close(recorder);
+        self.recorder = null;
     }
-    self.recorder = null;
 
     self.session.running_state = null;
 
@@ -465,11 +490,40 @@ fn postScores(self: *MainState) void {
 pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     const paused = self.menu_stack.len > 0 and !self.game_over;
 
+    // TODO filter out `esc` commands?
+    // also if menu is open don't record arrows (not sure if that's happening)
+
+    if (!paused) {
+        if (self.player) |*player| {
+            while (player.next_input) |input| {
+                if (input.frame_index > player.frame_index)
+                    break;
+                const gc = self.session.ecs.componentIter(c.GameController).next() orelse break;
+                const player_controller_id = switch (input.player_number) {
+                    0 => gc.player1_controller_id,
+                    1 => gc.player2_controller_id,
+                    else => null,
+                } orelse continue;
+                p.spawnEventGameInput(&self.session, .{
+                    .player_controller_id = player_controller_id,
+                    .command = input.command,
+                    .down = input.down,
+                });
+                record.readNextInput(player);
+            }
+            // TODO demo should record the frame_index that recording ended.
+            // we can open the menu or something when we get there in the playback.
+        }
+    }
+
     perf.begin(.frame);
     game.frame(&self.session, frame_context, paused);
     perf.end(.frame);
 
     if (!paused) {
+        if (self.player) |*player| {
+            player.frame_index += 1;
+        }
         if (self.recorder) |*recorder| {
             recorder.frame_index += 1;
         }
