@@ -670,6 +670,7 @@ pub const Framebuffer = struct {
     pub fn postDraw(
         fbs: *Framebuffer,
         ds: *State,
+        clear_screen: bool,
         full_w: u31,
         full_h: u31,
         blit_rect: BlitRect,
@@ -679,15 +680,17 @@ pub const Framebuffer = struct {
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // clear the entire screen to black (including any possible screen
-        // margin or letterboxing/pillarboxing).
-        // note that we can't just clear the screen once when the program
-        // starts, because of double/triple buffering. we would have to do at
-        // least for the first few draws. it's simpler just to clear every
-        // frame.
-        glViewport(0, 0, full_w, full_h);
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        if (clear_screen) {
+            // clear the entire screen to black (including any possible screen
+            // margin or letterboxing/pillarboxing).
+            // note that we can't just clear the screen once when the program
+            // starts, because of double/triple buffering. we would have to do
+            // at least for the first few draws. it's simpler just to clear
+            // every frame.
+            glViewport(0, 0, full_w, full_h);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
 
         ds.projection = ortho(0, 1, 1, 0);
         glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);

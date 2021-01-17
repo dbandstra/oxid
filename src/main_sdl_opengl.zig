@@ -598,7 +598,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             if (should_draw) {
                 // this alpha value is calculated to end up with an even blend
                 // of all fast forward frames
-                draw(self, 1.0 / @intToFloat(f32, frame_index + 1));
+                draw(self, frame_index == 0, 1.0 / @intToFloat(f32, frame_index + 1));
             }
 
             // delete events
@@ -822,7 +822,7 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
     }
 }
 
-fn draw(self: *Main, blit_alpha: f32) void {
+fn draw(self: *Main, clear: bool, blit_alpha: f32) void {
     perf.begin(.whole_draw);
 
     pdraw.Framebuffer.preDraw(&self.framebuffer);
@@ -834,6 +834,7 @@ fn draw(self: *Main, blit_alpha: f32) void {
     pdraw.Framebuffer.postDraw(
         &self.framebuffer,
         &self.draw_state,
+        clear,
         self.window_dims.w,
         self.window_dims.h,
         self.blit_rect,
