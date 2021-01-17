@@ -446,6 +446,11 @@ fn resetGame(self: *MainState) void {
 }
 
 fn postScores(self: *MainState) void {
+    if (self.player != null) {
+        // this is a demo playback, don't post the score
+        return;
+    }
+
     self.new_high_score = false;
 
     var save_high_scores = false;
