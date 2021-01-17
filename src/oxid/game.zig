@@ -52,10 +52,14 @@ pub const Session = struct {
     running_state: ?RunningState,
 };
 
-pub fn init(gs: *Session, random_seed: u32) void {
+pub fn init(gs: *Session) void {
     gs.ecs.init();
-    gs.prng = std.rand.DefaultPrng.init(random_seed);
+    gs.prng = std.rand.DefaultPrng.init(0);
     gs.running_state = null;
+}
+
+pub fn reseed(gs: *Session, random_seed: u32) void {
+    gs.prng = std.rand.DefaultPrng.init(random_seed);
 }
 
 pub const FrameContext = struct {

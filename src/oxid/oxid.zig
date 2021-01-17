@@ -112,7 +112,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         break :blk config.getDefault();
     };
 
-    game.init(&self.session, params.random_seed);
+    game.init(&self.session);
 
     audio.MainModule.init(
         &self.audio_module,
@@ -143,7 +143,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
     self.sound_enabled = params.sound_enabled;
-    self.prng = std.rand.DefaultPrng.init(0);
+    self.prng = std.rand.DefaultPrng.init(params.random_seed);
     self.menu_sounds = .{
         .backoff = null,
         .blip = null,
@@ -372,9 +372,13 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     self.session.ecs.applyRemovals();
 
     // start new session
-    self.recorder = record.open(&self.hunk.low()) catch |err| {
+    const game_seed = self.prng.random.int(u32);
+
+    self.recorder = record.open(&self.hunk.low(), game_seed) catch |err| {
         @panic("damn"); // FIXME
     };
+
+    game.reseed(&self.session, game_seed);
 
     const player1_controller_id =
         p.spawnPlayerController(&self.session, .{ .color = .yellow }).?;

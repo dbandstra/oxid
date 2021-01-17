@@ -10,7 +10,7 @@ pub const Recorder = struct {
     frame_index: u32,
 };
 
-pub fn open(hunk_side: *HunkSide) !Recorder {
+pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -33,7 +33,7 @@ pub fn open(hunk_side: *HunkSide) !Recorder {
 
     file.writer().print("demo {} {}\n", .{
         build_options.version,
-        0, // FIXME - print random seed
+        game_seed,
     }) catch |err| {
         @panic("aw man"); // FIXME
     };
