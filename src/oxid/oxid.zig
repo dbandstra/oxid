@@ -24,6 +24,7 @@ const audio = @import("audio.zig");
 const drawMenu = @import("draw_menu.zig").drawMenu;
 const drawGame = @import("draw.zig").drawGame;
 const setFriendlyFire = @import("functions/set_friendly_fire.zig").setFriendlyFire;
+const record = @import("record.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -39,6 +40,7 @@ pub const MainState = struct {
     audio_module: audio.MainModule,
     static: GameStatic,
     session: game.Session,
+    recorder: ?record.Recorder,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -125,6 +127,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     perf.init();
 
+    self.recorder = null;
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
@@ -268,11 +271,17 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 else => continue,
             };
 
+            const command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i));
+
             p.spawnEventGameInput(&main_state.session, .{
                 .player_controller_id = player_controller_id,
-                .command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i)),
+                .command = command,
                 .down = down,
             });
+
+            if (main_state.recorder) |*recorder| {
+                record.recordInput(recorder, player_number, command, down);
+            }
 
             return InputSpecial{ .noop = {} };
         }
@@ -292,7 +301,7 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
         },
         .start_new_game => |is_multiplayer| {
             self.menu_stack.clear();
-            startGame(&self.session, is_multiplayer);
+            startGame(self, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
         },
@@ -351,26 +360,35 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
-fn startGame(gs: *game.Session, is_multiplayer: bool) void {
+fn startGame(self: *MainState, is_multiplayer: bool) void {
+    if (self.recorder) |*recorder| {
+        record.close(recorder);
+    }
+
     // remove all entities
     inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
-        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
+        self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
     }
-    gs.ecs.applyRemovals();
+    self.session.ecs.applyRemovals();
+
+    // start new session
+    self.recorder = record.open(&self.hunk.low()) catch |err| {
+        @panic("damn"); // FIXME
+    };
 
     const player1_controller_id =
-        p.spawnPlayerController(gs, .{ .color = .yellow }).?;
+        p.spawnPlayerController(&self.session, .{ .color = .yellow }).?;
     const player2_controller_id = if (is_multiplayer)
-        p.spawnPlayerController(gs, .{ .color = .green })
+        p.spawnPlayerController(&self.session, .{ .color = .green })
     else
         null;
 
-    const game_controller_id = p.spawnGameController(gs, .{
+    const game_controller_id = p.spawnGameController(&self.session, .{
         .player1_controller_id = player1_controller_id,
         .player2_controller_id = player2_controller_id,
     }).?;
 
-    gs.running_state = .{
+    self.session.running_state = .{
         .render_move_boxes = false,
         .game_controller_id = game_controller_id,
     };
@@ -379,6 +397,11 @@ fn startGame(gs: *game.Session, is_multiplayer: bool) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
+    if (self.recorder) |*recorder| {
+        record.close(recorder);
+    }
+    self.recorder = null;
+
     self.session.running_state = null;
 
     // remove all entities
@@ -441,6 +464,12 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     perf.begin(.frame);
     game.frame(&self.session, frame_context, paused);
     perf.end(.frame);
+
+    if (!paused) {
+        if (self.recorder) |*recorder| {
+            recorder.frame_index += 1;
+        }
+    }
 
     // if EventGameOver is present, post the high score, but leave the
     // monsters running around. (the game state will be cleared when the user
