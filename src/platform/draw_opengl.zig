@@ -41,9 +41,8 @@ const DrawBuffer = struct {
 };
 
 pub const State = struct {
-    // dimensions of the game viewport, which will be scaled up to fit the system window
-    virtual_window_width: u32,
-    virtual_window_height: u32,
+    vwin_w: u31,
+    vwin_h: u31,
     shader_solid: SolidShader,
     shader_textured: TexturedShader,
     dyn_vertex_buffer: GLuint,
@@ -65,8 +64,8 @@ fn updateVBO(vbo: GLuint, maybe_data2f: ?[]f32) void {
 
 pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     hunk: *Hunk,
-    virtual_window_width: u32,
-    virtual_window_height: u32,
+    vwin_w: u31,
+    vwin_h: u31,
 }) !void {
     ds.shader_solid = try SolidShader.create(&params.hunk.low(), glsl_version);
     errdefer destroyShaderProgram(ds.shader_solid.program);
@@ -81,8 +80,8 @@ pub fn init(ds: *State, comptime glsl_version: GLSLVersion, params: struct {
     errdefer glDeleteBuffers(1, &ds.dyn_texcoord_buffer);
     updateVBO(ds.dyn_texcoord_buffer, null);
 
-    ds.virtual_window_width = params.virtual_window_width;
-    ds.virtual_window_height = params.virtual_window_height;
+    ds.vwin_w = params.vwin_w;
+    ds.vwin_h = params.vwin_h;
     ds.color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 };
     ds.draw_buffer.num_vertices = 0;
 
@@ -103,12 +102,10 @@ pub fn deinit(ds: *State) void {
 }
 
 fn setViewport(ds: *State) void {
-    const w = ds.virtual_window_width;
-    const h = ds.virtual_window_height;
-    const fw = @intToFloat(f32, w);
-    const fh = @intToFloat(f32, h);
+    const fw = @intToFloat(f32, ds.vwin_w);
+    const fh = @intToFloat(f32, ds.vwin_h);
     ds.projection = ortho(0, fw, fh, 0);
-    glViewport(0, 0, @intCast(c_int, w), @intCast(c_int, h));
+    glViewport(0, 0, ds.vwin_w, ds.vwin_h);
 }
 
 pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
@@ -628,7 +625,7 @@ pub const Framebuffer = struct {
         h: u31,
     };
 
-    pub fn init(w: u31, h: u31) !Framebuffer {
+    pub fn init(vwin_w: u31, vwin_h: u31) !Framebuffer {
         var fb: GLuint = undefined;
         glGenFramebuffers(1, &fb);
         glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -636,7 +633,7 @@ pub const Framebuffer = struct {
         var rt: GLuint = undefined;
         glGenTextures(1, &rt);
         glBindTexture(GL_TEXTURE_2D, rt);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vwin_w, vwin_h, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -648,9 +645,12 @@ pub const Framebuffer = struct {
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             glDeleteTextures(1, &rt);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glDeleteFramebuffers(1, &fb);
             return error.FramebufferInitFailed;
         }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return Framebuffer{
             .framebuffer = fb,
@@ -667,12 +667,29 @@ pub const Framebuffer = struct {
         glBindFramebuffer(GL_FRAMEBUFFER, fbs.framebuffer);
     }
 
-    pub fn postDraw(fbs: *Framebuffer, ds: *State, blit_rect: BlitRect, alpha: f32) void {
+    pub fn postDraw(
+        fbs: *Framebuffer,
+        ds: *State,
+        full_w: u31,
+        full_h: u31,
+        blit_rect: BlitRect,
+        alpha: f32,
+    ) void {
         flush(ds);
 
-        // blit renderbuffer to screen
-        ds.projection = ortho(0, 1, 1, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // clear the entire screen to black (including any possible screen
+        // margin or letterboxing/pillarboxing).
+        // note that we can't just clear the screen once when the program
+        // starts, because of double/triple buffering. we would have to do at
+        // least for the first few draws. it's simpler just to clear every
+        // frame.
+        glViewport(0, 0, full_w, full_h);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        ds.projection = ortho(0, 1, 1, 0);
         glViewport(blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
 
         ds.draw_buffer.vertex2f[0..12].* = .{ 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0 };

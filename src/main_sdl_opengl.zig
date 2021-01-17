@@ -24,11 +24,15 @@ pub const pstorage = @import("platform/storage_native.zig");
 pub const storagekey_config = "config.json";
 pub const storagekey_highscores = "highscore.dat";
 
+// margin to add around the scaled game view (in screen pixels). so far this is
+// just a hardcoded constant.
+const vmargin = 8;
+
 fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
     // pick a window size that isn't bigger than the desktop resolution, and
     // is an integer multiple of the virtual window size
-    const max_w = screen_w;
-    const max_h = screen_h - 40; // bias for system menubars/taskbars
+    const max_w = screen_w - vmargin * 2;
+    const max_h = screen_h - vmargin * 2 - 40; // bias for system menubars/taskbars
 
     const scale_limit = 8;
 
@@ -37,22 +41,29 @@ fn getMaxCanvasScale(screen_w: u31, screen_h: u31) u31 {
         const w = (scale + 1) * oxid.vwin_w;
         const h = (scale + 1) * oxid.vwin_h;
 
-        if (w > max_w or h > max_h) {
+        if (w > max_w or h > max_h)
             break;
-        }
     }
 
     return scale;
 }
 
-fn getWindowDimsForScale(scale: u31) struct { w: u31, h: u31 } {
+// get the dimensions of the program window. this is not used in fullscreen
+// mode.
+fn getWindowDimsForScale(scale: u31) WindowDims {
     return .{
-        .w = oxid.vwin_w * scale,
-        .h = oxid.vwin_h * scale,
+        .w = oxid.vwin_w * scale + vmargin * 2,
+        .h = oxid.vwin_h * scale + vmargin * 2,
     };
 }
 
-fn getBlitRect(screen_w: u31, screen_h: u31) pdraw.Framebuffer.BlitRect {
+// calculate the position and dimensions of the scaled game view within the
+// program window.
+// TODO add a config option to force whole-number scale.
+fn getBlitRect(screen_w_: u31, screen_h_: u31) pdraw.Framebuffer.BlitRect {
+    const screen_w = screen_w_ - vmargin * 2;
+    const screen_h = screen_h_ - vmargin * 2;
+
     // scale the game view up as far as possible, maintaining the aspect ratio
     const scaled_w = screen_h * oxid.vwin_w / oxid.vwin_h;
     const scaled_h = screen_w * oxid.vwin_h / oxid.vwin_w;
@@ -61,23 +72,23 @@ fn getBlitRect(screen_w: u31, screen_h: u31) pdraw.Framebuffer.BlitRect {
         return .{
             .w = scaled_w,
             .h = screen_h,
-            .x = screen_w / 2 - scaled_w / 2,
-            .y = 0,
+            .x = vmargin + screen_w / 2 - scaled_w / 2,
+            .y = vmargin,
         };
     }
     if (scaled_h < screen_h) {
         return .{
             .w = screen_w,
             .h = scaled_h,
-            .x = 0,
-            .y = screen_h / 2 - scaled_h / 2,
+            .x = vmargin,
+            .y = vmargin + screen_h / 2 - scaled_h / 2,
         };
     }
     return .{
         .w = screen_w,
         .h = screen_h,
-        .x = 0,
-        .y = 0,
+        .x = vmargin,
+        .y = vmargin,
     };
 }
 
@@ -87,6 +98,11 @@ const FramerateScheme = union(enum) {
     fixed: usize,
     // free: adapt to delta time
     free,
+};
+
+const WindowDims = struct {
+    w: u31,
+    h: u31,
 };
 
 // used to save the original position and dimensions of the game window before
@@ -106,6 +122,7 @@ const Main = struct {
     window: *sdl.SDL_Window,
     display_index: c_int, // used to detect when the window has been moved to another display
     glcontext: sdl.SDL_GLContext,
+    window_dims: WindowDims,
     blit_rect: pdraw.Framebuffer.BlitRect,
     audio_sample_rate: u31,
     audio_device: sdl.SDL_AudioDeviceID,
@@ -447,12 +464,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.requested_framerate_scheme = options.framerate_scheme;
     updateFramerateScheme(self); // sets self.framerate_scheme
 
-    self.framebuffer = pdraw.Framebuffer.init(oxid.vwin_w, oxid.vwin_h) catch |err| {
-        std.log.emerg("pdraw.Framebuffer.init failed: {}", .{err});
-        return error.Failed;
-    };
-    errdefer pdraw.Framebuffer.deinit(&self.framebuffer);
-
     {
         const num_joysticks = sdl.SDL_NumJoysticks();
         std.log.notice("{} joystick(s)", .{num_joysticks});
@@ -467,13 +478,19 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     pdraw.init(&self.draw_state, glsl_version, .{
         .hunk = hunk,
-        .virtual_window_width = oxid.vwin_w,
-        .virtual_window_height = oxid.vwin_h,
+        .vwin_w = oxid.vwin_w,
+        .vwin_h = oxid.vwin_h,
     }) catch |err| {
         std.log.emerg("pdraw.init failed: {}", .{err});
         return error.Failed;
     };
     errdefer pdraw.deinit(&self.draw_state);
+
+    self.framebuffer = pdraw.Framebuffer.init(oxid.vwin_w, oxid.vwin_h) catch |err| {
+        std.log.emerg("pdraw.Framebuffer.init failed: {}", .{err});
+        return error.Failed;
+    };
+    errdefer pdraw.Framebuffer.deinit(&self.framebuffer);
 
     try oxid.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
@@ -492,6 +509,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     // framerate_scheme, framebuffer
     self.display_index = 0;
     self.glcontext = glcontext;
+    self.window_dims = window_dims;
     self.blit_rect = getBlitRect(window_dims.w, window_dims.h);
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
@@ -523,8 +541,8 @@ fn deinit(self: *Main) void {
 
     sdl.SDL_PauseAudioDevice(self.audio_device, 1);
     oxid.deinit(&self.main_state);
-    pdraw.deinit(&self.draw_state);
     pdraw.Framebuffer.deinit(&self.framebuffer);
+    pdraw.deinit(&self.draw_state);
     sdl.SDL_GL_DeleteContext(self.glcontext);
     sdl.SDL_CloseAudioDevice(self.audio_device);
     sdl.SDL_DestroyWindow(self.window);
@@ -634,6 +652,7 @@ fn setCanvasScale(self: *Main, scale: u31) void {
     const h: i32 = dims.h;
     sdl.SDL_SetWindowSize(self.window, w, h);
 
+    self.window_dims = dims;
     self.blit_rect = getBlitRect(dims.w, dims.h);
 
     // if resizing the window puts part of it off-screen, push it back on-screen
@@ -673,7 +692,8 @@ fn toggleFullscreen(self: *Main) void {
         const swp = self.saved_window_pos.?; // this field is always set when fullscreen is true
         sdl.SDL_SetWindowSize(self.window, swp.w, swp.h);
         sdl.SDL_SetWindowPosition(self.window, swp.x, swp.y);
-        self.blit_rect = .{ .x = 0, .y = 0, .w = swp.w, .h = swp.h };
+        self.window_dims = .{ .w = swp.w, .h = swp.h };
+        self.blit_rect = getBlitRect(swp.w, swp.h);
         self.main_state.fullscreen = false;
         self.saved_window_pos = null;
         return;
@@ -710,6 +730,7 @@ fn toggleFullscreen(self: *Main) void {
         sdl.SDL_SetWindowSize(self.window, swp.w, swp.h); // put it back
         return;
     }
+    self.window_dims = .{ .w = full_w, .h = full_h };
     self.blit_rect = getBlitRect(full_w, full_h);
     self.main_state.fullscreen = true;
     self.saved_window_pos = swp;
@@ -813,6 +834,8 @@ fn draw(self: *Main, blit_alpha: f32) void {
     pdraw.Framebuffer.postDraw(
         &self.framebuffer,
         &self.draw_state,
+        self.window_dims.w,
+        self.window_dims.h,
         self.blit_rect,
         blit_alpha,
     );

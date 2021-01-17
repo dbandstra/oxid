@@ -221,8 +221,8 @@ fn init() !void {
 
     pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
-        .virtual_window_width = oxid.vwin_w,
-        .virtual_window_height = oxid.vwin_h,
+        .vwin_w = oxid.vwin_w,
+        .vwin_h = oxid.vwin_h,
     }) catch |err| {
         std.log.emerg("pdraw.init failed: {}", .{err});
         return error.Failed;
