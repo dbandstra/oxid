@@ -568,7 +568,16 @@ fn tick(self: *Main, refresh_rate: u64) void {
 
     // when fast forwarding, we'll simulate 4 frames and draw them blended
     // together. we'll also speed up the sound playback rate by 4x
-    const num_frames: u32 = if (self.fast_forward) 4 else 1;
+    //
+    // note: if you try 32 frames, zang crashes:
+    //
+    // integer part of floating point value out of bounds
+    //
+    // lib/zang/src/zang/mod_pulseosc.zig:128:27: 0x106370959 in
+    // .zang.zang.mod_pulseosc.PulseOsc.paintControlledFrequency (oxid)
+    //     const ifreq = @floatToInt(u32, SRfcobasefrq * freq[i]);
+    //                   ^
+    const num_frames: u32 = if (self.fast_forward) 12 else 1;
 
     var i: usize = 0;
     while (i < num_frames_to_simulate) : (i += 1) {
