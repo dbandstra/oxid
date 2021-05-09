@@ -2,10 +2,22 @@ const std = @import("std");
 const math = @import("../common/math.zig");
 const levels = @import("levels.zig");
 
+const wall: levels.MapTile = .{
+    .graphic = .wall,
+    .terrain_type = .wall,
+    .foreground = false,
+};
+
+const floor: levels.MapTile = .{
+    .graphic = .floor,
+    .terrain_type = .floor,
+    .foreground = false,
+};
+
 test "box_in_wall" {
-    var data = [1]u8{0x80} ** (levels.width * levels.height); // initialize to all walls
-    data[1 * levels.width + 1] = 0x00; // set tile at x=1, y=1 to floor
-    const level: levels.Level = .{ .data = data };
+    var tiles = [1]levels.MapTile{wall} ** (levels.width * levels.height); // initialize to all walls
+    tiles[1 * levels.width + 1] = floor; // set tile at x=1, y=1 to floor
+    const level: levels.Level = .{ .tiles = tiles };
 
     const s = levels.subpixels_per_tile;
 

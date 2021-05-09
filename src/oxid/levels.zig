@@ -1,5 +1,8 @@
+const build_options = @import("build_options");
 const std = @import("std");
+const pcx = @import("zig-pcx");
 const math = @import("../common/math.zig");
+const graphics = @import("graphics.zig");
 
 pub const subpixels_per_pixel = 16;
 pub const pixels_per_tile = 16;
@@ -10,20 +13,18 @@ pub const TerrainType = enum {
     wall,
 };
 
+pub const MapTile = struct {
+    graphic: graphics.Graphic,
+    terrain_type: TerrainType,
+    foreground: bool,
+};
+
 pub const width = 20;
 pub const height = 14;
 
 pub const Level = struct {
-    data: [width * height]u8,
+    tiles: [width * height]MapTile,
 };
-
-fn getTerrainType(value: u8) TerrainType {
-    if ((value & 0x80) != 0) {
-        return .wall;
-    } else {
-        return .floor;
-    }
-}
 
 pub fn absBoxInWall(level: Level, bbox: math.Box) bool {
     std.debug.assert(bbox.mins.x < bbox.maxs.x and bbox.mins.y < bbox.maxs.y);
@@ -37,12 +38,10 @@ pub fn absBoxInWall(level: Level, bbox: math.Box) bool {
     while (gy <= gy1) : (gy += 1) {
         var gx: i32 = gx0;
         while (gx <= gx1) : (gx += 1) {
-            if (getGridValue(level, math.vec2(gx, gy))) |value| {
-                const tt = getTerrainType(value);
-                if (tt == .wall) {
-                    return true;
-                }
-            }
+            // outside the map is considered wall
+            const tile = getMapTile(level, gx, gy) orelse return true;
+            if (tile.terrain_type == .wall)
+                return true;
         }
     }
 
@@ -53,53 +52,44 @@ pub fn boxInWall(level: Level, pos: math.Vec2, bbox: math.Box) bool {
     return absBoxInWall(level, math.moveBox(bbox, pos));
 }
 
-pub fn getGridValue(level: Level, pos: math.Vec2) ?u8 {
-    if (pos.x >= 0 and pos.y >= 0) {
-        const x = @intCast(usize, pos.x);
-        const y = @intCast(usize, pos.y);
+pub fn getMapTile(level: Level, x: i32, y: i32) ?MapTile {
+    if (x >= 0 and y >= 0) {
+        const ux = @intCast(usize, x);
+        const uy = @intCast(usize, y);
 
-        if (x < width and y < height) {
-            return level.data[y * width + x];
+        if (ux < width and uy < height) {
+            return level.tiles[uy * width + ux];
         }
     }
 
     return null;
 }
 
-pub fn getGridTerrainType(level: Level, pos: math.Vec2) TerrainType {
-    if (getGridValue(level, pos)) |value| {
-        return getTerrainType(value);
-    } else {
-        return .wall;
-    }
-}
-
 // levels are loaded from pcx files. the palette is thrown out but the color
 // index of each pixel is meaningful
-pub const level1 = Level{ .data = loadLevel("level1.pcx") };
+pub const level1 = Level{ .tiles = loadLevel("level1.pcx") };
 
-// map of pcx values to the values that are meaningful to the program
-const mapping = [_]u8{
-    0x00, // floor
-    0x85, // spooky block, bottom left
-    0x83, // spooky block, top left
-    0x84, // spooky block, top right
-    0x81, // wall (south face)
-    0x86, // spooky block, bottom right
-    0x80, // wall
-    0x01, // floor with shadow
-    0x87, // station, top left
-    0x88, // station, top right
-    0x89, // station, bottom left
-    0x8A, // station, bottom right
-    0x02, // station, shadow left
-    0x03, // station, shadow right
+// map of pcx indexed color values to level tile information
+// zig fmt: off
+const mapping = [_]MapTile{
+    .{ .graphic = .floor,        .terrain_type = .floor, .foreground = false },
+    .{ .graphic = .evilwall_bl,  .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .evilwall_tl,  .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .evilwall_tr,  .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .wall2,        .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .evilwall_br,  .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .wall,         .terrain_type = .wall,  .foreground = false },
+    .{ .graphic = .floor_shadow, .terrain_type = .floor, .foreground = false },
+    .{ .graphic = .station_tl,   .terrain_type = .wall,  .foreground = true  },
+    .{ .graphic = .station_tr,   .terrain_type = .wall,  .foreground = true  },
+    .{ .graphic = .station_bl,   .terrain_type = .wall,  .foreground = true  },
+    .{ .graphic = .station_br,   .terrain_type = .wall,  .foreground = true  },
+    .{ .graphic = .station_sl,   .terrain_type = .floor, .foreground = false },
+    .{ .graphic = .station_sr,   .terrain_type = .floor, .foreground = false },
 };
+// zig fmt: on
 
-const build_options = @import("build_options");
-const pcx = @import("zig-pcx");
-
-fn loadLevel(comptime filename: []const u8) [width * height]u8 {
+fn loadLevel(comptime filename: []const u8) [width * height]MapTile {
     @setEvalBranchQuota(20000);
     const input = @embedFile(build_options.assets_path ++ "/" ++ filename);
     var fbs = std.io.fixedBufferStream(input);
@@ -107,12 +97,13 @@ fn loadLevel(comptime filename: []const u8) [width * height]u8 {
     const Loader = pcx.Loader(@TypeOf(stream));
     const preloaded = try Loader.preload(&stream);
     if (preloaded.width != width or preloaded.height != height) {
-        @compileError(filename ++ " must be a 20x14 image");
+        @compileError(filename ++ " does not match expected dimensions");
     }
-    var data: [width * height]u8 = undefined;
-    try Loader.loadIndexed(&stream, preloaded, &data, null);
-    for (data) |*v| {
-        v.* = mapping[v.*];
+    var pixels: [width * height]u8 = undefined;
+    var tiles: [width * height]MapTile = undefined;
+    try Loader.loadIndexed(&stream, preloaded, &pixels, null);
+    for (pixels) |value, i| {
+        tiles[i] = mapping[value];
     }
-    return data;
+    return tiles;
 }

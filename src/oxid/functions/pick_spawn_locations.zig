@@ -21,9 +21,11 @@ pub fn pickSpawnLocations(gs: *game.Session, gridlocs_buf: []math.Vec2) []const 
     while (gy < levels.height) : (gy += 1) {
         gx = 0;
         while (gx < levels.width) : (gx += 1) {
-            const pos = math.vec2(gx, gy);
-            const i = gy * levels.width + gx;
-            gridmask[i] = levels.getGridTerrainType(levels.level1, pos) == .floor;
+            const in_wall = blk: {
+                const tile = levels.getMapTile(levels.level1, gx, gy) orelse break :blk true;
+                break :blk tile.terrain_type == .wall;
+            };
+            gridmask[gy * levels.width + gx] = !in_wall;
         }
     }
 

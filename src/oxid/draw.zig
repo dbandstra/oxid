@@ -2,7 +2,6 @@ const build_options = @import("build_options");
 const std = @import("std");
 const gbe = @import("gbe");
 const pdraw = @import("root").pdraw;
-const math = @import("../common/math.zig");
 const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const oxid = @import("oxid.zig");
@@ -13,7 +12,6 @@ const config = @import("config.zig");
 const c = @import("components.zig");
 const perf = @import("perf.zig");
 const util = @import("util.zig");
-const drawGameOverOverlay = @import("draw_menu.zig").drawGameOverOverlay;
 
 pub fn drawGame(
     ds: *pdraw.State,
@@ -27,13 +25,14 @@ pub fn drawGame(
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, &sort_buffer);
 
-        drawMap(ds, static);
+        drawMap(ds, static, false);
         drawEntities(ds, static, sorted_drawables);
-        drawMapForeground(ds, static);
+        drawMap(ds, static, true);
         drawBoxes(ds, gs);
         drawHud(ds, static, gs, high_score);
     } else {
-        drawMap(ds, static);
+        drawMap(ds, static, false);
+        drawMap(ds, static, true);
         drawHud(ds, static, gs, high_score);
     }
 }
@@ -61,67 +60,24 @@ fn getSortedDrawables(
     return sorted_drawables;
 }
 
-fn drawMapTile(
-    ds: *pdraw.State,
-    static: *const oxid.GameStatic,
-    x: u31,
-    y: u31,
-) void {
-    const gridpos = math.vec2(x, y);
-    const graphic: graphics.Graphic = switch (levels.getGridValue(levels.level1, gridpos).?) {
-        0x00 => .floor,
-        0x01 => .floor_shadow,
-        0x80 => .wall,
-        0x81 => .wall2,
-        0x82 => .pit,
-        0x83 => .evilwall_tl,
-        0x84 => .evilwall_tr,
-        0x85 => .evilwall_bl,
-        0x86 => .evilwall_br,
-        0x87 => .station_tl,
-        0x88 => .station_tr,
-        0x89 => .station_bl,
-        0x8A => .station_br,
-        0x02 => .station_sl,
-        0x03 => .station_sr,
-        else => return,
-    };
-    const pos = math.vec2Scale(gridpos, levels.subpixels_per_tile);
-    pdraw.tile(
-        ds,
-        static.tileset,
-        graphics.getGraphicTile(graphic),
-        @divFloor(pos.x, levels.subpixels_per_pixel),
-        @divFloor(pos.y, levels.subpixels_per_pixel) + oxid.hud_height,
-        .identity,
-    );
-}
-
-fn drawMap(ds: *pdraw.State, static: *const oxid.GameStatic) void {
-    perf.begin(.draw_map);
-    defer perf.end(.draw_map);
+fn drawMap(ds: *pdraw.State, static: *const oxid.GameStatic, foreground: bool) void {
+    perf.begin(if (foreground) .draw_map_foreground else .draw_map);
+    defer perf.end(if (foreground) .draw_map_foreground else .draw_map);
 
     var y: u31 = 0;
     while (y < levels.height) : (y += 1) {
         var x: u31 = 0;
         while (x < levels.width) : (x += 1) {
-            drawMapTile(ds, static, x, y);
-        }
-    }
-}
-
-// make the central 2x2 map tiles a foreground layer, so that the player spawn
-// anim makes him arise from behind it. (this should probably be implemented as
-// a regular entity later.)
-fn drawMapForeground(ds: *pdraw.State, static: *const oxid.GameStatic) void {
-    perf.begin(.draw_map_foreground);
-    defer perf.end(.draw_map_foreground);
-
-    var y: u31 = 6;
-    while (y < 8) : (y += 1) {
-        var x: u31 = 9;
-        while (x < 11) : (x += 1) {
-            drawMapTile(ds, static, x, y);
+            const map_tile = levels.getMapTile(levels.level1, x, y) orelse continue;
+            if (map_tile.foreground != foreground) continue;
+            pdraw.tile(
+                ds,
+                static.tileset,
+                graphics.getGraphicTile(map_tile.graphic),
+                @divFloor(x * levels.subpixels_per_tile, levels.subpixels_per_pixel),
+                @divFloor(y * levels.subpixels_per_tile, levels.subpixels_per_pixel) + oxid.hud_height,
+                .identity,
+            );
         }
     }
 }
