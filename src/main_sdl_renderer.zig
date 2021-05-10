@@ -278,8 +278,6 @@ fn tick(self: *Main) void {
         }
     }
 
-    self.main_state.menu_anim_time +%= 1;
-
     oxid.frame(&self.main_state, .{
         .spawn_draw_events = true,
         .friendly_fire = self.main_state.friendly_fire,

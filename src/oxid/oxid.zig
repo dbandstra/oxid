@@ -436,6 +436,8 @@ fn postScores(self: *MainState) void {
 }
 
 pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
+    self.menu_anim_time +%= 1;
+
     const paused = self.menu_stack.len > 0 and !self.game_over;
 
     perf.begin(.frame);

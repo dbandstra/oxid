@@ -580,8 +580,6 @@ fn tick(self: *Main, refresh_rate: u64) void {
             }
         }
 
-        self.main_state.menu_anim_time +%= 1;
-
         var frame_index: u32 = 0;
         while (frame_index < num_frames) : (frame_index += 1) {
             // if we're simulating multiple frames for one draw cycle, we only
