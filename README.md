@@ -54,7 +54,7 @@ Menu controls:
 * esc: go back
 
 Debug/cheat controls:
-* backquote: fast forward (not available in web version)
+* backquote: fast forward
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
 * F4: toggle profiling spam (not available in web version or in ReleaseSmall)

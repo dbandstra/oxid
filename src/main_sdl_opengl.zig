@@ -750,23 +750,19 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
         sdl.SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    inputEvent(self, .{ .key = key }, true);
-
                     switch (key) {
                         .backquote => self.fast_forward = true,
                         .f4 => perf.toggleSpam(),
-                        else => {},
+                        else => inputEvent(self, .{ .key = key }, true),
                     }
                 }
             }
         },
         sdl.SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                inputEvent(self, .{ .key = key }, false);
-
                 switch (key) {
                     .backquote => self.fast_forward = false,
-                    else => {},
+                    else => inputEvent(self, .{ .key = key }, false),
                 }
             }
         },

@@ -3,15 +3,7 @@ const Hunk = @import("zig-hunk").Hunk;
 const inputs = @import("common/inputs.zig");
 const constants = @import("oxid/constants.zig");
 const game = @import("oxid/game.zig");
-const drawGame = @import("oxid/draw.zig").drawGame;
-const audio = @import("oxid/audio.zig");
-const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
-const c = @import("oxid/components.zig");
-const menus = @import("oxid/menus.zig");
-const MenuDrawParams = @import("oxid/draw_menu.zig").MenuDrawParams;
-const drawMenu = @import("oxid/draw_menu.zig").drawMenu;
-const SetFriendlyFire = @import("oxid/functions/set_friendly_fire.zig");
 const oxid = @import("oxid/oxid.zig");
 
 // drivers that other source files can access via @import("root")
@@ -48,6 +40,8 @@ pub fn log(
 const Main = struct {
     main_state: oxid.MainState,
     draw_state: pdraw.State,
+    audio_speedup: u31,
+    fast_forward: bool,
 };
 
 fn translateKey(keyCode: c_int) ?inputs.Key {
@@ -167,6 +161,10 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
     // that the game doesn't handle. this allows most default browser behaviors
     // to still work
     const key = translateKey(keycode) orelse return 0;
+    if (key == .backquote) {
+        g.fast_forward = down != 0;
+        return NOP;
+    }
     const source: inputs.Source = .{ .key = key };
     const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return 0;
     return switch (special) {
@@ -218,6 +216,8 @@ fn init() !void {
     hunk.* = Hunk.init(main_memory);
 
     g = hunk.low().allocator.create(Main) catch unreachable;
+    g.audio_speedup = 1;
+    g.fast_forward = false;
 
     pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
@@ -258,7 +258,8 @@ export fn getAudioBufferSize() c_int {
 }
 
 export fn audioCallback(sample_rate: f32) [*]f32 {
-    g.main_state.audio_module.sample_rate = sample_rate;
+    g.main_state.audio_module.sample_rate = sample_rate / @intToFloat(f32, g.audio_speedup);
+
     const buf = g.main_state.audio_module.paint();
     const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.audio_module.volume) / 100.0);
 
@@ -311,22 +312,38 @@ export fn onAnimationFrame(now: c_int) void {
 }
 
 fn tick(should_draw: bool) void {
-    oxid.frame(&g.main_state, .{
-        .spawn_draw_events = should_draw,
-        .friendly_fire = g.main_state.friendly_fire,
-    });
+    // when fast forwarding, we'll simulate 4 frames and draw them blended
+    // together. we'll also speed up the sound playback rate by 4x
+    const num_frames: u31 = if (g.fast_forward) 4 else 1;
 
+    var frame_index: u31 = 0;
+    while (frame_index < num_frames) : (frame_index += 1) {
+        // if we're simulating multiple frames for one draw cycle, we only
+        // need to actually draw for the last one of them
+        const should_draw2 = frame_index == num_frames - 1;
+
+        // run simulation and create events for drawing, playing sounds, etc.
+        oxid.frame(&g.main_state, .{
+            .spawn_draw_events = should_draw and should_draw2,
+            .friendly_fire = g.main_state.friendly_fire,
+        });
+
+        // draw to framebuffer (from events)
+        if (should_draw and should_draw2) {
+            oxid.draw(&g.main_state, &g.draw_state);
+        }
+
+        // delete events
+        game.frameCleanup(&g.main_state.session);
+    }
+
+    g.audio_speedup = num_frames;
     g.main_state.audio_module.sync(
         !g.main_state.sound_enabled,
         g.main_state.cfg.volume,
+        // this sample rate is not actually used - it's overridden at the top of audioCallback
         g.main_state.audio_module.sample_rate,
         &g.main_state.session,
         &g.main_state.menu_sounds,
     );
-
-    if (should_draw) {
-        oxid.draw(&g.main_state, &g.draw_state);
-    }
-
-    game.frameCleanup(&g.main_state.session);
 }

@@ -69,6 +69,7 @@ const Main = struct {
     audio_sample_rate: u31,
     audio_device: sdl.SDL_AudioDeviceID,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
+    fast_forward: bool,
     quit: bool,
 };
 
@@ -239,6 +240,7 @@ fn init(hunk: *Hunk) !*Main {
     self.set_canvas_scale = null;
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
+    self.fast_forward = false;
     self.quit = false;
     self.saved_window_pos = null;
 
@@ -278,18 +280,34 @@ fn tick(self: *Main) void {
         }
     }
 
-    oxid.frame(&self.main_state, .{
-        .spawn_draw_events = true,
-        .friendly_fire = self.main_state.friendly_fire,
-    });
+    // when fast forwarding, we'll simulate 4 frames and draw them blended
+    // together. we'll also speed up the sound playback rate by 4x
+    const num_frames: u32 = if (self.fast_forward) 4 else 1;
 
-    perf.begin(.whole_draw);
-    perf.begin(.draw);
-    oxid.draw(&self.main_state, &self.draw_state);
-    perf.end(.draw);
-    perf.end(.whole_draw);
+    var frame_index: u32 = 0;
+    while (frame_index < num_frames) : (frame_index += 1) {
+        // if we're simulating multiple frames for one draw cycle, we only
+        // need to actually draw for the last one of them
+        const should_draw = frame_index == num_frames - 1;
 
-    game.frameCleanup(&self.main_state.session);
+        // run simulation and create events for drawing, playing sounds, etc.
+        oxid.frame(&self.main_state, .{
+            .spawn_draw_events = should_draw,
+            .friendly_fire = self.main_state.friendly_fire,
+        });
+
+        // draw to framebuffer (from events)
+        if (should_draw) {
+            perf.begin(.whole_draw);
+            perf.begin(.draw);
+            oxid.draw(&self.main_state, &self.draw_state);
+            perf.end(.draw);
+            perf.end(.whole_draw);
+        }
+
+        // delete events
+        game.frameCleanup(&self.main_state.session);
+    }
 
     sdl.SDL_RenderPresent(self.renderer);
 
@@ -297,7 +315,8 @@ fn tick(self: *Main) void {
     self.main_state.audio_module.sync(
         false,
         self.main_state.cfg.volume,
-        @intToFloat(f32, self.audio_sample_rate),
+        // speed up audio mixing frequency if game is being fast forwarded
+        @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames),
         &self.main_state.session,
         &self.main_state.menu_sounds,
     );
@@ -418,15 +437,20 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
         sdl.SDL_KEYDOWN => {
             if (evt.key.repeat == 0) {
                 if (translateKey(evt.key.keysym.sym)) |key| {
-                    inputEvent(self, .{ .key = key }, true);
-
-                    if (key == .f4) perf.toggleSpam();
+                    switch (key) {
+                        .backquote => self.fast_forward = true,
+                        .f4 => perf.toggleSpam(),
+                        else => inputEvent(self, .{ .key = key }, true),
+                    }
                 }
             }
         },
         sdl.SDL_KEYUP => {
             if (translateKey(evt.key.keysym.sym)) |key| {
-                inputEvent(self, .{ .key = key }, false);
+                switch (key) {
+                    .backquote => self.fast_forward = false,
+                    else => inputEvent(self, .{ .key = key }, false),
+                }
             }
         },
         sdl.SDL_WINDOWEVENT => {
