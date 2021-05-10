@@ -1,5 +1,3 @@
-const builtin = @import("builtin");
-const std = @import("std");
 const gbe = @import("gbe");
 const math = @import("../common/math.zig");
 const levels = @import("levels.zig");
@@ -49,10 +47,7 @@ pub fn frame(gs: *game.Session) void {
     // resolve each move group independently
     for (move_groups) |*move_group| {
         resolveMoveGroup(gs, move_group);
-    }
-
-    if (builtin.mode == .Debug) {
-        assertNoOverlaps(gs);
+        resolveOverlaps(gs, move_group);
     }
 }
 
@@ -255,7 +250,7 @@ fn resolveMoveGroup(gs: *game.Session, move_group: *const MoveGroup) void {
             p.spawnEventCollide(gs, .{
                 .self_id = m.entity.id,
                 .other_id = .{ .id = 0 },
-                .propelled = true,
+                .collision_type = .propelled,
             });
             hit_something = true;
         }
@@ -286,14 +281,52 @@ fn resolveMoveGroup(gs: *game.Session, move_group: *const MoveGroup) void {
     }
 }
 
+fn resolveOverlaps(gs: *game.Session, move_group: *const MoveGroup) void {
+    var maybe_self = move_group.head;
+    while (maybe_self) |self| : (maybe_self = self.next) {
+        if (self.entity.phys.illusory)
+            continue;
+        var maybe_other = self.next;
+        while (maybe_other) |other| : (maybe_other = other.next) {
+            if (other.entity.phys.illusory)
+                continue;
+            if (!couldObjectsCollide(self.entity.id, self.entity.phys, other.entity.id, other.entity.phys))
+                continue;
+            if (!math.boxesOverlap(self.entity.transform.pos, self.entity.phys.entity_bbox, other.entity.transform.pos, other.entity.phys.entity_bbox))
+                continue;
+            // these two entities overlap.
+            // create an "overlap" collision event for each of them (or update the existing one
+            // if present).
+            if (findCollisionEvent(gs, self.entity.id, other.entity.id)) |event| {
+                event.collision_type = .overlap;
+            } else {
+                p.spawnEventCollide(gs, .{
+                    .self_id = self.entity.id,
+                    .other_id = other.entity.id,
+                    .collision_type = .overlap,
+                });
+            }
+            if (findCollisionEvent(gs, other.entity.id, self.entity.id)) |event| {
+                event.collision_type = .overlap;
+            } else {
+                p.spawnEventCollide(gs, .{
+                    .self_id = other.entity.id,
+                    .other_id = self.entity.id,
+                    .collision_type = .overlap,
+                });
+            }
+        }
+    }
+}
+
 fn spawnCollisionEvents(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
-        event_collide.propelled = true;
+        event_collide.collision_type = .propelled;
     } else {
         p.spawnEventCollide(gs, .{
             .self_id = self_id,
             .other_id = other_id,
-            .propelled = true,
+            .collision_type = .propelled,
         });
     }
 
@@ -301,7 +334,7 @@ fn spawnCollisionEvents(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.
         p.spawnEventCollide(gs, .{
             .self_id = other_id,
             .other_id = self_id,
-            .propelled = false,
+            .collision_type = .hit_by_other,
         });
     }
 }
@@ -333,30 +366,4 @@ fn couldObjectsCollide(
     if ((a_phys.flags & b_phys.ignore_flags) != 0) return false;
     if ((a_phys.ignore_flags & b_phys.flags) != 0) return false;
     return true;
-}
-
-// log a message if any entities are found to overlap. this either means there's a logic error in
-// the physics code above, or a solid entity was spawned in a position intersecting another solid
-// entity (which would be considered a logic error in the game code).
-fn assertNoOverlaps(gs: *game.Session) void {
-    var it = gs.ecs.iter(Entity);
-    while (it.next()) |self| {
-        if (self.phys.illusory)
-            continue;
-        var it2 = gs.ecs.iter(Entity);
-        while (it2.next()) |other| {
-            if (other.phys.illusory)
-                continue;
-            if (!couldObjectsCollide(self.id, self.phys, other.id, other.phys))
-                continue;
-            if (math.boxesOverlap(
-                self.transform.pos,
-                self.phys.entity_bbox,
-                other.transform.pos,
-                other.phys.entity_bbox,
-            )) {
-                std.log.debug("who is this joker", .{});
-            }
-        }
-    }
 }

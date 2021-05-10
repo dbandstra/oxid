@@ -7,41 +7,6 @@ const graphics = @import("graphics.zig");
 const commands = @import("commands.zig");
 const audio = @import("audio.zig");
 
-pub const Bullet = struct {
-    pub const Type = enum {
-        monster_bullet,
-        player_bullet,
-    };
-
-    bullet_type: Type,
-    inflictor_player_controller_id: ?gbe.EntityId,
-    damage: u32,
-    line_of_fire: ?math.Box,
-};
-
-pub const Creature = struct {
-    invulnerability_timer: u32,
-    hit_points: u32,
-    flinch_timer: u32,
-};
-
-pub const Monster = struct {
-    pub const Personality = enum {
-        chase,
-        wander,
-    };
-
-    monster_type: constants.MonsterType,
-    spawning_timer: u32,
-    full_hit_points: u32,
-    personality: Personality,
-    can_shoot: bool,
-    next_attack_timer: u32,
-    has_coin: bool,
-};
-
-pub const Web = struct {};
-
 pub const GameController = struct {
     monster_count: u32,
     enemy_speed_level: u31,
@@ -65,21 +30,8 @@ pub const PlayerController = struct {
     respawn_timer: u32,
 };
 
-pub const Animation = struct {
-    simple_anim: graphics.SimpleAnim,
-    frame_index: u32,
-    frame_timer: u32,
-    z_index: u32,
-};
-
-pub const RemoveTimer = struct {
-    timer: u32,
-};
-
-pub const SimpleGraphic = struct {
-    graphic: graphics.Graphic,
-    z_index: u32,
-    directional: bool,
+pub const Transform = struct {
+    pos: math.Vec2,
 };
 
 pub const PhysObject = struct {
@@ -124,16 +76,16 @@ pub const PhysObject = struct {
     ignore_flags: u32,
 
     // internal fields used by physics step
-    internal: PhysObjectInternal,
+    internal: struct {
+        move_bbox: math.Box,
+        group_index: usize,
+    },
 };
 
-pub const PhysObjectInternal = struct {
-    move_bbox: math.Box,
-    group_index: usize,
-};
-
-pub const Pickup = struct {
-    pickup_type: constants.PickupType,
+pub const Creature = struct {
+    invulnerability_timer: u32,
+    hit_points: u32,
+    flinch_timer: u32,
 };
 
 pub const Player = struct {
@@ -157,8 +109,54 @@ pub const Player = struct {
     in_shoot: bool,
 };
 
-pub const Transform = struct {
-    pos: math.Vec2,
+pub const Monster = struct {
+    pub const Personality = enum {
+        chase,
+        wander,
+    };
+
+    monster_type: constants.MonsterType,
+    spawning_timer: u32,
+    full_hit_points: u32,
+    personality: Personality,
+    can_shoot: bool,
+    next_attack_timer: u32,
+    has_coin: bool,
+};
+
+pub const Web = struct {};
+
+pub const Bullet = struct {
+    pub const Type = enum {
+        monster_bullet,
+        player_bullet,
+    };
+
+    bullet_type: Type,
+    inflictor_player_controller_id: ?gbe.EntityId,
+    damage: u32,
+    line_of_fire: ?math.Box,
+};
+
+pub const SimpleGraphic = struct {
+    graphic: graphics.Graphic,
+    z_index: u32,
+    directional: bool,
+};
+
+pub const Animation = struct {
+    simple_anim: graphics.SimpleAnim,
+    frame_index: u32,
+    frame_timer: u32,
+    z_index: u32,
+};
+
+pub const Pickup = struct {
+    pickup_type: constants.PickupType,
+};
+
+pub const RemoveTimer = struct {
+    timer: u32,
 };
 
 pub const EventAwardLife = struct {
@@ -171,13 +169,20 @@ pub const EventAwardPoints = struct {
 };
 
 pub const EventCollide = struct {
+    pub const CollisionType = enum {
+        // the two entities overlap
+        overlap,
+
+        // self ran into other, or they both ran into each other
+        propelled,
+
+        // other ran into self while self was either motionless or moving in a different direction
+        hit_by_other,
+    };
+
     self_id: gbe.EntityId,
     other_id: gbe.EntityId, // 0 = wall
-
-    // `propelled`: if true, `self` ran into `other` (or they both ran into each
-    // other). if false, `other` ran into `self` while `self` was either
-    // motionless or moving in another direction.
-    propelled: bool,
+    collision_type: CollisionType,
 };
 
 pub const EventConferBonus = struct {
