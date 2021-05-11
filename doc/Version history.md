@@ -1,6 +1,6 @@
 # Version history
 
-## 1.0.2 (unreleased)
+## 1.0.2 (2021-05-11)
 
 * Gameplay: Fix bug where player can get briefly stuck in a spawning monster when the player's invulnerability frames run out - player is now immediately killed in this situation.
 * OpenGL frontend: add an 8px black margin around the scaled game view.
