@@ -36,10 +36,6 @@ pub const bullet_bbox = blk: {
     };
 };
 
-// currently, i can't pass a tuple to this function, due to a zig compiler bug (the program will
-// crash at runtime). so the explicit @"0", @"1", etc. syntax i'm using is only there until the
-// bug is fixed.
-// see https://github.com/ziglang/zig/issues/3915
 inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.EntityId {
     const entity_id = gs.ecs.spawn();
     inline for (@typeInfo(@TypeOf(components)).Struct.fields) |field| {
@@ -64,12 +60,15 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
     player1_controller_id: gbe.EntityId,
     player2_controller_id: ?gbe.EntityId,
 }) ?gbe.EntityId {
+    // note: i should be able to pass a tuple to this function instead of an explicitly defined
+    // struct, but there's a zig compiler bug (the program will crash at runtime).
+    // see https://github.com/ziglang/zig/issues/3915
     return spawnWithComponents(gs, struct {
-        @"0": c.GameController,
-        @"1": c.VoiceAccelerate,
-        @"2": c.VoiceWaveBegin,
+        game_controller: c.GameController,
+        voice_accelerate: c.VoiceAccelerate,
+        voice_wave_begin: c.VoiceWaveBegin,
     }{
-        .@"0" = c.GameController{
+        .game_controller = .{
             .monster_count = 0,
             .enemy_speed_level = 0,
             .enemy_speed_timer = constants.enemy_speed_ticks,
@@ -83,10 +82,10 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
             .player1_controller_id = params.player1_controller_id,
             .player2_controller_id = params.player2_controller_id,
         },
-        .@"1" = c.VoiceAccelerate{
+        .voice_accelerate = .{
             .params = null,
         },
-        .@"2" = c.VoiceWaveBegin{
+        .voice_wave_begin = .{
             .params = null,
         },
     });
@@ -96,9 +95,9 @@ pub fn spawnPlayerController(gs: *game.Session, params: struct {
     color: constants.PlayerColor,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.PlayerController,
+        player_controller: c.PlayerController,
     }{
-        .@"0" = c.PlayerController{
+        .player_controller = .{
             .player_id = null,
             .color = params.color,
             .lives = constants.player_num_lives,
@@ -114,19 +113,19 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.PhysObject,
-        @"2": c.Creature,
-        @"3": c.Player,
-        @"4": c.VoiceCoin,
-        @"5": c.VoiceLaser,
-        @"6": c.VoicePowerUp,
-        @"7": c.VoiceSampler,
+        transform: c.Transform,
+        phys_object: c.PhysObject,
+        creature: c.Creature,
+        player: c.Player,
+        voice_coin: c.VoiceCoin,
+        voice_laser: c.VoiceLaser,
+        voice_power_up: c.VoicePowerUp,
+        voice_sampler: c.VoiceSampler,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
         },
-        .@"1" = c.PhysObject{
+        .phys_object = .{
             .illusory = true, // illusory during invulnerability stage
             .world_bbox = world_bbox,
             .entity_bbox = player_entity_bbox,
@@ -138,12 +137,12 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .ignore_flags = c.PhysObject.FLAG_PLAYER,
             .internal = undefined,
         },
-        .@"2" = c.Creature{
+        .creature = .{
             .invulnerability_timer = constants.invulnerability_time,
             .hit_points = 1,
             .flinch_timer = 0,
         },
-        .@"3" = c.Player{
+        .player = .{
             .player_controller_id = params.player_controller_id,
             .color = params.color,
             .trigger_released = true,
@@ -160,10 +159,10 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .in_down = false,
             .in_shoot = false,
         },
-        .@"4" = c.VoiceCoin{ .params = null },
-        .@"5" = c.VoiceLaser{ .params = null },
-        .@"6" = c.VoicePowerUp{ .params = null },
-        .@"7" = c.VoiceSampler{ .sample = null },
+        .voice_coin = .{ .params = null },
+        .voice_laser = .{ .params = null },
+        .voice_power_up = .{ .params = null },
+        .voice_sampler = .{ .sample = null },
     });
 }
 
@@ -171,13 +170,13 @@ pub fn spawnPlayerCorpse(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.SimpleGraphic,
+        transform: c.Transform,
+        simple_graphic: c.SimpleGraphic,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.SimpleGraphic{
+        .simple_graphic = .{
             .graphic = .man_dying6,
             .z_index = constants.z_index_corpse,
             .directional = false,
@@ -199,16 +198,16 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
         false;
 
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.PhysObject,
-        @"2": c.Creature,
-        @"3": c.Monster,
-        @"4": ?c.VoiceLaser,
+        transform: c.Transform,
+        phys_object: c.PhysObject,
+        creature: c.Creature,
+        monster: c.Monster,
+        voice_laser: ?c.VoiceLaser,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.PhysObject{
+        .phys_object = .{
             .illusory = false,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -220,12 +219,12 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
             .ignore_flags = 0,
             .internal = undefined,
         },
-        .@"2" = c.Creature{
+        .creature = .{
             .invulnerability_timer = 0,
             .hit_points = 999, // invulnerable while spawning
             .flinch_timer = 0,
         },
-        .@"3" = c.Monster{
+        .monster = .{
             .monster_type = params.monster_type,
             .spawning_timer = constants.monster_spawn_time,
             .full_hit_points = monster_values.hit_points,
@@ -242,12 +241,7 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
                 0,
             .has_coin = params.has_coin,
         },
-        .@"4" = if (can_shoot)
-            c.VoiceLaser{
-                .params = null,
-            }
-        else
-            null,
+        .voice_laser = if (can_shoot) .{ .params = null } else null,
     });
 }
 
@@ -255,16 +249,16 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.PhysObject,
-        @"2": c.Web,
-        @"3": c.Creature,
-        @"4": c.VoiceSampler,
+        transform: c.Transform,
+        phys_object: c.PhysObject,
+        web: c.Web,
+        creature: c.Creature,
+        voice_sampler: c.VoiceSampler,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.PhysObject{
+        .phys_object = .{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = monster_entity_bbox,
@@ -276,13 +270,13 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
             .ignore_flags = 0,
             .internal = undefined,
         },
-        .@"2" = c.Web{},
-        .@"3" = c.Creature{
+        .web = .{},
+        .creature = .{
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
         },
-        .@"4" = c.VoiceSampler{
+        .voice_sampler = .{
             .sample = .drop_web,
         },
     });
@@ -298,15 +292,15 @@ pub fn spawnBullet(gs: *game.Session, params: struct {
     friendly_fire: bool,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.PhysObject,
-        @"2": c.Bullet,
-        @"3": c.SimpleGraphic,
+        transform: c.Transform,
+        phys_object: c.PhysObject,
+        bullet: c.Bullet,
+        simple_graphic: c.SimpleGraphic,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.PhysObject{
+        .phys_object = .{
             .illusory = true,
             .world_bbox = bullet_bbox,
             .entity_bbox = bullet_bbox,
@@ -330,13 +324,13 @@ pub fn spawnBullet(gs: *game.Session, params: struct {
             },
             .internal = undefined,
         },
-        .@"2" = c.Bullet{
+        .bullet = .{
             .bullet_type = params.bullet_type,
             .inflictor_player_controller_id = params.inflictor_player_controller_id,
             .damage = params.cluster_size,
             .line_of_fire = null,
         },
-        .@"3" = c.SimpleGraphic{
+        .simple_graphic = .{
             .graphic = switch (params.bullet_type) {
                 .monster_bullet => .mon_bullet,
                 .player_bullet => @as(graphics.Graphic, switch (params.cluster_size) {
@@ -357,13 +351,13 @@ pub fn spawnAnimation(gs: *game.Session, params: struct {
     z_index: u32,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.Animation,
+        transform: c.Transform,
+        animation: c.Animation,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.Animation{
+        .animation = .{
             .simple_anim = params.simple_anim,
             .frame_index = 0,
             .frame_timer = graphics.getSimpleAnim(params.simple_anim).ticks_per_frame,
@@ -379,16 +373,16 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
     const pickup_values = constants.getPickupValues(params.pickup_type);
 
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.SimpleGraphic,
-        @"2": c.PhysObject,
-        @"3": c.Pickup,
-        @"4": c.RemoveTimer,
+        transform: c.Transform,
+        simple_graphic: c.SimpleGraphic,
+        phys_object: c.PhysObject,
+        pickup: c.Pickup,
+        remove_timer: c.RemoveTimer,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.SimpleGraphic{
+        .simple_graphic = .{
             .graphic = switch (params.pickup_type) {
                 .power_up => .power_up,
                 .speed_up => .speed_up,
@@ -398,7 +392,7 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
             .z_index = constants.z_index_pickup,
             .directional = false,
         },
-        .@"2" = c.PhysObject{
+        .phys_object = .{
             .illusory = true,
             .world_bbox = world_bbox,
             .entity_bbox = pickup_entity_bbox,
@@ -410,10 +404,10 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
             .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,
         },
-        .@"3" = c.Pickup{
+        .pickup = .{
             .pickup_type = params.pickup_type,
         },
-        .@"4" = c.RemoveTimer{
+        .remove_timer = .{
             .timer = pickup_values.lifetime,
         },
     });
@@ -424,25 +418,20 @@ pub fn spawnSparks(gs: *game.Session, params: struct {
     impact_sound: bool,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.Animation,
-        @"2": ?c.VoiceSampler,
+        transform: c.Transform,
+        animation: c.Animation,
+        voice_sampler: ?c.VoiceSampler,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.Animation{
+        .animation = .{
             .simple_anim = .pla_sparks,
             .frame_index = 0,
             .frame_timer = graphics.getSimpleAnim(.pla_sparks).ticks_per_frame,
             .z_index = constants.z_index_sparks,
         },
-        .@"2" = if (params.impact_sound)
-            c.VoiceSampler{
-                .sample = .monster_impact,
-            }
-        else
-            null,
+        .voice_sampler = if (params.impact_sound) .{ .sample = .monster_impact } else null,
     });
 }
 
@@ -450,20 +439,20 @@ pub fn spawnExplosion(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
-        @"0": c.Transform,
-        @"1": c.Animation,
-        @"2": c.VoiceExplosion,
+        transform: c.Transform,
+        animation: c.Animation,
+        voice_explosion: c.VoiceExplosion,
     }{
-        .@"0" = c.Transform{
+        .transform = .{
             .pos = params.pos,
         },
-        .@"1" = c.Animation{
+        .animation = .{
             .simple_anim = .explosion,
             .frame_index = 0,
             .frame_timer = graphics.getSimpleAnim(.explosion).ticks_per_frame,
             .z_index = constants.z_index_explosion,
         },
-        .@"2" = c.VoiceExplosion{
+        .voice_explosion = .{
             .params = .{},
         },
     });
