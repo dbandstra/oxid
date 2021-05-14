@@ -16,7 +16,6 @@
         'player_death.wav',
         'sfx_exp_short_soft10.wav',
         'sfx_sounds_impact1.wav',
-        'sfx_sounds_interaction5.wav',
         'sfx_sounds_powerup4.wav',
     ];
 

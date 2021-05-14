@@ -6,6 +6,7 @@ const game = @import("game.zig");
 const levels = @import("levels.zig");
 const constants = @import("constants.zig");
 const c = @import("components.zig");
+const audio = @import("audio.zig");
 
 fn makeBBox(diameter: u31) math.Box {
     const graphic_diameter = levels.subpixels_per_tile;
@@ -248,12 +249,17 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
 pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
+    // can't do this in the struct literal because of a compiler bug - it will crash at runtime
+    // https://github.com/ziglang/zig/issues/3915
+    const drop_web_params = audio.DropWebVoice.NoteParams{
+        .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
+    };
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         phys_object: c.PhysObject,
         web: c.Web,
         creature: c.Creature,
-        voice_sampler: c.VoiceSampler,
+        voice_drop_web: c.VoiceDropWeb,
     }{
         .transform = .{
             .pos = params.pos,
@@ -276,8 +282,8 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
             .hit_points = 3,
             .flinch_timer = 0,
         },
-        .voice_sampler = .{
-            .sample = .drop_web,
+        .voice_drop_web = .{
+            .params = drop_web_params,
         },
     });
 }

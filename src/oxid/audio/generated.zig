@@ -14,6 +14,7 @@ pub const CoinVoice = _module19;
 pub const LaserVoice = _module20;
 pub const ExplosionVoice = _module21;
 pub const PowerUpVoice = _module22;
+pub const DropWebVoice = _module23;
 
 const _curve0 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 1000.0 },
@@ -52,6 +53,18 @@ const _curve5 = [_]zang.CurveNode{
     .{ .t = 0.0, .value = 0.3 },
     .{ .t = 0.2, .value = 0.2 },
     .{ .t = 0.3, .value = 0.0 },
+};
+
+const _curve6 = [_]zang.CurveNode{
+    .{ .t = 0.0, .value = 1.4 },
+    .{ .t = 0.075, .value = 1.0 },
+    .{ .t = 0.35, .value = 1.6 },
+};
+
+const _curve7 = [_]zang.CurveNode{
+    .{ .t = 0.0, .value = 0.0 },
+    .{ .t = 0.03, .value = 0.3 },
+    .{ .t = 0.35, .value = 0.0 },
 };
 
 const _track0 = struct {
@@ -737,6 +750,87 @@ const _module22 = struct {
             .input = temps[3],
             .type = .low_pass,
             .cutoff = zang.constant(0.5),
+            .res = 0.0,
+        });
+    }
+};
+
+const _module23 = struct {
+    pub const num_outputs = 1;
+    pub const num_temps = 5;
+    pub const Params = struct {
+        sample_rate: f32,
+        freq_mul: f32,
+    };
+    pub const NoteParams = struct {
+        freq_mul: f32,
+    };
+
+    field0: zang.SineOsc,
+    field1: zang.Curve,
+    field2: zang.Curve,
+    field3: zang.SineOsc,
+    field4: zang.SineOsc,
+    field5: zang.Filter,
+
+    pub fn init() _module23 {
+        return .{
+            .field0 = zang.SineOsc.init(),
+            .field1 = zang.Curve.init(),
+            .field2 = zang.Curve.init(),
+            .field3 = zang.SineOsc.init(),
+            .field4 = zang.SineOsc.init(),
+            .field5 = zang.Filter.init(),
+        };
+    }
+
+    pub fn paint(self: *_module23, span: zang.Span, outputs: [num_outputs][]f32, temps: [num_temps][]f32, note_id_changed: bool, params: Params) void {
+        zang.zero(span, temps[0]);
+        self.field0.paint(span, .{temps[0]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .freq = zang.constant(16.0),
+            .phase = zang.constant(0.0),
+        });
+        zang.zero(span, temps[1]);
+        zang.multiplyScalar(span, temps[1], temps[0], 0.4);
+        zang.zero(span, temps[0]);
+        zang.addScalar(span, temps[0], temps[1], 1.0);
+        zang.zero(span, temps[1]);
+        zang.multiplyScalar(span, temps[1], temps[0], 15.0);
+        zang.zero(span, temps[2]);
+        self.field1.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .function = .smoothstep,
+            .curve = &_curve6,
+        });
+        zang.zero(span, temps[3]);
+        zang.multiply(span, temps[3], temps[1], temps[2]);
+        zang.zero(span, temps[1]);
+        self.field2.paint(span, .{temps[1]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .function = .linear,
+            .curve = &_curve7,
+        });
+        zang.zero(span, temps[2]);
+        zang.multiplyScalar(span, temps[2], temps[3], 2.0);
+        zang.zero(span, temps[4]);
+        self.field4.paint(span, .{temps[4]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .freq = zang.buffer(temps[2]),
+            .phase = zang.constant(0.0),
+        });
+        zang.zero(span, temps[2]);
+        self.field3.paint(span, .{temps[2]}, .{}, note_id_changed, .{
+            .sample_rate = params.sample_rate,
+            .freq = zang.buffer(temps[3]),
+            .phase = zang.buffer(temps[4]),
+        });
+        zang.zero(span, temps[4]);
+        zang.multiply(span, temps[4], temps[1], temps[2]);
+        self.field5.paint(span, .{outputs[0]}, .{}, note_id_changed, .{
+            .input = temps[4],
+            .type = .high_pass,
+            .cutoff = zang.constant(0.02),
             .res = 0.0,
         });
     }

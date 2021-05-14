@@ -216,3 +216,30 @@ PowerUpVoice = defmodule begin
 
     out Filter(input=PulseOsc(freq, color=0.5) * volume, type=.low_pass, cutoff=0.5, res=0)
 end
+
+//////////////////////////////////////////////////////////////////////////
+
+DropWebVoice = defmodule freq_mul: constant, begin
+    base_freq = 15
+
+    warble = 1 + 0.4 * SineOsc(freq = 16, phase = 0)
+
+    freq = base_freq * warble * Curve(function=.smoothstep, curve=defcurve
+        0.0    1.4
+        0.075  1
+        0.35   1.6
+    end)
+
+    volume = Curve(function=.linear, curve=defcurve
+        0.0   0.0
+        0.03  0.3
+        0.35  0.0
+    end)
+
+    f = volume * SineOsc(
+        freq,
+        phase = SineOsc(freq = 2 * freq, phase = 0)
+    )
+
+    out Filter(input=f, type=.high_pass, cutoff=0.02, res=0)
+end

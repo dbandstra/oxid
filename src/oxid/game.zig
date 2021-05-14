@@ -19,6 +19,7 @@ pub const ComponentLists = struct {
     Transform: gbe.ComponentList(c.Transform, 100),
     VoiceAccelerate: gbe.ComponentList(c.VoiceAccelerate, 1),
     VoiceCoin: gbe.ComponentList(c.VoiceCoin, 50),
+    VoiceDropWeb: gbe.ComponentList(c.VoiceDropWeb, 50),
     VoiceExplosion: gbe.ComponentList(c.VoiceExplosion, 10),
     VoiceLaser: gbe.ComponentList(c.VoiceLaser, 100),
     VoicePowerUp: gbe.ComponentList(c.VoicePowerUp, 100),

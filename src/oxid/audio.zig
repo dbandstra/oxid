@@ -10,6 +10,7 @@ const MenuSounds = @import("oxid.zig").MenuSounds;
 const generated = @import("audio/generated.zig");
 pub const AccelerateVoice = generated.AccelerateVoice;
 pub const CoinVoice = generated.CoinVoice;
+pub const DropWebVoice = generated.DropWebVoice;
 pub const ExplosionVoice = generated.ExplosionVoice;
 pub const LaserVoice = generated.LaserVoice;
 pub const MenuBackoffVoice = generated.MenuBackoffVoice;
@@ -66,7 +67,6 @@ fn readWav(hunk: *Hunk, filename: []const u8) !zang.Sample {
 }
 
 pub const Sample = enum {
-    drop_web,
     extra_life,
     player_death,
     player_crumble,
@@ -81,7 +81,6 @@ const LoadedSamples = struct {
         for (self.samples) |_, i| {
             const s = @intToEnum(Sample, @intCast(@TagType(Sample), i));
             self.samples[i] = try readWav(hunk, switch (s) {
-                .drop_web => "sfx_sounds_interaction5.wav",
                 .extra_life => "sfx_sounds_powerup4.wav",
                 .player_death => "player_death.wav",
                 .player_crumble => "sfx_exp_short_soft10.wav",
@@ -221,6 +220,7 @@ fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8)
 // see https://github.com/ziglang/zig/issues/5479
 const VoiceAccelerateWrapperArray = GameSoundWrapperArray(AccelerateVoice, "VoiceAccelerate");
 const VoiceCoinWrapperArray = GameSoundWrapperArray(CoinVoice, "VoiceCoin");
+const VoiceDropWebWrapperArray = GameSoundWrapperArray(DropWebVoice, "VoiceDropWeb");
 const VoiceExplosionWrapperArray = GameSoundWrapperArray(ExplosionVoice, "VoiceExplosion");
 const VoiceLaserWrapperArray = GameSoundWrapperArray(LaserVoice, "VoiceLaser");
 const VoicePowerUpWrapperArray = GameSoundWrapperArray(PowerUpVoice, "VoicePowerUp");
@@ -234,6 +234,7 @@ pub const MainModule = struct {
 
     voice_accelerate: VoiceAccelerateWrapperArray,
     voice_coin: VoiceCoinWrapperArray,
+    voice_drop_web: VoiceDropWebWrapperArray,
     voice_explosion: VoiceExplosionWrapperArray,
     voice_laser: VoiceLaserWrapperArray,
     voice_power_up: VoicePowerUpWrapperArray,
@@ -258,6 +259,7 @@ pub const MainModule = struct {
         self.menu_ding = GameSoundWrapper(MenuDingVoice).init();
         VoiceAccelerateWrapperArray.init(&self.voice_accelerate);
         VoiceCoinWrapperArray.init(&self.voice_coin);
+        VoiceDropWebWrapperArray.init(&self.voice_drop_web);
         VoiceExplosionWrapperArray.init(&self.voice_explosion);
         VoiceLaserWrapperArray.init(&self.voice_laser);
         VoicePowerUpWrapperArray.init(&self.voice_power_up);
