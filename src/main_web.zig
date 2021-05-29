@@ -2,7 +2,6 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const inputs = @import("common/inputs.zig");
 const constants = @import("oxid/constants.zig");
-const game = @import("oxid/game.zig");
 const config = @import("oxid/config.zig");
 const oxid = @import("oxid/oxid.zig");
 
@@ -334,16 +333,14 @@ fn tick(should_draw: bool) void {
         }
 
         // delete events
-        game.frameCleanup(&g.main_state.session);
+        oxid.frameCleanup(&g.main_state);
     }
 
     g.audio_speedup = num_frames;
-    g.main_state.audio_module.sync(
+    oxid.audioSync(
+        &g.main_state,
         !g.main_state.sound_enabled,
-        g.main_state.cfg.volume,
         // this sample rate is not actually used - it's overridden at the top of audioCallback
         g.main_state.audio_module.sample_rate,
-        &g.main_state.session,
-        &g.main_state.menu_sounds,
     );
 }

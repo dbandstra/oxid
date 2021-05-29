@@ -6,7 +6,6 @@ const zang = @import("zang");
 const gl = @import("gl");
 const inputs = @import("common/inputs.zig");
 const constants = @import("oxid/constants.zig");
-const game = @import("oxid/game.zig");
 const audio = @import("oxid/audio.zig");
 const perf = @import("oxid/perf.zig");
 const config = @import("oxid/config.zig");
@@ -600,7 +599,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
             }
 
             // delete events
-            game.frameCleanup(&self.main_state.session);
+            oxid.frameCleanup(&self.main_state);
         }
     }
 
@@ -618,13 +617,11 @@ fn tick(self: *Main, refresh_rate: u64) void {
     // if the audio thread is currently doing a mix, this will wait until it's
     // finished.
     sdl.SDL_LockAudioDevice(self.audio_device);
-    self.main_state.audio_module.sync(
+    oxid.audioSync(
+        &self.main_state,
         false,
-        self.main_state.cfg.volume,
         // speed up audio mixing frequency if game is being fast forwarded
         @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames),
-        &self.main_state.session,
-        &self.main_state.menu_sounds,
     );
     sdl.SDL_UnlockAudioDevice(self.audio_device);
 

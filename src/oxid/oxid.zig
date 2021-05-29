@@ -38,7 +38,8 @@ pub const MainState = struct {
     cfg: config.Config,
     audio_module: audio.MainModule,
     static: GameStatic,
-    session: game.Session,
+    session_memory: game.Session, // don't access this directly
+    session: ?*game.Session, // points to session_memory when a game is running
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -110,8 +111,6 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         break :blk config.getDefault();
     };
 
-    game.init(&self.session, params.random_seed);
-
     audio.MainModule.init(
         &self.audio_module,
         self.hunk,
@@ -125,6 +124,8 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     perf.init();
 
+    // self.session_memory is undefined until a game is actually started
+    self.session = null;
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
@@ -140,7 +141,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
     self.sound_enabled = params.sound_enabled;
-    self.prng = std.rand.DefaultPrng.init(0);
+    self.prng = std.rand.DefaultPrng.init(params.random_seed);
     self.menu_sounds = .{
         .backoff = null,
         .blip = null,
@@ -217,6 +218,7 @@ pub const InputSpecial = union(enum) {
 };
 
 pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?InputSpecial {
+    // menu command?
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
@@ -254,7 +256,8 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
     }
 
     // game command?
-    const gc = main_state.session.ecs.componentIter(c.GameController).next() orelse return null;
+    const gs = main_state.session orelse return null;
+    const gc = gs.ecs.componentIter(c.GameController).next() orelse return null;
 
     var player_number: u32 = 0;
     while (player_number < config.num_players) : (player_number += 1) {
@@ -268,7 +271,7 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 else => continue,
             };
 
-            p.spawnEventGameInput(&main_state.session, .{
+            p.spawnEventGameInput(gs, .{
                 .player_controller_id = player_controller_id,
                 .command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i)),
                 .down = down,
@@ -292,7 +295,7 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
         },
         .start_new_game => |is_multiplayer| {
             self.menu_stack.clear();
-            startGame(&self.session, is_multiplayer);
+            startGame(self, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
         },
@@ -322,7 +325,9 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
         .toggle_friendly_fire => {
             self.friendly_fire = !self.friendly_fire;
             // update existing bullets
-            setFriendlyFire(&self.session, self.friendly_fire);
+            if (self.session) |gs| {
+                setFriendlyFire(gs, self.friendly_fire);
+            }
         },
         .bind_game_command => |payload| {
             const bindings = &self.cfg.game_bindings[payload.player_number];
@@ -351,41 +356,20 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
-fn startGame(gs: *game.Session, is_multiplayer: bool) void {
-    // remove all entities
-    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
-        gs.ecs.markAllForRemoval(field.field_type.ComponentType);
-    }
-    gs.ecs.applyRemovals();
+fn startGame(self: *MainState, is_multiplayer: bool) void {
+    const gs = &self.session_memory;
 
-    const player1_controller_id =
-        p.spawnPlayerController(gs, .{ .color = .yellow }).?;
-    const player2_controller_id = if (is_multiplayer)
-        p.spawnPlayerController(gs, .{ .color = .green })
-    else
-        null;
+    // use the host prng to get a seed for the game prng
+    const seed = self.prng.random.int(u32);
+    game.init(gs, seed, is_multiplayer);
 
-    const game_controller_id = p.spawnGameController(gs, .{
-        .player1_controller_id = player1_controller_id,
-        .player2_controller_id = player2_controller_id,
-    }).?;
-
-    gs.running_state = .{
-        .render_move_boxes = false,
-        .game_controller_id = game_controller_id,
-    };
+    self.session = gs;
 }
 
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    self.session.running_state = null;
-
-    // remove all entities
-    inline for (@typeInfo(game.ComponentLists).Struct.fields) |field| {
-        self.session.ecs.markAllForRemoval(field.field_type.ComponentType);
-    }
-    self.session.ecs.applyRemovals();
+    self.session = null;
 
     self.menu_stack.clear();
     self.menu_stack.push(.{
@@ -394,12 +378,14 @@ fn resetGame(self: *MainState) void {
 }
 
 fn postScores(self: *MainState) void {
+    const gs = self.session orelse return;
+
     self.new_high_score = false;
 
     var save_high_scores = false;
 
     // get players' scores
-    var it = self.session.ecs.componentIter(c.PlayerController);
+    var it = gs.ecs.componentIter(c.PlayerController);
     while (it.next()) |pc| {
         // insert the score somewhere in the high score list
         const new_score = pc.score;
@@ -440,14 +426,16 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 
     const paused = self.menu_stack.len > 0 and !self.game_over;
 
+    const gs = self.session orelse return;
+
     perf.begin(.frame);
-    game.frame(&self.session, frame_context, paused);
+    game.frame(gs, frame_context, paused);
     perf.end(.frame);
 
     // if EventGameOver is present, post the high score, but leave the
     // monsters running around. (the game state will be cleared when the user
     // hits escape again.)
-    if (self.session.ecs.componentIter(c.EventGameOver).next() != null) {
+    if (gs.ecs.componentIter(c.EventGameOver).next() != null) {
         self.game_over = true;
         postScores(self);
 
@@ -459,12 +447,30 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     // note: caller still needs to call `game.frameCleanup`
 }
 
+pub fn frameCleanup(self: *MainState) void {
+    const gs = self.session orelse return;
+
+    game.frameCleanup(gs);
+}
+
 pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
-    drawGame(draw_state, &self.static, &self.session, self.cfg, self.high_scores[0]);
+    drawGame(draw_state, &self.static, self.session, self.cfg, self.high_scores[0]);
     drawMenu(&self.menu_stack, .{
         .ds = draw_state,
         .static = &self.static,
         .menu_context = makeMenuContext(self),
     });
     pdraw.flush(draw_state);
+}
+
+// called when audio thread is locked. this is where we communicate
+// information from the main thread to the audio thread.
+pub fn audioSync(self: *MainState, reset: bool, sample_rate: f32) void {
+    self.audio_module.sync(
+        reset,
+        self.cfg.volume,
+        sample_rate,
+        self.session,
+        &self.menu_sounds,
+    );
 }

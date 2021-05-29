@@ -16,25 +16,32 @@ const util = @import("util.zig");
 pub fn drawGame(
     ds: *pdraw.State,
     static: *const oxid.GameStatic,
-    gs: *game.Session,
+    maybe_gs: ?*game.Session,
     cfg: config.Config,
     high_score: u32,
 ) void {
-    if (gs.running_state != null) {
+    // draw map background
+    drawMap(ds, static, false);
+
+    // draw entities
+    if (maybe_gs) |gs| {
         const max_drawables = comptime game.ECS.getCapacity(c.EventDraw);
         var sort_buffer: [max_drawables]*const c.EventDraw = undefined;
         const sorted_drawables = getSortedDrawables(gs, &sort_buffer);
 
-        drawMap(ds, static, false);
         drawEntities(ds, static, sorted_drawables);
-        drawMap(ds, static, true);
-        drawBoxes(ds, gs);
-        drawHud(ds, static, gs, high_score);
-    } else {
-        drawMap(ds, static, false);
-        drawMap(ds, static, true);
-        drawHud(ds, static, gs, high_score);
     }
+
+    // draw map foreground
+    drawMap(ds, static, true);
+
+    // draw debug overlays
+    if (maybe_gs) |gs| {
+        drawBoxes(ds, gs);
+    }
+
+    // draw HUD
+    drawHud(ds, static, maybe_gs, high_score);
 }
 
 fn getSortedDrawables(
@@ -119,7 +126,7 @@ fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
 fn drawHud(
     ds: *pdraw.State,
     static: *const oxid.GameStatic,
-    gs: *game.Session,
+    maybe_gs: ?*game.Session,
     high_score: u32,
 ) void {
     perf.begin(.draw_hud);
@@ -139,7 +146,14 @@ fn drawHud(
 
     pdraw.setColor(ds, white);
 
-    if (gs.ecs.componentIter(c.GameController).next()) |gc| {
+    const maybe_gc = if (maybe_gs) |gs|
+        gs.ecs.componentIter(c.GameController).next()
+    else
+        null;
+
+    if (maybe_gc) |gc| {
+        const gs = maybe_gs.?;
+
         _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
         fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();

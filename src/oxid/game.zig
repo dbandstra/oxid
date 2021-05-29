@@ -42,21 +42,31 @@ pub const ComponentLists = struct {
 
 pub const ECS = gbe.ECS(ComponentLists);
 
-pub const RunningState = struct {
+pub const Session = struct {
+    ecs: ECS,
+    prng: std.rand.DefaultPrng,
     render_move_boxes: bool,
     game_controller_id: gbe.EntityId,
 };
 
-pub const Session = struct {
-    ecs: ECS,
-    prng: std.rand.DefaultPrng,
-    running_state: ?RunningState,
-};
-
-pub fn init(gs: *Session, random_seed: u32) void {
+pub fn init(gs: *Session, random_seed: u32, is_multiplayer: bool) void {
     gs.ecs.init();
     gs.prng = std.rand.DefaultPrng.init(random_seed);
-    gs.running_state = null;
+
+    const player1_controller_id =
+        p.spawnPlayerController(gs, .{ .color = .yellow }).?;
+    const player2_controller_id = if (is_multiplayer)
+        p.spawnPlayerController(gs, .{ .color = .green })
+    else
+        null;
+
+    const game_controller_id = p.spawnGameController(gs, .{
+        .player1_controller_id = player1_controller_id,
+        .player2_controller_id = player2_controller_id,
+    }).?;
+
+    gs.render_move_boxes = false;
+    gs.game_controller_id = game_controller_id;
 }
 
 pub const FrameContext = struct {
@@ -78,36 +88,34 @@ fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) voi
 pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
     runSystem(gs, ctx, "input");
 
-    if (gs.running_state) |grs| {
-        if (!paused) {
-            runSystem(gs, ctx, "game_controller");
-            runSystem(gs, ctx, "player_controller");
-            runSystem(gs, ctx, "animation");
-            runSystem(gs, ctx, "player_movement");
-            runSystem(gs, ctx, "monster_movement");
-            runSystem(gs, ctx, "bullet");
-            runSystem(gs, ctx, "creature");
-            runSystem(gs, ctx, "remove_timer");
+    if (!paused) {
+        runSystem(gs, ctx, "game_controller");
+        runSystem(gs, ctx, "player_controller");
+        runSystem(gs, ctx, "animation");
+        runSystem(gs, ctx, "player_movement");
+        runSystem(gs, ctx, "monster_movement");
+        runSystem(gs, ctx, "bullet");
+        runSystem(gs, ctx, "creature");
+        runSystem(gs, ctx, "remove_timer");
 
-            physics.frame(gs);
+        physics.frame(gs);
 
-            // pickups react to event_collide, spawn event_confer_bonus
-            runSystem(gs, ctx, "pickup_collide");
-            // bullets react to event_collide, spawn event_take_damage
-            runSystem(gs, ctx, "bullet_collide");
-            // monsters react to event_collide, damage others
-            runSystem(gs, ctx, "monster_touch_response");
-            // player reacts to event_confer_bonus, gets bonus effect
-            runSystem(gs, ctx, "player_reaction");
+        // pickups react to event_collide, spawn event_confer_bonus
+        runSystem(gs, ctx, "pickup_collide");
+        // bullets react to event_collide, spawn event_take_damage
+        runSystem(gs, ctx, "bullet_collide");
+        // monsters react to event_collide, damage others
+        runSystem(gs, ctx, "monster_touch_response");
+        // player reacts to event_confer_bonus, gets bonus effect
+        runSystem(gs, ctx, "player_reaction");
 
-            // creatures react to event_take_damage, die
-            runSystem(gs, ctx, "creature_take_damage");
+        // creatures react to event_take_damage, die
+        runSystem(gs, ctx, "creature_take_damage");
 
-            // player controller reacts to 'player died' event
-            runSystem(gs, ctx, "player_controller_react");
-            // game controller reacts to 'player died' event
-            runSystem(gs, ctx, "game_controller_react");
-        }
+        // player controller reacts to 'player died' event
+        runSystem(gs, ctx, "player_controller_react");
+        // game controller reacts to 'player died' event
+        runSystem(gs, ctx, "game_controller_react");
     }
 
     gs.ecs.applyRemovals();
@@ -116,10 +124,8 @@ pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
         // send draw commands (as events)
         runSystem(gs, ctx, "draw");
 
-        if (gs.running_state) |grs| {
-            if (grs.render_move_boxes) {
-                runSystem(gs, ctx, "draw_boxes");
-            }
+        if (gs.render_move_boxes) {
+            runSystem(gs, ctx, "draw_boxes");
         }
     }
 }

@@ -278,18 +278,31 @@ pub const MainModule = struct {
 
     // called when audio thread is locked. this is where we communicate
     // information from the main thread to the audio thread.
-    pub fn sync(self: *MainModule, reset: bool, volume: u32, sample_rate: f32, gs: *game.Session, menu_sounds: *MenuSounds) void {
+    pub fn sync(
+        self: *MainModule,
+        reset: bool,
+        volume: u32,
+        sample_rate: f32,
+        maybe_gs: ?*game.Session,
+        menu_sounds: *MenuSounds,
+    ) void {
         const impulse_frame: usize = 0;
 
         self.volume = volume;
         self.sample_rate = sample_rate;
 
+        // sync menu sounds
         inline for (@typeInfo(MainModule).Struct.fields) |field| {
             if (comptime std.mem.startsWith(u8, field.name, "menu_")) {
                 const maybe_params_ptr = &@field(menu_sounds, field.name[5..]);
                 @field(self, field.name).sync(reset, impulse_frame, maybe_params_ptr.*);
                 maybe_params_ptr.* = null;
             }
+        }
+
+        // sync game sounds
+        const gs = maybe_gs orelse return;
+        inline for (@typeInfo(MainModule).Struct.fields) |field| {
             if (comptime std.mem.startsWith(u8, field.name, "voice_")) {
                 const component_name = @TypeOf(@field(self, field.name)).component_name;
                 const component_list = &@field(gs.ecs.components, component_name);
