@@ -80,6 +80,35 @@ pub const InputEvent = struct {
     down: bool,
 };
 
+pub fn openPlayer2(file: std.fs.File) !Player {
+    // read first line
+    var buffer: [1024]u8 = undefined;
+    const maybe_slice = file.reader().readUntilDelimiterOrEof(&buffer, '\n') catch |err| {
+        @panic("dang it");
+    };
+    const slice = maybe_slice orelse @panic("no slice");
+    // TODO ensure first word is 'demo'
+    const space = std.mem.lastIndexOfScalar(u8, slice, ' ') orelse @panic("no space");
+    const seed_slice = slice[space + 1 ..];
+    const seed = std.fmt.parseInt(u32, seed_slice, 10) catch |err| {
+        @panic("failed to parse seed");
+    };
+
+    // TODO check version and fail if it doesn't equal build_options.version.
+
+    // prepare first input
+    var player: Player = .{
+        .file = file,
+        .game_seed = seed,
+        .frame_index = 0,
+        .next_input = null,
+    };
+
+    readNextInput(&player);
+
+    return player;
+}
+
 pub fn openPlayer(hunk_side: *HunkSide) !Player {
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
@@ -100,30 +129,7 @@ pub fn openPlayer(hunk_side: *HunkSide) !Player {
     };
     errdefer file.close();
 
-    // read first line
-    var buffer: [1024]u8 = undefined;
-    const maybe_slice = file.reader().readUntilDelimiterOrEof(&buffer, '\n') catch |err| {
-        @panic("dang it");
-    };
-    const slice = maybe_slice orelse @panic("no slice");
-    // TODO ensure first word is 'demo'
-    const space = std.mem.lastIndexOfScalar(u8, slice, ' ') orelse @panic("no space");
-    const seed_slice = slice[space + 1 ..];
-    const seed = std.fmt.parseInt(u32, seed_slice, 10) catch |err| {
-        @panic("failed to parse seed");
-    };
-
-    // prepare first input
-    var player: Player = .{
-        .file = file,
-        .game_seed = seed,
-        .frame_index = 0,
-        .next_input = null,
-    };
-
-    readNextInput(&player);
-
-    return player;
+    return openPlayer2(file);
 }
 
 pub fn closePlayer(player: *Player) void {
