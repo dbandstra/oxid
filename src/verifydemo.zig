@@ -68,7 +68,10 @@ pub fn main() u8 {
                 .command = input.command,
                 .down = input.down,
             });
-            record.readNextInput(&player);
+            record.readNextInput(&player) catch |err| {
+                stderr.print("Error reading from demo file: {}\n", .{err}) catch {};
+                return 1;
+            };
         }
 
         game.frame(&gs, frame_context, false);

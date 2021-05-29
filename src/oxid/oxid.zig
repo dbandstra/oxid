@@ -301,7 +301,11 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
             });
 
             if (main_state.recorder) |*recorder| {
-                record.recordInput(recorder, player_number, command, down);
+                record.recordInput(recorder, player_number, command, down) catch |err| {
+                    std.log.err("Aborting demo recording due to error: {}\n", .{err});
+                    record.close(recorder);
+                    main_state.recorder = null;
+                };
             }
 
             return InputSpecial{ .noop = {} };
@@ -501,7 +505,11 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                     .command = input.command,
                     .down = input.down,
                 });
-                record.readNextInput(player);
+                record.readNextInput(player) catch |err| {
+                    std.log.err("Demo playback error: {}\n", .{err});
+                    resetGame(self);
+                    return;
+                };
             }
             // TODO demo should record the frame_index that recording ended.
             // we can open the menu or something when we get there in the playback.

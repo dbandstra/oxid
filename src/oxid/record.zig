@@ -33,12 +33,10 @@ pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
     errdefer file.close();
 
     // TODO also encode whether it's a multiplayer game
-    file.writer().print("demo {} {}\n", .{
+    try file.writer().print("demo {} {}\n", .{
         build_options.version,
         game_seed,
-    }) catch |err| {
-        @panic("aw man"); // FIXME
-    };
+    });
 
     return Recorder{
         .file = file,
@@ -55,15 +53,13 @@ pub fn recordInput(
     player_number: u32,
     command: commands.GameCommand,
     down: bool,
-) void {
-    recorder.file.writer().print("{} {} {} {}\n", .{
+) !void {
+    try recorder.file.writer().print("{} {} {} {}\n", .{
         recorder.frame_index,
         player_number,
         @tagName(command),
         down,
-    }) catch |err| {
-        @panic("whoops"); // FIXME
-    };
+    });
 }
 
 pub const Player = struct {
@@ -83,16 +79,12 @@ pub const InputEvent = struct {
 pub fn openPlayer2(file: std.fs.File) !Player {
     // read first line
     var buffer: [1024]u8 = undefined;
-    const maybe_slice = file.reader().readUntilDelimiterOrEof(&buffer, '\n') catch |err| {
-        @panic("dang it");
-    };
-    const slice = maybe_slice orelse @panic("no slice");
+    const maybe_slice = try file.reader().readUntilDelimiterOrEof(&buffer, '\n');
+    const slice = maybe_slice orelse return error.InvalidDemo;
     // TODO ensure first word is 'demo'
-    const space = std.mem.lastIndexOfScalar(u8, slice, ' ') orelse @panic("no space");
+    const space = std.mem.lastIndexOfScalar(u8, slice, ' ') orelse return error.InvalidDemo;
     const seed_slice = slice[space + 1 ..];
-    const seed = std.fmt.parseInt(u32, seed_slice, 10) catch |err| {
-        @panic("failed to parse seed");
-    };
+    const seed = std.fmt.parseInt(u32, seed_slice, 10) catch return error.InvalidDemo;
 
     // TODO check version and fail if it doesn't equal build_options.version.
 
@@ -104,7 +96,7 @@ pub fn openPlayer2(file: std.fs.File) !Player {
         .next_input = null,
     };
 
-    readNextInput(&player);
+    try readNextInput(&player);
 
     return player;
 }
@@ -136,32 +128,26 @@ pub fn closePlayer(player: *Player) void {
     player.file.close();
 }
 
-pub fn readNextInput(player: *Player) void {
+pub fn readNextInput(player: *Player) !void {
     var buffer: [1024]u8 = undefined;
-    const maybe_slice = player.file.reader().readUntilDelimiterOrEof(&buffer, '\n') catch |err| {
-        @panic("dang it");
-    };
+    const maybe_slice = try player.file.reader().readUntilDelimiterOrEof(&buffer, '\n');
     var slice = maybe_slice orelse {
         player.next_input = null;
         return;
     };
-    var space = std.mem.indexOfScalar(u8, slice, ' ') orelse @panic("no space");
-    const frame_index = std.fmt.parseInt(u32, slice[0..space], 10) catch |err| {
-        @panic("failed to parse frame_index");
-    };
+    var space = std.mem.indexOfScalar(u8, slice, ' ') orelse return error.InvalidDemo;
+    const frame_index = std.fmt.parseInt(u32, slice[0..space], 10) catch return error.InvalidDemo;
     slice = slice[space + 1 ..];
-    space = std.mem.indexOfScalar(u8, slice, ' ') orelse @panic("no space");
-    const player_number = std.fmt.parseInt(u32, slice[0..space], 10) catch |err| {
-        @panic("failed to parse player_number");
-    };
+    space = std.mem.indexOfScalar(u8, slice, ' ') orelse return error.InvalidDemo;
+    const player_number = std.fmt.parseInt(u32, slice[0..space], 10) catch return error.InvalidDemo;
     slice = slice[space + 1 ..];
-    space = std.mem.indexOfScalar(u8, slice, ' ') orelse @panic("no space");
+    space = std.mem.indexOfScalar(u8, slice, ' ') orelse return error.InvalidDemo;
     const command = blk: {
         inline for (@typeInfo(commands.GameCommand).Enum.fields) |field, i| {
             if (std.mem.eql(u8, field.name, slice[0..space]))
                 break :blk @intToEnum(commands.GameCommand, i);
         }
-        @panic("failed to parse command");
+        return error.InvalidDemo;
     };
     slice = slice[space + 1 ..];
     // this crashes the compiler (TODO file an issue)
@@ -178,12 +164,5 @@ pub fn readNextInput(player: *Player) void {
         .player_number = player_number,
         .command = command,
         .down = down,
-    };
-}
-
-pub fn readInput(player: *Player) ?InputEvent {
-    var buffer: [1024]u8 = undefined;
-    const maybe_slice = file.reader().readUntilDelimiterOrEof(&buffer, '\n') catch |err| {
-        @panic("dang it");
     };
 }
