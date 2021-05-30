@@ -10,7 +10,7 @@ pub const Recorder = struct {
     frame_index: u32,
 };
 
-pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
+pub fn openRecorder(hunk_side: *HunkSide, game_seed: u32) !Recorder {
     // i don't think zig's std library has any date functionality, so pull in libc.
     // TODO push date code to main file and use via @import("root")?
     const c = @cImport({
@@ -72,7 +72,7 @@ pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
     };
 }
 
-pub fn close(recorder: *Recorder) void {
+pub fn closeRecorder(recorder: *Recorder) void {
     recorder.file.close();
 }
 

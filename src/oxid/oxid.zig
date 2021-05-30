@@ -24,7 +24,7 @@ const audio = @import("audio.zig");
 const drawMenu = @import("draw_menu.zig").drawMenu;
 const drawGame = @import("draw.zig").drawGame;
 const setFriendlyFire = @import("functions/set_friendly_fire.zig").setFriendlyFire;
-const record = @import("record.zig");
+const demos = @import("demos.zig");
 
 // this many pixels is added to the top of the window for font stuff
 pub const hud_height = 16;
@@ -41,8 +41,8 @@ pub const MainState = struct {
     static: GameStatic,
     session_memory: game.Session, // don't access this directly
     session: ?*game.Session, // points to session_memory when a game is running
-    recorder: ?record.Recorder,
-    player: ?record.Player,
+    demo_recorder: ?demos.Recorder,
+    demo_player: ?demos.Player,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -129,8 +129,8 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     // self.session_memory is undefined until a game is actually started
     self.session = null;
-    self.player = null;
-    self.recorder = null;
+    self.demo_player = null;
+    self.demo_recorder = null;
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
@@ -283,11 +283,11 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 .down = down,
             });
 
-            if (main_state.recorder) |*recorder| {
-                record.recordInput(recorder, player_number, command, down) catch |err| {
+            if (main_state.demo_recorder) |*recorder| {
+                demos.recordInput(recorder, player_number, command, down) catch |err| {
                     std.log.err("Aborting demo recording due to error: {}\n", .{err});
-                    record.close(recorder);
-                    main_state.recorder = null;
+                    demos.closeRecorder(recorder);
+                    main_state.demo_recorder = null;
                 };
             }
 
@@ -308,7 +308,6 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
             self.menu_stack.pop();
         },
         .start_new_game => |is_multiplayer| {
-            self.menu_stack.clear();
             startGame(self, is_multiplayer);
             self.game_over = false;
             self.new_high_score = false;
@@ -371,21 +370,23 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
 fn startGame(self: *MainState, is_multiplayer: bool) void {
-    if (self.player) |*player| {
-        record.closePlayer(player);
-        self.player = null;
+    if (self.demo_player) |*player| {
+        demos.closePlayer(player);
+        self.demo_player = null;
     }
-    if (self.recorder) |*recorder| {
-        record.close(recorder);
-        self.recorder = null;
+    if (self.demo_recorder) |*recorder| {
+        demos.closeRecorder(recorder);
+        self.demo_recorder = null;
     }
 
     const seed = self.prng.random.int(u32);
 
-    self.recorder = record.open(&self.hunk.low(), seed) catch |err| blk: {
+    self.demo_recorder = demos.openRecorder(&self.hunk.low(), seed) catch |err| blk: {
         std.log.err("Failed to start demo recording: {}", .{err});
         break :blk null;
     };
+
+    self.menu_stack.clear();
 
     const gs = &self.session_memory;
 
@@ -395,27 +396,27 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 }
 
 pub fn playDemo(self: *MainState, filename: []const u8) void {
-    if (self.player) |*player| {
-        record.closePlayer(player);
-        self.player = null;
+    if (self.demo_player) |*player| {
+        demos.closePlayer(player);
+        self.demo_player = null;
     }
-    if (self.recorder) |*recorder| {
-        record.close(recorder);
-        self.recorder = null;
+    if (self.demo_recorder) |*recorder| {
+        demos.closeRecorder(recorder);
+        self.demo_recorder = null;
     }
 
-    self.player = record.openPlayer(filename) catch |err| {
+    self.demo_player = demos.openPlayer(filename) catch |err| {
         std.log.err("Failed to open demo player: {}", .{err});
         return;
     };
 
-    std.log.notice("Playing demo from {s}\n", .{filename});
-
     self.menu_stack.clear();
+
+    std.log.notice("Playing demo from {s}\n", .{filename});
 
     const gs = &self.session_memory;
 
-    game.init(gs, self.player.?.game_seed, false);
+    game.init(gs, self.demo_player.?.game_seed, false);
 
     self.session = gs;
 }
@@ -423,13 +424,13 @@ pub fn playDemo(self: *MainState, filename: []const u8) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    if (self.player) |*player| {
-        record.closePlayer(player);
-        self.player = null;
+    if (self.demo_player) |*player| {
+        demos.closePlayer(player);
+        self.demo_player = null;
     }
-    if (self.recorder) |*recorder| {
-        record.close(recorder);
-        self.recorder = null;
+    if (self.demo_recorder) |*recorder| {
+        demos.closeRecorder(recorder);
+        self.demo_recorder = null;
     }
 
     self.session = null;
@@ -443,7 +444,7 @@ fn resetGame(self: *MainState) void {
 fn postScores(self: *MainState) void {
     const gs = self.session orelse return;
 
-    if (self.player != null) {
+    if (self.demo_player != null) {
         // this is a demo playback, don't post the score
         return;
     }
@@ -500,7 +501,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     // also if menu is open don't record arrows (not sure if that's happening)
 
     if (!paused) {
-        if (self.player) |*player| {
+        if (self.demo_player) |*player| {
             while (player.next_input) |input| {
                 if (input.frame_index > player.frame_index)
                     break;
@@ -515,7 +516,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                     .command = input.command,
                     .down = input.down,
                 });
-                record.readNextInput(player) catch |err| {
+                demos.readNextInput(player) catch |err| {
                     std.log.err("Demo playback error: {}\n", .{err});
                     resetGame(self);
                     return;
@@ -531,10 +532,10 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     perf.end(.frame);
 
     if (!paused) {
-        if (self.player) |*player| {
+        if (self.demo_player) |*player| {
             player.frame_index += 1;
         }
-        if (self.recorder) |*recorder| {
+        if (self.demo_recorder) |*recorder| {
             recorder.frame_index += 1;
         }
     }

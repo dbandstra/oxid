@@ -2,7 +2,7 @@
 
 const std = @import("std");
 const game = @import("oxid/game.zig");
-const record = @import("oxid/record.zig");
+const demos = @import("oxid/demos.zig");
 const c = @import("oxid/components.zig");
 const p = @import("oxid/prototypes.zig");
 
@@ -17,11 +17,11 @@ pub fn main() u8 {
 
     const filename = std.mem.spanZ(std.os.argv[1]);
 
-    var player = record.openPlayer(filename) catch |err| {
+    var player = demos.openPlayer(filename) catch |err| {
         stderr.print("Failed to open player: {}\n", .{err}) catch {};
         return 1;
     };
-    defer record.closePlayer(&player);
+    defer demos.closePlayer(&player);
 
     var gs: game.Session = undefined; // TODO allocate on heap?
 
@@ -64,7 +64,7 @@ pub fn main() u8 {
                 .command = input.command,
                 .down = input.down,
             });
-            record.readNextInput(&player) catch |err| {
+            demos.readNextInput(&player) catch |err| {
                 stderr.print("Error reading from demo file: {}\n", .{err}) catch {};
                 return 1;
             };
