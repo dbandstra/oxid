@@ -420,7 +420,7 @@ pub fn playDemo(self: *MainState, filename: []const u8) void {
 
     self.menu_stack.clear();
 
-    std.log.notice("Playing demo from {s}\n", .{filename});
+    std.log.notice("Playing demo from {s}", .{filename});
 
     const gs = &self.session_memory;
 
