@@ -52,6 +52,7 @@ pub const MainState = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     friendly_fire: bool,
+    record_demos: bool,
     sound_enabled: bool,
     prng: std.rand.DefaultPrng,
     menu_sounds: MenuSounds,
@@ -145,6 +146,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.canvas_scale = params.canvas_scale;
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
+    self.record_demos = false;
     self.sound_enabled = params.sound_enabled;
     self.prng = std.rand.DefaultPrng.init(params.random_seed);
     self.menu_sounds = .{
@@ -196,6 +198,7 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
         .canvas_scale = self.canvas_scale,
         .max_canvas_scale = self.max_canvas_scale,
         .friendly_fire = self.friendly_fire,
+        .record_demos = self.record_demos,
     };
 }
 
@@ -342,6 +345,9 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
                 setFriendlyFire(gs, self.friendly_fire);
             }
         },
+        .toggle_record_demos => {
+            self.record_demos = !self.record_demos;
+        },
         .bind_game_command => |payload| {
             const bindings = &self.cfg.game_bindings[payload.player_number];
             // don't bind if there is already another action bound to this key
@@ -381,10 +387,12 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 
     const seed = self.prng.random.int(u32);
 
-    self.demo_recorder = demos.openRecorder(&self.hunk.low(), seed) catch |err| blk: {
-        std.log.err("Failed to start demo recording: {}", .{err});
-        break :blk null;
-    };
+    if (self.record_demos) {
+        self.demo_recorder = demos.openRecorder(&self.hunk.low(), seed) catch |err| blk: {
+            std.log.err("Failed to start demo recording: {}", .{err});
+            break :blk null;
+        };
+    }
 
     self.menu_stack.clear();
 

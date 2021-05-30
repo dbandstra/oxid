@@ -70,6 +70,26 @@ Debug/cheat controls:
 * F2: toggle rendering of move boxes
 * F4: toggle profiling spam (not available in web version or in ReleaseSmall)
 
+## Recording demos
+
+You can record your games for later playback. To do this, go into the "Game
+Settings" menu and enable "Record demos". Now, all new games that you start
+will be recorded.
+
+Demos are named using the current date and time and are written to a folder
+called `recordings` in the user app data folder, which is something like:
+
+* Windows: `%USERPROFILE%/AppData/Local/Oxid`
+* MacOS: `~/Library/Application Support/Oxid`
+* Linux, BSD: `~/.local/share/Oxid`
+
+The demo filename is printed to the console when recording begins.
+
+To play back a demo, launch Oxid with the `--demo FILENAME` argument. An
+in-game UI for browsing demos will be added later.
+
+Demo recording is currently not available in the Web build.
+
 ## Code organization
 
 See [doc/Code organization.md](doc/Code%20organization.md)

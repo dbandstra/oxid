@@ -26,6 +26,7 @@ pub const MenuContext = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     friendly_fire: bool,
+    record_demos: bool,
 };
 
 pub const Effect = union(enum) {
@@ -40,6 +41,7 @@ pub const Effect = union(enum) {
     set_canvas_scale: u31,
     toggle_fullscreen,
     toggle_friendly_fire,
+    toggle_record_demos,
     bind_game_command: BindGameCommand,
     reset_anim_time,
     quit,
@@ -331,6 +333,9 @@ pub const OptionsMenu = struct {
             ctx.setEffect(.{ .push = .{ .key_bindings_menu = KeyBindingsMenu.init() } });
             ctx.setSound(.ding);
         }
+
+        ctx.vspacer();
+
         if (ctx.option("Back", .{})) {
             ctx.setEffect(.pop);
             ctx.setSound(.ding);
@@ -362,6 +367,14 @@ pub const GameSettingsMenu = struct {
             ctx.setEffect(.toggle_friendly_fire);
             ctx.setSound(.ding);
         }
+        const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
+        if (ctx.optionToggle("Record demos: {}", .{record_demos_str})) {
+            ctx.setEffect(.toggle_record_demos);
+            ctx.setSound(.ding);
+        }
+
+        ctx.vspacer();
+
         if (ctx.option("Back", .{})) {
             ctx.setEffect(.pop);
             ctx.setSound(.ding);
