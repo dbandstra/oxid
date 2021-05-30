@@ -152,23 +152,6 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         .blip = null,
         .ding = null,
     };
-
-    // start playing a demo
-    // TODO combine this code with startGame?
-    if (true) blk: {
-        self.player = record.openPlayer(&self.hunk.low()) catch |err| {
-            std.log.err("Failed to open player: {}", .{err});
-            break :blk;
-        };
-
-        self.menu_stack.clear();
-
-        const gs = &self.session_memory;
-
-        game.init(gs, self.player.?.game_seed, false);
-
-        self.session = gs;
-    }
 }
 
 pub fn deinit(self: *MainState) void {
@@ -407,6 +390,32 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     const gs = &self.session_memory;
 
     game.init(gs, seed, is_multiplayer);
+
+    self.session = gs;
+}
+
+pub fn playDemo(self: *MainState, filename: []const u8) void {
+    if (self.player) |*player| {
+        record.closePlayer(player);
+        self.player = null;
+    }
+    if (self.recorder) |*recorder| {
+        record.close(recorder);
+        self.recorder = null;
+    }
+
+    self.player = record.openPlayer(filename) catch |err| {
+        std.log.err("Failed to open demo player: {}", .{err});
+        return;
+    };
+
+    std.log.notice("Playing demo from {s}\n", .{filename});
+
+    self.menu_stack.clear();
+
+    const gs = &self.session_memory;
+
+    game.init(gs, self.player.?.game_seed, false);
 
     self.session = gs;
 }

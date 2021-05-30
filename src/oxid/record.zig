@@ -104,7 +104,10 @@ pub const InputEvent = struct {
     down: bool,
 };
 
-pub fn openPlayer2(file: std.fs.File) !Player {
+pub fn openPlayer(filename: []const u8) !Player {
+    const file = try std.fs.cwd().openFile(filename, .{});
+    errdefer file.close();
+
     // read first line
     var buffer: [1024]u8 = undefined;
     const maybe_slice = try file.reader().readUntilDelimiterOrEof(&buffer, '\n');
@@ -127,29 +130,6 @@ pub fn openPlayer2(file: std.fs.File) !Player {
     try readNextInput(&player);
 
     return player;
-}
-
-pub fn openPlayer(hunk_side: *HunkSide) !Player {
-    const mark = hunk_side.getMark();
-    defer hunk_side.freeToMark(mark);
-
-    const dir_path = try std.fs.getAppDataDir(
-        &hunk_side.allocator,
-        dirname ++ std.fs.path.sep_str ++ "recordings",
-    );
-    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
-        dir_path,
-        "game0000", // FIXME
-    });
-
-    const file = std.fs.cwd().openFile(file_path, .{}) catch |err| {
-        //if (err == error.FileNotFound)
-        //    return null;
-        return err;
-    };
-    errdefer file.close();
-
-    return openPlayer2(file);
 }
 
 pub fn closePlayer(player: *Player) void {

@@ -17,15 +17,8 @@ pub fn main() u8 {
 
     const filename = std.mem.spanZ(std.os.argv[1]);
 
-    const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
-        stderr.print("Failed to open '{s}': {}\n", .{ filename, err }) catch {};
-        return 1;
-    };
-    // file is closed by closePlayer
-
-    var player = record.openPlayer2(file) catch |err| {
+    var player = record.openPlayer(filename) catch |err| {
         stderr.print("Failed to open player: {}\n", .{err}) catch {};
-        file.close();
         return 1;
     };
     defer record.closePlayer(&player);
