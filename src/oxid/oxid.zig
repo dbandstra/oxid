@@ -399,8 +399,9 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 
     const seed = self.prng.random.int(u32);
 
-    self.recorder = record.open(&self.hunk.low(), seed) catch |err| {
-        @panic("damn"); // FIXME
+    self.recorder = record.open(&self.hunk.low(), seed) catch |err| blk: {
+        std.log.err("Failed to start demo recording: {}", .{err});
+        break :blk null;
     };
 
     const gs = &self.session_memory;
