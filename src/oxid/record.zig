@@ -11,6 +11,12 @@ pub const Recorder = struct {
 };
 
 pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
+    // i don't think zig's std library has any date functionality, so pull in libc.
+    // TODO push date code to main file and use via @import("root")?
+    const c = @cImport({
+        @cInclude("time.h");
+    });
+
     const mark = hunk_side.getMark();
     defer hunk_side.freeToMark(mark);
 
@@ -24,10 +30,32 @@ pub fn open(hunk_side: *HunkSide, game_seed: u32) !Recorder {
             return err;
     };
 
-    const file_path = try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
-        dir_path,
-        "game0000", // TODO use timestamp or something
-    });
+    const file_path = blk: {
+        var buffer: [40]u8 = undefined;
+        var fbs = std.io.fixedBufferStream(&buffer);
+        var stream = fbs.outStream();
+
+        var t = c.time(null);
+        var tm: *c.tm = c.localtime(&t) orelse return error.FailedToGetLocalTime;
+
+        _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.txt", .{
+            // cast to unsigned because zig is weird and prints '+' characters
+            // before all signed numbers
+            (try std.math.cast(u32, tm.tm_year)) + 1900,
+            (try std.math.cast(u32, tm.tm_mon)) + 1,
+            try std.math.cast(u32, tm.tm_mday),
+            try std.math.cast(u32, tm.tm_hour),
+            try std.math.cast(u32, tm.tm_min),
+            try std.math.cast(u32, tm.tm_sec),
+        });
+
+        break :blk try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
+            dir_path,
+            fbs.getWritten(),
+        });
+    };
+
+    std.log.notice("Recording to {s}", .{file_path});
 
     const file = try std.fs.cwd().createFile(file_path, .{});
     errdefer file.close();

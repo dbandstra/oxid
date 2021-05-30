@@ -38,6 +38,9 @@ pub fn main() u8 {
         // FIXME will this happen if you end a recording before getting a game over?
         // the recorder should explicitly finalize demo files, when you end the game
         // or get a game over.
+        // actually - it's probably impossible or almost impossible to get a runaway
+        // loop, barring a bug. if player input stops, he should be killed pretty
+        // quickly.
         if (player.frame_index > 500000) {
             stderr.print("Runaway loop? Stopped after 500,000 frames\n", .{}) catch {};
             return 1;
