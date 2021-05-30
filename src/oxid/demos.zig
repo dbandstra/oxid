@@ -1,16 +1,23 @@
 const build_options = @import("build_options");
+const builtin = @import("builtin");
 const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 const commands = @import("commands.zig");
 
 const dirname = @import("root").pstorage_dirname;
 
+// note: demos don't work in the wasm build yet. in order to get that working
+// the `file` field needs to be moved to the caller's responsibility
+
 pub const Recorder = struct {
-    file: std.fs.File,
+    file: if (builtin.arch == .wasm32) void else std.fs.File,
     frame_index: u32,
 };
 
 pub fn openRecorder(hunk_side: *HunkSide, game_seed: u32) !Recorder {
+    if (builtin.arch == .wasm32)
+        return error.NotSupported;
+
     // i don't think zig's std library has any date functionality, so pull in libc.
     // TODO push date code to main file and use via @import("root")?
     const c = @cImport({
@@ -73,6 +80,9 @@ pub fn openRecorder(hunk_side: *HunkSide, game_seed: u32) !Recorder {
 }
 
 pub fn closeRecorder(recorder: *Recorder) void {
+    if (builtin.arch == .wasm32)
+        return;
+
     recorder.file.close();
 }
 
@@ -82,6 +92,9 @@ pub fn recordInput(
     command: commands.GameCommand,
     down: bool,
 ) !void {
+    if (builtin.arch == .wasm32)
+        return error.NotSupported;
+
     try recorder.file.writer().print("{} {} {} {}\n", .{
         recorder.frame_index,
         player_number,
@@ -91,7 +104,7 @@ pub fn recordInput(
 }
 
 pub const Player = struct {
-    file: std.fs.File,
+    file: if (builtin.arch == .wasm32) void else std.fs.File,
     game_seed: u32,
     frame_index: u32,
     next_input: ?InputEvent,
@@ -105,6 +118,9 @@ pub const InputEvent = struct {
 };
 
 pub fn openPlayer(filename: []const u8) !Player {
+    if (builtin.arch == .wasm32)
+        return error.NotSupported;
+
     const file = try std.fs.cwd().openFile(filename, .{});
     errdefer file.close();
 
@@ -133,10 +149,16 @@ pub fn openPlayer(filename: []const u8) !Player {
 }
 
 pub fn closePlayer(player: *Player) void {
+    if (builtin.arch == .wasm32)
+        return;
+
     player.file.close();
 }
 
 pub fn readNextInput(player: *Player) !void {
+    if (builtin.arch == .wasm32)
+        return error.NotSupported;
+
     var buffer: [1024]u8 = undefined;
     const maybe_slice = try player.file.reader().readUntilDelimiterOrEof(&buffer, '\n');
     var slice = maybe_slice orelse {

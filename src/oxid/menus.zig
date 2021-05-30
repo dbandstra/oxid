@@ -367,10 +367,13 @@ pub const GameSettingsMenu = struct {
             ctx.setEffect(.toggle_friendly_fire);
             ctx.setSound(.ding);
         }
-        const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
-        if (ctx.optionToggle("Record demos: {}", .{record_demos_str})) {
-            ctx.setEffect(.toggle_record_demos);
-            ctx.setSound(.ding);
+
+        if (builtin.arch != .wasm32) {
+            const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
+            if (ctx.optionToggle("Record demos: {}", .{record_demos_str})) {
+                ctx.setEffect(.toggle_record_demos);
+                ctx.setSound(.ding);
+            }
         }
 
         ctx.vspacer();
