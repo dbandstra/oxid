@@ -388,7 +388,7 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     const seed = self.prng.random.int(u32);
 
     if (self.record_demos) {
-        self.demo_recorder = demos.openRecorder(&self.hunk.low(), seed) catch |err| blk: {
+        self.demo_recorder = demos.openRecorder(&self.hunk.low(), seed, is_multiplayer) catch |err| blk: {
             std.log.err("Failed to start demo recording: {}", .{err});
             break :blk null;
         };
