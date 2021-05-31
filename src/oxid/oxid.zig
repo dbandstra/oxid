@@ -514,7 +514,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                 if (input.frame_index > player.frame_index)
                     break;
                 const gc = gs.ecs.componentIter(c.GameController).next() orelse break;
-                const player_controller_id = switch (input.player_number) {
+                const player_controller_id = switch (input.player_index) {
                     0 => gc.player1_controller_id,
                     1 => gc.player2_controller_id,
                     else => null,

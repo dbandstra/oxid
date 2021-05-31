@@ -31,9 +31,9 @@ pub fn main() u8 {
         // FIXME will this happen if you end a recording before getting a game over?
         // the recorder should explicitly finalize demo files, when you end the game
         // or get a game over.
-        // actually - it's probably impossible or almost impossible to get a runaway
-        // loop, barring a bug. if player input stops, he should be killed pretty
-        // quickly.
+        // note: it's possible for the game to run endlessly without player input.
+        // there are some areas where the last enemy can run in circles indefinitely
+        // if you look at it.
         if (player.frame_index > 500000) {
             stderr.print("Runaway loop? Stopped after 500,000 frames\n", .{}) catch {};
             return 1;
@@ -54,7 +54,7 @@ pub fn main() u8 {
         while (player.next_input) |input| {
             if (input.frame_index > player.frame_index)
                 break;
-            const player_controller_id = switch (input.player_number) {
+            const player_controller_id = switch (input.player_index) {
                 0 => gc.player1_controller_id,
                 1 => gc.player2_controller_id,
                 else => null,

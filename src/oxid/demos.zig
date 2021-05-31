@@ -12,6 +12,7 @@ const dirname = @import("root").pstorage_dirname;
 pub const Recorder = struct {
     file: if (builtin.arch == .wasm32) void else std.fs.File,
     frame_index: u32,
+    player_last_frame_index: [2]u32,
 };
 
 pub fn openRecorder(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Recorder {
@@ -45,7 +46,7 @@ pub fn openRecorder(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Reco
         var t = c.time(null);
         var tm: *c.tm = c.localtime(&t) orelse return error.FailedToGetLocalTime;
 
-        _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.txt", .{
+        _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
             // cast to unsigned because zig is weird and prints '+' characters
             // before all signed numbers
             (try std.math.cast(u32, tm.tm_year)) + 1900,
@@ -67,13 +68,16 @@ pub fn openRecorder(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Reco
     const file = try std.fs.cwd().createFile(file_path, .{});
     errdefer file.close();
 
-    try file.writer().print("oxid_demo {} {} {}\n", .{
-        build_options.version, seed, is_multiplayer,
-    });
+    try file.writer().writeAll("OXIDDEMO");
+    try file.writer().writeIntLittle(u32, build_options.version.len);
+    try file.writer().writeAll(build_options.version);
+    try file.writer().writeIntLittle(u32, seed);
+    try file.writer().writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
 
     return Recorder{
         .file = file,
         .frame_index = 0,
+        .player_last_frame_index = .{ 0, 0 },
     };
 }
 
@@ -86,85 +90,44 @@ pub fn closeRecorder(recorder: *Recorder) void {
 
 pub fn recordInput(
     recorder: *Recorder,
-    player_number: u32,
+    player_index: u32,
     command: commands.GameCommand,
     down: bool,
 ) !void {
     if (builtin.arch == .wasm32)
         return error.NotSupported;
 
-    try recorder.file.writer().print("{} {} {} {}\n", .{
-        recorder.frame_index,
-        player_number,
-        @tagName(command),
-        down,
-    });
+    if (player_index > 1)
+        return error.InvalidPlayerIndex;
+
+    const rel_frame = recorder.frame_index - recorder.player_last_frame_index[player_index];
+    if (rel_frame > 255) {
+        // we only have space for ~4 seconds between recorded commands
+        // FIXME - output no-op "sync" command.
+        return error.TooLongWithoutInput;
+    }
+
+    try recorder.file.writer().writeByte(@intCast(u8, player_index) |
+        (@as(u8, @boolToInt(down)) << 1) |
+        (@as(u8, @enumToInt(command)) << 2));
+
+    try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
+
+    recorder.player_last_frame_index[player_index] = recorder.frame_index;
 }
-
-const LineParser = struct {
-    it: std.mem.TokenIterator,
-
-    fn init(line: []const u8) LineParser {
-        return .{ .it = std.mem.tokenize(line, " ") };
-    }
-
-    fn nextToken(self: *LineParser) ?[]const u8 {
-        return self.it.next();
-    }
-
-    fn expectToken(self: *LineParser, line_no: u32, comptime name: []const u8) ![]const u8 {
-        return self.nextToken() orelse {
-            std.log.debug("line {}: expected {}, found end of line", .{ line_no, name });
-            return error.InvalidDemo;
-        };
-    }
-
-    fn expectEndOfLine(self: *LineParser, line_no: u32) !void {
-        if (self.nextToken()) |token| {
-            std.log.debug("line {}: expected end of line, found '{}'", .{ line_no, token });
-            return error.InvalidDemo;
-        }
-    }
-
-    fn parseInt(self: *LineParser, comptime T: type, line_no: u32, comptime name: []const u8) !T {
-        const token = try self.expectToken(line_no, name);
-        return std.fmt.parseInt(u32, token, 10) catch {
-            std.log.debug("line {}: {}: expected int, found '{}'", .{ line_no, name, token });
-            return error.InvalidDemo;
-        };
-    }
-
-    fn parseEnum(self: *LineParser, comptime T: type, line_no: u32, comptime name: []const u8) !T {
-        const token = try self.expectToken(line_no, name);
-        inline for (@typeInfo(T).Enum.fields) |field, i| {
-            if (std.mem.eql(u8, field.name, token))
-                return @intToEnum(T, i);
-        }
-        std.log.debug("line {}: {}: invalid value '{}'", .{ line_no, name, token });
-        return error.InvalidDemo;
-    }
-
-    fn parseBool(self: *LineParser, line_no: u32, comptime name: []const u8) !bool {
-        const token = try self.expectToken(line_no, name);
-        if (std.mem.eql(u8, token, "false")) return false;
-        if (std.mem.eql(u8, token, "true")) return true;
-        std.log.debug("line {}: {}: expected bool, found '{}'", .{ line_no, name, token });
-        return error.InvalidDemo;
-    }
-};
 
 pub const Player = struct {
     file: if (builtin.arch == .wasm32) void else std.fs.File,
-    line_no: u32,
     game_seed: u32,
     is_multiplayer: bool,
     frame_index: u32,
+    player_last_frame_index: [2]u32,
     next_input: ?InputEvent,
 };
 
 pub const InputEvent = struct {
     frame_index: u32,
-    player_number: u32,
+    player_index: u32,
     command: commands.GameCommand,
     down: bool,
 };
@@ -192,20 +155,18 @@ pub fn openPlayer(filename: []const u8) !Player {
     const file = try std.fs.cwd().openFile(filename, .{});
     errdefer file.close();
 
-    // read first line
     var buffer: [128]u8 = undefined;
-    const line = (try file.reader().readUntilDelimiterOrEof(&buffer, '\n')) orelse
-        return error.NotADemo;
-    var p = LineParser.init(line);
+    file.reader().readNoEof(buffer[0..8]) catch |err| {
+        if (err == error.EndOfStream) return error.NotADemo;
+        return err;
+    };
+    if (!std.mem.eql(u8, buffer[0..8], "OXIDDEMO")) return error.NotADemo;
 
-    // parse identifier
-    if (if (p.nextToken()) |token| !std.mem.eql(u8, token, "oxid_demo") else true) {
-        std.log.debug("not an oxid demo", .{});
-        return error.InvalidDemo;
-    }
+    const version_len = try file.reader().readIntLittle(u32);
+    if (version_len > buffer.len) return error.InvalidDemo;
+    const version_string = buffer[0..version_len];
+    try file.reader().readNoEof(version_string);
 
-    // parse version
-    const version_string = try p.expectToken(1, "version");
     if (parseVersion(build_options.version)) |oxid_version| {
         if (parseVersion(version_string)) |demo_version| {
             if (!areVersionsCompatible(oxid_version, demo_version)) {
@@ -219,17 +180,15 @@ pub fn openPlayer(filename: []const u8) !Player {
         std.log.warn("could not determine oxid version, skipping compatibility check", .{});
     }
 
-    const seed = try p.parseInt(u32, 1, "seed");
-    const is_multiplayer = try p.parseBool(1, "is_multiplayer");
-
-    try p.expectEndOfLine(1);
+    const seed = try file.reader().readIntLittle(u32);
+    const is_multiplayer = (try file.reader().readIntLittle(u32)) > 1;
 
     var player: Player = .{
         .file = file,
-        .line_no = 2,
         .game_seed = seed,
         .is_multiplayer = is_multiplayer,
         .frame_index = 0,
+        .player_last_frame_index = .{ 0, 0 },
         .next_input = null,
     };
 
@@ -250,25 +209,25 @@ pub fn readNextInput(player: *Player) !void {
     if (builtin.arch == .wasm32)
         return error.NotSupported;
 
-    var buffer: [128]u8 = undefined;
-    const line = (try player.file.reader().readUntilDelimiterOrEof(&buffer, '\n')) orelse {
-        player.next_input = null;
-        return;
-    };
-    var p = LineParser.init(line);
+    const byte0 = try player.file.reader().readByte();
+    const byte1 = try player.file.reader().readByte();
 
-    const frame_index = try p.parseInt(u32, player.line_no, "frame_index");
-    const player_number = try p.parseInt(u32, player.line_no, "player_number");
-    const command = try p.parseEnum(commands.GameCommand, player.line_no, "command");
-    const down = try p.parseBool(player.line_no, "down");
+    const player_index = byte0 & 1;
+    const down = (byte0 & 2) != 0;
+    const command_index = byte0 >> 2;
+    if (command_index >= @typeInfo(commands.GameCommand).Enum.fields.len)
+        return error.InvalidDemo;
+    const i = @intCast(@TagType(commands.GameCommand), command_index);
+    const command = @intToEnum(commands.GameCommand, i);
 
-    try p.expectEndOfLine(player.line_no);
+    const rel_frame: u32 = byte1;
+    const abs_frame = player.player_last_frame_index[player_index] + rel_frame;
+    player.player_last_frame_index[player_index] = abs_frame;
 
     player.next_input = .{
-        .frame_index = frame_index,
-        .player_number = player_number,
+        .frame_index = abs_frame,
+        .player_index = player_index,
         .command = command,
         .down = down,
     };
-    player.line_no += 1;
 }
