@@ -17,11 +17,11 @@ pub fn main() u8 {
 
     const filename = std.mem.spanZ(std.os.argv[1]);
 
-    var player = demos.openPlayer(filename) catch |err| {
+    var player = demos.Player.open(filename) catch |err| {
         stderr.print("Failed to open player: {}\n", .{err}) catch {};
         return 1;
     };
-    defer demos.closePlayer(&player);
+    defer player.close();
 
     var gs: game.Session = undefined; // TODO allocate on heap?
 
@@ -64,7 +64,7 @@ pub fn main() u8 {
                 .command = input.command,
                 .down = input.down,
             });
-            demos.readNextInput(&player) catch |err| {
+            player.readNextInput() catch |err| {
                 stderr.print("Error reading from demo file: {}\n", .{err}) catch {};
                 return 1;
             };
