@@ -87,6 +87,23 @@ pub const Recorder = struct {
         recorder.file.close();
     }
 
+    // call this at the end of every game frame
+    pub fn incrementFrameIndex(recorder: *Recorder) !void {
+        recorder.frame_index = try std.math.add(u32, recorder.frame_index, 1);
+
+        // as long as outside code doesn't mess with these fields, this should
+        // never happen
+        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
+
+        // if we just hit 256 frames since the last recorded command, write
+        // a no-op command. we only have one byte to store the frame offset
+        if (recorder.frame_index - recorder.last_frame_index > 255) {
+            try recorder.file.writer().writeByte(0); // no-op
+            try recorder.file.writer().writeByte(255);
+            recorder.last_frame_index += 255;
+        }
+    }
+
     pub fn recordInput(
         recorder: *Recorder,
         player_index: u32,
@@ -102,26 +119,20 @@ pub const Recorder = struct {
         if (player_index > 1)
             return error.InvalidPlayerIndex;
 
-        if (recorder.frame_index < recorder.last_frame_index)
-            return error.InvalidFrameIndex;
+        // as long as outside code doesn't mess with these fields, this should
+        // never happen
+        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
 
-        // byte 1, bit 1: player_index
-        // byte 1, bit 2: down
-        const byte_base = @intCast(u8, player_index) | (@as(u8, @boolToInt(down)) << 1);
+        const rel_frame = recorder.frame_index - recorder.last_frame_index;
 
-        // byte 2 will contain the number of frames since the last command. but if
-        // more frames have elapsed than fit in the byte, we need to emit no-op
-        // commands to keep the integrity of the relative frame offsets.
-        // byte 1, bit 3: no-op (bits 4-8 are unused)
-        var rel_frame = recorder.frame_index - recorder.last_frame_index;
-        while (rel_frame > 255) : (rel_frame -= 255) {
-            try recorder.file.writer().writeByte(byte_base | 4);
-            try recorder.file.writer().writeByte(255);
-        }
+        // similarly, this shouldn't happen either. the incrementFrameIndex
+        // function takes care of this situation
+        std.debug.assert(rel_frame < 256);
 
-        // byte 1, bits 4-8: command
-        try recorder.file.writer().writeByte(byte_base | (@as(u8, @enumToInt(command)) << 3));
-        // byte 2: relative frame offset
+        try recorder.file.writer().writeByte(1 |
+            (@intCast(u8, player_index) << 1) |
+            (@as(u8, @boolToInt(down)) << 2) |
+            (@as(u8, @enumToInt(command)) << 3));
         try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
 
         recorder.last_frame_index = recorder.frame_index;
@@ -216,6 +227,10 @@ pub const Player = struct {
         player.file.close();
     }
 
+    pub fn incrementFrameIndex(player: *Player) !void {
+        player.frame_index = try std.math.add(u32, player.frame_index, 1);
+    }
+
     pub fn readNextInput(player: *Player) !void {
         if (builtin.arch == .wasm32)
             return error.NotSupported;
@@ -225,9 +240,9 @@ pub const Player = struct {
 
         const frame_index = player.last_frame_index + @as(u32, byte1);
 
-        const player_index = byte0 & 1;
-        const down = (byte0 & 2) != 0;
-        if (byte0 & 4 == 0) { // third bit means no-op
+        if (byte0 & 1 != 0) { // if 0 then this is a no-op (syncing the frame offset)
+            const player_index = (byte0 & 2) >> 1;
+            const down = (byte0 & 4) != 0;
             const command_index = byte0 >> 3;
             if (command_index >= @typeInfo(commands.GameCommand).Enum.fields.len)
                 return error.InvalidDemo;

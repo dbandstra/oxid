@@ -27,7 +27,7 @@ pub fn main() u8 {
 
     game.init(&gs, player.game_seed, false);
 
-    while (true) : (player.frame_index += 1) {
+    while (true) {
         // FIXME will this happen if you end a recording before getting a game over?
         // the recorder should explicitly finalize demo files, when you end the game
         // or get a game over.
@@ -88,5 +88,10 @@ pub fn main() u8 {
         }
 
         game.frameCleanup(&gs);
+
+        player.incrementFrameIndex() catch |err| {
+            stderr.print("Error incrementing frame index: {}\n", .{err}) catch {};
+            return 1;
+        };
     }
 }

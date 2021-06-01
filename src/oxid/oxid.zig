@@ -544,10 +544,18 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 
     if (!paused) {
         if (self.demo_player) |*demo_player| {
-            demo_player.frame_index += 1;
+            demo_player.incrementFrameIndex() catch |err| {
+                std.log.err("Demo playback error: {}", .{err});
+                resetGame(self);
+                return;
+            };
         }
         if (self.demo_recorder) |*demo_recorder| {
-            demo_recorder.frame_index += 1;
+            demo_recorder.incrementFrameIndex() catch |err| {
+                std.log.err("Aborting demo recording due to error: {}\n", .{err});
+                demo_recorder.close();
+                self.demo_recorder = null;
+            };
         }
     }
 
