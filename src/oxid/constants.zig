@@ -37,6 +37,8 @@ pub const ticks_per_oxygen_spent = 180; // player loses 1 point every 3 seconds
 // although every time you pick up a coin the tick timer resets, so actually
 // you lose one point every 3-6 seconds
 
+pub const low_oxygen_alert_threshold = 3;
+
 pub const PlayerColor = enum {
     yellow,
     green,

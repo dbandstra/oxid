@@ -5,6 +5,7 @@ const pdraw = @import("root").pdraw;
 const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const oxid = @import("oxid.zig");
+const constants = @import("constants.zig");
 const game = @import("game.zig");
 const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
@@ -171,6 +172,8 @@ fn drawHud(
             );
         }
 
+        var oxygen_low: [2]bool = .{ false, false };
+
         for ([_]?gbe.EntityId{
             gc.player1_controller_id,
             gc.player2_controller_id,
@@ -199,6 +202,8 @@ fn drawHud(
             if (pc.player_id) |player_id| {
                 if (gs.ecs.findComponentById(player_id, c.Player)) |player| {
                     maybe_oxygen = player.oxygen;
+                    if (player.oxygen <= constants.low_oxygen_alert_threshold)
+                        oxygen_low[player_index] = true;
                 }
             }
             if (maybe_oxygen) |oxygen| {
@@ -214,14 +219,32 @@ fn drawHud(
             fbs.reset();
         }
 
+        if (oxygen_low[0] or oxygen_low[1]) {
+            const message = blk: {
+                if (!oxygen_low[1]) break :blk "P1 TANK LOW!";
+                if (!oxygen_low[0]) break :blk "P2 TANK LOW!";
+                break :blk "P1&2 TANK LOW!";
+            };
+            const message_w = fonts.stringWidth(&static.font, message);
+            const x = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
+            const y = @as(i32, oxid.vwin_h / 2) - 8 / 2;
+
+            pdraw.setColor(ds, black);
+            fonts.drawString(ds, &static.font, x + 1, y + 1, message);
+            pdraw.setColor(ds, white);
+            fonts.drawString(ds, &static.font, x, y, message);
+        }
+
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = oxid.vwin_w / 2 - message.len * 8 / 2;
+                const message_w = fonts.stringWidth(&static.font, message);
+                const x = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
+                const y = 28 * 8;
 
                 pdraw.setColor(ds, black);
-                fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
+                fonts.drawString(ds, &static.font, x + 1, y + 1, message);
                 pdraw.setColor(ds, white);
-                fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
+                fonts.drawString(ds, &static.font, x, y, message);
             }
         }
     } else {
