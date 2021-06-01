@@ -20,6 +20,9 @@ pub const GameController = struct {
     wave_message_timer: u32,
     player1_controller_id: gbe.EntityId,
     player2_controller_id: ?gbe.EntityId,
+    // ticker: increments by 1 every frame, and wraps around. used for making
+    // things blink on the HUD
+    ticker: u32,
 };
 
 pub const PlayerController = struct {

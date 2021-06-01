@@ -82,6 +82,7 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
             .wave_message_timer = 0,
             .player1_controller_id = params.player1_controller_id,
             .player2_controller_id = params.player2_controller_id,
+            .ticker = 0,
         },
         .voice_accelerate = .{
             .params = null,

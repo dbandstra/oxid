@@ -172,8 +172,6 @@ fn drawHud(
             );
         }
 
-        var oxygen_low: [2]bool = .{ false, false };
-
         for ([_]?gbe.EntityId{
             gc.player1_controller_id,
             gc.player2_controller_id,
@@ -202,8 +200,29 @@ fn drawHud(
             if (pc.player_id) |player_id| {
                 if (gs.ecs.findComponentById(player_id, c.Player)) |player| {
                     maybe_oxygen = player.oxygen;
-                    if (player.oxygen <= constants.low_oxygen_alert_threshold)
-                        oxygen_low[player_index] = true;
+
+                    // low oxygen warning
+                    const maybe_mask: ?u32 = switch (player.oxygen) {
+                        0, 1 => 8,
+                        2, 3 => 16,
+                        else => null,
+                    };
+                    if (maybe_mask) |mask| {
+                        if (gc.ticker & mask != 0) {
+                            _ = stream.print("P{} TANK LOW!", .{player_index + 1}) catch unreachable; // FIXME
+                            const message = fbs.getWritten();
+                            defer fbs.reset();
+
+                            const message_w = fonts.stringWidth(&static.font, message);
+                            const ax = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
+                            const ay = @as(i32, oxid.vwin_h / 2) - 8 / 2 + 8 * @intCast(i32, player_index);
+
+                            pdraw.setColor(ds, black);
+                            fonts.drawString(ds, &static.font, ax + 1, ay + 1, message);
+                            pdraw.setColor(ds, white);
+                            fonts.drawString(ds, &static.font, ax, ay, message);
+                        }
+                    }
                 }
             }
             if (maybe_oxygen) |oxygen| {
@@ -217,22 +236,6 @@ fn drawHud(
             _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
             fonts.drawString(ds, &static.font, 25 * 8, y, fbs.getWritten());
             fbs.reset();
-        }
-
-        if (oxygen_low[0] or oxygen_low[1]) {
-            const message = blk: {
-                if (!oxygen_low[1]) break :blk "P1 TANK LOW!";
-                if (!oxygen_low[0]) break :blk "P2 TANK LOW!";
-                break :blk "P1&2 TANK LOW!";
-            };
-            const message_w = fonts.stringWidth(&static.font, message);
-            const x = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
-            const y = @as(i32, oxid.vwin_h / 2) - 8 / 2;
-
-            pdraw.setColor(ds, black);
-            fonts.drawString(ds, &static.font, x + 1, y + 1, message);
-            pdraw.setColor(ds, white);
-            fonts.drawString(ds, &static.font, x, y, message);
         }
 
         if (gc.wave_message) |message| {
