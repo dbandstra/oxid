@@ -69,6 +69,7 @@ const Main = struct {
     audio_device: sdl.SDL_AudioDeviceID,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
     fast_forward: bool,
+    shift: u32, // whether shift key(s) are pressed
     quit: bool,
 };
 
@@ -240,6 +241,7 @@ fn init(hunk: *Hunk) !*Main {
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
     self.fast_forward = false;
+    self.shift = 0;
     self.quit = false;
     self.saved_window_pos = null;
 
@@ -279,9 +281,12 @@ fn tick(self: *Main) void {
         }
     }
 
-    // when fast forwarding, we'll simulate 4 frames and draw them blended
-    // together. we'll also speed up the sound playback rate by 4x
-    const num_frames: u32 = if (self.fast_forward) 4 else 1;
+    // when fast forwarding, we'll simulate multiple frames and only draw the
+    // last one
+    const num_frames = if (self.fast_forward)
+        if (self.shift != 0) @as(u32, 16) else @as(u32, 4)
+    else
+        1;
 
     var frame_index: u32 = 0;
     while (frame_index < num_frames) : (frame_index += 1) {
@@ -311,12 +316,16 @@ fn tick(self: *Main) void {
     sdl.SDL_RenderPresent(self.renderer);
 
     sdl.SDL_LockAudioDevice(self.audio_device);
-    oxid.audioSync(
-        &self.main_state,
-        false,
-        // speed up audio mixing frequency if game is being fast forwarded
-        @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames),
-    );
+    if (self.fast_forward and self.shift != 0) {
+        // super fast forward - just disable sound. 16x is going to be hard
+        // to hear and probably just be a bunch of weird aliasing
+        oxid.audioSync(&self.main_state, true, @intToFloat(f32, self.audio_sample_rate));
+    } else if (self.fast_forward) {
+        // in 4x fast forward, speed sound up 4x as well
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 4.0);
+    } else {
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate));
+    }
     sdl.SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {
@@ -437,7 +446,11 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
                     switch (key) {
                         .backquote => self.fast_forward = true,
                         .f4 => perf.toggleSpam(),
-                        else => inputEvent(self, .{ .key = key }, true),
+                        else => {
+                            if (key == .lshift) self.shift |= 1;
+                            if (key == .rshift) self.shift |= 2;
+                            inputEvent(self, .{ .key = key }, true);
+                        },
                     }
                 }
             }
@@ -446,7 +459,11 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
             if (translateKey(evt.key.keysym.sym)) |key| {
                 switch (key) {
                     .backquote => self.fast_forward = false,
-                    else => inputEvent(self, .{ .key = key }, false),
+                    else => {
+                        if (key == .lshift) self.shift &= ~@as(u32, 1);
+                        if (key == .rshift) self.shift &= ~@as(u32, 2);
+                        inputEvent(self, .{ .key = key }, false);
+                    },
                 }
             }
         },

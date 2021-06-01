@@ -552,14 +552,17 @@ fn deinit(self: *Main) void {
 
 // simulate a frame, and draw it if requested
 fn doFrame(self: *Main, should_draw: bool, clear: bool, alpha: f32) void {
+    // run simulation and create events for drawing, playing sounds, etc.
     oxid.frame(&self.main_state, .{
         .spawn_draw_events = should_draw,
         .friendly_fire = self.main_state.friendly_fire,
     });
 
+    // draw to framebuffer (from events)
     if (should_draw)
         draw(self, clear, alpha);
 
+    // delete events
     oxid.frameCleanup(&self.main_state);
 }
 
