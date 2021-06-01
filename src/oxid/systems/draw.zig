@@ -62,19 +62,29 @@ fn drawPlayers(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         if (self.player.dying_timer > 0) {
+            const graphic: graphics.Graphic = blk: {
+                if (self.player.dying_timer > constants.duration60(30)) {
+                    if (self.player.oxygen == 0) {
+                        switch (self.player.color) {
+                            .yellow => break :blk .man1_choke,
+                            .green => break :blk .man2_choke,
+                        }
+                    }
+                    if (alternation(u32, self.player.dying_timer, constants.duration60(2))) {
+                        break :blk .man_dying1;
+                    } else {
+                        break :blk .man_dying2;
+                    }
+                }
+                if (self.player.dying_timer > constants.duration60(20))
+                    break :blk .man_dying3;
+                if (self.player.dying_timer > constants.duration60(10))
+                    break :blk .man_dying4;
+                break :blk .man_dying5;
+            };
             p.spawnEventDraw(gs, .{
                 .pos = self.transform.pos,
-                .graphic = if (self.player.dying_timer > constants.duration60(30))
-                    if (alternation(u32, self.player.dying_timer, constants.duration60(2)))
-                        graphics.Graphic.man_dying1
-                    else
-                        graphics.Graphic.man_dying2
-                else if (self.player.dying_timer > constants.duration60(20))
-                    graphics.Graphic.man_dying3
-                else if (self.player.dying_timer > constants.duration60(10))
-                    graphics.Graphic.man_dying4
-                else
-                    graphics.Graphic.man_dying5,
+                .graphic = graphic,
                 .transform = .identity,
                 .z_index = constants.z_index_player,
             });
