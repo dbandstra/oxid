@@ -264,6 +264,9 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
     }
 
     // game command?
+    if (main_state.demo_player != null)
+        return null;
+
     const gs = main_state.session orelse return null;
     const gc = gs.ecs.componentIter(c.GameController).next() orelse return null;
 
