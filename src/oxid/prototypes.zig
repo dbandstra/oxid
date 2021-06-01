@@ -148,6 +148,8 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .color = params.color,
             .trigger_released = true,
             .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
+            .oxygen = constants.max_oxygen,
+            .oxygen_timer = constants.ticks_per_oxygen_spent,
             .attack_level = .one,
             .speed_level = .one,
             .spawn_anim_y_remaining = levels.subpixels_per_tile, // will animate upwards 1 tile upon spawning
@@ -486,5 +488,6 @@ pub const spawnEventGameInput = event(c.EventGameInput);
 pub const spawnEventGameOver = event(c.EventGameOver);
 pub const spawnEventMonsterDied = event(c.EventMonsterDied);
 pub const spawnEventPlayerDied = event(c.EventPlayerDied);
+pub const spawnEventRestoreOxygen = event(c.EventRestoreOxygen);
 pub const spawnEventShowMessage = event(c.EventShowMessage);
 pub const spawnEventTakeDamage = event(c.EventTakeDamage);

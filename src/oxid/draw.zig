@@ -195,8 +195,22 @@ fn drawHud(
             }
             pdraw.setColor(ds, white);
 
-            _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-            fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
+            var maybe_oxygen: ?u32 = null;
+            if (pc.player_id) |player_id| {
+                if (gs.ecs.findComponentById(player_id, c.Player)) |player| {
+                    maybe_oxygen = player.oxygen;
+                }
+            }
+            if (maybe_oxygen) |oxygen| {
+                _ = stream.print("Tank:{}", .{oxygen}) catch unreachable; // FIXME
+                fonts.drawString(ds, &static.font, 18 * 8, y, fbs.getWritten());
+                fbs.reset();
+            } else {
+                fonts.drawString(ds, &static.font, 18 * 8, y, "Tank:");
+            }
+
+            _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
+            fonts.drawString(ds, &static.font, 25 * 8, y, fbs.getWritten());
             fbs.reset();
         }
 

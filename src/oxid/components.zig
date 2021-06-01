@@ -96,6 +96,8 @@ pub const Player = struct {
     color: constants.PlayerColor,
     trigger_released: bool,
     bullets: [constants.player_max_bullets]?gbe.EntityId,
+    oxygen: u32,
+    oxygen_timer: u32,
     attack_level: AttackLevel,
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,
@@ -215,6 +217,8 @@ pub const EventMonsterDied = struct {};
 pub const EventPlayerDied = struct {
     player_controller_id: gbe.EntityId,
 };
+
+pub const EventRestoreOxygen = struct {};
 
 pub const EventShowMessage = struct {
     message: []const u8,

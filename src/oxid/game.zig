@@ -36,6 +36,7 @@ pub const ComponentLists = struct {
     EventGameOver: gbe.ComponentList(c.EventGameOver, 20),
     EventMonsterDied: gbe.ComponentList(c.EventMonsterDied, 20),
     EventPlayerDied: gbe.ComponentList(c.EventPlayerDied, 20),
+    EventRestoreOxygen: gbe.ComponentList(c.EventRestoreOxygen, 20),
     EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
     EventTakeDamage: gbe.ComponentList(c.EventTakeDamage, 20),
 };

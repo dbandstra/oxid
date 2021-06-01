@@ -43,6 +43,7 @@ fn think(gs: *game.Session, self: SystemData) void {
             self.gc.enemy_speed_level = wave.speed;
             self.gc.monster_count = countNonPersistentMonsters(gs);
             self.gc.wave_message = wave.message;
+            p.spawnEventRestoreOxygen(gs, .{});
         }
     }
     if (self.gc.enemy_speed_timer > 0) {
