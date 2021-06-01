@@ -11,8 +11,8 @@ const dirname = @import("root").pstorage_dirname;
 
 pub const Recorder = struct {
     file: if (builtin.arch == .wasm32) void else std.fs.File,
-    frame_index: u32,
-    player_last_frame_index: [2]u32,
+    frame_index: u32, // starts at 0 and counts up for every game frame
+    last_frame_index: u32, // what frame_index was last time we recorded a command
 };
 
 pub fn openRecorder(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Recorder {
@@ -77,7 +77,7 @@ pub fn openRecorder(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Reco
     return Recorder{
         .file = file,
         .frame_index = 0,
-        .player_last_frame_index = .{ 0, 0 },
+        .last_frame_index = 0,
     };
 }
 
@@ -94,26 +94,38 @@ pub fn recordInput(
     command: commands.GameCommand,
     down: bool,
 ) !void {
+    // we only have 5 bits to store the command
+    comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 32);
+
     if (builtin.arch == .wasm32)
         return error.NotSupported;
 
     if (player_index > 1)
         return error.InvalidPlayerIndex;
 
-    const rel_frame = recorder.frame_index - recorder.player_last_frame_index[player_index];
-    if (rel_frame > 255) {
-        // we only have space for ~4 seconds between recorded commands
-        // FIXME - output no-op "sync" command.
-        return error.TooLongWithoutInput;
+    if (recorder.frame_index < recorder.last_frame_index)
+        return error.InvalidFrameIndex;
+
+    // byte 1, bit 1: player_index
+    // byte 1, bit 2: down
+    const byte_base = @intCast(u8, player_index) | (@as(u8, @boolToInt(down)) << 1);
+
+    // byte 2 will contain the number of frames since the last command. but if
+    // more frames have elapsed than fit in the byte, we need to emit no-op
+    // commands to keep the integrity of the relative frame offsets.
+    // byte 1, bit 3: no-op (bits 4-8 are unused)
+    var rel_frame = recorder.frame_index - recorder.last_frame_index;
+    while (rel_frame > 255) : (rel_frame -= 255) {
+        try recorder.file.writer().writeByte(byte_base | 4);
+        try recorder.file.writer().writeByte(255);
     }
 
-    try recorder.file.writer().writeByte(@intCast(u8, player_index) |
-        (@as(u8, @boolToInt(down)) << 1) |
-        (@as(u8, @enumToInt(command)) << 2));
-
+    // byte 1, bits 4-8: command
+    try recorder.file.writer().writeByte(byte_base | (@as(u8, @enumToInt(command)) << 3));
+    // byte 2: relative frame offset
     try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
 
-    recorder.player_last_frame_index[player_index] = recorder.frame_index;
+    recorder.last_frame_index = recorder.frame_index;
 }
 
 pub const Player = struct {
@@ -121,7 +133,7 @@ pub const Player = struct {
     game_seed: u32,
     is_multiplayer: bool,
     frame_index: u32,
-    player_last_frame_index: [2]u32,
+    last_frame_index: u32,
     next_input: ?InputEvent,
 };
 
@@ -188,7 +200,7 @@ pub fn openPlayer(filename: []const u8) !Player {
         .game_seed = seed,
         .is_multiplayer = is_multiplayer,
         .frame_index = 0,
-        .player_last_frame_index = .{ 0, 0 },
+        .last_frame_index = 0,
         .next_input = null,
     };
 
@@ -212,22 +224,24 @@ pub fn readNextInput(player: *Player) !void {
     const byte0 = try player.file.reader().readByte();
     const byte1 = try player.file.reader().readByte();
 
+    const frame_index = player.last_frame_index + @as(u32, byte1);
+
     const player_index = byte0 & 1;
     const down = (byte0 & 2) != 0;
-    const command_index = byte0 >> 2;
-    if (command_index >= @typeInfo(commands.GameCommand).Enum.fields.len)
-        return error.InvalidDemo;
-    const i = @intCast(@TagType(commands.GameCommand), command_index);
-    const command = @intToEnum(commands.GameCommand, i);
+    if (byte0 & 4 == 0) { // third bit means no-op
+        const command_index = byte0 >> 3;
+        if (command_index >= @typeInfo(commands.GameCommand).Enum.fields.len)
+            return error.InvalidDemo;
+        const i = @intCast(@TagType(commands.GameCommand), command_index);
+        const command = @intToEnum(commands.GameCommand, i);
 
-    const rel_frame: u32 = byte1;
-    const abs_frame = player.player_last_frame_index[player_index] + rel_frame;
-    player.player_last_frame_index[player_index] = abs_frame;
+        player.next_input = .{
+            .frame_index = frame_index,
+            .player_index = player_index,
+            .command = command,
+            .down = down,
+        };
+    }
 
-    player.next_input = .{
-        .frame_index = abs_frame,
-        .player_index = player_index,
-        .command = command,
-        .down = down,
-    };
+    player.last_frame_index = frame_index;
 }
