@@ -317,11 +317,10 @@ fn tick(self: *Main) void {
 
     sdl.SDL_LockAudioDevice(self.audio_device);
     if (self.fast_forward and self.shift != 0) {
-        // super fast forward - just disable sound. 16x is going to be hard
-        // to hear and probably just be a bunch of weird aliasing
-        oxid.audioSync(&self.main_state, true, @intToFloat(f32, self.audio_sample_rate));
+        // 16x super fast forward
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 16.0);
     } else if (self.fast_forward) {
-        // in 4x fast forward, speed sound up 4x as well
+        // 4x fast forward
         oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 4.0);
     } else {
         oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate));
