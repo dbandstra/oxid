@@ -208,7 +208,7 @@ fn drawHud(
                         else => null,
                     };
                     if (maybe_mask) |mask| {
-                        if (gc.ticker & mask != 0) {
+                        if (gc.ticker & mask != 0 and player.dying_timer == 0) {
                             _ = stream.print("P{} TANK LOW!", .{player_index + 1}) catch unreachable; // FIXME
                             const message = fbs.getWritten();
                             defer fbs.reset();

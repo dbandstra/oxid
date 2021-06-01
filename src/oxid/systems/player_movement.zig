@@ -55,13 +55,14 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
             if (self.player.oxygen_timer == 0) {
                 if (self.player.oxygen > 0) {
                     self.player.oxygen -= 1;
-                } else {
-                    p.spawnEventTakeDamage(gs, .{
-                        .inflictor_player_controller_id = self.player.player_controller_id,
-                        .self_id = self.id,
-                        .amount = self.creature.hit_points,
-                    });
-                    return;
+                    if (self.player.oxygen == 0) {
+                        p.spawnEventTakeDamage(gs, .{
+                            .inflictor_player_controller_id = self.player.player_controller_id,
+                            .self_id = self.id,
+                            .amount = self.creature.hit_points,
+                        });
+                        return;
+                    }
                 }
                 self.player.oxygen_timer = constants.ticks_per_oxygen_spent;
             }
