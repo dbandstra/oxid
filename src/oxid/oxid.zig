@@ -376,17 +376,24 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
     return InputSpecial{ .noop = {} };
 }
 
-// called when "start new game" is selected in the menu. if a game is already
-// in progress, restart it
-fn startGame(self: *MainState, is_multiplayer: bool) void {
+fn resetDemo(self: *MainState) void {
     if (self.demo_player) |*demo_player| {
         demo_player.close();
         self.demo_player = null;
     }
     if (self.demo_recorder) |*demo_recorder| {
+        demo_recorder.markEnd() catch |err| {
+            std.log.err("Aborting demo recording due to error: {}\n", .{err});
+        };
         demo_recorder.close();
         self.demo_recorder = null;
     }
+}
+
+// called when "start new game" is selected in the menu. if a game is already
+// in progress, restart it
+fn startGame(self: *MainState, is_multiplayer: bool) void {
+    resetDemo(self);
 
     const seed = self.prng.random.int(u32);
 
@@ -407,14 +414,7 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 }
 
 pub fn playDemo(self: *MainState, filename: []const u8) void {
-    if (self.demo_player) |*demo_player| {
-        demo_player.close();
-        self.demo_player = null;
-    }
-    if (self.demo_recorder) |*demo_recorder| {
-        demo_recorder.close();
-        self.demo_recorder = null;
-    }
+    resetDemo(self);
 
     self.demo_player = demos.Player.open(filename) catch |err| {
         std.log.err("Failed to open demo player: {}", .{err});
@@ -435,14 +435,7 @@ pub fn playDemo(self: *MainState, filename: []const u8) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    if (self.demo_player) |*demo_player| {
-        demo_player.close();
-        self.demo_player = null;
-    }
-    if (self.demo_recorder) |*demo_recorder| {
-        demo_recorder.close();
-        self.demo_recorder = null;
-    }
+    resetDemo(self);
 
     self.session = null;
 
@@ -513,28 +506,33 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 
     if (!paused) {
         if (self.demo_player) |*demo_player| {
-            while (demo_player.next_input) |input| {
-                if (input.frame_index > demo_player.frame_index)
-                    break;
-                const gc = gs.ecs.componentIter(c.GameController).next() orelse break;
-                const player_controller_id = switch (input.player_index) {
-                    0 => gc.player1_controller_id,
-                    1 => gc.player2_controller_id,
-                    else => null,
-                } orelse continue;
-                p.spawnEventGameInput(gs, .{
-                    .player_controller_id = player_controller_id,
-                    .command = input.command,
-                    .down = input.down,
-                });
+            while (demo_player.getNextEvent()) |event| {
+                switch (event) {
+                    .end_of_demo => {
+                        std.log.notice("Demo playback complete.\n", .{});
+                        resetGame(self);
+                        return;
+                    },
+                    .input => |input| {
+                        const gc = gs.ecs.componentIter(c.GameController).next() orelse break;
+                        const player_controller_id = switch (input.player_index) {
+                            0 => gc.player1_controller_id,
+                            1 => gc.player2_controller_id,
+                            else => null,
+                        } orelse continue;
+                        p.spawnEventGameInput(gs, .{
+                            .player_controller_id = player_controller_id,
+                            .command = input.command,
+                            .down = input.down,
+                        });
+                    },
+                }
                 demo_player.readNextInput() catch |err| {
                     std.log.err("Demo playback error: {}\n", .{err});
                     resetGame(self);
                     return;
                 };
             }
-            // TODO demo should record the frame_index that recording ended.
-            // we can open the menu or something when we get there in the playback.
         }
     }
 

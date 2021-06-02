@@ -87,6 +87,22 @@ pub const Recorder = struct {
         recorder.file.close();
     }
 
+    // write a special marker so we know on what frame to end the demo.
+    pub fn markEnd(recorder: *Recorder) !void {
+        // as long as outside code doesn't mess with these fields, this should
+        // never happen
+        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
+
+        const rel_frame = recorder.frame_index - recorder.last_frame_index;
+
+        // similarly, this shouldn't happen either. the incrementFrameIndex
+        // function takes care of this situation
+        std.debug.assert(rel_frame < 256);
+
+        try recorder.file.writer().writeByte(255); // end of demo
+        try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
+    }
+
     // call this at the end of every game frame
     pub fn incrementFrameIndex(recorder: *Recorder) !void {
         if (builtin.arch == .wasm32)
@@ -113,8 +129,10 @@ pub const Recorder = struct {
         command: commands.GameCommand,
         down: bool,
     ) !void {
-        // we only have 5 bits to store the command
-        comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 32);
+        // we only have 5 bits to store the command (32 possible values). and
+        // we reserve the highest value so that we can set the first byte to
+        // 255 to represent the end of demo marker.
+        comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 31);
 
         if (builtin.arch == .wasm32)
             return error.NotSupported;
@@ -143,11 +161,13 @@ pub const Recorder = struct {
 };
 
 pub const Player = struct {
-    pub const InputEvent = struct {
-        frame_index: u32,
-        player_index: u32,
-        command: commands.GameCommand,
-        down: bool,
+    pub const Event = union(enum) {
+        end_of_demo,
+        input: struct {
+            player_index: u32,
+            command: commands.GameCommand,
+            down: bool,
+        },
     };
 
     file: if (builtin.arch == .wasm32) void else std.fs.File,
@@ -155,7 +175,10 @@ pub const Player = struct {
     is_multiplayer: bool,
     frame_index: u32,
     last_frame_index: u32,
-    next_input: ?InputEvent,
+    next: struct {
+        frame_index: u32,
+        event: Event,
+    },
 
     fn parseVersion(string: []const u8) ?[3][]const u8 {
         var it = std.mem.tokenize(string, ".-");
@@ -214,10 +237,9 @@ pub const Player = struct {
             .is_multiplayer = is_multiplayer,
             .frame_index = 0,
             .last_frame_index = 0,
-            .next_input = null,
+            .next = undefined, // set by readNextInput (below)
         };
 
-        // prepare first input
         try readNextInput(&player);
 
         return player;
@@ -246,7 +268,12 @@ pub const Player = struct {
 
         const frame_index = player.last_frame_index + @as(u32, byte1);
 
-        if (byte0 & 1 != 0) { // if 0 then this is a no-op (syncing the frame offset)
+        if (byte0 == 255) { // end of demo
+            player.next = .{
+                .frame_index = frame_index,
+                .event = .end_of_demo,
+            };
+        } else if (byte0 & 1 != 0) { // if 0 then this is a no-op (syncing the frame offset)
             const player_index = (byte0 & 2) >> 1;
             const down = (byte0 & 4) != 0;
             const command_index = byte0 >> 3;
@@ -255,14 +282,24 @@ pub const Player = struct {
             const i = @intCast(@TagType(commands.GameCommand), command_index);
             const command = @intToEnum(commands.GameCommand, i);
 
-            player.next_input = .{
+            player.next = .{
                 .frame_index = frame_index,
-                .player_index = player_index,
-                .command = command,
-                .down = down,
+                .event = .{
+                    .input = .{
+                        .player_index = player_index,
+                        .command = command,
+                        .down = down,
+                    },
+                },
             };
         }
 
         player.last_frame_index = frame_index;
+    }
+
+    pub fn getNextEvent(player: *const Player) ?Event {
+        if (player.next.frame_index == player.frame_index)
+            return player.next.event;
+        return null;
     }
 };
