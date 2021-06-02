@@ -65,7 +65,8 @@ Menu controls:
 
 Debug/cheat controls:
 
-* backquote: fast forward
+* backquote: fast forward (4x speed)
+* shift-backquote: super fast forward (16x speed)
 * backspace: skip to next wave
 * F2: toggle rendering of move boxes
 * F4: toggle profiling spam (not available in web version or in ReleaseSmall)
