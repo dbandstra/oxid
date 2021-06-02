@@ -37,6 +37,7 @@ fn killAllMonsters(gs: *game.Session) void {
     }
 
     if (gs.ecs.componentIter(c.GameController).next()) |gc| {
+        gc.monster_count = 0;
         gc.next_wave_timer = 1;
     }
 }
