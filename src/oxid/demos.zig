@@ -3,14 +3,28 @@ const builtin = @import("builtin");
 const std = @import("std");
 const commands = @import("commands.zig");
 
+fn parseVersion(string: []const u8) ?[2]u16 {
+    var it = std.mem.tokenize(string, ".");
+    const major_str = it.next() orelse return null;
+    const major = std.fmt.parseInt(u16, major_str, 10) catch return null;
+    const minor_str = it.next() orelse return null;
+    const minor = std.fmt.parseInt(u16, minor_str, 10) catch return null;
+    return [2]u16{ major, minor };
+}
+
 pub const Recorder = struct {
     frame_index: u32 = 0, // starts at 0 and counts up for every game frame
     last_frame_index: u32 = 0, // what frame_index was last time we recorded a command
 
     pub fn start(self: *Recorder, writer: anytype, seed: u32, is_multiplayer: bool) !void {
         try writer.writeAll("OXIDDEMO");
-        try writer.writeIntLittle(u32, build_options.version.len);
-        try writer.writeAll(build_options.version);
+        if (parseVersion(build_options.version)) |version| {
+            try writer.writeIntLittle(u16, version[0]);
+            try writer.writeIntLittle(u16, version[1]);
+        } else {
+            try writer.writeIntLittle(u16, 0);
+            try writer.writeIntLittle(u16, 0);
+        }
         try writer.writeIntLittle(u32, seed);
         try writer.writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
     }
@@ -101,22 +115,6 @@ pub const Player = struct {
         event: Event,
     },
 
-    fn parseVersion(string: []const u8) ?[3][]const u8 {
-        var it = std.mem.tokenize(string, ".-");
-        const major = it.next() orelse return null;
-        const minor = it.next() orelse return null;
-        const patch = it.next() orelse return null;
-        return [3][]const u8{ major, minor, patch };
-    }
-
-    // we accept the demo if major and minor versions are same, but the patch
-    // version can differ. this is under the assumption that any "breaking"
-    // changes to gamecode, however slight, will incur at least a minor version
-    // bump.
-    fn areVersionsCompatible(a: [3][]const u8, b: [3][]const u8) bool {
-        return std.mem.eql(u8, a[0], b[0]) and std.mem.eql(u8, a[1], b[1]);
-    }
-
     pub fn open(filename: []const u8) !Player {
         if (builtin.arch == .wasm32)
             return error.NotSupported;
@@ -136,10 +134,13 @@ pub const Player = struct {
         const version_string = buffer[0..version_len];
         try file.reader().readNoEof(version_string);
 
-        if (parseVersion(build_options.version)) |oxid_version| {
-            if (parseVersion(version_string)) |demo_version| {
-                if (!areVersionsCompatible(oxid_version, demo_version)) {
-                    std.log.err("incompatible version (demo {}, oxid {})", .{ version_string, build_options.version });
+        if (parseVersion(build_options.version)) |oxid_ver| {
+            if (parseVersion(version_string)) |demo_ver| {
+                if (oxid_ver[0] != demo_ver[0] or oxid_ver[1] != demo_ver[1]) {
+                    std.log.err("incompatible version (demo {}.{}.x, oxid {}.{}.x)", .{
+                        demo_ver[0], demo_ver[1],
+                        oxid_ver[0], oxid_ver[1],
+                    });
                     return error.DemoVersionMismatch;
                 }
             } else {
