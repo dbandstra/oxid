@@ -11,7 +11,7 @@ const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire
 
 const SystemData = struct {
     id: gbe.EntityId,
-    creature: *const c.Creature,
+    creature: *c.Creature,
     phys: *c.PhysObject,
     player: *c.Player,
     transform: *c.Transform,
@@ -48,6 +48,24 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
                 self.player.line_of_fire = null;
             }
             continue;
+        }
+
+        if (self.player.oxygen_timer > 0 and self.creature.invulnerability_timer == 0) {
+            self.player.oxygen_timer -= 1;
+            if (self.player.oxygen_timer == 0) {
+                if (self.player.oxygen > 0) {
+                    self.player.oxygen -= 1;
+                    if (self.player.oxygen == 0) {
+                        p.spawnEventTakeDamage(gs, .{
+                            .inflictor_player_controller_id = self.player.player_controller_id,
+                            .self_id = self.id,
+                            .amount = self.creature.hit_points,
+                        });
+                        return;
+                    }
+                }
+                self.player.oxygen_timer = constants.ticks_per_oxygen_spent;
+            }
         }
 
         playerUpdate(gs, self);

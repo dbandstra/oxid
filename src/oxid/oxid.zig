@@ -97,7 +97,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         .first_char = 0,
         .char_width = 8,
         .char_height = 8,
-        .spacing = -1,
+        .spacing = -2,
     }) catch |err| {
         std.log.emerg("Failed to load font: {}", .{err});
         return error.Failed;

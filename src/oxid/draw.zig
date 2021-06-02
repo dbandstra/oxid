@@ -5,6 +5,7 @@ const pdraw = @import("root").pdraw;
 const drawing = @import("../common/drawing.zig");
 const fonts = @import("../common/fonts.zig");
 const oxid = @import("oxid.zig");
+const constants = @import("constants.zig");
 const game = @import("game.zig");
 const graphics = @import("graphics.zig");
 const levels = @import("levels.zig");
@@ -195,19 +196,58 @@ fn drawHud(
             }
             pdraw.setColor(ds, white);
 
-            _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-            fonts.drawString(ds, &static.font, 19 * 8, y, fbs.getWritten());
+            var maybe_oxygen: ?u32 = null;
+            if (pc.player_id) |player_id| {
+                if (gs.ecs.findComponentById(player_id, c.Player)) |player| {
+                    maybe_oxygen = player.oxygen;
+
+                    // low oxygen warning
+                    const maybe_mask: ?u32 = switch (player.oxygen) {
+                        0, 1 => 8,
+                        2, 3 => 16,
+                        else => null,
+                    };
+                    if (maybe_mask) |mask| {
+                        if (gc.ticker & mask != 0 and player.dying_timer == 0) {
+                            _ = stream.print("P{} TANK LOW!", .{player_index + 1}) catch unreachable; // FIXME
+                            const message = fbs.getWritten();
+                            defer fbs.reset();
+
+                            const message_w = fonts.stringWidth(&static.font, message);
+                            const ax = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
+                            const ay = @as(i32, oxid.vwin_h / 2) - 8 / 2 + 8 * @intCast(i32, player_index);
+
+                            pdraw.setColor(ds, black);
+                            fonts.drawString(ds, &static.font, ax + 1, ay + 1, message);
+                            pdraw.setColor(ds, white);
+                            fonts.drawString(ds, &static.font, ax, ay, message);
+                        }
+                    }
+                }
+            }
+            if (maybe_oxygen) |oxygen| {
+                _ = stream.print("Tank:{}", .{oxygen}) catch unreachable; // FIXME
+                fonts.drawString(ds, &static.font, 18 * 8, y, fbs.getWritten());
+                fbs.reset();
+            } else {
+                fonts.drawString(ds, &static.font, 18 * 8, y, "Tank:");
+            }
+
+            _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
+            fonts.drawString(ds, &static.font, 25 * 8, y, fbs.getWritten());
             fbs.reset();
         }
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const x = oxid.vwin_w / 2 - message.len * 8 / 2;
+                const message_w = fonts.stringWidth(&static.font, message);
+                const x = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
+                const y = 28 * 8;
 
                 pdraw.setColor(ds, black);
-                fonts.drawString(ds, &static.font, @intCast(i32, x) + 1, 28 * 8 + 1, message);
+                fonts.drawString(ds, &static.font, x + 1, y + 1, message);
                 pdraw.setColor(ds, white);
-                fonts.drawString(ds, &static.font, @intCast(i32, x), 28 * 8, message);
+                fonts.drawString(ds, &static.font, x, y, message);
             }
         }
     } else {

@@ -41,6 +41,7 @@ const Main = struct {
     draw_state: pdraw.State,
     audio_speedup: u31,
     fast_forward: bool,
+    shift: bool,
 };
 
 fn translateKey(keyCode: c_int) ?inputs.Key {
@@ -164,6 +165,7 @@ export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
         g.fast_forward = down != 0;
         return NOP;
     }
+    if (key == .lshift) g.shift = down != 0;
     const source: inputs.Source = .{ .key = key };
     const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return 0;
     return switch (special) {
@@ -217,6 +219,7 @@ fn init() !void {
     g = hunk.low().allocator.create(Main) catch unreachable;
     g.audio_speedup = 1;
     g.fast_forward = false;
+    g.shift = false;
 
     pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
@@ -313,7 +316,10 @@ export fn onAnimationFrame(now: c_int) void {
 fn tick(should_draw: bool) void {
     // when fast forwarding, we'll simulate 4 frames and draw them blended
     // together. we'll also speed up the sound playback rate by 4x
-    const num_frames: u31 = if (g.fast_forward) 4 else 1;
+    const num_frames = if (g.fast_forward)
+        if (g.shift) @as(u31, 16) else @as(u31, 4)
+    else
+        1;
 
     var frame_index: u31 = 0;
     while (frame_index < num_frames) : (frame_index += 1) {

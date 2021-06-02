@@ -20,6 +20,9 @@ pub const GameController = struct {
     wave_message_timer: u32,
     player1_controller_id: gbe.EntityId,
     player2_controller_id: ?gbe.EntityId,
+    // ticker: increments by 1 every frame, and wraps around. used for making
+    // things blink on the HUD
+    ticker: u32,
 };
 
 pub const PlayerController = struct {
@@ -96,6 +99,8 @@ pub const Player = struct {
     color: constants.PlayerColor,
     trigger_released: bool,
     bullets: [constants.player_max_bullets]?gbe.EntityId,
+    oxygen: u32,
+    oxygen_timer: u32,
     attack_level: AttackLevel,
     speed_level: SpeedLevel,
     spawn_anim_y_remaining: u31,
@@ -215,6 +220,8 @@ pub const EventMonsterDied = struct {};
 pub const EventPlayerDied = struct {
     player_controller_id: gbe.EntityId,
 };
+
+pub const EventRestoreOxygen = struct {};
 
 pub const EventShowMessage = struct {
     message: []const u8,

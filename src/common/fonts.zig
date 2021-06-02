@@ -45,14 +45,13 @@ pub fn unload(font: *Font) void {
 }
 
 pub fn stringWidth(font: *const Font, string: []const u8) u31 {
-    var x: i32 = 0;
-    for (string) |char, i| {
-        if (i > 0) {
-            x += font.spacing;
-        }
-        x += @as(i32, font.tileset.tile_w);
-    }
-    return @intCast(u31, std.math.max(0, x));
+    if (string.len == 0)
+        return 0;
+    const w: u31 = font.tileset.tile_w;
+    if (-font.spacing >= w)
+        return 0;
+    const w1 = @intCast(u31, @as(i32, w) + font.spacing);
+    return w + w1 * @intCast(u31, string.len - 1);
 }
 
 pub fn drawString(ds: *pdraw.State, font: *const Font, x: i32, y: i32, string: []const u8) void {

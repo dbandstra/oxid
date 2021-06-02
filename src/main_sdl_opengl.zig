@@ -129,6 +129,7 @@ const Main = struct {
     toggle_fullscreen: bool,
     set_canvas_scale: ?u31,
     fast_forward: bool,
+    shift: u32, // whether shift key(s) are pressed
     framerate_scheme: FramerateScheme,
     t: usize,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
@@ -156,7 +157,7 @@ pub fn main() u8 {
     const options = parseOptions(&hunk.low()) catch |err| {
         if (err != error.BadArg) { // if BadArg, error was already printed
             const stderr = std.io.getStdErr().writer();
-            stderr.print("Failed to parse command-line options: {}", .{err}) catch {};
+            stderr.print("Failed to parse command-line options: {}\n", .{err}) catch {};
         }
         return 1;
     } orelse {
@@ -522,6 +523,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.toggle_fullscreen = false;
     self.set_canvas_scale = null;
     self.fast_forward = false;
+    self.shift = 0;
     self.t = 0.0;
     self.saved_window_pos = null;
 
@@ -558,6 +560,22 @@ fn deinit(self: *Main) void {
     sdl.SDL_Quit();
 }
 
+// simulate a frame, and draw it if requested
+fn doFrame(self: *Main, should_draw: bool, clear: bool, alpha: f32) void {
+    // run simulation and create events for drawing, playing sounds, etc.
+    oxid.frame(&self.main_state, .{
+        .spawn_draw_events = should_draw,
+        .friendly_fire = self.main_state.friendly_fire,
+    });
+
+    // draw to framebuffer (from events)
+    if (should_draw)
+        draw(self, clear, alpha);
+
+    // delete events
+    oxid.frameCleanup(&self.main_state);
+}
+
 // this is run once per monitor frame
 fn tick(self: *Main, refresh_rate: u64) void {
     const num_frames_to_simulate = blk: {
@@ -575,10 +593,6 @@ fn tick(self: *Main, refresh_rate: u64) void {
         return;
     }
 
-    // when fast forwarding, we'll simulate 4 frames and draw them blended
-    // together. we'll also speed up the sound playback rate by 4x
-    const num_frames: u32 = if (self.fast_forward) 4 else 1;
-
     var i: usize = 0;
     while (i < num_frames_to_simulate) : (i += 1) {
         var evt: sdl.SDL_Event = undefined;
@@ -589,27 +603,36 @@ fn tick(self: *Main, refresh_rate: u64) void {
             }
         }
 
-        var frame_index: u32 = 0;
-        while (frame_index < num_frames) : (frame_index += 1) {
-            // if we're simulating multiple frames for one draw cycle, we only
-            // need to actually draw for the last one of them
-            const should_draw = i == num_frames_to_simulate - 1;
+        // if we're simulating multiple frames for one draw cycle, we only
+        // draw the last one of them.
+        const should_draw = i == num_frames_to_simulate - 1;
 
-            // run simulation and create events for drawing, playing sounds, etc.
-            oxid.frame(&self.main_state, .{
-                .spawn_draw_events = should_draw,
-                .friendly_fire = self.main_state.friendly_fire,
-            });
-
-            // draw to framebuffer (from events)
-            if (should_draw) {
-                // this alpha value is calculated to end up with an even blend
-                // of all fast forward frames
-                draw(self, frame_index == 0, 1.0 / @intToFloat(f32, frame_index + 1));
+        if (self.fast_forward and self.shift != 0) {
+            // 16x speed (super fast forward)
+            // simulate 16 frames, but only draw every 4th one
+            var frame_index: u32 = 0;
+            while (frame_index < 16) : (frame_index += 1) {
+                doFrame(
+                    self,
+                    should_draw and frame_index & 3 == 3,
+                    frame_index == 3,
+                    1.0 / @intToFloat(f32, (frame_index >> 2) + 1),
+                );
             }
-
-            // delete events
-            oxid.frameCleanup(&self.main_state);
+        } else if (self.fast_forward) {
+            // 4x speed (fast forward)
+            var frame_index: u32 = 0;
+            while (frame_index < 4) : (frame_index += 1) {
+                doFrame(
+                    self,
+                    should_draw,
+                    frame_index == 0,
+                    1.0 / @intToFloat(f32, frame_index + 1),
+                );
+            }
+        } else {
+            // 1x speed
+            doFrame(self, should_draw, true, 1.0);
         }
     }
 
@@ -627,12 +650,15 @@ fn tick(self: *Main, refresh_rate: u64) void {
     // if the audio thread is currently doing a mix, this will wait until it's
     // finished.
     sdl.SDL_LockAudioDevice(self.audio_device);
-    oxid.audioSync(
-        &self.main_state,
-        false,
-        // speed up audio mixing frequency if game is being fast forwarded
-        @intToFloat(f32, self.audio_sample_rate) / @intToFloat(f32, num_frames),
-    );
+    if (self.fast_forward and self.shift != 0) {
+        // 16x super fast forward
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 16.0);
+    } else if (self.fast_forward) {
+        // 4x fast forward
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 4.0);
+    } else {
+        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate));
+    }
     sdl.SDL_UnlockAudioDevice(self.audio_device);
 
     if (self.toggle_fullscreen) {
@@ -760,7 +786,11 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
                     switch (key) {
                         .backquote => self.fast_forward = true,
                         .f4 => perf.toggleSpam(),
-                        else => inputEvent(self, .{ .key = key }, true),
+                        else => {
+                            if (key == .lshift) self.shift |= 1;
+                            if (key == .rshift) self.shift |= 2;
+                            inputEvent(self, .{ .key = key }, true);
+                        },
                     }
                 }
             }
@@ -769,7 +799,11 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
             if (translateKey(evt.key.keysym.sym)) |key| {
                 switch (key) {
                     .backquote => self.fast_forward = false,
-                    else => inputEvent(self, .{ .key = key }, false),
+                    else => {
+                        if (key == .lshift) self.shift &= ~@as(u32, 1);
+                        if (key == .rshift) self.shift &= ~@as(u32, 2);
+                        inputEvent(self, .{ .key = key }, false);
+                    },
                 }
             }
         },
