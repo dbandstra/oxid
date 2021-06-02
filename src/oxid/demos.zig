@@ -89,6 +89,9 @@ pub const Recorder = struct {
 
     // call this at the end of every game frame
     pub fn incrementFrameIndex(recorder: *Recorder) !void {
+        if (builtin.arch == .wasm32)
+            return error.NotSupported;
+
         recorder.frame_index = try std.math.add(u32, recorder.frame_index, 1);
 
         // as long as outside code doesn't mess with these fields, this should
@@ -228,6 +231,9 @@ pub const Player = struct {
     }
 
     pub fn incrementFrameIndex(player: *Player) !void {
+        if (builtin.arch == .wasm32)
+            return error.NotSupported;
+
         player.frame_index = try std.math.add(u32, player.frame_index, 1);
     }
 
