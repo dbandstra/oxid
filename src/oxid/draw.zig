@@ -159,11 +159,11 @@ fn drawHud(
         const gs = maybe_gs.?;
 
         pdraw.setColor(ds, text_label);
-        fonts.drawString(ds, font, 0, 0, "Wave:");
+        fonts.drawString(ds, font, 0, 0, "Wave");
 
         pdraw.setColor(ds, text_value);
         _ = stream.print("{}", .{gc.wave_number}) catch unreachable; // FIXME
-        fonts.drawString(ds, font, fonts.stringWidth(font, "Wave:"), 0, fbs.getWritten());
+        fonts.drawString(ds, font, fonts.stringWidth(font, "Wave") + 4, 0, fbs.getWritten());
         fbs.reset();
 
         // show little colored helmets in the HUD to make it clear which
@@ -173,7 +173,7 @@ fn drawHud(
             ds,
             static.tileset,
             graphics.getGraphicTile(.man_icons),
-            40,
+            46,
             0,
             .identity,
         );
@@ -181,7 +181,7 @@ fn drawHud(
             // both helmets are in the same tile. so if it's single player,
             // cover up the green helmet with a black fill.
             pdraw.setColor(ds, black);
-            pdraw.fill(ds, 40, 8, 16, 8);
+            pdraw.fill(ds, 46, 8, 16, 8);
         }
 
         for ([_]?gbe.EntityId{
@@ -193,10 +193,7 @@ fn drawHud(
 
             const y = @intCast(i32, player_index) * 8;
 
-            pdraw.setColor(ds, white);
-            fonts.drawString(ds, font, 56, y, "x");
-
-            var lives_x = 56 + fonts.stringWidth(font, "x");
+            var lives_x: u31 = 64;
 
             pdraw.setColor(ds, salmon);
             var i: u31 = 0;
@@ -248,22 +245,22 @@ fn drawHud(
             if (maybe_oxygen) |oxygen| {
                 // \x1D is a superscript 2
                 pdraw.setColor(ds, text_label);
-                fonts.drawString(ds, font, 114, y, "O\x1D:");
+                fonts.drawString(ds, font, 116, y, "O\x1D");
 
                 pdraw.setColor(ds, text_value);
                 _ = stream.print("{}", .{oxygen}) catch unreachable; // FIXME
-                fonts.drawString(ds, font, 114 + fonts.stringWidth(font, "O\x1D:"), y, fbs.getWritten());
+                fonts.drawString(ds, font, 116 + fonts.stringWidth(font, "O\x1D") + 2, y, fbs.getWritten());
                 fbs.reset();
             } else {
-                fonts.drawString(ds, font, 114, y, "O\x1D:");
+                fonts.drawString(ds, font, 116, y, "O\x1D");
             }
 
             pdraw.setColor(ds, text_label);
-            fonts.drawString(ds, font, 168, y, "Score:");
+            fonts.drawString(ds, font, 168, y, "Score");
 
             pdraw.setColor(ds, text_value);
             _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
-            fonts.drawString(ds, font, 168 + fonts.stringWidth(font, "Score:"), y, fbs.getWritten());
+            fonts.drawString(ds, font, 168 + fonts.stringWidth(font, "Score") + 4, y, fbs.getWritten());
             fbs.reset();
         }
 
@@ -285,11 +282,11 @@ fn drawHud(
     }
 
     pdraw.setColor(ds, text_label);
-    fonts.drawString(ds, font, 252, 0, "High:");
+    fonts.drawString(ds, font, 252, 0, "High");
 
     pdraw.setColor(ds, text_value);
     _ = stream.print("{}", .{high_score}) catch unreachable; // FIXME
-    fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High:"), 0, fbs.getWritten());
+    fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High") + 4, 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.setColor(ds, drawing.pure_white);
