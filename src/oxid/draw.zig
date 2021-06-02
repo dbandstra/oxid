@@ -159,17 +159,22 @@ fn drawHud(
         fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
         fbs.reset();
 
-        if (gc.player2_controller_id != null) {
-            // multiplayer game: show little colored helmets in the HUD
-            // to make it clear which player is which
-            pdraw.tile(
-                ds,
-                static.tileset,
-                graphics.getGraphicTile(.man_icons),
-                6 * 8 - 2,
-                -1,
-                .identity,
-            );
+        // show little colored helmets in the HUD to make it clear which
+        // player is which
+        pdraw.tile(
+            ds,
+            static.tileset,
+            graphics.getGraphicTile(.man_icons),
+            40,
+            0,
+            .identity,
+        );
+        if (gc.player2_controller_id == null) {
+            // both helmets are in the same tile. so if it's single player,
+            // cover up the green helmet with a black fill.
+            pdraw.setColor(ds, black);
+            pdraw.fill(ds, 40, 8, 16, 8);
+            pdraw.setColor(ds, white);
         }
 
         for ([_]?gbe.EntityId{
@@ -181,14 +186,21 @@ fn drawHud(
 
             const y = @intCast(i32, player_index) * 8;
 
-            fonts.drawString(ds, &static.font, 8 * 8, y, "Lives:");
+            fonts.drawString(ds, &static.font, 56, y, "x");
 
-            const lives_x = 8 * 8 + fonts.stringWidth(&static.font, "Lives:");
+            var lives_x = 56 + fonts.stringWidth(&static.font, "x");
 
             pdraw.setColor(ds, salmon);
             var i: u31 = 0;
             while (i < pc.lives) : (i += 1) {
-                fonts.drawString(ds, &static.font, lives_x + i * 8, y, "\x1E"); // heart
+                fonts.drawString(ds, &static.font, lives_x, y, "\x1E"); // heart
+                switch (pc.lives) {
+                    1...5 => lives_x += 8,
+                    6 => lives_x += 7,
+                    7 => lives_x += 6,
+                    8 => lives_x += 5,
+                    else => lives_x += 4,
+                }
             }
             if (pc.lives == 0) {
                 pdraw.setColor(ds, lightgray);
@@ -226,15 +238,16 @@ fn drawHud(
                 }
             }
             if (maybe_oxygen) |oxygen| {
-                _ = stream.print("Tank:{}", .{oxygen}) catch unreachable; // FIXME
-                fonts.drawString(ds, &static.font, 18 * 8, y, fbs.getWritten());
+                // \x1D is a superscript 2
+                _ = stream.print("O\x1D:{}", .{oxygen}) catch unreachable; // FIXME
+                fonts.drawString(ds, &static.font, 114, y, fbs.getWritten());
                 fbs.reset();
             } else {
-                fonts.drawString(ds, &static.font, 18 * 8, y, "Tank:");
+                fonts.drawString(ds, &static.font, 114, y, "OXY:");
             }
 
-            _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
-            fonts.drawString(ds, &static.font, 25 * 8, y, fbs.getWritten());
+            _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
+            fonts.drawString(ds, &static.font, 168, y, fbs.getWritten());
             fbs.reset();
         }
 
@@ -255,7 +268,7 @@ fn drawHud(
     }
 
     _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fonts.drawString(ds, &static.font, 30 * 8, 0, fbs.getWritten());
+    fonts.drawString(ds, &static.font, 252, 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.setColor(ds, drawing.pure_white);
