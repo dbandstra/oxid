@@ -1,130 +1,56 @@
 const build_options = @import("build_options");
 const builtin = @import("builtin");
 const std = @import("std");
-const HunkSide = @import("zig-hunk").HunkSide;
 const commands = @import("commands.zig");
 
-const dirname = @import("root").pstorage_dirname;
-
-// note: demos don't work in the wasm build yet. in order to get that working
-// the `file` field needs to be moved to the caller's responsibility
-
 pub const Recorder = struct {
-    file: if (builtin.arch == .wasm32) void else std.fs.File,
-    frame_index: u32, // starts at 0 and counts up for every game frame
-    last_frame_index: u32, // what frame_index was last time we recorded a command
+    frame_index: u32 = 0, // starts at 0 and counts up for every game frame
+    last_frame_index: u32 = 0, // what frame_index was last time we recorded a command
 
-    pub fn open(hunk_side: *HunkSide, seed: u32, is_multiplayer: bool) !Recorder {
-        if (builtin.arch == .wasm32)
-            return error.NotSupported;
-
-        // i don't think zig's std library has any date functionality, so pull in libc.
-        // TODO push date code to main file and use via @import("root")?
-        const c = @cImport({
-            @cInclude("time.h");
-        });
-
-        const mark = hunk_side.getMark();
-        defer hunk_side.freeToMark(mark);
-
-        const dir_path = try std.fs.getAppDataDir(
-            &hunk_side.allocator,
-            dirname ++ std.fs.path.sep_str ++ "recordings",
-        );
-
-        std.fs.cwd().makeDir(dir_path) catch |err| {
-            if (err != error.PathAlreadyExists)
-                return err;
-        };
-
-        const file_path = blk: {
-            var buffer: [40]u8 = undefined;
-            var fbs = std.io.fixedBufferStream(&buffer);
-            var stream = fbs.outStream();
-
-            var t = c.time(null);
-            var tm: *c.tm = c.localtime(&t) orelse return error.FailedToGetLocalTime;
-
-            _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
-                // cast to unsigned because zig is weird and prints '+' characters
-                // before all signed numbers
-                (try std.math.cast(u32, tm.tm_year)) + 1900,
-                (try std.math.cast(u32, tm.tm_mon)) + 1,
-                try std.math.cast(u32, tm.tm_mday),
-                try std.math.cast(u32, tm.tm_hour),
-                try std.math.cast(u32, tm.tm_min),
-                try std.math.cast(u32, tm.tm_sec),
-            });
-
-            break :blk try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
-                dir_path,
-                fbs.getWritten(),
-            });
-        };
-
-        std.log.notice("Recording to {s}", .{file_path});
-
-        const file = try std.fs.cwd().createFile(file_path, .{});
-        errdefer file.close();
-
-        try file.writer().writeAll("OXIDDEMO");
-        try file.writer().writeIntLittle(u32, build_options.version.len);
-        try file.writer().writeAll(build_options.version);
-        try file.writer().writeIntLittle(u32, seed);
-        try file.writer().writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
-
-        return Recorder{
-            .file = file,
-            .frame_index = 0,
-            .last_frame_index = 0,
-        };
-    }
-
-    pub fn close(recorder: *Recorder) void {
-        if (builtin.arch == .wasm32)
-            return;
-
-        recorder.file.close();
+    pub fn start(self: *Recorder, writer: anytype, seed: u32, is_multiplayer: bool) !void {
+        try writer.writeAll("OXIDDEMO");
+        try writer.writeIntLittle(u32, build_options.version.len);
+        try writer.writeAll(build_options.version);
+        try writer.writeIntLittle(u32, seed);
+        try writer.writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
     }
 
     // write a special marker so we know on what frame to end the demo.
-    pub fn markEnd(recorder: *Recorder) !void {
+    pub fn end(self: *Recorder, writer: anytype) !void {
         // as long as outside code doesn't mess with these fields, this should
         // never happen
-        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
+        std.debug.assert(self.frame_index >= self.last_frame_index);
 
-        const rel_frame = recorder.frame_index - recorder.last_frame_index;
+        const rel_frame = self.frame_index - self.last_frame_index;
 
         // similarly, this shouldn't happen either. the incrementFrameIndex
         // function takes care of this situation
         std.debug.assert(rel_frame < 256);
 
-        try recorder.file.writer().writeByte(255); // end of demo
-        try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
+        try writer.writeByte(255); // end of demo
+        try writer.writeByte(@intCast(u8, rel_frame));
     }
 
     // call this at the end of every game frame
-    pub fn incrementFrameIndex(recorder: *Recorder) !void {
-        if (builtin.arch == .wasm32)
-            return error.NotSupported;
-
-        recorder.frame_index = try std.math.add(u32, recorder.frame_index, 1);
+    pub fn incrementFrameIndex(self: *Recorder, writer: anytype) !void {
+        self.frame_index = try std.math.add(u32, self.frame_index, 1);
 
         // as long as outside code doesn't mess with these fields, this should
         // never happen
-        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
+        std.debug.assert(self.frame_index >= self.last_frame_index);
 
         // if we just hit 256 frames since the last recorded command, write
         // a no-op command. we only have one byte to store the frame offset
-        if (recorder.frame_index - recorder.last_frame_index > 255) {
-            try recorder.file.writer().writeByte(0); // no-op
-            try recorder.file.writer().writeByte(255);
-            recorder.last_frame_index += 255;
+        if (self.frame_index - self.last_frame_index > 255) {
+            try writer.writeByte(0); // no-op
+            try writer.writeByte(255);
+            self.last_frame_index += 255;
         }
     }
 
     pub fn recordInput(
-        recorder: *Recorder,
+        self: *Recorder,
+        writer: anytype,
         player_index: u32,
         command: commands.GameCommand,
         down: bool,
@@ -134,29 +60,26 @@ pub const Recorder = struct {
         // 255 to represent the end of demo marker.
         comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 31);
 
-        if (builtin.arch == .wasm32)
-            return error.NotSupported;
-
         if (player_index > 1)
             return error.InvalidPlayerIndex;
 
         // as long as outside code doesn't mess with these fields, this should
         // never happen
-        std.debug.assert(recorder.frame_index >= recorder.last_frame_index);
+        std.debug.assert(self.frame_index >= self.last_frame_index);
 
-        const rel_frame = recorder.frame_index - recorder.last_frame_index;
+        const rel_frame = self.frame_index - self.last_frame_index;
 
         // similarly, this shouldn't happen either. the incrementFrameIndex
         // function takes care of this situation
         std.debug.assert(rel_frame < 256);
 
-        try recorder.file.writer().writeByte(1 |
+        try writer.writeByte(1 |
             (@intCast(u8, player_index) << 1) |
             (@as(u8, @boolToInt(down)) << 2) |
             (@as(u8, @enumToInt(command)) << 3));
-        try recorder.file.writer().writeByte(@intCast(u8, rel_frame));
+        try writer.writeByte(@intCast(u8, rel_frame));
 
-        recorder.last_frame_index = recorder.frame_index;
+        self.last_frame_index = self.frame_index;
     }
 };
 

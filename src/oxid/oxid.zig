@@ -1,9 +1,11 @@
 const assets_path = @import("build_options").assets_path;
+const builtin = @import("builtin");
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
 const pstorage = @import("root").pstorage;
+const pstorage_dirname = @import("root").pstorage_dirname;
 const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
 const drawing = @import("../common/drawing.zig");
@@ -41,6 +43,7 @@ pub const MainState = struct {
     static: GameStatic,
     session_memory: game.Session, // don't access this directly
     session: ?*game.Session, // points to session_memory when a game is running
+    demo_stream: std.io.FixedBufferStream([]u8), // recorder writes into this
     demo_recorder: ?demos.Recorder,
     demo_player: ?demos.Player,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
@@ -79,6 +82,7 @@ pub const InitParams = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     sound_enabled: bool,
+    record_buffer: []u8,
 };
 
 pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
@@ -130,6 +134,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     // self.session_memory is undefined until a game is actually started
     self.session = null;
+    self.demo_stream = std.io.fixedBufferStream(params.record_buffer);
     self.demo_player = null;
     self.demo_recorder = null;
     self.game_over = false;
@@ -290,9 +295,13 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
             });
 
             if (main_state.demo_recorder) |*demo_recorder| {
-                demo_recorder.recordInput(player_number, command, down) catch |err| {
-                    std.log.err("Aborting demo recording due to error: {}\n", .{err});
-                    demo_recorder.close();
+                demo_recorder.recordInput(
+                    main_state.demo_stream.writer(),
+                    player_number,
+                    command,
+                    down,
+                ) catch |err| {
+                    std.log.err("Aborting demo recording due to error: {}", .{err});
                     main_state.demo_recorder = null;
                 };
             }
@@ -382,12 +391,74 @@ fn resetDemo(self: *MainState) void {
         self.demo_player = null;
     }
     if (self.demo_recorder) |*demo_recorder| {
-        demo_recorder.markEnd() catch |err| {
-            std.log.err("Aborting demo recording due to error: {}\n", .{err});
+        demo_recorder.end(self.demo_stream.writer()) catch |err| {
+            std.log.err("Aborting demo recording due to error: {}", .{err});
         };
-        demo_recorder.close();
+        saveDemo(self) catch |err| {
+            std.log.err("Failed to save demo to file: {}", .{err});
+        };
         self.demo_recorder = null;
     }
+}
+
+fn saveDemo(self: *MainState) !void {
+    if (builtin.arch == .wasm32) {
+        // TODO support wasm somehow
+        return;
+    }
+
+    // i don't think zig's std library has any date functionality, so pull in libc.
+    // TODO push date code to main file and use via @import("root")?
+    const cc = @cImport({
+        @cInclude("time.h");
+    });
+
+    var hunk_side = self.hunk.low();
+
+    const mark = hunk_side.getMark();
+    defer hunk_side.freeToMark(mark);
+
+    const dir_path = try std.fs.getAppDataDir(
+        &hunk_side.allocator,
+        pstorage_dirname ++ std.fs.path.sep_str ++ "recordings",
+    );
+
+    std.fs.cwd().makeDir(dir_path) catch |err| {
+        if (err != error.PathAlreadyExists)
+            return err;
+    };
+
+    const file_path = blk: {
+        var buffer: [40]u8 = undefined;
+        var fbs = std.io.fixedBufferStream(&buffer);
+        var stream = fbs.outStream();
+
+        var t = cc.time(null);
+        var tm: *cc.tm = cc.localtime(&t) orelse return error.FailedToGetLocalTime;
+
+        _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
+            // cast to unsigned because zig is weird and prints '+' characters
+            // before all signed numbers
+            (try std.math.cast(u32, tm.tm_year)) + 1900,
+            (try std.math.cast(u32, tm.tm_mon)) + 1,
+            try std.math.cast(u32, tm.tm_mday),
+            try std.math.cast(u32, tm.tm_hour),
+            try std.math.cast(u32, tm.tm_min),
+            try std.math.cast(u32, tm.tm_sec),
+        });
+
+        break :blk try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
+            dir_path,
+            fbs.getWritten(),
+        });
+    };
+
+    const file = try std.fs.cwd().createFile(file_path, .{});
+    defer file.close();
+
+    try file.writer().writeAll(self.demo_stream.getWritten());
+
+    std.log.notice("Saved demo to {s}", .{file_path});
 }
 
 // called when "start new game" is selected in the menu. if a game is already
@@ -398,9 +469,11 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     const seed = self.prng.random.int(u32);
 
     if (self.record_demos) {
-        self.demo_recorder = demos.Recorder.open(&self.hunk.low(), seed, is_multiplayer) catch |err| blk: {
+        self.demo_stream.reset();
+        self.demo_recorder = demos.Recorder{};
+        self.demo_recorder.?.start(self.demo_stream.writer(), seed, is_multiplayer) catch |err| {
             std.log.err("Failed to start demo recording: {}", .{err});
-            break :blk null;
+            self.demo_recorder = null;
         };
     }
 
@@ -509,7 +582,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
             while (demo_player.getNextEvent()) |event| {
                 switch (event) {
                     .end_of_demo => {
-                        std.log.notice("Demo playback complete.\n", .{});
+                        std.log.notice("Demo playback complete.", .{});
                         resetGame(self);
                         return;
                     },
@@ -528,7 +601,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                     },
                 }
                 demo_player.readNextInput() catch |err| {
-                    std.log.err("Demo playback error: {}\n", .{err});
+                    std.log.err("Demo playback error: {}", .{err});
                     resetGame(self);
                     return;
                 };
@@ -549,9 +622,8 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
             };
         }
         if (self.demo_recorder) |*demo_recorder| {
-            demo_recorder.incrementFrameIndex() catch |err| {
-                std.log.err("Aborting demo recording due to error: {}\n", .{err});
-                demo_recorder.close();
+            demo_recorder.incrementFrameIndex(self.demo_stream.writer()) catch |err| {
+                std.log.err("Aborting demo recording due to error: {}", .{err});
                 self.demo_recorder = null;
             };
         }

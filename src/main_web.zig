@@ -203,7 +203,7 @@ var g: *Main = undefined;
 const audio_buffer_size = 1024;
 
 fn init() !void {
-    main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 200 * 1024) catch |err| {
+    main_memory = std.heap.page_allocator.alloc(u8, @sizeOf(Main) + 400 * 1024) catch |err| {
         std.log.emerg("failed to allocate main_memory: {}", .{err});
         return error.Failed;
     };
@@ -215,6 +215,8 @@ fn init() !void {
     };
     errdefer std.heap.page_allocator.destroy(hunk);
     hunk.* = Hunk.init(main_memory);
+
+    const record_buffer = hunk.low().allocator.alloc(u8, 200000) catch unreachable;
 
     g = hunk.low().allocator.create(Main) catch unreachable;
     g.audio_speedup = 1;
@@ -240,6 +242,7 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
+        .record_buffer = record_buffer,
     }); // oxid.init prints its own errors and returns error.Failed
     errdefer oxid.deinit(&g.main_state);
 }
