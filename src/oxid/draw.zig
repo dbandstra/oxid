@@ -133,10 +133,15 @@ fn drawHud(
     perf.begin(.draw_hud);
     defer perf.end(.draw_hud);
 
+    const font = &static.font;
+
     const black = graphics.getColor(static.palette, .black);
     const salmon = graphics.getColor(static.palette, .salmon);
     const lightgray = graphics.getColor(static.palette, .lightgray);
     const white = graphics.getColor(static.palette, .white);
+
+    const text_label = lightgray;
+    const text_value = white;
 
     var buffer: [40]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buffer);
@@ -144,8 +149,6 @@ fn drawHud(
 
     pdraw.setColor(ds, black);
     pdraw.fill(ds, 0, 0, oxid.vwin_w, oxid.hud_height);
-
-    pdraw.setColor(ds, white);
 
     const maybe_gc = if (maybe_gs) |gs|
         gs.ecs.componentIter(c.GameController).next()
@@ -155,12 +158,17 @@ fn drawHud(
     if (maybe_gc) |gc| {
         const gs = maybe_gs.?;
 
-        _ = stream.print("Wave:{}", .{gc.wave_number}) catch unreachable; // FIXME
-        fonts.drawString(ds, &static.font, 0, 0, fbs.getWritten());
+        pdraw.setColor(ds, text_label);
+        fonts.drawString(ds, font, 0, 0, "Wave:");
+
+        pdraw.setColor(ds, text_value);
+        _ = stream.print("{}", .{gc.wave_number}) catch unreachable; // FIXME
+        fonts.drawString(ds, font, fonts.stringWidth(font, "Wave:"), 0, fbs.getWritten());
         fbs.reset();
 
         // show little colored helmets in the HUD to make it clear which
         // player is which
+        pdraw.setColor(ds, white);
         pdraw.tile(
             ds,
             static.tileset,
@@ -174,7 +182,6 @@ fn drawHud(
             // cover up the green helmet with a black fill.
             pdraw.setColor(ds, black);
             pdraw.fill(ds, 40, 8, 16, 8);
-            pdraw.setColor(ds, white);
         }
 
         for ([_]?gbe.EntityId{
@@ -186,14 +193,15 @@ fn drawHud(
 
             const y = @intCast(i32, player_index) * 8;
 
-            fonts.drawString(ds, &static.font, 56, y, "x");
+            pdraw.setColor(ds, white);
+            fonts.drawString(ds, font, 56, y, "x");
 
-            var lives_x = 56 + fonts.stringWidth(&static.font, "x");
+            var lives_x = 56 + fonts.stringWidth(font, "x");
 
             pdraw.setColor(ds, salmon);
             var i: u31 = 0;
             while (i < pc.lives) : (i += 1) {
-                fonts.drawString(ds, &static.font, lives_x, y, "\x1E"); // heart
+                fonts.drawString(ds, font, lives_x, y, "\x1E"); // heart
                 switch (pc.lives) {
                     1...5 => lives_x += 8,
                     6 => lives_x += 7,
@@ -204,9 +212,8 @@ fn drawHud(
             }
             if (pc.lives == 0) {
                 pdraw.setColor(ds, lightgray);
-                fonts.drawString(ds, &static.font, lives_x, y, "\x1F"); // skull
+                fonts.drawString(ds, font, lives_x, y, "\x1F"); // skull
             }
-            pdraw.setColor(ds, white);
 
             var maybe_oxygen: ?u32 = null;
             if (pc.player_id) |player_id| {
@@ -225,50 +232,64 @@ fn drawHud(
                             const message = fbs.getWritten();
                             defer fbs.reset();
 
-                            const message_w = fonts.stringWidth(&static.font, message);
+                            const message_w = fonts.stringWidth(font, message);
                             const ax = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
                             const ay = @as(i32, oxid.vwin_h / 2) - 8 / 2 + 8 * @intCast(i32, player_index);
 
                             pdraw.setColor(ds, black);
-                            fonts.drawString(ds, &static.font, ax + 1, ay + 1, message);
+                            fonts.drawString(ds, font, ax + 1, ay + 1, message);
                             pdraw.setColor(ds, white);
-                            fonts.drawString(ds, &static.font, ax, ay, message);
+                            fonts.drawString(ds, font, ax, ay, message);
                         }
                     }
                 }
             }
+            //pdraw.setColor(ds, white);
             if (maybe_oxygen) |oxygen| {
                 // \x1D is a superscript 2
-                _ = stream.print("O\x1D:{}", .{oxygen}) catch unreachable; // FIXME
-                fonts.drawString(ds, &static.font, 114, y, fbs.getWritten());
+                pdraw.setColor(ds, text_label);
+                fonts.drawString(ds, font, 114, y, "O\x1D:");
+
+                pdraw.setColor(ds, text_value);
+                _ = stream.print("{}", .{oxygen}) catch unreachable; // FIXME
+                fonts.drawString(ds, font, 114 + fonts.stringWidth(font, "O\x1D:"), y, fbs.getWritten());
                 fbs.reset();
             } else {
-                fonts.drawString(ds, &static.font, 114, y, "OXY:");
+                fonts.drawString(ds, font, 114, y, "O\x1D:");
             }
 
-            _ = stream.print("Score:{}", .{pc.score}) catch unreachable; // FIXME
-            fonts.drawString(ds, &static.font, 168, y, fbs.getWritten());
+            pdraw.setColor(ds, text_label);
+            fonts.drawString(ds, font, 168, y, "Score:");
+
+            pdraw.setColor(ds, text_value);
+            _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
+            fonts.drawString(ds, font, 168 + fonts.stringWidth(font, "Score:"), y, fbs.getWritten());
             fbs.reset();
         }
 
         if (gc.wave_message) |message| {
             if (gc.wave_message_timer > 0) {
-                const message_w = fonts.stringWidth(&static.font, message);
+                const message_w = fonts.stringWidth(font, message);
                 const x = @as(i32, oxid.vwin_w / 2) - @as(i32, message_w / 2);
                 const y = 28 * 8;
 
                 pdraw.setColor(ds, black);
-                fonts.drawString(ds, &static.font, x + 1, y + 1, message);
+                fonts.drawString(ds, font, x + 1, y + 1, message);
                 pdraw.setColor(ds, white);
-                fonts.drawString(ds, &static.font, x, y, message);
+                fonts.drawString(ds, font, x, y, message);
             }
         }
     } else {
-        fonts.drawString(ds, &static.font, 0, 0, "OXID " ++ build_options.version);
+        pdraw.setColor(ds, white);
+        fonts.drawString(ds, font, 0, 0, "OXID " ++ build_options.version);
     }
 
-    _ = stream.print("High:{}", .{high_score}) catch unreachable; // FIXME
-    fonts.drawString(ds, &static.font, 252, 0, fbs.getWritten());
+    pdraw.setColor(ds, text_label);
+    fonts.drawString(ds, font, 252, 0, "High:");
+
+    pdraw.setColor(ds, text_value);
+    _ = stream.print("{}", .{high_score}) catch unreachable; // FIXME
+    fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High:"), 0, fbs.getWritten());
     fbs.reset();
 
     pdraw.setColor(ds, drawing.pure_white);

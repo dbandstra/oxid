@@ -23,7 +23,7 @@ pub const Color = enum {
     orange,
     lightgray,
     lightgreen,
-    cyan,
+    peach,
     lightcyan,
     yellow,
     white,
