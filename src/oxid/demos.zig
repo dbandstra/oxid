@@ -27,6 +27,10 @@ pub const Recorder = struct {
         }
         try writer.writeIntLittle(u32, seed);
         try writer.writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
+        // add a placeholder for the scores. we'll go back and fill this in
+        // when recording is complete
+        try writer.writeIntLittle(u32, 0); // player 1 score
+        try writer.writeIntLittle(u32, 0); // player 2 score
     }
 
     // write a special marker so we know on what frame to end the demo.
@@ -43,6 +47,19 @@ pub const Recorder = struct {
 
         try writer.writeByte(254); // end of demo
         try writer.writeByte(@intCast(u8, rel_frame));
+    }
+
+    pub fn patchScore(self: *Recorder, buffer: []u8, score1: u32, score2: u32) void {
+        // player 1 score
+        buffer[20] = @truncate(u8, score1);
+        buffer[21] = @truncate(u8, score1 >> 8);
+        buffer[22] = @truncate(u8, score1 >> 16);
+        buffer[23] = @truncate(u8, score1 >> 24);
+        // player 2 score
+        buffer[24] = @truncate(u8, score2);
+        buffer[25] = @truncate(u8, score2 >> 8);
+        buffer[26] = @truncate(u8, score2 >> 16);
+        buffer[27] = @truncate(u8, score2 >> 24);
     }
 
     // call this at the end of every game frame

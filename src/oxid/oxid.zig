@@ -390,22 +390,29 @@ fn resetDemo(self: *MainState) void {
         demo_player.close();
         self.demo_player = null;
     }
-    if (self.demo_recorder) |*demo_recorder| {
-        demo_recorder.end(self.demo_stream.writer()) catch |err| {
-            std.log.err("Aborting demo recording due to error: {}", .{err});
-        };
-        saveDemo(self) catch |err| {
-            std.log.err("Failed to save demo to file: {}", .{err});
-        };
-        self.demo_recorder = null;
-    }
+    // the recorder should never be active, but just in case
+    self.demo_recorder = null;
+}
+
+fn finishDemoRecording(self: *MainState, player1_score: u32, player2_score: u32) void {
+    const demo_recorder = if (self.demo_recorder) |*r| r else return;
+    defer self.demo_recorder = null;
+
+    demo_recorder.end(self.demo_stream.writer()) catch |err| {
+        std.log.err("Aborting demo recording due to error: {}", .{err});
+        return;
+    };
+
+    demo_recorder.patchScore(self.demo_stream.buffer, player1_score, player2_score);
+
+    saveDemo(self) catch |err| {
+        std.log.err("Failed to save demo to file: {}", .{err});
+    };
 }
 
 fn saveDemo(self: *MainState) !void {
-    if (builtin.arch == .wasm32) {
-        // TODO support wasm somehow
-        return;
-    }
+    if (builtin.arch == .wasm32)
+        return; // TODO support wasm somehow
 
     // i don't think zig's std library has any date functionality, so pull in libc.
     // TODO push date code to main file and use via @import("root")?
@@ -530,6 +537,9 @@ fn postScores(self: *MainState) void {
 
     var save_high_scores = false;
 
+    var player1_score: u32 = 0;
+    var player2_score: u32 = 0;
+
     // get players' scores
     var it = gs.ecs.componentIter(c.PlayerController);
     while (it.next()) |pc| {
@@ -558,6 +568,11 @@ fn postScores(self: *MainState) void {
             save_high_scores = true;
             break;
         }
+
+        switch (pc.color) {
+            .yellow => player1_score = pc.score,
+            .green => player2_score = pc.score,
+        }
     }
 
     if (save_high_scores) {
@@ -565,6 +580,8 @@ fn postScores(self: *MainState) void {
             std.log.err("Failed to save high scores: {}", .{err});
         };
     }
+
+    finishDemoRecording(self, player1_score, player2_score);
 }
 
 pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
