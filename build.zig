@@ -47,10 +47,18 @@ pub fn build(b: *std.build.Builder) !void {
     wasm.addBuildOption([]const u8, "version", version);
     wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
 
+    const verifydemo = b.addExecutable("verifydemo", "src/verifydemo.zig");
+    verifydemo.setBuildMode(b.standardReleaseOptions());
+    verifydemo.setOutputDir("zig-cache");
+    // FIXME we should only require gbe, not zang etc.
+    try addCommonRequirements(b, verifydemo);
+    verifydemo.addBuildOption([]const u8, "version", version);
+
     b.step("test", "Run all tests").dependOn(&t.step);
     b.step("play", "Play the game").dependOn(&main.run().step);
     b.step("sdl_renderer", "Build with SDL_Renderer").dependOn(&main_alt.step);
     b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
+    b.step("verifydemo", "Build verifydemo utility").dependOn(&verifydemo.step);
     b.default_step.dependOn(&main.step);
 }
 

@@ -142,6 +142,7 @@ const Options = struct {
     audio_buffer_size: u16,
     framerate_scheme: ?FramerateScheme,
     vsync: bool, // if disabled, framerate scheme will be ignored
+    demo_filename: ?[]const u8,
 };
 
 // since audio files are loaded at runtime, we need to make room for them in
@@ -236,6 +237,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         clap.parseParam("-b, --bufsize <NUM>     Audio buffer size (default 1024)") catch unreachable,
         clap.parseParam("-f, --refreshrate <NUM> Display refresh rate (number or `free`)") catch unreachable,
         clap.parseParam("--novsync               Disable vsync") catch unreachable,
+        clap.parseParam("--demo <FILENAME>       Play back a recorded demo") catch unreachable,
     };
 
     var args = try clap.parse(clap.Help, &params, allocator, null);
@@ -254,6 +256,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         .audio_buffer_size = 1024,
         .framerate_scheme = null,
         .vsync = true,
+        .demo_filename = null,
     };
 
     if (args.option("--rate")) |value| {
@@ -278,6 +281,9 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
     }
     if (args.flag("--novsync")) {
         options.vsync = false;
+    }
+    if (args.option("--demo")) |value| {
+        options.demo_filename = value;
     }
 
     return options;
@@ -525,6 +531,10 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     errdefer sdl.SDL_PauseAudioDevice(device, 1);
 
     std.log.notice("Initialization complete.", .{});
+
+    if (options.demo_filename) |filename| {
+        oxid.playDemo(&self.main_state, filename);
+    }
 
     return self;
 }
