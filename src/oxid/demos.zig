@@ -27,7 +27,7 @@ pub const Recorder = struct {
         // function takes care of this situation
         std.debug.assert(rel_frame < 256);
 
-        try writer.writeByte(255); // end of demo
+        try writer.writeByte(254); // end of demo
         try writer.writeByte(@intCast(u8, rel_frame));
     }
 
@@ -55,10 +55,8 @@ pub const Recorder = struct {
         command: commands.GameCommand,
         down: bool,
     ) !void {
-        // we only have 5 bits to store the command (32 possible values). and
-        // we reserve the highest value so that we can set the first byte to
-        // 255 to represent the end of demo marker.
-        comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 31);
+        // we only have 5 bits to store the command (32 possible values)
+        comptime std.debug.assert(@typeInfo(commands.GameCommand).Enum.fields.len < 32);
 
         if (player_index > 1)
             return error.InvalidPlayerIndex;
@@ -191,7 +189,7 @@ pub const Player = struct {
 
         const frame_index = player.last_frame_index + @as(u32, byte1);
 
-        if (byte0 == 255) { // end of demo
+        if (byte0 == 254) { // end of demo
             player.next = .{
                 .frame_index = frame_index,
                 .event = .end_of_demo,
