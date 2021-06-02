@@ -25,7 +25,7 @@ pub fn run(gs: *game.Session) void {
 fn think(gs: *game.Session, self: SystemData) void {
     self.gc.ticker +%= 1;
     // if all non-persistent monsters are dead, prepare next wave
-    if (self.gc.next_wave_timer == 0 and countNonPersistentMonsters(gs) == 0) {
+    if (self.gc.next_wave_timer == 0 and self.gc.monster_count == 0) {
         self.gc.next_wave_timer = constants.next_wave_time;
     }
     if (self.gc.wave_message_timer > 0) {
@@ -40,9 +40,8 @@ fn think(gs: *game.Session, self: SystemData) void {
             self.gc.enemy_speed_level = 0;
             self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
             const wave = waves.createWave(gs, self.gc.wave_number);
-            spawnWave(gs, self.gc.wave_number, &wave);
+            spawnWave(gs, self.gc, &wave);
             self.gc.enemy_speed_level = wave.speed;
-            self.gc.monster_count = countNonPersistentMonsters(gs);
             self.gc.wave_message = wave.message;
             p.spawnEventRestoreOxygen(gs, .{});
         }
@@ -90,18 +89,7 @@ fn think(gs: *game.Session, self: SystemData) void {
     }
 }
 
-fn countNonPersistentMonsters(gs: *game.Session) u32 {
-    var count: u32 = 0;
-    var it = gs.ecs.componentIter(c.Monster);
-    while (it.next()) |monster| {
-        if (!constants.getMonsterValues(monster.monster_type).persistent) {
-            count += 1;
-        }
-    }
-    return count;
-}
-
-fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void {
+fn spawnWave(gs: *game.Session, gc: *c.GameController, wave: *const waves.Wave) void {
     const max_count = 100;
     const count = std.math.min(
         wave.spiders + wave.knights + wave.fastbugs + wave.squids + wave.juggernauts,
@@ -110,19 +98,24 @@ fn spawnWave(gs: *game.Session, wave_number: u32, wave: *const waves.Wave) void 
     const coins = (wave.spiders + wave.knights) / 3;
     var spawn_locs_buf: [max_count]math.Vec2 = undefined;
     for (pickSpawnLocations(gs, spawn_locs_buf[0..count])) |loc, i| {
+        const monster_type: constants.MonsterType = blk: {
+            if (i < wave.spiders)
+                break :blk .spider;
+            if (i < wave.spiders + wave.knights)
+                break :blk .knight;
+            if (i < wave.spiders + wave.knights + wave.fastbugs)
+                break :blk .fast_bug;
+            if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
+                break :blk .squid;
+            break :blk .juggernaut;
+        };
+        if (!constants.getMonsterValues(monster_type).persistent) {
+            gc.monster_count += 1;
+        }
         _ = p.spawnMonster(gs, .{
-            .wave_number = wave_number,
+            .wave_number = gc.wave_number,
             .pos = math.vec2Scale(loc, levels.subpixels_per_tile),
-            .monster_type = if (i < wave.spiders)
-                constants.MonsterType.spider
-            else if (i < wave.spiders + wave.knights)
-                constants.MonsterType.knight
-            else if (i < wave.spiders + wave.knights + wave.fastbugs)
-                constants.MonsterType.fast_bug
-            else if (i < wave.spiders + wave.knights + wave.fastbugs + wave.squids)
-                constants.MonsterType.squid
-            else
-                constants.MonsterType.juggernaut,
+            .monster_type = monster_type,
             // TODO - distribute coins randomly across monster types?
             .has_coin = i < coins,
         });

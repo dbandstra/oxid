@@ -20,6 +20,12 @@ const SystemData = struct {
 };
 
 pub fn run(gs: *game.Session, context: game.FrameContext) void {
+    const monster_count = blk: {
+        if (gs.ecs.componentIter(c.GameController).next()) |gc|
+            break :blk gc.monster_count;
+        break :blk 0;
+    };
+
     var it = gs.ecs.iter(SystemData);
     while (it.next()) |self| {
         if (self.player.spawn_anim_y_remaining > 0) {
@@ -50,7 +56,10 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
             continue;
         }
 
-        if (self.player.oxygen_timer > 0 and self.creature.invulnerability_timer == 0) {
+        if (self.player.oxygen_timer > 0 and
+            self.creature.invulnerability_timer == 0 and
+            monster_count > 0)
+        {
             self.player.oxygen_timer -= 1;
             if (self.player.oxygen_timer == 0) {
                 if (self.player.oxygen > 0) {
