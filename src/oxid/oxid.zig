@@ -411,7 +411,7 @@ fn finishDemoRecording(self: *MainState, player1_score: u32, player2_score: u32)
 }
 
 fn saveDemo(self: *MainState) !void {
-    if (builtin.arch == .wasm32)
+    if (comptime std.Target.current.isWasm())
         return; // TODO support wasm somehow
 
     // i don't think zig's std library has any date functionality, so pull in libc.

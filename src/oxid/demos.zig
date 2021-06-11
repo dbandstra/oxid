@@ -122,7 +122,7 @@ pub const Player = struct {
         },
     };
 
-    file: if (builtin.arch == .wasm32) void else std.fs.File,
+    file: if (std.Target.current.isWasm()) void else std.fs.File,
     game_seed: u32,
     is_multiplayer: bool,
     frame_index: u32,
@@ -133,7 +133,7 @@ pub const Player = struct {
     },
 
     pub fn open(filename: []const u8) !Player {
-        if (builtin.arch == .wasm32)
+        if (comptime std.Target.current.isWasm())
             return error.NotSupported;
 
         const file = try std.fs.cwd().openFile(filename, .{});
@@ -189,21 +189,21 @@ pub const Player = struct {
     }
 
     pub fn close(player: *Player) void {
-        if (builtin.arch == .wasm32)
+        if (comptime std.Target.current.isWasm())
             return;
 
         player.file.close();
     }
 
     pub fn incrementFrameIndex(player: *Player) !void {
-        if (builtin.arch == .wasm32)
+        if (comptime std.Target.current.isWasm())
             return error.NotSupported;
 
         player.frame_index = try std.math.add(u32, player.frame_index, 1);
     }
 
     pub fn readNextInput(player: *Player) !void {
-        if (builtin.arch == .wasm32)
+        if (comptime std.Target.current.isWasm())
             return error.NotSupported;
 
         const byte0 = try player.file.reader().readByte();

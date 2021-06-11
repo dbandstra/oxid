@@ -153,7 +153,7 @@ pub const MainMenu = struct {
             ctx.setSound(.ding);
         }
         // quit button is removed in web build
-        if (builtin.arch != .wasm32) {
+        if (comptime !std.Target.current.isWasm()) {
             if (ctx.option("Quit", .{})) {
                 ctx.setEffect(.quit);
             }
@@ -269,7 +269,7 @@ pub const OptionsMenu = struct {
 
         ctx.title(.left, "OPTIONS");
 
-        if (builtin.arch == .wasm32) {
+        if (comptime std.Target.current.isWasm()) {
             // https://github.com/ziglang/zig/issues/3882
             const sound_str = if (ctx.menu_context.sound_enabled) "ON" else "OFF";
             if (ctx.optionToggle("Sound: {}", .{sound_str})) {
@@ -368,7 +368,7 @@ pub const GameSettingsMenu = struct {
             ctx.setSound(.ding);
         }
 
-        if (builtin.arch != .wasm32) {
+        if (comptime !std.Target.current.isWasm()) {
             const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
             if (ctx.optionToggle("Record demos: {}", .{record_demos_str})) {
                 ctx.setEffect(.toggle_record_demos);

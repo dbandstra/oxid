@@ -1,7 +1,7 @@
 // pdraw implementation backed by GL. supports OpenGL 2.1 (GLSL v120),
 // OpenGL 3.0 (GLSL v130), and WebGL 1.
 
-usingnamespace if (@import("builtin").arch == .wasm32)
+usingnamespace if (std.Target.current.isWasm())
     @import("zig-webgl")
 else
     @import("gl").namespace;
@@ -464,24 +464,22 @@ const SolidShader = struct {
 
         const old = glsl_version == .v120 or glsl_version == .webgl;
 
-        const source: ShaderSource = .{
-            .vertex = first_line ++
-                (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
-                \\uniform mat4 MVP;
-                \\
-                \\void main(void) {
-                \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
-                \\}
-            ,
-            .fragment = first_line ++
-                (if (old) "" else "out vec4 FragColor;\n") ++
-                \\uniform vec4 Color;
-                \\
-                \\void main(void) {
-                \\
-                ++
-                "    " ++ (if (old) "gl_" else "") ++ "FragColor = Color;\n" ++
-                \\}
+        const source: ShaderSource = .{ .vertex = first_line ++
+            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
+            \\uniform mat4 MVP;
+            \\
+            \\void main(void) {
+            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+            \\}
+        , .fragment = first_line ++
+            (if (old) "" else "out vec4 FragColor;\n") ++
+            \\uniform vec4 Color;
+            \\
+            \\void main(void) {
+            \\
+            ++
+            "    " ++ (if (old) "gl_" else "") ++ "FragColor = Color;\n" ++
+            \\}
         };
 
         const program = try compileAndLinkShaderProgram(hunk_side, "solid", source);
@@ -535,29 +533,27 @@ const TexturedShader = struct {
 
         const old = glsl_version == .v120 or glsl_version == .webgl;
 
-        const source: ShaderSource = .{
-            .vertex = first_line ++
-                (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
-                (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
-                (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
-                \\uniform mat4 MVP;
-                \\
-                \\void main(void) {
-                \\    FragTexCoord = TexCoord;
-                \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
-                \\}
-            ,
-            .fragment = first_line ++
-                (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
-                (if (old) "" else "out vec4 FragColor;\n") ++
-                \\uniform sampler2D Tex;
-                \\uniform vec4 Color;
-                \\
-                \\void main(void) {
-                \\
-                ++
-                "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
-                \\}
+        const source: ShaderSource = .{ .vertex = first_line ++
+            (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
+            (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
+            (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
+            \\uniform mat4 MVP;
+            \\
+            \\void main(void) {
+            \\    FragTexCoord = TexCoord;
+            \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
+            \\}
+        , .fragment = first_line ++
+            (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
+            (if (old) "" else "out vec4 FragColor;\n") ++
+            \\uniform sampler2D Tex;
+            \\uniform vec4 Color;
+            \\
+            \\void main(void) {
+            \\
+            ++
+            "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
+            \\}
         };
 
         const program = try compileAndLinkShaderProgram(hunk_side, "textured", source);
