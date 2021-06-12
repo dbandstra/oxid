@@ -170,6 +170,10 @@ pub const Player = struct {
         const seed = try file.reader().readIntLittle(u32);
         const is_multiplayer = (try file.reader().readIntLittle(u32)) > 1;
 
+        // the demo file contains the final scores, but we don't use those for anything (they're
+        // just for the convenience of outside scripts). skip them
+        try reader.skipBytes(8, .{});
+
         var player: Player = .{
             .file = file,
             .game_seed = seed,
