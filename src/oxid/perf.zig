@@ -47,7 +47,7 @@ else
             return Timer{
                 .label = label,
                 .timer = std.time.Timer.start() catch |err| {
-                    std.log.err("Failed to initialize \"{}\" perf timer: {}", .{ label, err });
+                    std.log.err("Failed to initialize \"{s}\" perf timer: {}", .{ label, err });
                     return null;
                 },
                 .samples = [1]u64{0} ** num_samples,
@@ -108,11 +108,11 @@ else
 
         fn displayOne(label: []const u8, entry: Entry) void {
             const self = &(entries[@enumToInt(entry)] orelse {
-                std.log.notice("{} - timer error", .{label});
+                std.log.notice("{s} - timer error", .{label});
                 return;
             });
             if (!self.filled) {
-                std.log.notice("{} - waiting", .{label});
+                std.log.notice("{s} - waiting", .{label});
                 return;
             }
             var cum: u64 = 0;
@@ -125,13 +125,13 @@ else
             const avg_us = @intToFloat(f32, avg) / 1000.0;
             // std.fmt api doesn't support alignment
             if (avg_us < 10.0) {
-                std.log.notice("{} -    {d:.3} μs ({} fps)", .{ label, avg_us, fps });
+                std.log.notice("{s} -    {d:.3} μs ({} fps)", .{ label, avg_us, fps });
             } else if (avg_us < 100.0) {
-                std.log.notice("{} -   {d:.3} μs ({} fps)", .{ label, avg_us, fps });
+                std.log.notice("{s} -   {d:.3} μs ({} fps)", .{ label, avg_us, fps });
             } else if (avg_us < 1000.0) {
-                std.log.notice("{} -  {d:.3} μs ({} fps)", .{ label, avg_us, fps });
+                std.log.notice("{s} -  {d:.3} μs ({} fps)", .{ label, avg_us, fps });
             } else {
-                std.log.notice("{} - {d:.3} μs ({} fps)", .{ label, avg_us, fps });
+                std.log.notice("{s} - {d:.3} μs ({} fps)", .{ label, avg_us, fps });
             }
         }
     };

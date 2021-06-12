@@ -23,11 +23,11 @@ pub fn loadPcx(
     const filedata = @embedFile(filename);
 
     var fbs = std.io.fixedBufferStream(filedata);
-    var stream = fbs.inStream();
-    const Loader = pcx.Loader(@TypeOf(stream));
+    var reader = fbs.reader();
+    const Loader = pcx.Loader(@TypeOf(reader));
 
     // load PCX header
-    const preloaded = try Loader.preload(&stream);
+    const preloaded = try Loader.preload(&reader);
 
     // allocate space for image data
     const width: u32 = preloaded.width;
@@ -37,7 +37,7 @@ pub fn loadPcx(
     var palette: [768]u8 = undefined;
 
     // decode image into `pixels`
-    try Loader.loadIndexedWithStride(&stream, preloaded, pixels, 4, &palette);
+    try Loader.loadIndexedWithStride(&reader, preloaded, pixels, 4, &palette);
 
     // convert image data to RGBA
     var i: u32 = 0;

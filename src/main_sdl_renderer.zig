@@ -163,7 +163,7 @@ fn init(hunk: *Hunk) !*Main {
                     std.log.notice("Failed to get SDL render driver info: {s}", .{sdl.SDL_GetError()});
                     break :blk;
                 } else {
-                    std.log.notice("  - {}", .{std.mem.spanZ(info.name)});
+                    std.log.notice("  - {s}", .{std.mem.spanZ(info.name)});
                 }
             }
         }
@@ -181,7 +181,7 @@ fn init(hunk: *Hunk) !*Main {
     {
         var info: sdl.SDL_RendererInfo = undefined;
         if (sdl.SDL_GetRendererInfo(renderer, &info) == 0) {
-            std.log.notice("Chosen SDL render driver: {}", .{std.mem.spanZ(info.name)});
+            std.log.notice("Chosen SDL render driver: {s}", .{std.mem.spanZ(info.name)});
         } else {
             std.log.warn("Failed to get SDL renderer info: {s}", .{sdl.SDL_GetError()});
         }
@@ -194,7 +194,7 @@ fn init(hunk: *Hunk) !*Main {
     self.renderer = renderer;
 
     if (sdl.SDL_GetCurrentAudioDriver()) |name| {
-        std.log.notice("Audio driver: {}", .{std.mem.spanZ(name)});
+        std.log.notice("Audio driver: {s}", .{std.mem.spanZ(name)});
     } else {
         std.log.warn("Failed to get audio driver name.", .{});
     }

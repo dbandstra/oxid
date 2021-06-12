@@ -313,7 +313,7 @@ fn updateFramerateScheme(self: *Main) void {
     const vsync_enabled = sdl.SDL_GL_GetSwapInterval() != 0;
     // https://github.com/ziglang/zig/issues/3882
     const vsync_str = if (vsync_enabled) "enabled" else "disabled";
-    std.log.notice("Vsync is {}.", .{vsync_str});
+    std.log.notice("Vsync is {s}.", .{vsync_str});
 
     self.framerate_scheme = blk: {
         if (!vsync_enabled) {
@@ -418,7 +418,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     }
 
     if (sdl.SDL_GetCurrentAudioDriver()) |name| {
-        std.log.notice("Audio driver: {}", .{std.mem.spanZ(name)});
+        std.log.notice("Audio driver: {s}", .{std.mem.spanZ(name)});
     } else {
         std.log.warn("Failed to get audio driver name.", .{});
     }
@@ -461,13 +461,13 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     for (gl.extensions) |extension| {
         if (@enumToInt(sdl.SDL_GL_ExtensionSupported(extension)) == 0) {
-            std.log.emerg("OpenGL extension \"{}\" is required.", .{extension});
+            std.log.emerg("OpenGL extension \"{s}\" is required.", .{extension});
             return error.Failed;
         }
     }
     for (gl.commands) |command| {
         command.ptr.* = sdl.SDL_GL_GetProcAddress(command.name) orelse {
-            std.log.emerg("Failed to load GL function \"{}\".", .{command.name});
+            std.log.emerg("Failed to load GL function \"{s}\".", .{command.name});
             return error.Failed;
         };
     }

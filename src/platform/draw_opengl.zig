@@ -302,11 +302,6 @@ pub fn flush(ds: *State) void {
 
 // shader code
 
-const ShaderSource = struct {
-    vertex: []const u8,
-    fragment: []const u8,
-};
-
 const ShaderProgram = struct {
     name: []const u8,
     program_id: GLuint,
@@ -317,14 +312,15 @@ const ShaderProgram = struct {
 fn compileAndLinkShaderProgram(
     hunk_side: *HunkSide,
     name: []const u8,
-    source: ShaderSource,
+    vertex_source: []const u8,
+    fragment_source: []const u8,
 ) !ShaderProgram {
     const vertex_id = try compileShader(
         hunk_side,
         name,
         "vertex",
         GL_VERTEX_SHADER,
-        source.vertex,
+        vertex_source,
     );
     errdefer glDeleteShader(vertex_id);
 
@@ -333,7 +329,7 @@ fn compileAndLinkShaderProgram(
         name,
         "fragment",
         GL_FRAGMENT_SHADER,
-        source.fragment,
+        fragment_source,
     );
     errdefer glDeleteShader(fragment_id);
 
@@ -357,14 +353,14 @@ fn compileAndLinkShaderProgram(
         defer hunk_side.freeToMark(mark);
 
         const buffer = hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1) catch {
-            std.log.err("Failed to link \"{}\" shader program.", .{name});
+            std.log.err("Failed to link \"{s}\" shader program.", .{name});
             std.log.err("Failed to retrieve program info log (out of memory).", .{});
             return error.ShaderLinkFailed;
         };
 
         var len: GLsizei = 0;
         glGetProgramInfoLog(program_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
-        std.log.err("Failed to link \"{}\" shader program.\n{}\n{}\n{}", .{
+        std.log.err("Failed to link \"{s}\" shader program.\n{s}\n{s}\n{s}", .{
             name,
             "-" ** 60,
             std.mem.trimRight(u8, buffer[0..@intCast(usize, len)], "\r\n"),
@@ -405,14 +401,14 @@ fn compileShader(
         defer hunk_side.freeToMark(mark);
 
         const buffer = hunk_side.allocator.alloc(u8, @intCast(usize, buffer_size) + 1) catch {
-            std.log.err("Failed to compile \"{}\" {} shader.", .{ name, shader_type });
+            std.log.err("Failed to compile \"{s}\" {s} shader.", .{ name, shader_type });
             std.log.err("Failed to retrieve shader info log (out of memory).", .{});
             return error.ShaderCompileFailed;
         };
 
         var len: GLsizei = 0;
         glGetShaderInfoLog(shader_id, @intCast(GLsizei, buffer.len), &len, buffer.ptr);
-        std.log.err("Failed to compile \"{}\" {} shader.\n{}\n{}\n{}", .{
+        std.log.err("Failed to compile \"{s}\" {s} shader.\n{s}\n{s}\n{s}", .{
             name,
             shader_type,
             "-" ** 60,
@@ -438,14 +434,14 @@ fn destroyShaderProgram(sp: ShaderProgram) void {
 fn getAttribLocation(sp: ShaderProgram, name: [:0]const u8) GLint {
     const id = glGetAttribLocation(sp.program_id, name);
     if (id == -1)
-        std.log.warn("Shader program \"{}\" has no attrib \"{}\".", .{ sp.name, name });
+        std.log.warn("Shader program \"{s}\" has no attrib \"{s}\".", .{ sp.name, name });
     return id;
 }
 
 fn getUniformLocation(sp: ShaderProgram, name: [:0]const u8) GLint {
     const id = glGetUniformLocation(sp.program_id, name);
     if (id == -1)
-        std.log.warn("Shader program \"{}\" has no uniform \"{}\".", .{ sp.name, name });
+        std.log.warn("Shader program \"{s}\" has no uniform \"{s}\".", .{ sp.name, name });
     return id;
 }
 
@@ -464,14 +460,16 @@ const SolidShader = struct {
 
         const old = glsl_version == .v120 or glsl_version == .webgl;
 
-        const source: ShaderSource = .{ .vertex = first_line ++
+        const vertex_source = first_line ++
             (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
             \\uniform mat4 MVP;
             \\
             \\void main(void) {
             \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
             \\}
-        , .fragment = first_line ++
+        ;
+
+        const fragment_source = first_line ++
             (if (old) "" else "out vec4 FragColor;\n") ++
             \\uniform vec4 Color;
             \\
@@ -480,9 +478,14 @@ const SolidShader = struct {
             ++
             "    " ++ (if (old) "gl_" else "") ++ "FragColor = Color;\n" ++
             \\}
-        };
+        ;
 
-        const program = try compileAndLinkShaderProgram(hunk_side, "solid", source);
+        const program = try compileAndLinkShaderProgram(
+            hunk_side,
+            "solid",
+            vertex_source,
+            fragment_source,
+        );
 
         return SolidShader{
             .program = program,
@@ -533,7 +536,7 @@ const TexturedShader = struct {
 
         const old = glsl_version == .v120 or glsl_version == .webgl;
 
-        const source: ShaderSource = .{ .vertex = first_line ++
+        const vertex_source = first_line ++
             (if (old) "attribute" else "in") ++ " vec3 VertexPosition;\n" ++
             (if (old) "attribute" else "in") ++ " vec2 TexCoord;\n" ++
             (if (old) "varying" else "out") ++ " vec2 FragTexCoord;\n" ++
@@ -543,7 +546,9 @@ const TexturedShader = struct {
             \\    FragTexCoord = TexCoord;
             \\    gl_Position = vec4(VertexPosition, 1.0) * MVP;
             \\}
-        , .fragment = first_line ++
+        ;
+
+        const fragment_source = first_line ++
             (if (old) "varying" else "in") ++ " vec2 FragTexCoord;\n" ++
             (if (old) "" else "out vec4 FragColor;\n") ++
             \\uniform sampler2D Tex;
@@ -554,9 +559,14 @@ const TexturedShader = struct {
             ++
             "    " ++ (if (old) "gl_" else "") ++ "FragColor = texture2D(Tex, FragTexCoord) * Color;\n" ++
             \\}
-        };
+        ;
 
-        const program = try compileAndLinkShaderProgram(hunk_side, "textured", source);
+        const program = try compileAndLinkShaderProgram(
+            hunk_side,
+            "textured",
+            vertex_source,
+            fragment_source,
+        );
 
         return TexturedShader{
             .program = program,

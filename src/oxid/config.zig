@@ -107,7 +107,7 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
                 } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
                     readBindings(commands.GameCommand, &cfg.game_bindings[1], kv.value);
                 } else {
-                    std.log.warn("Unrecognized config field: '{}'", .{kv.key});
+                    std.log.warn("Unrecognized config field: '{s}'", .{kv.key});
                 }
             }
         },
@@ -135,7 +135,7 @@ fn readBindings(
             while (it.next()) |kv| {
                 const command = parseCommand(CommandType, kv.key) orelse continue;
                 const source = parseInputSource(kv.value) catch {
-                    std.log.warn("Error parsing input source for command '{}'", .{kv.key});
+                    std.log.warn("Error parsing input source for command '{s}'", .{kv.key});
                     continue;
                 };
                 bindings.*[@enumToInt(command)] = source;
@@ -153,7 +153,7 @@ fn parseCommand(comptime CommandType: type, s: []const u8) ?CommandType {
             return @intToEnum(CommandType, field.value);
         }
     }
-    std.log.warn("Unrecognized {}: '{}'", .{ @typeName(CommandType), s });
+    std.log.warn("Unrecognized {s}: '{s}'", .{ @typeName(CommandType), s });
     return null;
 }
 
@@ -279,11 +279,11 @@ fn writeBindings(
     for (bindings) |maybe_source, i| {
         const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
         const command_name = getEnumValueName(CommandType, command);
-        try w.print("        \"{}\": ", .{command_name});
+        try w.print("        \"{s}\": ", .{command_name});
         if (maybe_source) |source| {
             switch (source) {
                 .key => |key| {
-                    try w.print("{{\"type\": \"key\", \"key\": \"{}\"}}", .{getEnumValueName(inputs.Key, key)});
+                    try w.print("{{\"type\": \"key\", \"key\": \"{s}\"}}", .{getEnumValueName(inputs.Key, key)});
                 },
                 .joy_button => |j| {
                     try w.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});

@@ -438,12 +438,11 @@ fn saveDemo(self: *MainState) !void {
     const file_path = blk: {
         var buffer: [40]u8 = undefined;
         var fbs = std.io.fixedBufferStream(&buffer);
-        var stream = fbs.outStream();
 
         var t = cc.time(null);
         var tm: *cc.tm = cc.localtime(&t) orelse return error.FailedToGetLocalTime;
 
-        _ = try stream.print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
+        _ = try fbs.writer().print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
             // cast to unsigned because zig is weird and prints '+' characters
             // before all signed numbers
             (try std.math.cast(u32, tm.tm_year)) + 1900,

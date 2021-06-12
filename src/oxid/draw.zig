@@ -145,7 +145,7 @@ fn drawHud(
 
     var buffer: [40]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buffer);
-    var stream = fbs.outStream();
+    var writer = fbs.writer();
 
     pdraw.setColor(ds, black);
     pdraw.fill(ds, 0, 0, oxid.vwin_w, oxid.hud_height);
@@ -162,7 +162,7 @@ fn drawHud(
         fonts.drawString(ds, font, 0, 0, "Wave");
 
         pdraw.setColor(ds, text_value);
-        _ = stream.print("{}", .{gc.wave_number}) catch unreachable; // FIXME
+        _ = writer.print("{}", .{gc.wave_number}) catch unreachable; // FIXME
         fonts.drawString(ds, font, fonts.stringWidth(font, "Wave") + 4, 0, fbs.getWritten());
         fbs.reset();
 
@@ -225,7 +225,7 @@ fn drawHud(
                     };
                     if (maybe_mask) |mask| {
                         if (gc.ticker & mask != 0 and player.dying_timer == 0) {
-                            _ = stream.print("P{} TANK LOW!", .{player_index + 1}) catch unreachable; // FIXME
+                            _ = writer.print("P{} TANK LOW!", .{player_index + 1}) catch unreachable; // FIXME
                             const message = fbs.getWritten();
                             defer fbs.reset();
 
@@ -248,7 +248,7 @@ fn drawHud(
                 fonts.drawString(ds, font, 116, y, "O\x1D");
 
                 pdraw.setColor(ds, text_value);
-                _ = stream.print("{}", .{oxygen}) catch unreachable; // FIXME
+                _ = writer.print("{}", .{oxygen}) catch unreachable; // FIXME
                 fonts.drawString(ds, font, 116 + fonts.stringWidth(font, "O\x1D") + 2, y, fbs.getWritten());
                 fbs.reset();
             } else {
@@ -259,7 +259,7 @@ fn drawHud(
             fonts.drawString(ds, font, 168, y, "Score");
 
             pdraw.setColor(ds, text_value);
-            _ = stream.print("{}", .{pc.score}) catch unreachable; // FIXME
+            _ = writer.print("{}", .{pc.score}) catch unreachable; // FIXME
             fonts.drawString(ds, font, 168 + fonts.stringWidth(font, "Score") + 4, y, fbs.getWritten());
             fbs.reset();
         }
@@ -285,7 +285,7 @@ fn drawHud(
     fonts.drawString(ds, font, 252, 0, "High");
 
     pdraw.setColor(ds, text_value);
-    _ = stream.print("{}", .{high_score}) catch unreachable; // FIXME
+    _ = writer.print("{}", .{high_score}) catch unreachable; // FIXME
     fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High") + 4, 0, fbs.getWritten());
     fbs.reset();
 

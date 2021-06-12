@@ -93,15 +93,15 @@ fn loadLevel(comptime filename: []const u8) [width * height]MapTile {
     @setEvalBranchQuota(20000);
     const input = @embedFile(build_options.assets_path ++ "/" ++ filename);
     var fbs = std.io.fixedBufferStream(input);
-    var stream = fbs.inStream();
-    const Loader = pcx.Loader(@TypeOf(stream));
-    const preloaded = try Loader.preload(&stream);
+    var reader = fbs.reader();
+    const Loader = pcx.Loader(@TypeOf(reader));
+    const preloaded = try Loader.preload(&reader);
     if (preloaded.width != width or preloaded.height != height) {
         @compileError(filename ++ " does not match expected dimensions");
     }
     var pixels: [width * height]u8 = undefined;
     var tiles: [width * height]MapTile = undefined;
-    try Loader.loadIndexed(&stream, preloaded, &pixels, null);
+    try Loader.loadIndexed(&reader, preloaded, &pixels, null);
     for (pixels) |value, i| {
         tiles[i] = mapping[value];
     }

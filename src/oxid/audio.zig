@@ -57,10 +57,10 @@ fn readWav(hunk: *Hunk, filename: []const u8) !mod.Sampler.Sample {
     const contents = try passets.loadAsset(&hunk.low().allocator, &hunk.high(), filename);
 
     var fbs = std.io.fixedBufferStream(contents);
-    var stream = fbs.inStream();
+    var reader = fbs.reader();
 
-    const Loader = wav.Loader(@TypeOf(stream), false);
-    const preloaded = try Loader.preload(&stream);
+    const Loader = wav.Loader(@TypeOf(reader), false);
+    const preloaded = try Loader.preload(&reader);
 
     // don't need to allocate new memory or call Loader.load, because contents
     // has already been loaded and we use wav data as-is from the file
