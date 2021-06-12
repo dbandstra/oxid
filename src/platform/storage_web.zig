@@ -2,8 +2,13 @@ const std = @import("std");
 const HunkSide = @import("zig-hunk").HunkSide;
 
 // extern functions implemented in javascript
+extern fn deleteLocalStorage(name_ptr: [*]const u8, name_len: c_int) void;
 extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
 extern fn setLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
+
+pub fn deleteObject(hunk_side: *HunkSide, key: []const u8) !void {
+    deleteLocalStorage(key.ptr, @intCast(c_int, key.len));
+}
 
 pub const ReadableObject = struct {
     buffer: [5000]u8, // FIXME store the buffer outside. ReadableObject should not be heavyweight.
@@ -37,7 +42,7 @@ pub const ReadableObject = struct {
     pub fn close(self: ReadableObject) void {}
 
     pub fn reader(self: *ReadableObject) Reader {
-        return Reader{ .context = self };
+        return .{ .context = self };
     }
 
     // implementation copied from std.io.FixedBufferStream
@@ -61,7 +66,19 @@ pub const WritableObject = struct {
     pos: usize,
 
     pub const WriteError = error{NoSpaceLeft};
+    pub const SeekError = error{};
+    pub const GetSeekPosError = error{};
+
     pub const Writer = std.io.Writer(*WritableObject, WriteError, write);
+    pub const SeekableStream = std.io.SeekableStream(
+        *WritableObject,
+        SeekError,
+        GetSeekPosError,
+        seekTo,
+        seekBy,
+        getPos,
+        getEndPos,
+    );
 
     pub fn open(hunk_side: *HunkSide, key: []const u8) !WritableObject {
         return WritableObject{
@@ -81,7 +98,11 @@ pub const WritableObject = struct {
     }
 
     pub fn writer(self: *WritableObject) Writer {
-        return Writer{ .context = self };
+        return .{ .context = self };
+    }
+
+    pub fn seekableStream(self: *WritableObject) SeekableStream {
+        return .{ .context = self };
     }
 
     // implementation copied from std.io.FixedBufferStream
@@ -100,5 +121,33 @@ pub const WritableObject = struct {
         if (n == 0) return error.NoSpaceLeft;
 
         return n;
+    }
+
+    pub fn seekTo(self: *WritableObject, pos: u64) SeekError!void {
+        self.pos = if (std.math.cast(usize, pos)) |x| x else |_| self.buffer.len;
+    }
+
+    pub fn seekBy(self: *WritableObject, amt: i64) SeekError!void {
+        if (amt < 0) {
+            const abs_amt = std.math.absCast(amt);
+            const abs_amt_usize = std.math.cast(usize, abs_amt) catch std.math.maxInt(usize);
+            if (abs_amt_usize > self.pos) {
+                self.pos = 0;
+            } else {
+                self.pos -= abs_amt_usize;
+            }
+        } else {
+            const amt_usize = std.math.cast(usize, amt) catch std.math.maxInt(usize);
+            const new_pos = std.math.add(usize, self.pos, amt_usize) catch std.math.maxInt(usize);
+            self.pos = std.math.min(self.buffer.len, new_pos);
+        }
+    }
+
+    pub fn getEndPos(self: *WritableObject) GetSeekPosError!u64 {
+        return self.buffer.len;
+    }
+
+    pub fn getPos(self: *WritableObject) GetSeekPosError!u64 {
+        return self.pos;
     }
 };

@@ -64,8 +64,15 @@
         getRandomSeed() {
             return Math.floor(Math.random() * 2147483647);
         },
+        getTimestamp() {
+            return Math.floor(Date.now() / 1000);
+        },
         consoleLog(ptr, len) {
             console.log(readString(ptr, len));
+        },
+        deleteLocalStorage(name_ptr, name_len) {
+            const name = readString(name_ptr, name_len);
+            storage.deleteItem(name);
         },
         setLocalStorage(name_ptr, name_len, value_ptr, value_len) {
             const name = readString(name_ptr, name_len);

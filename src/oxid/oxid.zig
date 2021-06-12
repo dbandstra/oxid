@@ -7,6 +7,7 @@ const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
 const pstorage = @import("root").pstorage;
 const pstorage_dirname = @import("root").pstorage_dirname;
+const ptime = @import("root").ptime;
 const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
 const drawing = @import("../common/drawing.zig");
@@ -37,9 +38,22 @@ pub const hud_height = 16;
 pub const vwin_w = levels.width * levels.pixels_per_tile; // 320
 pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 
-pub const DemoPlayer = struct {
+pub const DemoRecording = struct {
+    storagekey_buffer: [256]u8,
+    storagekey: []const u8,
+    object: pstorage.WritableObject,
+    recorder: demos.Recorder,
+};
+
+pub const DemoPlaying = struct {
     object: pstorage.ReadableObject,
     player: demos.Player,
+};
+
+pub const DemoState = union(enum) {
+    no_demo,
+    recording: DemoRecording,
+    playing: DemoPlaying,
 };
 
 pub const MainState = struct {
@@ -49,9 +63,7 @@ pub const MainState = struct {
     static: GameStatic,
     session_memory: game.Session, // don't access this directly
     session: ?*game.Session, // points to session_memory when a game is running
-    demo_stream: std.io.FixedBufferStream([]u8), // recorder writes into this
-    demo_recorder: ?demos.Recorder,
-    demo_player: ?DemoPlayer,
+    demo_state: DemoState,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -88,7 +100,6 @@ pub const InitParams = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     sound_enabled: bool,
-    record_buffer: []u8,
 };
 
 pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
@@ -140,9 +151,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
 
     // self.session_memory is undefined until a game is actually started
     self.session = null;
-    self.demo_stream = std.io.fixedBufferStream(params.record_buffer);
-    self.demo_player = null;
-    self.demo_recorder = null;
+    self.demo_state = .no_demo;
     self.game_over = false;
     self.new_high_score = false;
     self.menu_anim_time = 0;
@@ -275,7 +284,7 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
     }
 
     // game command?
-    if (main_state.demo_player != null)
+    if (main_state.demo_state == .playing)
         return null;
 
     const gs = main_state.session orelse return null;
@@ -300,16 +309,15 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 .down = down,
             });
 
-            if (main_state.demo_recorder) |*demo_recorder| {
-                demo_recorder.recordInput(
-                    main_state.demo_stream.writer(),
-                    player_number,
-                    command,
-                    down,
-                ) catch |err| {
-                    std.log.err("Aborting demo recording due to error: {}", .{err});
-                    main_state.demo_recorder = null;
-                };
+            switch (main_state.demo_state) {
+                .recording => |*dr| {
+                    dr.recorder.recordInput(dr.object.writer(), player_number, command, down) catch |err| {
+                        std.log.err("Aborting demo recording due to error: {}", .{err});
+                        dr.object.close();
+                        main_state.demo_state = .no_demo;
+                    };
+                },
+                else => {},
             }
 
             return InputSpecial{ .noop = {} };
@@ -391,46 +399,162 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
     return InputSpecial{ .noop = {} };
 }
 
-fn stopDemoPlayback(self: *MainState) void {
-    if (self.demo_player) |*demo_player| {
-        demo_player.object.close();
-        self.demo_player = null;
+fn resetDemo(self: *MainState) void {
+    switch (self.demo_state) {
+        .no_demo => {},
+        .playing => |*dp| {
+            dp.object.close();
+            self.demo_state = .no_demo;
+        },
+        .recording => |*dr| {
+            dr.object.close();
+            self.demo_state = .no_demo;
+        },
     }
-    // the recorder should never be active, but just in case
-    self.demo_recorder = null;
+}
+
+const DemoLine = struct {
+    storagekey: []const u8,
+    player1_score: u32,
+    player2_score: u32,
+};
+
+fn readDemoIndex(hunk_side: *HunkSide, lines_array: []DemoLine) !usize {
+    const maybe_object = try pstorage.ReadableObject.open(hunk_side, "demos.dat");
+    var object = maybe_object orelse return 0; // this copies a big static buffer - ouch
+    defer object.close();
+
+    var num_lines: usize = 0;
+    while (num_lines < lines_array.len) {
+        const len = object.reader().readIntLittle(u32) catch |err| {
+            if (err == error.EndOfStream)
+                break;
+            return err;
+        };
+        const sk = try hunk_side.allocator.alloc(u8, len);
+        try object.reader().readNoEof(sk);
+        const p1 = try object.reader().readIntLittle(u32);
+        const p2 = try object.reader().readIntLittle(u32);
+        lines_array[num_lines] = .{
+            .storagekey = sk,
+            .player1_score = p1,
+            .player2_score = p2,
+        };
+        num_lines += 1;
+    }
+
+    return num_lines;
+}
+
+fn writeDemoIndex(
+    hunk_side: *HunkSide,
+    prev_lines: []const DemoLine,
+    storagekey: []const u8,
+    player1_score: u32,
+    player2_score: u32,
+) !void {
+    var object = try pstorage.WritableObject.open(hunk_side, "demos.dat");
+    defer object.close();
+
+    // write the new demo to the file
+    try object.writer().writeIntLittle(u32, @intCast(u32, storagekey.len));
+    try object.writer().writeAll(storagekey);
+    try object.writer().writeIntLittle(u32, player1_score);
+    try object.writer().writeIntLittle(u32, player2_score);
+
+    // write up to 9 lines from the previous file contents
+    for (prev_lines[0..std.math.min(prev_lines.len, 9)]) |line| {
+        try object.writer().writeIntLittle(u32, @intCast(u32, line.storagekey.len));
+        try object.writer().writeAll(line.storagekey);
+        try object.writer().writeIntLittle(u32, line.player1_score);
+        try object.writer().writeIntLittle(u32, line.player2_score);
+    }
 }
 
 fn finishDemoRecording(self: *MainState, player1_score: u32, player2_score: u32) void {
-    const demo_recorder = if (self.demo_recorder) |*r| r else return;
-    defer self.demo_recorder = null;
-
-    demo_recorder.end(self.demo_stream.writer()) catch |err| {
-        std.log.err("Aborting demo recording due to error: {}", .{err});
-        return;
+    const dr = switch (self.demo_state) {
+        .recording => |*dr_| dr_,
+        else => return,
     };
 
-    demo_recorder.patchScore(self.demo_stream.buffer, player1_score, player2_score);
+    defer self.demo_state = .no_demo;
 
-    saveDemo(self) catch |err| {
-        std.log.err("Failed to save demo to file: {}", .{err});
+    // finalize the demo recording
+    {
+        defer dr.object.close();
+
+        dr.recorder.end(
+            dr.object.writer(),
+            dr.object.seekableStream(),
+            player1_score,
+            player2_score,
+        ) catch |err| {
+            std.log.err("Aborting demo recording due to error: {}", .{err});
+            return;
+        };
+
+        std.log.notice("Finished recording.", .{});
+    }
+
+    // update the demo index file
+    const mark = self.hunk.low().getMark();
+    defer self.hunk.low().freeToMark(mark);
+
+    var demo_lines: [10]DemoLine = undefined;
+
+    // read the demo index. it should contain up to 10 scores.
+    const num_demo_lines = readDemoIndex(&self.hunk.low(), &demo_lines) catch |err| blk: {
+        std.log.err("Failed to read demo index: {}", .{err});
+        break :blk 0;
     };
+
+    // write the demo index back. put the new demo at the top. if there were already
+    // 10 demos, leave out the last one.
+    writeDemoIndex(
+        &self.hunk.low(),
+        demo_lines[0..num_demo_lines],
+        dr.storagekey,
+        player1_score,
+        player2_score,
+    ) catch |err| {
+        std.log.err("Failed to write demo index: {}", .{err});
+    };
+
+    // if we just bumped an old demo off the end of the list, delete the actual
+    // recording
+    if (num_demo_lines == demo_lines.len) {
+        const storagekey = demo_lines[demo_lines.len - 1].storagekey;
+
+        pstorage.deleteObject(&self.hunk.low(), storagekey) catch |err| {
+            std.log.err("Failed to delete old demo: {}", .{err});
+        };
+    }
 }
 
-fn saveDemo(self: *MainState) !void {
-    var buffer: [40]u8 = undefined;
+fn startRecording(self: *MainState, seed: u32, is_multiplayer: bool) !void {
+    std.debug.assert(self.demo_state == .no_demo);
 
-    const storagekey = blk: {
-        var fbs = std.io.fixedBufferStream(&buffer);
+    self.demo_state = .{ .recording = undefined };
+    errdefer self.demo_state = .no_demo;
 
-        // note: this is UTC
-        const secs = try std.math.cast(u64, std.time.timestamp());
-        const epoch_seconds: epoch.EpochSeconds = .{ .secs = secs };
+    const dr = switch (self.demo_state) {
+        .recording => |*dr| dr,
+        else => unreachable,
+    };
+
+    dr.storagekey = blk: {
+        var fbs = std.io.fixedBufferStream(&dr.storagekey_buffer);
+
+        const epoch_seconds: epoch.EpochSeconds = .{
+            .secs = ptime.timestamp(),
+        };
         const epoch_day = epoch_seconds.getEpochDay();
         const day_seconds = epoch_seconds.getDaySeconds();
         const year_day = epoch_day.calculateYearDay();
         const month_day = year_day.calculateMonthDay();
 
-        _ = try fbs.writer().print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}", .{
+        // note: date and time are UTC, oh well. i don't think zig has timezone capabilities yet.
+        _ = try fbs.writer().print("demos/{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.dat", .{
             year_day.year,
             month_day.month.numeric(),
             month_day.day_index + 1,
@@ -442,29 +566,24 @@ fn saveDemo(self: *MainState) !void {
         break :blk fbs.getWritten();
     };
 
-    var object = try pstorage.WritableObject.open(&self.hunk.low(), storagekey);
-    defer object.close();
+    dr.object = try pstorage.WritableObject.open(&self.hunk.low(), dr.storagekey);
+    errdefer dr.object.close();
 
-    try object.writer().writeAll(self.demo_stream.getWritten());
+    try dr.recorder.start(dr.object.writer(), seed, is_multiplayer);
 
-    std.log.notice("Saved demo to {s}", .{storagekey});
+    std.log.notice("Recording to {}", .{dr.storagekey});
 }
 
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
 fn startGame(self: *MainState, is_multiplayer: bool) void {
-    stopDemoPlayback(self);
+    resetDemo(self);
 
     const seed = self.prng.random.int(u32);
 
     if (self.record_demos) {
-        // start recording a demo. note: demos are recorded into memory. we don't actually save
-        // anything (or generate a filename) until the game ends
-        self.demo_stream.reset();
-        self.demo_recorder = demos.Recorder{};
-        self.demo_recorder.?.start(self.demo_stream.writer(), seed, is_multiplayer) catch |err| {
+        startRecording(self, seed, is_multiplayer) catch |err| {
             std.log.err("Failed to start demo recording: {}", .{err});
-            self.demo_recorder = null;
         };
     }
 
@@ -477,31 +596,42 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     self.session = gs;
 }
 
-pub fn playDemo(self: *MainState, storagekey: []const u8) void {
-    stopDemoPlayback(self);
+fn startPlaying(self: *MainState, storagekey: []const u8) !*const demos.Player {
+    std.debug.assert(self.demo_state == .no_demo);
 
-    if (pstorage.ReadableObject.open(&self.hunk.low(), storagekey)) |maybe_object| {
-        self.demo_player = DemoPlayer{
-            .object = maybe_object orelse {
-                std.log.err("Demo '{}' does not exist", .{storagekey});
-                return;
-            },
-            .player = undefined,
-        };
-        self.demo_player.?.player = demos.Player.start(self.demo_player.?.object.reader()) catch |err| {
-            std.log.err("Failed to open demo player: {}", .{err});
-            self.demo_player.?.object.close();
-            return;
-        };
-    } else |_| {}
+    self.demo_state = .{ .playing = undefined };
+    errdefer self.demo_state = .no_demo;
 
-    self.menu_stack.clear();
+    const dp = switch (self.demo_state) {
+        .playing => |*dp_| dp_,
+        else => unreachable,
+    };
+
+    dp.object = (try pstorage.ReadableObject.open(&self.hunk.low(), storagekey)) orelse {
+        return error.DemoNotFound;
+    };
+    errdefer dp.object.close();
+
+    dp.player = try demos.Player.start(dp.object.reader());
 
     std.log.notice("Playing demo from {s}", .{storagekey});
 
+    return &dp.player;
+}
+
+pub fn playDemo(self: *MainState, storagekey: []const u8) void {
+    resetDemo(self);
+
+    const player = startPlaying(self, storagekey) catch |err| {
+        std.log.err("Failed to open demo player: {}", .{err});
+        return;
+    };
+
+    self.menu_stack.clear();
+
     const gs = &self.session_memory;
 
-    game.init(gs, self.demo_player.?.player.game_seed, false);
+    game.init(gs, player.game_seed, player.is_multiplayer);
 
     self.session = gs;
 }
@@ -509,7 +639,7 @@ pub fn playDemo(self: *MainState, storagekey: []const u8) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    stopDemoPlayback(self);
+    resetDemo(self);
 
     self.session = null;
 
@@ -522,7 +652,7 @@ fn resetGame(self: *MainState) void {
 fn postScores(self: *MainState) void {
     const gs = self.session orelse return;
 
-    if (self.demo_player != null) {
+    if (self.demo_state == .playing) {
         // this is a demo playback, don't post the score
         return;
     }
@@ -589,34 +719,37 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     // also if menu is open don't record arrows (not sure if that's happening)
 
     if (!paused) {
-        if (self.demo_player) |*demo_player| {
-            while (demo_player.player.getNextEvent()) |event| {
-                switch (event) {
-                    .end_of_demo => {
-                        std.log.notice("Demo playback complete.", .{});
+        switch (self.demo_state) {
+            .no_demo, .recording => {},
+            .playing => |*dp| {
+                while (dp.player.getNextEvent()) |event| {
+                    switch (event) {
+                        .end_of_demo => {
+                            std.log.notice("Demo playback complete.", .{});
+                            resetGame(self);
+                            return;
+                        },
+                        .input => |input| {
+                            const gc = gs.ecs.componentIter(c.GameController).next() orelse break;
+                            const player_controller_id = switch (input.player_index) {
+                                0 => gc.player1_controller_id,
+                                1 => gc.player2_controller_id,
+                                else => null,
+                            } orelse continue;
+                            p.spawnEventGameInput(gs, .{
+                                .player_controller_id = player_controller_id,
+                                .command = input.command,
+                                .down = input.down,
+                            });
+                        },
+                    }
+                    dp.player.readNextInput(dp.object.reader()) catch |err| {
+                        std.log.err("Demo playback error: {}", .{err});
                         resetGame(self);
                         return;
-                    },
-                    .input => |input| {
-                        const gc = gs.ecs.componentIter(c.GameController).next() orelse break;
-                        const player_controller_id = switch (input.player_index) {
-                            0 => gc.player1_controller_id,
-                            1 => gc.player2_controller_id,
-                            else => null,
-                        } orelse continue;
-                        p.spawnEventGameInput(gs, .{
-                            .player_controller_id = player_controller_id,
-                            .command = input.command,
-                            .down = input.down,
-                        });
-                    },
+                    };
                 }
-                demo_player.player.readNextInput(demo_player.object.reader()) catch |err| {
-                    std.log.err("Demo playback error: {}", .{err});
-                    resetGame(self);
-                    return;
-                };
-            }
+            },
         }
     }
 
@@ -625,18 +758,22 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     perf.end(.frame);
 
     if (!paused) {
-        if (self.demo_player) |*demo_player| {
-            demo_player.player.incrementFrameIndex() catch |err| {
-                std.log.err("Demo playback error: {}", .{err});
-                resetGame(self);
-                return;
-            };
-        }
-        if (self.demo_recorder) |*demo_recorder| {
-            demo_recorder.incrementFrameIndex(self.demo_stream.writer()) catch |err| {
-                std.log.err("Aborting demo recording due to error: {}", .{err});
-                self.demo_recorder = null;
-            };
+        switch (self.demo_state) {
+            .no_demo => {},
+            .playing => |*dp| {
+                dp.player.incrementFrameIndex() catch |err| {
+                    std.log.err("Demo playback error: {}", .{err});
+                    resetGame(self);
+                    return;
+                };
+            },
+            .recording => |*dr| {
+                dr.recorder.incrementFrameIndex(dr.object.writer()) catch |err| {
+                    std.log.err("Aborting demo recording due to error: {}", .{err});
+                    dr.object.close();
+                    self.demo_state = .no_demo;
+                };
+            },
         }
     }
 

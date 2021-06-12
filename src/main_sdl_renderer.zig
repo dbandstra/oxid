@@ -15,6 +15,7 @@ pub const passets = @import("platform/assets_native.zig");
 pub const pdraw = @import("platform/draw_sdl.zig");
 pub const pstorage_dirname = "Oxid";
 pub const pstorage = @import("platform/storage_native.zig");
+pub const ptime = @import("platform/time_native.zig");
 
 pub const storagekey_config = "config.json";
 pub const storagekey_highscores = "highscore.dat";
@@ -77,13 +78,7 @@ const Main = struct {
 // the memory buffer
 const audio_assets_size = 320700;
 
-// we record games into a buffer and then decide whether to save them at the
-// end. 200KB is far beyond the best game i can imagine (a 20,000 point game
-// is about 20KB). still i would like to replace this with an ArrayList
-// eventually.
-const record_buffer_size = 200000;
-
-var main_memory: [@sizeOf(Main) + 200 * 1024 + audio_assets_size + record_buffer_size]u8 = undefined;
+var main_memory: [@sizeOf(Main) + 200 * 1024 + audio_assets_size]u8 = undefined;
 
 pub fn main() u8 {
     var hunk = Hunk.init(&main_memory);
@@ -107,7 +102,6 @@ fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C)
 }
 
 fn init(hunk: *Hunk) !*Main {
-    const record_buffer = hunk.low().allocator.alloc(u8, record_buffer_size) catch unreachable; // FIXME
     const self = hunk.low().allocator.create(Main) catch unreachable;
 
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_AUDIO) != 0) {
@@ -239,7 +233,6 @@ fn init(hunk: *Hunk) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
-        .record_buffer = record_buffer,
     }); // oxid.init prints its own error and returns error.Failed
     errdefer oxid.deinit(&self.main_state);
 

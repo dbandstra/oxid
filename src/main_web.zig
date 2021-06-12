@@ -9,6 +9,7 @@ const oxid = @import("oxid/oxid.zig");
 pub const passets = @import("platform/assets_web.zig");
 pub const pdraw = @import("platform/draw_opengl.zig");
 pub const pstorage = @import("platform/storage_web.zig");
+pub const ptime = @import("platform/time_web.zig");
 
 pub const storagekey_config = "config";
 pub const storagekey_highscores = "highscores";
@@ -216,8 +217,6 @@ fn init() !void {
     errdefer std.heap.page_allocator.destroy(hunk);
     hunk.* = Hunk.init(main_memory);
 
-    const record_buffer = hunk.low().allocator.alloc(u8, 200000) catch unreachable;
-
     g = hunk.low().allocator.create(Main) catch unreachable;
     g.audio_speedup = 1;
     g.fast_forward = false;
@@ -242,7 +241,6 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
-        .record_buffer = record_buffer,
     }); // oxid.init prints its own errors and returns error.Failed
     errdefer oxid.deinit(&g.main_state);
 }

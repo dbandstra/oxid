@@ -13,9 +13,14 @@ function _createMemoryStorage() {
         return key in dict ? dict[key] : null;
     }
 
+    function deleteItem(key) {
+        delete dict.key;
+    }
+
     return {
         setItem: setItem,
         getItem: getItem,
+        deleteItem: deleteItem,
     };
 }
 
@@ -34,9 +39,14 @@ function _createLocalStorage(local_storage) {
         }
     }
 
+    function deleteItem(key) {
+        local_storage.removeItem(key);
+    }
+
     return {
         setItem: setItem,
         getItem: getItem,
+        deleteItem: deleteItem,
     };
 }
 

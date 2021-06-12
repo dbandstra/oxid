@@ -33,7 +33,7 @@ pub const Recorder = struct {
     }
 
     // write a special marker so we know on what frame to end the demo.
-    pub fn end(self: *Recorder, writer: anytype) !void {
+    pub fn end(self: *Recorder, writer: anytype, seekableStream: anytype, score1: u32, score2: u32) !void {
         // as long as outside code doesn't mess with these fields, this should
         // never happen
         std.debug.assert(self.frame_index >= self.last_frame_index);
@@ -46,19 +46,11 @@ pub const Recorder = struct {
 
         try writer.writeByte(254); // end of demo
         try writer.writeByte(@intCast(u8, rel_frame));
-    }
 
-    pub fn patchScore(self: *Recorder, buffer: []u8, score1: u32, score2: u32) void {
-        // player 1 score
-        buffer[20] = @truncate(u8, score1);
-        buffer[21] = @truncate(u8, score1 >> 8);
-        buffer[22] = @truncate(u8, score1 >> 16);
-        buffer[23] = @truncate(u8, score1 >> 24);
-        // player 2 score
-        buffer[24] = @truncate(u8, score2);
-        buffer[25] = @truncate(u8, score2 >> 8);
-        buffer[26] = @truncate(u8, score2 >> 16);
-        buffer[27] = @truncate(u8, score2 >> 24);
+        // now go back to the header and write the final scores
+        try seekableStream.seekTo(20);
+        try writer.writeIntLittle(u32, score1);
+        try writer.writeIntLittle(u32, score2);
     }
 
     // call this at the end of every game frame

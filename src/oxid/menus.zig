@@ -368,12 +368,10 @@ pub const GameSettingsMenu = struct {
             ctx.setSound(.ding);
         }
 
-        if (comptime !std.Target.current.isWasm()) {
-            const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
-            if (ctx.optionToggle("Record demos: {s}", .{record_demos_str})) {
-                ctx.setEffect(.toggle_record_demos);
-                ctx.setSound(.ding);
-            }
+        const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
+        if (ctx.optionToggle("Record demos: {s}", .{record_demos_str})) {
+            ctx.setEffect(.toggle_record_demos);
+            ctx.setSound(.ding);
         }
 
         ctx.vspacer();
