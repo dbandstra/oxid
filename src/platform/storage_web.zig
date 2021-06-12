@@ -6,7 +6,7 @@ extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]
 extern fn setLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
 
 pub const ReadableObject = struct {
-    buffer: [5000]u8,
+    buffer: [5000]u8, // FIXME store the buffer outside. ReadableObject should not be heavyweight.
     pos: usize,
     size: usize,
 
@@ -57,7 +57,7 @@ pub const ReadableObject = struct {
 
 pub const WritableObject = struct {
     key: []const u8,
-    buffer: [5000]u8,
+    buffer: [5000]u8, // FIXME
     pos: usize,
 
     pub const WriteError = error{NoSpaceLeft};

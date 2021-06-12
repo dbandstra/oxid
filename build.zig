@@ -68,6 +68,7 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
+    o.addPackagePath("epoch", "lib/epoch.zig");
     o.addPackagePath("gbe", "lib/gbe/gbe.zig");
     const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{
         b.build_root,

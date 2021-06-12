@@ -86,8 +86,8 @@ called `recordings` in the user app data folder, which is something like:
 
 The demo filename is printed to the console when recording begins.
 
-To play back a demo, launch Oxid with the `--demo FILENAME` argument. An
-in-game UI for browsing demos will be added later.
+To play back a demo, launch Oxid with the `--demo recordings/FILENAME`
+argument. An in-game UI for browsing demos will be added later.
 
 Demo recording is currently not available in the Web build.
 

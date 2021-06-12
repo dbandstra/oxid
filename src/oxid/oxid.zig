@@ -1,6 +1,7 @@
 const assets_path = @import("build_options").assets_path;
 const builtin = @import("builtin");
 const std = @import("std");
+const epoch = @import("epoch");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
 const pdraw = @import("root").pdraw;
@@ -37,7 +38,7 @@ pub const vwin_w = levels.width * levels.pixels_per_tile; // 320
 pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 
 pub const DemoPlayer = struct {
-    file: std.fs.File,
+    object: pstorage.ReadableObject,
     player: demos.Player,
 };
 
@@ -390,9 +391,9 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
     return InputSpecial{ .noop = {} };
 }
 
-fn resetDemo(self: *MainState) void {
+fn stopDemoPlayback(self: *MainState) void {
     if (self.demo_player) |*demo_player| {
-        demo_player.file.close();
+        demo_player.object.close();
         self.demo_player = null;
     }
     // the recorder should never be active, but just in case
@@ -416,70 +417,49 @@ fn finishDemoRecording(self: *MainState, player1_score: u32, player2_score: u32)
 }
 
 fn saveDemo(self: *MainState) !void {
-    if (comptime std.Target.current.isWasm())
-        return; // TODO support wasm somehow
+    var buffer: [40]u8 = undefined;
 
-    // i don't think zig's std library has any date functionality, so pull in libc.
-    // TODO push date code to main file and use via @import("root")?
-    const cc = @cImport({
-        @cInclude("time.h");
-    });
-
-    var hunk_side = self.hunk.low();
-
-    const mark = hunk_side.getMark();
-    defer hunk_side.freeToMark(mark);
-
-    const dir_path = try std.fs.getAppDataDir(
-        &hunk_side.allocator,
-        pstorage_dirname ++ std.fs.path.sep_str ++ "recordings",
-    );
-
-    std.fs.cwd().makeDir(dir_path) catch |err| {
-        if (err != error.PathAlreadyExists)
-            return err;
-    };
-
-    const file_path = blk: {
-        var buffer: [40]u8 = undefined;
+    const storagekey = blk: {
         var fbs = std.io.fixedBufferStream(&buffer);
 
-        var t = cc.time(null);
-        var tm: *cc.tm = cc.localtime(&t) orelse return error.FailedToGetLocalTime;
+        // note: this is UTC
+        const secs = try std.math.cast(u64, std.time.timestamp());
+        const epoch_seconds: epoch.EpochSeconds = .{ .secs = secs };
+        const epoch_day = epoch_seconds.getEpochDay();
+        const day_seconds = epoch_seconds.getDaySeconds();
+        const year_day = epoch_day.calculateYearDay();
+        const month_day = year_day.calculateMonthDay();
 
-        _ = try fbs.writer().print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.oxiddemo", .{
-            // cast to unsigned because zig is weird and prints '+' characters
-            // before all signed numbers
-            (try std.math.cast(u32, tm.tm_year)) + 1900,
-            (try std.math.cast(u32, tm.tm_mon)) + 1,
-            try std.math.cast(u32, tm.tm_mday),
-            try std.math.cast(u32, tm.tm_hour),
-            try std.math.cast(u32, tm.tm_min),
-            try std.math.cast(u32, tm.tm_sec),
+        _ = try fbs.writer().print("demo_{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}", .{
+            year_day.year,
+            month_day.month.numeric(),
+            month_day.day_index + 1,
+            day_seconds.getHoursIntoDay(),
+            day_seconds.getMinutesIntoHour(),
+            day_seconds.getSecondsIntoMinute(),
         });
 
-        break :blk try std.fs.path.join(&hunk_side.allocator, &[_][]const u8{
-            dir_path,
-            fbs.getWritten(),
-        });
+        break :blk fbs.getWritten();
     };
 
-    const file = try std.fs.cwd().createFile(file_path, .{});
-    defer file.close();
+    var object = try pstorage.WritableObject.open(&self.hunk.low(), storagekey);
+    defer object.close();
 
-    try file.writer().writeAll(self.demo_stream.getWritten());
+    try object.writer().writeAll(self.demo_stream.getWritten());
 
-    std.log.notice("Saved demo to {s}", .{file_path});
+    std.log.notice("Saved demo to {s}", .{storagekey});
 }
 
 // called when "start new game" is selected in the menu. if a game is already
 // in progress, restart it
 fn startGame(self: *MainState, is_multiplayer: bool) void {
-    resetDemo(self);
+    stopDemoPlayback(self);
 
     const seed = self.prng.random.int(u32);
 
     if (self.record_demos) {
+        // start recording a demo. note: demos are recorded into memory. we don't actually save
+        // anything (or generate a filename) until the game ends
         self.demo_stream.reset();
         self.demo_recorder = demos.Recorder{};
         self.demo_recorder.?.start(self.demo_stream.writer(), seed, is_multiplayer) catch |err| {
@@ -497,23 +477,27 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
     self.session = gs;
 }
 
-pub fn playDemo(self: *MainState, filename: []const u8) void {
-    resetDemo(self);
+pub fn playDemo(self: *MainState, storagekey: []const u8) void {
+    stopDemoPlayback(self);
 
-    if (std.fs.cwd().openFile(filename, .{})) |file| {
+    if (pstorage.ReadableObject.open(&self.hunk.low(), storagekey)) |maybe_object| {
         self.demo_player = DemoPlayer{
-            .file = file,
-            .player = demos.Player.start(file.reader()) catch |err| {
-                std.log.err("Failed to open demo player: {}", .{err});
-                file.close();
+            .object = maybe_object orelse {
+                std.log.err("Demo '{}' does not exist", .{storagekey});
                 return;
             },
+            .player = undefined,
+        };
+        self.demo_player.?.player = demos.Player.start(self.demo_player.?.object.reader()) catch |err| {
+            std.log.err("Failed to open demo player: {}", .{err});
+            self.demo_player.?.object.close();
+            return;
         };
     } else |_| {}
 
     self.menu_stack.clear();
 
-    std.log.notice("Playing demo from {s}", .{filename});
+    std.log.notice("Playing demo from {s}", .{storagekey});
 
     const gs = &self.session_memory;
 
@@ -525,7 +509,7 @@ pub fn playDemo(self: *MainState, filename: []const u8) void {
 // clear out all existing game state and open the main menu. this should leave
 // the program in a similar state to when it was first started up.
 fn resetGame(self: *MainState) void {
-    resetDemo(self);
+    stopDemoPlayback(self);
 
     self.session = null;
 
@@ -627,7 +611,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                         });
                     },
                 }
-                demo_player.player.readNextInput(demo_player.file.reader()) catch |err| {
+                demo_player.player.readNextInput(demo_player.object.reader()) catch |err| {
                     std.log.err("Demo playback error: {}", .{err});
                     resetGame(self);
                     return;
