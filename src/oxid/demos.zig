@@ -172,7 +172,7 @@ pub const Player = struct {
 
         // the demo file contains the final scores, but we don't use those for anything (they're
         // just for the convenience of outside scripts). skip them
-        try reader.skipBytes(8, .{});
+        try file.reader().skipBytes(8, .{});
 
         var player: Player = .{
             .file = file,
