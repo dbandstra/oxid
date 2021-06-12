@@ -2,6 +2,7 @@
 
 const std = @import("std");
 const zang = @import("zang");
+const mod = @import("modules");
 
 pub const MenuInstrument = _module12;
 pub const MenuBlipVoice = _module13;
@@ -180,15 +181,15 @@ const _module12 = struct {
         note_on: bool,
     };
 
-    field0: zang.PulseOsc,
-    field1: zang.Envelope,
-    field2: zang.Filter,
+    field0: mod.PulseOsc,
+    field1: mod.Envelope,
+    field2: mod.Filter,
 
     pub fn init() _module12 {
         return .{
-            .field0 = zang.PulseOsc.init(),
-            .field1 = zang.Envelope.init(),
-            .field2 = zang.Filter.init(),
+            .field0 = mod.PulseOsc.init(),
+            .field1 = mod.Envelope.init(),
+            .field2 = mod.Filter.init(),
         };
     }
 
@@ -362,13 +363,13 @@ const _module16 = struct {
         note_on: bool,
     };
 
-    field0: zang.PulseOsc,
-    field1: zang.Envelope,
+    field0: mod.PulseOsc,
+    field1: mod.Envelope,
 
     pub fn init() _module16 {
         return .{
-            .field0 = zang.PulseOsc.init(),
-            .field1 = zang.Envelope.init(),
+            .field0 = mod.PulseOsc.init(),
+            .field1 = mod.Envelope.init(),
         };
     }
 
@@ -487,15 +488,15 @@ const _module19 = struct {
         freq_mul: f32,
     };
 
-    field0: zang.PulseOsc,
-    field1: zang.Envelope,
+    field0: mod.PulseOsc,
+    field1: mod.Envelope,
     tracker0: zang.Notes(_track5.Params).NoteTracker,
     trigger0: zang.Trigger(_track5.Params),
 
     pub fn init() _module19 {
         return .{
-            .field0 = zang.PulseOsc.init(),
-            .field1 = zang.Envelope.init(),
+            .field0 = mod.PulseOsc.init(),
+            .field1 = mod.Envelope.init(),
             .tracker0 = zang.Notes(_track5.Params).NoteTracker.init(&_track5.notes),
             .trigger0 = zang.Trigger(_track5.Params).init(),
         };
@@ -550,19 +551,19 @@ const _module20 = struct {
         modulator_rad: f32,
     };
 
-    field0: zang.SineOsc,
-    field1: zang.Curve,
-    field2: zang.SineOsc,
-    field3: zang.Curve,
-    field4: zang.Curve,
+    field0: mod.SineOsc,
+    field1: mod.Curve,
+    field2: mod.SineOsc,
+    field3: mod.Curve,
+    field4: mod.Curve,
 
     pub fn init() _module20 {
         return .{
-            .field0 = zang.SineOsc.init(),
-            .field1 = zang.Curve.init(),
-            .field2 = zang.SineOsc.init(),
-            .field3 = zang.Curve.init(),
-            .field4 = zang.Curve.init(),
+            .field0 = mod.SineOsc.init(),
+            .field1 = mod.Curve.init(),
+            .field2 = mod.SineOsc.init(),
+            .field3 = mod.Curve.init(),
+            .field4 = mod.Curve.init(),
         };
     }
 
@@ -620,17 +621,17 @@ const _module21 = struct {
     pub const NoteParams = struct {
     };
 
-    field0: zang.Curve,
-    field1: zang.Filter,
-    field2: zang.Noise,
-    field3: zang.Curve,
+    field0: mod.Curve,
+    field1: mod.Filter,
+    field2: mod.Noise,
+    field3: mod.Curve,
 
     pub fn init() _module21 {
         return .{
-            .field0 = zang.Curve.init(),
-            .field1 = zang.Filter.init(),
-            .field2 = zang.Noise.init(),
-            .field3 = zang.Curve.init(),
+            .field0 = mod.Curve.init(),
+            .field1 = mod.Filter.init(),
+            .field2 = mod.Noise.init(),
+            .field3 = mod.Curve.init(),
         };
     }
 
@@ -711,17 +712,17 @@ const _module22 = struct {
     pub const NoteParams = struct {
     };
 
-    field0: zang.Curve,
-    field1: zang.Curve,
-    field2: zang.Filter,
-    field3: zang.PulseOsc,
+    field0: mod.Curve,
+    field1: mod.Curve,
+    field2: mod.Filter,
+    field3: mod.PulseOsc,
 
     pub fn init() _module22 {
         return .{
-            .field0 = zang.Curve.init(),
-            .field1 = zang.Curve.init(),
-            .field2 = zang.Filter.init(),
-            .field3 = zang.PulseOsc.init(),
+            .field0 = mod.Curve.init(),
+            .field1 = mod.Curve.init(),
+            .field2 = mod.Filter.init(),
+            .field3 = mod.PulseOsc.init(),
         };
     }
 
@@ -766,21 +767,21 @@ const _module23 = struct {
         freq_mul: f32,
     };
 
-    field0: zang.SineOsc,
-    field1: zang.Curve,
-    field2: zang.Curve,
-    field3: zang.SineOsc,
-    field4: zang.SineOsc,
-    field5: zang.Filter,
+    field0: mod.SineOsc,
+    field1: mod.Curve,
+    field2: mod.Curve,
+    field3: mod.SineOsc,
+    field4: mod.SineOsc,
+    field5: mod.Filter,
 
     pub fn init() _module23 {
         return .{
-            .field0 = zang.SineOsc.init(),
-            .field1 = zang.Curve.init(),
-            .field2 = zang.Curve.init(),
-            .field3 = zang.SineOsc.init(),
-            .field4 = zang.SineOsc.init(),
-            .field5 = zang.Filter.init(),
+            .field0 = mod.SineOsc.init(),
+            .field1 = mod.Curve.init(),
+            .field2 = mod.Curve.init(),
+            .field3 = mod.SineOsc.init(),
+            .field4 = mod.SineOsc.init(),
+            .field5 = mod.Filter.init(),
         };
     }
 

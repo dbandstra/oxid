@@ -64,6 +64,7 @@ pub fn build(b: *std.build.Builder) !void {
 
 fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !void {
     o.addPackagePath("zang", "lib/zang/src/zang.zig");
+    o.addPackagePath("modules", "lib/zang/src/modules.zig");
     o.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");

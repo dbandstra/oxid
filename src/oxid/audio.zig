@@ -2,6 +2,7 @@ const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const wav = @import("zig-wav");
 const zang = @import("zang");
+const mod = @import("modules");
 const passets = @import("root").passets;
 const game = @import("game.zig");
 const c = @import("components.zig");
@@ -34,7 +35,7 @@ const max_temps = blk: {
     break :blk highest;
 };
 
-fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
+fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) mod.Sampler.Sample {
     return .{
         .num_channels = preloaded.num_channels,
         .sample_rate = preloaded.sample_rate,
@@ -48,7 +49,7 @@ fn makeSample(preloaded: wav.PreloadedInfo, data: []const u8) zang.Sample {
     };
 }
 
-fn readWav(hunk: *Hunk, filename: []const u8) !zang.Sample {
+fn readWav(hunk: *Hunk, filename: []const u8) !mod.Sampler.Sample {
     // temporary allocations in the high hunk side, persistent in the low side
     const mark = hunk.getHighMark();
     defer hunk.freeToHighMark(mark);
@@ -74,7 +75,7 @@ pub const Sample = enum {
 };
 
 const LoadedSamples = struct {
-    samples: [@typeInfo(Sample).Enum.fields.len]zang.Sample,
+    samples: [@typeInfo(Sample).Enum.fields.len]mod.Sampler.Sample,
 
     fn init(hunk: *Hunk) !LoadedSamples {
         var self: LoadedSamples = undefined;
@@ -90,20 +91,20 @@ const LoadedSamples = struct {
         return self;
     }
 
-    fn get(self: *const LoadedSamples, sample: Sample) zang.Sample {
+    fn get(self: *const LoadedSamples, sample: Sample) mod.Sampler.Sample {
         return self.samples[@enumToInt(sample)];
     }
 };
 
 pub const SamplerNoteParams = struct {
-    sample: zang.Sample,
+    sample: mod.Sampler.Sample,
     channel: usize,
     loop: bool,
 };
 
 // this object lives on the audio thread. use `sync` to pass it information from the main thread.
 fn GameSoundWrapper(comptime ModuleType: type) type {
-    const NoteParamsType = if (ModuleType == zang.Sampler)
+    const NoteParamsType = if (ModuleType == mod.Sampler)
         SamplerNoteParams
     else
         ModuleType.NoteParams;
@@ -195,11 +196,8 @@ fn GameSoundWrapperArray(comptime T: type, comptime component_name_: []const u8)
                 if (component_list.id[i] == 0) {
                     continue;
                 }
-                if (T == zang.Sampler) {
-                    const maybe_params: ?SamplerNoteParams = if (component_list.data[i].sample) |sample|
-                        .{ .sample = loaded_samples.get(sample), .channel = 0, .loop = false }
-                    else
-                        null;
+                if (T == mod.Sampler) {
+                    const maybe_params: ?SamplerNoteParams = if (component_list.data[i].sample) |sample| .{ .sample = loaded_samples.get(sample), .channel = 0, .loop = false } else null;
                     wrapper.sync(reset, impulse_frame, maybe_params);
                     component_list.data[i].sample = null;
                 } else {
@@ -224,7 +222,7 @@ const VoiceDropWebWrapperArray = GameSoundWrapperArray(DropWebVoice, "VoiceDropW
 const VoiceExplosionWrapperArray = GameSoundWrapperArray(ExplosionVoice, "VoiceExplosion");
 const VoiceLaserWrapperArray = GameSoundWrapperArray(LaserVoice, "VoiceLaser");
 const VoicePowerUpWrapperArray = GameSoundWrapperArray(PowerUpVoice, "VoicePowerUp");
-const VoiceSamplerWrapperArray = GameSoundWrapperArray(zang.Sampler, "VoiceSampler");
+const VoiceSamplerWrapperArray = GameSoundWrapperArray(mod.Sampler, "VoiceSampler");
 const VoiceWaveBeginWrapperArray = GameSoundWrapperArray(WaveBeginVoice, "VoiceWaveBegin");
 
 pub const MainModule = struct {
