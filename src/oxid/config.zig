@@ -227,18 +227,10 @@ fn parseInputSource(value: std.json.Value) !?inputs.Source {
 
 // writing config json
 
-fn getEnumValueName(comptime T: type, value: T) []const u8 {
-    inline for (@typeInfo(T).Enum.fields) |field| {
-        if (@intToEnum(T, field.value) == value) {
-            return field.name;
-        }
-    }
-    unreachable;
-}
-
 pub fn write(hunk_side: *HunkSide, key: []const u8, cfg: Config) !void {
     var object = try pstorage.WritableObject.open(hunk_side, key);
     defer object.close();
+
     try writeToStream(object.writer(), cfg);
 }
 
@@ -278,12 +270,11 @@ fn writeBindings(
     // the possible values have characters that would need escaping
     for (bindings) |maybe_source, i| {
         const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
-        const command_name = getEnumValueName(CommandType, command);
-        try w.print("        \"{s}\": ", .{command_name});
+        try w.print("        \"{s}\": ", .{@tagName(command)});
         if (maybe_source) |source| {
             switch (source) {
                 .key => |key| {
-                    try w.print("{{\"type\": \"key\", \"key\": \"{s}\"}}", .{getEnumValueName(inputs.Key, key)});
+                    try w.print("{{\"type\": \"key\", \"key\": \"{s}\"}}", .{@tagName(key)});
                 },
                 .joy_button => |j| {
                     try w.print("{{\"type\": \"joy_button\", \"button\": {}}}", .{j.button});
