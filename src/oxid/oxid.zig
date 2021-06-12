@@ -36,6 +36,11 @@ pub const hud_height = 16;
 pub const vwin_w = levels.width * levels.pixels_per_tile; // 320
 pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 
+pub const DemoPlayer = struct {
+    file: std.fs.File,
+    player: demos.Player,
+};
+
 pub const MainState = struct {
     hunk: *Hunk,
     cfg: config.Config,
@@ -45,7 +50,7 @@ pub const MainState = struct {
     session: ?*game.Session, // points to session_memory when a game is running
     demo_stream: std.io.FixedBufferStream([]u8), // recorder writes into this
     demo_recorder: ?demos.Recorder,
-    demo_player: ?demos.Player,
+    demo_player: ?DemoPlayer,
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
@@ -387,7 +392,7 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
 
 fn resetDemo(self: *MainState) void {
     if (self.demo_player) |*demo_player| {
-        demo_player.close();
+        demo_player.file.close();
         self.demo_player = null;
     }
     // the recorder should never be active, but just in case
@@ -495,10 +500,16 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 pub fn playDemo(self: *MainState, filename: []const u8) void {
     resetDemo(self);
 
-    self.demo_player = demos.Player.open(filename) catch |err| {
-        std.log.err("Failed to open demo player: {}", .{err});
-        return;
-    };
+    if (std.fs.cwd().openFile(filename, .{})) |file| {
+        self.demo_player = DemoPlayer{
+            .file = file,
+            .player = demos.Player.start(file.reader()) catch |err| {
+                std.log.err("Failed to open demo player: {}", .{err});
+                file.close();
+                return;
+            },
+        };
+    } else |_| {}
 
     self.menu_stack.clear();
 
@@ -506,7 +517,7 @@ pub fn playDemo(self: *MainState, filename: []const u8) void {
 
     const gs = &self.session_memory;
 
-    game.init(gs, self.demo_player.?.game_seed, false);
+    game.init(gs, self.demo_player.?.player.game_seed, false);
 
     self.session = gs;
 }
@@ -595,7 +606,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 
     if (!paused) {
         if (self.demo_player) |*demo_player| {
-            while (demo_player.getNextEvent()) |event| {
+            while (demo_player.player.getNextEvent()) |event| {
                 switch (event) {
                     .end_of_demo => {
                         std.log.notice("Demo playback complete.", .{});
@@ -616,7 +627,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
                         });
                     },
                 }
-                demo_player.readNextInput() catch |err| {
+                demo_player.player.readNextInput(demo_player.file.reader()) catch |err| {
                     std.log.err("Demo playback error: {}", .{err});
                     resetGame(self);
                     return;
@@ -631,7 +642,7 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 
     if (!paused) {
         if (self.demo_player) |*demo_player| {
-            demo_player.incrementFrameIndex() catch |err| {
+            demo_player.player.incrementFrameIndex() catch |err| {
                 std.log.err("Demo playback error: {}", .{err});
                 resetGame(self);
                 return;

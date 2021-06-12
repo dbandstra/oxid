@@ -1,5 +1,4 @@
 const build_options = @import("build_options");
-const builtin = @import("builtin");
 const std = @import("std");
 const commands = @import("commands.zig");
 
@@ -122,7 +121,6 @@ pub const Player = struct {
         },
     };
 
-    file: if (std.Target.current.isWasm()) void else std.fs.File,
     game_seed: u32,
     is_multiplayer: bool,
     frame_index: u32,
@@ -132,24 +130,18 @@ pub const Player = struct {
         event: Event,
     },
 
-    pub fn open(filename: []const u8) !Player {
-        if (comptime std.Target.current.isWasm())
-            return error.NotSupported;
-
-        const file = try std.fs.cwd().openFile(filename, .{});
-        errdefer file.close();
-
+    pub fn start(reader: anytype) !Player {
         var buffer: [128]u8 = undefined;
-        file.reader().readNoEof(buffer[0..8]) catch |err| {
+        reader.readNoEof(buffer[0..8]) catch |err| {
             if (err == error.EndOfStream) return error.NotADemo;
             return err;
         };
         if (!std.mem.eql(u8, buffer[0..8], "OXIDDEMO")) return error.NotADemo;
 
-        const version_len = try file.reader().readIntLittle(u32);
+        const version_len = try reader.readIntLittle(u32);
         if (version_len > buffer.len) return error.InvalidDemo;
         const version_string = buffer[0..version_len];
-        try file.reader().readNoEof(version_string);
+        try reader.readNoEof(version_string);
 
         if (parseVersion(build_options.version)) |oxid_ver| {
             if (parseVersion(version_string)) |demo_ver| {
@@ -167,15 +159,14 @@ pub const Player = struct {
             std.log.warn("could not determine oxid version, skipping compatibility check", .{});
         }
 
-        const seed = try file.reader().readIntLittle(u32);
-        const is_multiplayer = (try file.reader().readIntLittle(u32)) > 1;
+        const seed = try reader.readIntLittle(u32);
+        const is_multiplayer = (try reader.readIntLittle(u32)) > 1;
 
         // the demo file contains the final scores, but we don't use those for anything (they're
         // just for the convenience of outside scripts). skip them
         try file.reader().skipBytes(8, .{});
 
         var player: Player = .{
-            .file = file,
             .game_seed = seed,
             .is_multiplayer = is_multiplayer,
             .frame_index = 0,
@@ -183,31 +174,18 @@ pub const Player = struct {
             .next = undefined, // set by readNextInput (below)
         };
 
-        try readNextInput(&player);
+        try readNextInput(&player, reader);
 
         return player;
     }
 
-    pub fn close(player: *Player) void {
-        if (comptime std.Target.current.isWasm())
-            return;
-
-        player.file.close();
-    }
-
     pub fn incrementFrameIndex(player: *Player) !void {
-        if (comptime std.Target.current.isWasm())
-            return error.NotSupported;
-
         player.frame_index = try std.math.add(u32, player.frame_index, 1);
     }
 
-    pub fn readNextInput(player: *Player) !void {
-        if (comptime std.Target.current.isWasm())
-            return error.NotSupported;
-
-        const byte0 = try player.file.reader().readByte();
-        const byte1 = try player.file.reader().readByte();
+    pub fn readNextInput(player: *Player, reader: anytype) !void {
+        const byte0 = try reader.readByte();
+        const byte1 = try reader.readByte();
 
         const frame_index = player.last_frame_index + @as(u32, byte1);
 
