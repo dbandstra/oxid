@@ -12,10 +12,13 @@ fn parseVersion(string: []const u8) ?[2]u16 {
 }
 
 pub const Recorder = struct {
-    frame_index: u32 = 0, // starts at 0 and counts up for every game frame
-    last_frame_index: u32 = 0, // what frame_index was last time we recorded a command
+    frame_index: u32, // starts at 0 and counts up for every game frame
+    last_frame_index: u32, // what frame_index was last time we recorded a command
 
     pub fn start(self: *Recorder, writer: anytype, seed: u32, is_multiplayer: bool) !void {
+        self.frame_index = 0;
+        self.last_frame_index = 0;
+
         try writer.writeAll("OXIDDEMO");
         if (parseVersion(build_options.version)) |version| {
             try writer.writeIntLittle(u16, version[0]);
@@ -26,8 +29,9 @@ pub const Recorder = struct {
         }
         try writer.writeIntLittle(u32, seed);
         try writer.writeIntLittle(u32, @as(u32, if (is_multiplayer) 2 else 1));
-        // add a placeholder for the scores. we'll go back and fill this in
-        // when recording is complete
+        // reserve space for some stuff that we'll go back and fill in when
+        // recording is complete.
+        try writer.writeIntLittle(u32, 0); // final frame index
         try writer.writeIntLittle(u32, 0); // player 1 score
         try writer.writeIntLittle(u32, 0); // player 2 score
     }
@@ -49,12 +53,14 @@ pub const Recorder = struct {
 
         // now go back to the header and write the final scores
         try seekableStream.seekTo(20);
+        try writer.writeIntLittle(u32, self.frame_index);
         try writer.writeIntLittle(u32, score1);
         try writer.writeIntLittle(u32, score2);
     }
 
     // call this at the end of every game frame
     pub fn incrementFrameIndex(self: *Recorder, writer: anytype) !void {
+        // this will overflow if a game takes 2.27 years
         self.frame_index = try std.math.add(u32, self.frame_index, 1);
 
         // as long as outside code doesn't mess with these fields, this should
@@ -115,6 +121,7 @@ pub const Player = struct {
 
     game_seed: u32,
     is_multiplayer: bool,
+    total_frames: u32, // useful for showing playback progress
     frame_index: u32,
     last_frame_index: u32,
     next: struct {
@@ -154,13 +161,14 @@ pub const Player = struct {
         const seed = try reader.readIntLittle(u32);
         const is_multiplayer = (try reader.readIntLittle(u32)) > 1;
 
-        // the demo file contains the final scores, but we don't use those for anything (they're
-        // just for the convenience of outside scripts). skip them
-        try reader.skipBytes(8, .{});
+        const total_frames = try reader.readIntLittle(u32);
+        _ = try reader.readIntLittle(u32); // player 1 score
+        _ = try reader.readIntLittle(u32); // player 2 score
 
         var player: Player = .{
             .game_seed = seed,
             .is_multiplayer = is_multiplayer,
+            .total_frames = total_frames,
             .frame_index = 0,
             .last_frame_index = 0,
             .next = undefined, // set by readNextInput (below)

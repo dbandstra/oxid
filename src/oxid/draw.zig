@@ -20,6 +20,7 @@ pub fn drawGame(
     maybe_gs: ?*game.Session,
     cfg: config.Config,
     high_score: u32,
+    maybe_demo_progress: ?u32,
 ) void {
     // draw map background
     drawMap(ds, static, false);
@@ -42,7 +43,7 @@ pub fn drawGame(
     }
 
     // draw HUD
-    drawHud(ds, static, maybe_gs, high_score);
+    drawHud(ds, static, maybe_gs, high_score, maybe_demo_progress);
 }
 
 fn getSortedDrawables(
@@ -129,6 +130,7 @@ fn drawHud(
     static: *const oxid.GameStatic,
     maybe_gs: ?*game.Session,
     high_score: u32,
+    maybe_demo_progress: ?u32,
 ) void {
     perf.begin(.draw_hud);
     defer perf.end(.draw_hud);
@@ -282,12 +284,21 @@ fn drawHud(
     }
 
     pdraw.setColor(ds, text_label);
-    fonts.drawString(ds, font, 252, 0, "High");
+    if (maybe_demo_progress) |progress| {
+        fonts.drawString(ds, font, 252, 0, "DEMO");
 
-    pdraw.setColor(ds, text_value);
-    _ = writer.print("{}", .{high_score}) catch unreachable; // FIXME
-    fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High") + 4, 0, fbs.getWritten());
-    fbs.reset();
+        pdraw.setColor(ds, text_value);
+        _ = writer.print("{: >3}%", .{progress}) catch unreachable; // FIXME
+        fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "Demo") + 4, 0, fbs.getWritten());
+        fbs.reset();
+    } else {
+        fonts.drawString(ds, font, 252, 0, "High");
+
+        pdraw.setColor(ds, text_value);
+        _ = writer.print("{}", .{high_score}) catch unreachable; // FIXME
+        fonts.drawString(ds, font, 252 + fonts.stringWidth(font, "High") + 4, 0, fbs.getWritten());
+        fbs.reset();
+    }
 
     pdraw.setColor(ds, drawing.pure_white);
 }

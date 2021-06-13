@@ -786,7 +786,21 @@ pub fn frameCleanup(self: *MainState) void {
 }
 
 pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
-    drawGame(draw_state, &self.static, self.session, self.cfg, self.high_scores[0]);
+    const maybe_demo_progress = switch (self.demo_state) {
+        .playing => |*dp| if (dp.player.total_frames > 0)
+            dp.player.frame_index * 100 / dp.player.total_frames
+        else
+            0,
+        else => null,
+    };
+    drawGame(
+        draw_state,
+        &self.static,
+        self.session,
+        self.cfg,
+        self.high_scores[0],
+        maybe_demo_progress,
+    );
     drawMenu(&self.menu_stack, .{
         .ds = draw_state,
         .static = &self.static,
