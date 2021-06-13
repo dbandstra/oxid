@@ -11,7 +11,7 @@ pub fn deleteObject(hunk_side: *HunkSide, key: []const u8) !void {
 }
 
 pub const ReadableObject = struct {
-    buffer: [50000]u8, // FIXME store the buffer outside. ReadableObject should not be heavyweight.
+    buffer: []const u8,
     pos: usize,
     size: usize,
 
@@ -19,12 +19,13 @@ pub const ReadableObject = struct {
     pub const Reader = std.io.Reader(*ReadableObject, ReadError, read);
 
     pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
-        var buffer: [50000]u8 = undefined;
+        var buffer = try std.heap.page_allocator.alloc(u8, 100000);
+        errdefer std.heap.page_allocator.free(buffer);
 
         const bytes_read = getLocalStorage(
             key.ptr,
             @intCast(c_int, key.len),
-            &buffer,
+            buffer.ptr,
             @intCast(c_int, buffer.len),
         );
         if (bytes_read < 0)
@@ -39,7 +40,9 @@ pub const ReadableObject = struct {
         };
     }
 
-    pub fn close(self: ReadableObject) void {}
+    pub fn close(self: ReadableObject) void {
+        std.heap.page_allocator.free(self.buffer);
+    }
 
     pub fn reader(self: *ReadableObject) Reader {
         return .{ .context = self };
@@ -49,6 +52,7 @@ pub const ReadableObject = struct {
     // can't use std.io.FixedBufferStream because there's no way to get it to
     // point to self.buffer in the open function (since self is returned by
     // value)
+    // FIXME this is no longer the case (buffer is on the heap now)
     pub fn read(self: *ReadableObject, dest: []u8) ReadError!usize {
         const size = std.math.min(dest.len, self.size - self.pos);
         const end = self.pos + size;
@@ -62,7 +66,7 @@ pub const ReadableObject = struct {
 
 pub const WritableObject = struct {
     key: []const u8,
-    buffer: [50000]u8, // FIXME
+    buffer: []u8,
     pos: usize,
     // std.io.FixedBufferStream doesn't have this, but maybe it should.
     end_pos: usize,
@@ -83,9 +87,12 @@ pub const WritableObject = struct {
     );
 
     pub fn open(hunk_side: *HunkSide, key: []const u8) !WritableObject {
+        var buffer = try std.heap.page_allocator.alloc(u8, 100000);
+        errdefer std.heap.page_allocator.free(buffer);
+
         return WritableObject{
             .key = key,
-            .buffer = undefined,
+            .buffer = buffer,
             .pos = 0,
             .end_pos = 0,
         };
@@ -95,9 +102,11 @@ pub const WritableObject = struct {
         setLocalStorage(
             self.key.ptr,
             @intCast(c_int, self.key.len),
-            &self.buffer,
+            self.buffer.ptr,
             @intCast(c_int, self.end_pos),
         );
+
+        std.heap.page_allocator.free(self.buffer);
     }
 
     pub fn writer(self: *WritableObject) Writer {
