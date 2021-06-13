@@ -14,25 +14,29 @@ Table of contents:
 
 ## Main files
 
+There are a few different "frontends" for Oxid.
+
 * `src/main_sdl_opengl.zig`
-    * Main file for Oxid using SDL2 and the OpenGL implementation of `pdraw`
+    * Oxid frontend using SDL2 and the OpenGL implementation of `pdraw`
       (using OpenGL 2.1 + GL_ARB_framebuffer_object).
-    * `zig build`
+    * To build: `zig build`
 * `src/main_sdl_renderer.zig`
-    * Main file for Oxid using SDL2 and the `SDL_render` implementation of
+    * Oxid frontend using SDL2 and the `SDL_Renderer` implementation of
       `pdraw`.
-    * Note: compared to the OpenGL build, this main file is missing some
-      features such as framerate control, fast forwarding, and joystick
-      support.
-    * `zig build sdl_renderer`
+    * Note: compared to the OpenGL build, this frontend is missing a few
+      features, such as command-line options, joystick support, and the blur
+      effect while fast forwarding. However, it may be more portable (not
+      being tied to OpenGL).
+    * To build: `zig build sdl_renderer`
 * `src/main_web.zig`
-    * Main file for Oxid WebAssembly build. Also uses the OpenGL
-      implementation of `pdraw` (which supports WebGL 1).
-    * `sh build_web.sh www` (which calls `zig build wasm` and copies
-      artifacts to `www` folder where the game can be served).
+    * Oxid frontend for WebAssembly. Uses the OpenGL implementation of
+      `pdraw` (which supports WebGL 1).
+    * To build: `sh build_web.sh www` (which calls `zig build wasm` and
+      copies artifacts to `www` folder where the game can be served).
 * `src/verifydemo.zig`
     * A command-line tool that headlessly simulates a demo file and prints
       player 1's final score to stdout.
+    * To build: `zig build verifydemo`
 
 ## src/oxid/
 
