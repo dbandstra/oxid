@@ -547,24 +547,26 @@ pub const DemosMenu = struct {
 
         for (ctx.menu_context.demo_index) |*entry, i| {
             const storagekey = entry.storagekey_buffer[0..entry.storagekey_len];
-            // "demos/2021-06-13_05-01-31.dat"
-            const start = "demos/".len;
-            const pressed =
-                if (entry.player2_score > 0)
-                ctx.option("{s} {s}:{s} / {}, {} pts", .{
-                    storagekey[start .. start + 10],
-                    storagekey[start + 11 .. start + 13],
-                    storagekey[start + 14 .. start + 16],
-                    entry.player1_score,
-                    entry.player2_score,
-                })
-            else
-                ctx.option("{s} {s}:{s} / {} pts", .{
+            const pressed = blk: {
+                if (storagekey.len != "demos/2021-06-13_05-01-31.dat".len)
+                    break :blk ctx.option("(glitched)", .{});
+                const start = "demos/".len;
+                if (entry.player2_score > 0) {
+                    break :blk ctx.option("{s} {s}:{s} / {}, {} pts", .{
+                        storagekey[start .. start + 10],
+                        storagekey[start + 11 .. start + 13],
+                        storagekey[start + 14 .. start + 16],
+                        entry.player1_score,
+                        entry.player2_score,
+                    });
+                }
+                break :blk ctx.option("{s} {s}:{s} / {} pts", .{
                     storagekey[start .. start + 10],
                     storagekey[start + 11 .. start + 13],
                     storagekey[start + 14 .. start + 16],
                     entry.player1_score,
                 });
+            };
             if (pressed) {
                 ctx.setEffect(.{ .play_demo = i });
                 ctx.setSound(.ding);

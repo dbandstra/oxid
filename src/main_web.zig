@@ -7,9 +7,9 @@ const oxid = @import("oxid/oxid.zig");
 
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_web.zig");
+pub const pdate = @import("platform/date_web.zig");
 pub const pdraw = @import("platform/draw_opengl.zig");
 pub const pstorage = @import("platform/storage_web.zig");
-pub const ptime = @import("platform/time_web.zig");
 
 pub const storagekey_config = "config";
 pub const storagekey_highscores = "highscores";

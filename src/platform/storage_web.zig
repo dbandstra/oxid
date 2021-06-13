@@ -3,7 +3,7 @@ const HunkSide = @import("zig-hunk").HunkSide;
 
 // extern functions implemented in javascript
 extern fn deleteLocalStorage(name_ptr: [*]const u8, name_len: c_int) void;
-extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_maxlen: c_int) c_int;
+extern fn getLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]u8, value_maxlen: c_int) c_int;
 extern fn setLocalStorage(name_ptr: [*]const u8, name_len: c_int, value_ptr: [*]const u8, value_len: c_int) void;
 
 pub fn deleteObject(hunk_side: *HunkSide, key: []const u8) !void {

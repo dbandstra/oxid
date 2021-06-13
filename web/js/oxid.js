@@ -55,6 +55,8 @@
         return;
     }
 
+    const pad = (p, n) => ('0000' + n).slice(-p); // helper for getDateTime
+
     // these are implementations of extern functions called from the zig side
     const env = {
         // WebGL functions
@@ -64,8 +66,22 @@
         getRandomSeed() {
             return Math.floor(Math.random() * 2147483647);
         },
-        getTimestamp() {
-            return Math.floor(Date.now() / 1000);
+        externGetDateTime(out_ptr, out_maxlen) {
+            const d = new Date(Date.now());
+            const data = new TextEncoder().encode(
+                pad(4, d.getYear() + 1900) + '-' +
+                pad(2, d.getMonth() + 1) + '-' +
+                pad(2, d.getDate()) + '_' +
+                pad(2, d.getHours()) + '-' +
+                pad(2, d.getMinutes()) + '-' +
+                pad(2, d.getSeconds()));
+            try {
+                new Uint8Array(memory.buffer, out_ptr, out_maxlen).set(data);
+            } catch (err) {
+                console.warn('externGetDateTime failed to write into program memory:', err);
+                return -1;
+            }
+            return data.length;
         },
         consoleLog(ptr, len) {
             console.log(readString(ptr, len));

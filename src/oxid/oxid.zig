@@ -1,13 +1,12 @@
 const assets_path = @import("build_options").assets_path;
 const builtin = @import("builtin");
 const std = @import("std");
-const epoch = @import("epoch");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
+const pdate = @import("root").pdate;
 const pdraw = @import("root").pdraw;
 const pstorage = @import("root").pstorage;
 const pstorage_dirname = @import("root").pstorage_dirname;
-const ptime = @import("root").ptime;
 const storagekey_config = @import("root").storagekey_config;
 const storagekey_highscores = @import("root").storagekey_highscores;
 const drawing = @import("../common/drawing.zig");
@@ -547,23 +546,9 @@ fn startRecording(self: *MainState, seed: u32, is_multiplayer: bool) !void {
     dr.storagekey = blk: {
         var fbs = std.io.fixedBufferStream(&dr.storagekey_buffer);
 
-        const epoch_seconds: epoch.EpochSeconds = .{
-            .secs = ptime.timestamp(),
-        };
-        const epoch_day = epoch_seconds.getEpochDay();
-        const day_seconds = epoch_seconds.getDaySeconds();
-        const year_day = epoch_day.calculateYearDay();
-        const month_day = year_day.calculateMonthDay();
-
-        // note: date and time are UTC, oh well. i don't think zig has timezone capabilities yet.
-        _ = try fbs.writer().print("demos/{d:0>4}-{d:0>2}-{d:0>2}_{d:0>2}-{d:0>2}-{d:0>2}.dat", .{
-            year_day.year,
-            month_day.month.numeric(),
-            month_day.day_index + 1,
-            day_seconds.getHoursIntoDay(),
-            day_seconds.getMinutesIntoHour(),
-            day_seconds.getSecondsIntoMinute(),
-        });
+        _ = try fbs.writer().print("demos/", .{});
+        try pdate.getDateTime(fbs.writer());
+        _ = try fbs.writer().print(".dat", .{});
 
         break :blk fbs.getWritten();
     };

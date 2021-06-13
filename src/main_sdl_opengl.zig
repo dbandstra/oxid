@@ -16,10 +16,10 @@ const translateKey = @import("platform/sdl_keys.zig").translateKey;
 
 // drivers that other source files can access via @import("root")
 pub const passets = @import("platform/assets_native.zig");
+pub const pdate = @import("platform/date_libc.zig");
 pub const pdraw = @import("platform/draw_opengl.zig");
 pub const pstorage_dirname = "Oxid";
 pub const pstorage = @import("platform/storage_native.zig");
-pub const ptime = @import("platform/time_native.zig");
 
 pub const storagekey_config = "config.json";
 pub const storagekey_highscores = "highscore.dat";
