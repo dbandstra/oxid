@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Oxid</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    </head>
+    <body>
+        <div id="loading-text">
+            Loading...
+        </div>
+        <canvas id="canvasgl" width="320" height="240"></canvas>
+        <div class="belowtext">
+            <div>
+                menu: <span class="key">arrows</span>, <span class="key">enter</span>, <span class="key">esc</span>.
+                &nbsp;
+                game (defaults): <span class="key">arrows</span>, <span class="key">space</span>.
+                &nbsp;
+                turn on sound in menu
+            </div>
+            <div>
+                <a href="#" id="diagnostics-toggle">diagnostics</a>
+                |
+                <a href="https://github.com/dbandstra/oxid">github</a>
+            </div>
+        </div>
+        <table id="diagnostics-table">
+            <thead><tr><th>Feature</th><th>Available</th><th>Notes</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <script src="js/base64js.min.js"></script>
+        <script src="js/diagnostics.js"></script>
+        <script src="js/storage.js"></script>
+        <script src="js/webgl.js"></script>
+        <script src="js/oxid.js"></script>
+    </body>
+</html>

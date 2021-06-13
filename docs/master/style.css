@@ -1,0 +1,59 @@
+body {
+    background: #140C1C;
+    color: #DEEED6;
+    font-family: sans-serif;
+}
+
+#loading-text {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    top: 110px;
+    text-align: center;
+    font-size: 24px;
+    color: #ccc;
+}
+
+#canvasgl {
+    display: block;
+    margin: 0 auto;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+.belowtext {
+    max-width: 960px;
+    margin: 0 auto;
+    margin-top: 1.5em;
+    display: flex;
+    justify-content: space-between;
+}
+
+a {
+    color: #DEEED6;
+}
+
+.key {
+    color: #6DC2CA;
+}
+
+#diagnostics-table {
+    display: none;
+    border: 1px solid #757161;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    margin-top: 1.5em;
+}
+#diagnostics-table th {
+    text-align: left;
+}
+#diagnostics-table th, #diagnostics-table td {
+    border: 1px solid #757161;
+    padding: 0.25em 0.5em;
+}
+#diagnostics-table td:nth-child(3) {
+    font-family: monospace;
+}
