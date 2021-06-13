@@ -38,6 +38,13 @@ pub const hud_height = 16;
 pub const vwin_w = levels.width * levels.pixels_per_tile; // 320
 pub const vwin_h = levels.height * levels.pixels_per_tile + hud_height; // 240
 
+pub const DemoIndexEntry = struct {
+    storagekey_buffer: [256]u8,
+    storagekey_len: u8,
+    player1_score: u32,
+    player2_score: u32,
+};
+
 pub const DemoRecording = struct {
     storagekey_buffer: [256]u8,
     storagekey: []const u8,
@@ -67,13 +74,15 @@ pub const MainState = struct {
     game_over: bool, // if true, leave the game unpaused even when a menu is open
     new_high_score: bool,
     high_scores: [constants.num_high_scores]u32,
+    demo_index: [constants.num_demo_index_entries]DemoIndexEntry,
+    demo_index_num: usize,
     menu_anim_time: u32,
     menu_stack: menus.MenuStack,
     fullscreen: bool,
     canvas_scale: u31,
     max_canvas_scale: u31,
     friendly_fire: bool,
-    record_demos: bool,
+    disable_recording: bool,
     sound_enabled: bool,
     prng: std.rand.DefaultPrng,
     menu_sounds: MenuSounds,
@@ -100,6 +109,7 @@ pub const InitParams = struct {
     canvas_scale: u31,
     max_canvas_scale: u31,
     sound_enabled: bool,
+    disable_recording: bool,
 };
 
 pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
@@ -111,6 +121,10 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         // the user's legitimate high scores might get wiped out (FIXME?)
         std.log.crit("Failed to load high scores: {}", .{err});
         break :blk [1]u32{0} ** constants.num_high_scores;
+    };
+
+    readDemoIndex(self) catch |err| {
+        std.log.crit("Failed to load demo index: {}", .{err});
     };
 
     fonts.load(ds, &self.hunk.low(), &self.static.font, .{
@@ -166,8 +180,8 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.canvas_scale = params.canvas_scale;
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
-    self.record_demos = false;
     self.sound_enabled = params.sound_enabled;
+    self.disable_recording = params.disable_recording;
     self.prng = std.rand.DefaultPrng.init(params.random_seed);
     self.menu_sounds = .{
         .backoff = null,
@@ -213,12 +227,12 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
         .cfg = self.cfg,
         .high_scores = self.high_scores,
         .new_high_score = self.new_high_score,
+        .demo_index = self.demo_index[0..self.demo_index_num],
         .game_over = self.game_over,
         .anim_time = self.menu_anim_time,
         .canvas_scale = self.canvas_scale,
         .max_canvas_scale = self.max_canvas_scale,
         .friendly_fire = self.friendly_fire,
-        .record_demos = self.record_demos,
     };
 }
 
@@ -351,6 +365,12 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
             // scores were already been posted when the game ended
             resetGame(self);
         },
+        .play_demo => |index| {
+            if (index < self.demo_index_num) {
+                const entry = &self.demo_index[index];
+                playDemo(self, entry.storagekey_buffer[0..entry.storagekey_len]);
+            }
+        },
         .toggle_sound => {
             return InputSpecial{ .toggle_sound = {} };
         },
@@ -370,9 +390,6 @@ fn applyMenuEffect(self: *MainState, effect: menus.Effect) ?InputSpecial {
             if (self.session) |gs| {
                 setFriendlyFire(gs, self.friendly_fire);
             }
-        },
-        .toggle_record_demos => {
-            self.record_demos = !self.record_demos;
         },
         .bind_game_command => |payload| {
             const bindings = &self.cfg.game_bindings[payload.player_number];
@@ -413,61 +430,40 @@ fn resetDemo(self: *MainState) void {
     }
 }
 
-const DemoLine = struct {
-    storagekey: []const u8,
-    player1_score: u32,
-    player2_score: u32,
-};
+fn readDemoIndex(self: *MainState) !void {
+    self.demo_index_num = 0;
 
-fn readDemoIndex(hunk_side: *HunkSide, lines_array: []DemoLine) !usize {
-    const maybe_object = try pstorage.ReadableObject.open(hunk_side, "demos.dat");
-    var object = maybe_object orelse return 0; // this copies a big static buffer - ouch
+    var object = (try pstorage.ReadableObject.open(&self.hunk.low(), "demos.dat")) orelse return;
     defer object.close();
 
-    var num_lines: usize = 0;
-    while (num_lines < lines_array.len) {
-        const len = object.reader().readIntLittle(u32) catch |err| {
+    errdefer self.demo_index_num = 0;
+
+    while (self.demo_index_num < self.demo_index.len) {
+        const len = object.reader().readByte() catch |err| {
             if (err == error.EndOfStream)
                 break;
             return err;
         };
-        const sk = try hunk_side.allocator.alloc(u8, len);
-        try object.reader().readNoEof(sk);
-        const p1 = try object.reader().readIntLittle(u32);
-        const p2 = try object.reader().readIntLittle(u32);
-        lines_array[num_lines] = .{
-            .storagekey = sk,
-            .player1_score = p1,
-            .player2_score = p2,
-        };
-        num_lines += 1;
-    }
 
-    return num_lines;
+        const entry = &self.demo_index[self.demo_index_num];
+        self.demo_index_num += 1;
+
+        try object.reader().readNoEof(entry.storagekey_buffer[0..len]);
+        entry.storagekey_len = len;
+        entry.player1_score = try object.reader().readIntLittle(u32);
+        entry.player2_score = try object.reader().readIntLittle(u32);
+    }
 }
 
-fn writeDemoIndex(
-    hunk_side: *HunkSide,
-    prev_lines: []const DemoLine,
-    storagekey: []const u8,
-    player1_score: u32,
-    player2_score: u32,
-) !void {
-    var object = try pstorage.WritableObject.open(hunk_side, "demos.dat");
+fn writeDemoIndex(self: *MainState) !void {
+    var object = try pstorage.WritableObject.open(&self.hunk.low(), "demos.dat");
     defer object.close();
 
-    // write the new demo to the file
-    try object.writer().writeIntLittle(u32, @intCast(u32, storagekey.len));
-    try object.writer().writeAll(storagekey);
-    try object.writer().writeIntLittle(u32, player1_score);
-    try object.writer().writeIntLittle(u32, player2_score);
-
-    // write up to 9 lines from the previous file contents
-    for (prev_lines[0..std.math.min(prev_lines.len, 9)]) |line| {
-        try object.writer().writeIntLittle(u32, @intCast(u32, line.storagekey.len));
-        try object.writer().writeAll(line.storagekey);
-        try object.writer().writeIntLittle(u32, line.player1_score);
-        try object.writer().writeIntLittle(u32, line.player2_score);
+    for (self.demo_index[0..self.demo_index_num]) |entry| {
+        try object.writer().writeByte(entry.storagekey_len);
+        try object.writer().writeAll(entry.storagekey_buffer[0..entry.storagekey_len]);
+        try object.writer().writeIntLittle(u32, entry.player1_score);
+        try object.writer().writeIntLittle(u32, entry.player2_score);
     }
 }
 
@@ -496,35 +492,41 @@ fn finishDemoRecording(self: *MainState, player1_score: u32, player2_score: u32)
         std.log.notice("Finished recording.", .{});
     }
 
-    // update the demo index file
-    const mark = self.hunk.low().getMark();
-    defer self.hunk.low().freeToMark(mark);
-
-    var demo_lines: [10]DemoLine = undefined;
-
-    // read the demo index. it should contain up to 10 scores.
-    const num_demo_lines = readDemoIndex(&self.hunk.low(), &demo_lines) catch |err| blk: {
+    // read the demo index again (we already read it when the program started
+    // up), just to make sure we're up to date.
+    readDemoIndex(self) catch |err| {
         std.log.err("Failed to read demo index: {}", .{err});
-        break :blk 0;
     };
 
-    // write the demo index back. put the new demo at the top. if there were already
-    // 10 demos, leave out the last one.
-    writeDemoIndex(
-        &self.hunk.low(),
-        demo_lines[0..num_demo_lines],
-        dr.storagekey,
-        player1_score,
-        player2_score,
-    ) catch |err| {
+    // remember the key of the old demo to delete
+    const maybe_entry_to_delete =
+        if (self.demo_index_num == self.demo_index.len)
+        self.demo_index[self.demo_index.len - 1]
+    else
+        null;
+
+    // add the new score to the demo index
+    if (self.demo_index_num < self.demo_index.len) {
+        self.demo_index_num += 1;
+    }
+    var i = self.demo_index_num - 1;
+    while (i > 0) : (i -= 1) {
+        self.demo_index[i] = self.demo_index[i - 1];
+    }
+    std.mem.copy(u8, &self.demo_index[0].storagekey_buffer, dr.storagekey);
+    self.demo_index[0].storagekey_len = @intCast(u8, dr.storagekey.len);
+    self.demo_index[0].player1_score = player1_score;
+    self.demo_index[0].player2_score = player2_score;
+
+    // save the demo index
+    writeDemoIndex(self) catch |err| {
         std.log.err("Failed to write demo index: {}", .{err});
     };
 
     // if we just bumped an old demo off the end of the list, delete the actual
     // recording
-    if (num_demo_lines == demo_lines.len) {
-        const storagekey = demo_lines[demo_lines.len - 1].storagekey;
-
+    if (maybe_entry_to_delete) |entry| {
+        const storagekey = entry.storagekey_buffer[0..entry.storagekey_len];
         pstorage.deleteObject(&self.hunk.low(), storagekey) catch |err| {
             std.log.err("Failed to delete old demo: {}", .{err});
         };
@@ -581,7 +583,7 @@ fn startGame(self: *MainState, is_multiplayer: bool) void {
 
     const seed = self.prng.random.int(u32);
 
-    if (self.record_demos) {
+    if (!self.disable_recording) {
         startRecording(self, seed, is_multiplayer) catch |err| {
             std.log.err("Failed to start demo recording: {}", .{err});
         };

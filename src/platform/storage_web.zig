@@ -64,6 +64,8 @@ pub const WritableObject = struct {
     key: []const u8,
     buffer: [5000]u8, // FIXME
     pos: usize,
+    // std.io.FixedBufferStream doesn't have this, but maybe it should.
+    end_pos: usize,
 
     pub const WriteError = error{NoSpaceLeft};
     pub const SeekError = error{};
@@ -85,6 +87,7 @@ pub const WritableObject = struct {
             .key = key,
             .buffer = undefined,
             .pos = 0,
+            .end_pos = 0,
         };
     }
 
@@ -93,7 +96,7 @@ pub const WritableObject = struct {
             self.key.ptr,
             @intCast(c_int, self.key.len),
             &self.buffer,
-            @intCast(c_int, self.pos),
+            @intCast(c_int, self.end_pos),
         );
     }
 
@@ -106,6 +109,8 @@ pub const WritableObject = struct {
     }
 
     // implementation copied from std.io.FixedBufferStream
+    // TODO what if you seek past end_pos and then write? i think files support that,
+    // so maybe this should too
     pub fn write(self: *WritableObject, bytes: []const u8) WriteError!usize {
         if (bytes.len == 0) return 0;
         if (self.pos >= self.buffer.len) return error.NoSpaceLeft;
@@ -117,6 +122,9 @@ pub const WritableObject = struct {
 
         std.mem.copy(u8, self.buffer[self.pos .. self.pos + n], bytes[0..n]);
         self.pos += n;
+
+        if (self.pos > self.end_pos)
+            self.end_pos = self.pos;
 
         if (n == 0) return error.NoSpaceLeft;
 

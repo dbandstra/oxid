@@ -233,6 +233,7 @@ fn init(hunk: *Hunk) !*Main {
         .canvas_scale = initial_canvas_scale,
         .max_canvas_scale = max_canvas_scale,
         .sound_enabled = true,
+        .disable_recording = false,
     }); // oxid.init prints its own error and returns error.Failed
     errdefer oxid.deinit(&self.main_state);
 

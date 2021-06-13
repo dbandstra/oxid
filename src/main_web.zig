@@ -241,6 +241,7 @@ fn init() !void {
         .canvas_scale = 1,
         .max_canvas_scale = 4,
         .sound_enabled = false,
+        .disable_recording = false,
     }); // oxid.init prints its own errors and returns error.Failed
     errdefer oxid.deinit(&g.main_state);
 }

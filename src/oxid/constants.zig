@@ -13,6 +13,7 @@ pub fn duration60(v: u31) u31 {
 }
 
 pub const num_high_scores = 10;
+pub const num_demo_index_entries = 10;
 
 pub const enemy_speed_ticks = duration60(20 * 60); // every 20 seconds, increase monster speed
 pub const max_enemy_speed_level = 4;

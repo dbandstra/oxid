@@ -4,6 +4,7 @@ const inputs = @import("../common/inputs.zig");
 const constants = @import("constants.zig");
 const config = @import("config.zig");
 const commands = @import("commands.zig");
+const DemoIndexEntry = @import("oxid.zig").DemoIndexEntry;
 
 pub const TextAlignment = enum {
     left,
@@ -21,12 +22,12 @@ pub const MenuContext = struct {
     cfg: config.Config,
     high_scores: [constants.num_high_scores]u32,
     new_high_score: bool,
+    demo_index: []const DemoIndexEntry,
     game_over: bool,
     anim_time: u32,
     canvas_scale: u31,
     max_canvas_scale: u31,
     friendly_fire: bool,
-    record_demos: bool,
 };
 
 pub const Effect = union(enum) {
@@ -36,12 +37,12 @@ pub const Effect = union(enum) {
     start_new_game: bool,
     end_game,
     reset_game,
+    play_demo: usize,
     toggle_sound,
     set_volume: u32,
     set_canvas_scale: u31,
     toggle_fullscreen,
     toggle_friendly_fire,
-    toggle_record_demos,
     bind_game_command: BindGameCommand,
     reset_anim_time,
     quit,
@@ -73,6 +74,7 @@ pub const Menu = union(enum) {
     game_settings_menu: GameSettingsMenu,
     key_bindings_menu: KeyBindingsMenu,
     high_scores_menu: HighScoresMenu,
+    demos_menu: DemosMenu,
 
     pub fn dispatch(
         self: *Menu,
@@ -89,6 +91,7 @@ pub const Menu = union(enum) {
             .game_settings_menu => |*menu_state| func(GameSettingsMenu, menu_state, params),
             .key_bindings_menu => |*menu_state| func(KeyBindingsMenu, menu_state, params),
             .high_scores_menu => |*menu_state| func(HighScoresMenu, menu_state, params),
+            .demos_menu => |*menu_state| func(DemosMenu, menu_state, params),
         };
     }
 };
@@ -150,6 +153,10 @@ pub const MainMenu = struct {
         }
         if (ctx.option("High scores", .{})) {
             ctx.setEffect(.{ .push = .{ .high_scores_menu = HighScoresMenu.init() } });
+            ctx.setSound(.ding);
+        }
+        if (ctx.option("Recorded games", .{})) {
+            ctx.setEffect(.{ .push = .{ .demos_menu = DemosMenu.init() } });
             ctx.setSound(.ding);
         }
         // quit button is removed in web build
@@ -368,12 +375,6 @@ pub const GameSettingsMenu = struct {
             ctx.setSound(.ding);
         }
 
-        const record_demos_str = if (ctx.menu_context.record_demos) "ON" else "OFF";
-        if (ctx.optionToggle("Record demos: {s}", .{record_demos_str})) {
-            ctx.setEffect(.toggle_record_demos);
-            ctx.setSound(.ding);
-        }
-
         ctx.vspacer();
 
         if (ctx.option("Back", .{})) {
@@ -512,6 +513,62 @@ pub const HighScoresMenu = struct {
 
         for (ctx.menu_context.high_scores) |score, i| {
             ctx.label("{:3}. {}", .{ i + 1, score });
+        }
+
+        ctx.vspacer();
+
+        if (ctx.option("Close", .{})) {
+            ctx.setEffect(.pop);
+            ctx.setSound(.ding);
+        }
+    }
+};
+
+pub const DemosMenu = struct {
+    cursor_pos: usize,
+
+    pub fn init() @This() {
+        return .{
+            .cursor_pos = 0,
+        };
+    }
+
+    pub fn func(self: *@This(), comptime Ctx: type, ctx: *Ctx) void {
+        if (if (ctx.command) |command| command == .escape else false) {
+            ctx.setEffect(.pop);
+            ctx.setSound(.backoff);
+            return;
+        }
+
+        ctx.title(.left, "RECORDED GAMES");
+
+        ctx.label("10 most recent games:", .{});
+        ctx.vspacer();
+
+        for (ctx.menu_context.demo_index) |*entry, i| {
+            const storagekey = entry.storagekey_buffer[0..entry.storagekey_len];
+            // "demos/2021-06-13_05-01-31.dat"
+            const start = "demos/".len;
+            const pressed =
+                if (entry.player2_score > 0)
+                ctx.option("{s} {s}:{s} / {}, {} pts", .{
+                    storagekey[start .. start + 10],
+                    storagekey[start + 11 .. start + 13],
+                    storagekey[start + 14 .. start + 16],
+                    entry.player1_score,
+                    entry.player2_score,
+                })
+            else
+                ctx.option("{s} {s}:{s} / {} pts", .{
+                    storagekey[start .. start + 10],
+                    storagekey[start + 11 .. start + 13],
+                    storagekey[start + 14 .. start + 16],
+                    entry.player1_score,
+                });
+            if (pressed) {
+                ctx.setEffect(.{ .play_demo = i });
+                ctx.setSound(.ding);
+            }
         }
 
         ctx.vspacer();
