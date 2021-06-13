@@ -11,7 +11,7 @@ pub fn deleteObject(hunk_side: *HunkSide, key: []const u8) !void {
 }
 
 pub const ReadableObject = struct {
-    buffer: [5000]u8, // FIXME store the buffer outside. ReadableObject should not be heavyweight.
+    buffer: [50000]u8, // FIXME store the buffer outside. ReadableObject should not be heavyweight.
     pos: usize,
     size: usize,
 
@@ -19,7 +19,7 @@ pub const ReadableObject = struct {
     pub const Reader = std.io.Reader(*ReadableObject, ReadError, read);
 
     pub fn open(hunk_side: *HunkSide, key: []const u8) !?ReadableObject {
-        var buffer: [5000]u8 = undefined;
+        var buffer: [50000]u8 = undefined;
 
         const bytes_read = getLocalStorage(
             key.ptr,
@@ -62,7 +62,7 @@ pub const ReadableObject = struct {
 
 pub const WritableObject = struct {
     key: []const u8,
-    buffer: [5000]u8, // FIXME
+    buffer: [50000]u8, // FIXME
     pos: usize,
     // std.io.FixedBufferStream doesn't have this, but maybe it should.
     end_pos: usize,
