@@ -30,6 +30,9 @@ Table of contents:
       implementation of `pdraw` (which supports WebGL 1).
     * `sh build_web.sh www` (which calls `zig build wasm` and copies
       artifacts to `www` folder where the game can be served).
+* `src/verifydemo.zig`
+    * A command-line tool that headlessly simulates a demo file and prints
+      player 1's final score to stdout.
 
 ## src/oxid/
 
