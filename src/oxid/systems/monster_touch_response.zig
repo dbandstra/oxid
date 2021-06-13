@@ -7,6 +7,7 @@ const p = @import("../prototypes.zig");
 const SystemData = struct {
     id: gbe.EntityId,
     phys: *c.PhysObject,
+    creature: *c.Creature,
     monster: *c.Monster,
     inbox: gbe.Inbox(16, c.EventCollide, "self_id"),
 };
@@ -48,6 +49,7 @@ fn monsterCollide(gs: *game.Session, self: SystemData) void {
             if (self.monster.spawning_timer > 0) {
                 // spawn "early" if killing a player, so it looks less weird
                 self.monster.spawning_timer = 0;
+                self.creature.hit_points = self.monster.full_hit_points;
             }
             p.spawnEventTakeDamage(gs, .{
                 .inflictor_player_controller_id = null,
