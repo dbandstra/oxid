@@ -342,11 +342,11 @@ fn updateFramerateScheme(self: *Main) void {
 }
 
 fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
-    const audio_module = @ptrCast(*audio.MainModule, @alignCast(@alignOf(*audio.MainModule), userdata_.?));
+    const audio_state = @ptrCast(*audio.State, @alignCast(@alignOf(*audio.State), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const buf = audio_module.paint();
-    const vol = std.math.min(1.0, @intToFloat(f32, audio_module.volume) / 100.0);
+    const buf = audio_state.paint();
+    const vol = std.math.min(1.0, @intToFloat(f32, audio_state.volume) / 100.0);
     zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }
 
@@ -423,7 +423,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     want.channels = 1;
     want.samples = options.audio_buffer_size;
     want.callback = audioCallback;
-    want.userdata = &self.main_state.audio_module;
+    want.userdata = &self.main_state.audio_state;
 
     var have: sdl.SDL_AudioSpec = undefined;
 
@@ -650,17 +650,14 @@ fn tick(self: *Main, refresh_rate: u64) void {
     sdl.SDL_LockAudioDevice(self.audio_device);
     if (self.fast_forward and self.shift != 0) {
         // 16x super fast forward
-        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 16.0);
+        oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 16.0);
     } else if (self.fast_forward) {
         // 4x fast forward
-        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate) / 4.0);
+        oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 4.0);
     } else {
-        oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate));
+        oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate));
     }
     sdl.SDL_UnlockAudioDevice(self.audio_device);
-
-    // clear out EventPlaySound
-    oxid.soundEventCleanup(&self.main_state);
 
     if (self.toggle_fullscreen) {
         toggleFullscreen(self);

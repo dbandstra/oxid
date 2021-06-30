@@ -65,7 +65,7 @@ pub const DemoState = union(enum) {
 pub const MainState = struct {
     hunk: *Hunk,
     cfg: config.Config,
-    audio_module: audio.MainModule,
+    audio_state: audio.State,
     static: GameStatic,
     session_memory: game.Session, // don't access this directly
     session: ?*game.Session, // points to session_memory when a game is running
@@ -143,8 +143,8 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
         break :blk config.getDefault();
     };
 
-    audio.MainModule.init(
-        &self.audio_module,
+    audio.State.init(
+        &self.audio_state,
         self.hunk,
         self.cfg.volume,
         params.audio_sample_rate,
@@ -772,13 +772,9 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
 pub fn frameCleanup(self: *MainState) void {
     const gs = self.session orelse return;
 
+    // this removes all event entities except for EventPlaySound (those will
+    // be removed by audioSync as they're consumed).
     game.frameCleanup(gs);
-}
-
-pub fn soundEventCleanup(self: *MainState) void {
-    const gs = self.session orelse return;
-
-    game.soundEventCleanup(gs);
 }
 
 pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
@@ -807,20 +803,30 @@ pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
 
 // called when audio thread is locked. this is where we communicate
 // information from the main thread to the audio thread.
-pub fn audioSync(self: *MainState, reset: bool, sample_rate: f32) void {
-    self.audio_module.volume = self.cfg.volume;
-    self.audio_module.sample_rate = sample_rate;
+pub fn audioSync(self: *MainState, new_sample_rate: ?f32) void {
+    self.audio_state.volume = self.cfg.volume;
+    if (new_sample_rate) |sample_rate|
+        self.audio_state.sample_rate = sample_rate;
 
-    // sync menu sounds
+    // if sound is disabled, clear out any lingering state from before it was disabled
+    if (!self.sound_enabled) {
+        self.audio_state.reset();
+    }
+
+    // push menu sounds
     if (self.queued_menu_sound) |params| {
-        self.audio_module.pushSound(params);
+        if (self.sound_enabled)
+            self.audio_state.pushSound(params);
         self.queued_menu_sound = null;
     }
 
-    // sync game sounds
+    // push game sounds
     if (self.session) |gs| {
-        var it = gs.ecs.componentIter(c.EventPlaySound);
-        while (it.next()) |event|
-            self.audio_module.pushSound(event.params);
+        if (self.sound_enabled) {
+            var it = gs.ecs.componentIter(c.EventPlaySound);
+            while (it.next()) |event|
+                self.audio_state.pushSound(event.params);
+        }
+        game.soundEventCleanup(gs);
     }
 }

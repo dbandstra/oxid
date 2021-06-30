@@ -236,7 +236,7 @@ fn init() !void {
         .hunk = hunk,
         .random_seed = getRandomSeed(),
         .audio_buffer_size = audio_buffer_size,
-        .audio_sample_rate = 44100, // will be overridden before first paint
+        .audio_sample_rate = 44100, // will be overridden in audio callback before first paint
         .fullscreen = false,
         .canvas_scale = 1,
         .max_canvas_scale = 4,
@@ -262,10 +262,10 @@ export fn getAudioBufferSize() c_int {
 }
 
 export fn audioCallback(sample_rate: f32) [*]f32 {
-    g.main_state.audio_module.sample_rate = sample_rate / @intToFloat(f32, g.audio_speedup);
+    g.main_state.audio_state.sample_rate = sample_rate / @intToFloat(f32, g.audio_speedup);
 
-    const buf = g.main_state.audio_module.paint();
-    const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.audio_module.volume) / 100.0);
+    const buf = g.main_state.audio_state.paint();
+    const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.audio_state.volume) / 100.0);
 
     var i: usize = 0;
     while (i < audio_buffer_size) : (i += 1) {
@@ -345,10 +345,7 @@ fn tick(should_draw: bool) void {
     }
 
     g.audio_speedup = num_frames;
-    oxid.audioSync(
-        &g.main_state,
-        !g.main_state.sound_enabled,
-        // this sample rate is not actually used - it's overridden at the top of audioCallback
-        g.main_state.audio_module.sample_rate,
-    );
+    // don't pass a new sample rate to audioSync here. in the web build, we determine the sample
+    // rate in audioCallback, based on g.audio_speedup.
+    oxid.audioSync(&g.main_state, null);
 }
