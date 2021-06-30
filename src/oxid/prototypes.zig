@@ -66,8 +66,6 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
     // see https://github.com/ziglang/zig/issues/3915
     return spawnWithComponents(gs, struct {
         game_controller: c.GameController,
-        voice_accelerate: c.VoiceAccelerate,
-        voice_wave_begin: c.VoiceWaveBegin,
     }{
         .game_controller = .{
             .monster_count = 0,
@@ -83,12 +81,6 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
             .player1_controller_id = params.player1_controller_id,
             .player2_controller_id = params.player2_controller_id,
             .ticker = 0,
-        },
-        .voice_accelerate = .{
-            .params = null,
-        },
-        .voice_wave_begin = .{
-            .params = null,
         },
     });
 }
@@ -119,10 +111,6 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
         phys_object: c.PhysObject,
         creature: c.Creature,
         player: c.Player,
-        voice_coin: c.VoiceCoin,
-        voice_laser: c.VoiceLaser,
-        voice_power_up: c.VoicePowerUp,
-        voice_sampler: c.VoiceSampler,
     }{
         .transform = .{
             .pos = math.vec2(params.pos.x, params.pos.y + levels.subpixels_per_tile),
@@ -163,10 +151,6 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .in_down = false,
             .in_shoot = false,
         },
-        .voice_coin = .{ .params = null },
-        .voice_laser = .{ .params = null },
-        .voice_power_up = .{ .params = null },
-        .voice_sampler = .{ .sample = null },
     });
 }
 
@@ -206,7 +190,6 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
         phys_object: c.PhysObject,
         creature: c.Creature,
         monster: c.Monster,
-        voice_laser: ?c.VoiceLaser,
     }{
         .transform = .{
             .pos = params.pos,
@@ -245,24 +228,17 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
                 0,
             .has_coin = params.has_coin,
         },
-        .voice_laser = if (can_shoot) .{ .params = null } else null,
     });
 }
 
 pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
 }) ?gbe.EntityId {
-    // can't do this in the struct literal because of a compiler bug - it will crash at runtime
-    // https://github.com/ziglang/zig/issues/3915
-    const drop_web_params = audio.DropWebVoice.NoteParams{
-        .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
-    };
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         phys_object: c.PhysObject,
         web: c.Web,
         creature: c.Creature,
-        voice_drop_web: c.VoiceDropWeb,
     }{
         .transform = .{
             .pos = params.pos,
@@ -284,9 +260,6 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
             .invulnerability_timer = 0,
             .hit_points = 3,
             .flinch_timer = 0,
-        },
-        .voice_drop_web = .{
-            .params = drop_web_params,
         },
     });
 }
@@ -424,12 +397,10 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
 
 pub fn spawnSparks(gs: *game.Session, params: struct {
     pos: math.Vec2,
-    impact_sound: bool,
 }) ?gbe.EntityId {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         animation: c.Animation,
-        voice_sampler: ?c.VoiceSampler,
     }{
         .transform = .{
             .pos = params.pos,
@@ -440,7 +411,6 @@ pub fn spawnSparks(gs: *game.Session, params: struct {
             .frame_timer = graphics.getSimpleAnim(.pla_sparks).ticks_per_frame,
             .z_index = constants.z_index_sparks,
         },
-        .voice_sampler = if (params.impact_sound) .{ .sample = .monster_impact } else null,
     });
 }
 
@@ -450,7 +420,6 @@ pub fn spawnExplosion(gs: *game.Session, params: struct {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         animation: c.Animation,
-        voice_explosion: c.VoiceExplosion,
     }{
         .transform = .{
             .pos = params.pos,
@@ -460,9 +429,6 @@ pub fn spawnExplosion(gs: *game.Session, params: struct {
             .frame_index = 0,
             .frame_timer = graphics.getSimpleAnim(.explosion).ticks_per_frame,
             .z_index = constants.z_index_explosion,
-        },
-        .voice_explosion = .{
-            .params = .{},
         },
     });
 }
@@ -488,7 +454,12 @@ pub const spawnEventDrawBox = event(c.EventDrawBox);
 pub const spawnEventGameInput = event(c.EventGameInput);
 pub const spawnEventGameOver = event(c.EventGameOver);
 pub const spawnEventMonsterDied = event(c.EventMonsterDied);
+pub const spawnEventPlaySound = event(c.EventPlaySound);
 pub const spawnEventPlayerDied = event(c.EventPlayerDied);
 pub const spawnEventRestoreOxygen = event(c.EventRestoreOxygen);
 pub const spawnEventShowMessage = event(c.EventShowMessage);
 pub const spawnEventTakeDamage = event(c.EventTakeDamage);
+
+pub fn playSound(gs: *game.Session, params: audio.SoundParams) void {
+    _ = spawnEventPlaySound(gs, .{ .params = params });
+}

@@ -15,8 +15,6 @@ const SystemData = struct {
     phys: *c.PhysObject,
     player: *c.Player,
     transform: *c.Transform,
-    voice_laser: *c.VoiceLaser,
-    voice_sampler: *c.VoiceSampler,
 };
 
 pub fn run(gs: *game.Session, context: game.FrameContext) void {
@@ -47,7 +45,7 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
                 gs.ecs.markForRemoval(self.id);
             } else {
                 if (self.player.dying_timer == constants.duration60(30)) { // yeesh
-                    self.voice_sampler.sample = .player_crumble;
+                    p.playSound(gs, .{ .sample = .player_crumble });
                 }
                 self.phys.speed = 0;
                 self.phys.push_dir = null;
@@ -113,12 +111,14 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
     } else return;
 
     self.player.trigger_released = false;
-    self.voice_laser.params = .{
-        .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
-        .carrier_mul = 2.0,
-        .modulator_mul = 0.5,
-        .modulator_rad = 0.5,
-    };
+    p.playSound(gs, .{
+        .laser = .{
+            .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
+            .carrier_mul = 2.0,
+            .modulator_mul = 0.5,
+            .modulator_rad = 0.5,
+        },
+    });
     // spawn the bullet one quarter of a grid cell in front of the player
     const pos = self.transform.pos;
     const dir_vec = math.getNormal(self.phys.facing);

@@ -17,14 +17,6 @@ pub const ComponentLists = struct {
     RemoveTimer: gbe.ComponentList(c.RemoveTimer, 50),
     SimpleGraphic: gbe.ComponentList(c.SimpleGraphic, 50),
     Transform: gbe.ComponentList(c.Transform, 100),
-    VoiceAccelerate: gbe.ComponentList(c.VoiceAccelerate, 1),
-    VoiceCoin: gbe.ComponentList(c.VoiceCoin, 50),
-    VoiceDropWeb: gbe.ComponentList(c.VoiceDropWeb, 50),
-    VoiceExplosion: gbe.ComponentList(c.VoiceExplosion, 10),
-    VoiceLaser: gbe.ComponentList(c.VoiceLaser, 100),
-    VoicePowerUp: gbe.ComponentList(c.VoicePowerUp, 100),
-    VoiceSampler: gbe.ComponentList(c.VoiceSampler, 100),
-    VoiceWaveBegin: gbe.ComponentList(c.VoiceWaveBegin, 1),
     Web: gbe.ComponentList(c.Web, 100),
     EventAwardLife: gbe.ComponentList(c.EventAwardLife, 20),
     EventAwardPoints: gbe.ComponentList(c.EventAwardPoints, 20),
@@ -35,6 +27,7 @@ pub const ComponentLists = struct {
     EventGameInput: gbe.ComponentList(c.EventGameInput, 20),
     EventGameOver: gbe.ComponentList(c.EventGameOver, 20),
     EventMonsterDied: gbe.ComponentList(c.EventMonsterDied, 20),
+    EventPlaySound: gbe.ComponentList(c.EventPlaySound, 20),
     EventPlayerDied: gbe.ComponentList(c.EventPlayerDied, 20),
     EventRestoreOxygen: gbe.ComponentList(c.EventRestoreOxygen, 20),
     EventShowMessage: gbe.ComponentList(c.EventShowMessage, 5),
@@ -131,15 +124,20 @@ pub fn frame(gs: *Session, ctx: FrameContext, paused: bool) void {
     }
 }
 
-// run after "middleware" (rendering, sound, etc)
+// run after "middleware" (rendering, etc)
 pub fn frameCleanup(gs: *Session) void {
-    // mark all events for removal
+    // mark all events for removal, except EventPlaySound. those need to last a little longer
     inline for (@typeInfo(ComponentLists).Struct.fields) |field| {
         const ComponentType = field.field_type.ComponentType;
-        if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event")) {
+        if (comptime std.mem.startsWith(u8, @typeName(ComponentType), "Event") and ComponentType != c.EventPlaySound) {
             gs.ecs.markAllForRemoval(ComponentType);
         }
     }
 
+    gs.ecs.applyRemovals();
+}
+
+pub fn soundEventCleanup(gs: *Session) void {
+    gs.ecs.markAllForRemoval(c.EventPlaySound);
     gs.ecs.applyRemovals();
 }

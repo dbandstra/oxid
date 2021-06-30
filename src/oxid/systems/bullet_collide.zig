@@ -14,9 +14,11 @@ pub fn run(gs: *game.Session) void {
     while (it.next()) |self| {
         const event = self.inbox.one();
 
+        if (!gbe.EntityId.isZero(event.other_id)) {
+            p.playSound(gs, .{ .sample = .monster_impact });
+        }
         _ = p.spawnSparks(gs, .{
             .pos = self.transform.pos,
-            .impact_sound = !gbe.EntityId.isZero(event.other_id),
         });
 
         if (!gbe.EntityId.isZero(event.other_id)) {

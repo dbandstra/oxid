@@ -11,8 +11,6 @@ const waves = @import("../waves.zig");
 
 const SystemData = struct {
     gc: *c.GameController,
-    voice_accelerate: *c.VoiceAccelerate,
-    voice_wave_begin: *c.VoiceWaveBegin,
 };
 
 pub fn run(gs: *game.Session) void {
@@ -34,7 +32,7 @@ fn think(gs: *game.Session, self: SystemData) void {
     if (self.gc.next_wave_timer > 0) {
         self.gc.next_wave_timer -= 1;
         if (self.gc.next_wave_timer == 0) {
-            self.voice_wave_begin.params = .{};
+            p.playSound(gs, .wave_begin);
             self.gc.wave_number += 1;
             self.gc.wave_message_timer = constants.duration60(180);
             self.gc.enemy_speed_level = 0;
@@ -51,14 +49,16 @@ fn think(gs: *game.Session, self: SystemData) void {
         if (self.gc.enemy_speed_timer == 0) {
             if (self.gc.enemy_speed_level < constants.max_enemy_speed_level) {
                 self.gc.enemy_speed_level += 1;
-                self.voice_accelerate.params = .{
-                    .playback_speed = switch (self.gc.enemy_speed_level) {
-                        1 => 1.25,
-                        2 => 1.5,
-                        3 => 1.75,
-                        else => 2.0,
+                p.playSound(gs, .{
+                    .accelerate = .{
+                        .playback_speed = switch (self.gc.enemy_speed_level) {
+                            1 => 1.25,
+                            2 => 1.5,
+                            3 => 1.75,
+                            else => 2.0,
+                        },
                     },
-                };
+                });
             }
             self.gc.enemy_speed_timer = constants.enemy_speed_ticks;
         }

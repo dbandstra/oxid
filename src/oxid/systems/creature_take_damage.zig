@@ -11,7 +11,6 @@ pub fn run(gs: *game.Session) void {
         transform: *const c.Transform,
         monster: ?*const c.Monster,
         player: ?*c.Player,
-        voice_sampler: ?*c.VoiceSampler,
         inbox: gbe.Inbox(8, c.EventTakeDamage, "self_id"),
     });
     while (it.next()) |self| {
@@ -39,9 +38,7 @@ pub fn run(gs: *game.Session) void {
 
         if (self.player) |self_player| {
             // player died
-            if (self.voice_sampler) |voice_sampler| {
-                voice_sampler.sample = .player_death;
-            }
+            p.playSound(gs, .{ .sample = .player_death });
 
             self_player.dying_timer = constants.player_death_anim_time;
 
@@ -82,6 +79,7 @@ pub fn run(gs: *game.Session) void {
             }
         }
 
+        p.playSound(gs, .explosion);
         _ = p.spawnExplosion(gs, .{
             .pos = self.transform.pos,
         });

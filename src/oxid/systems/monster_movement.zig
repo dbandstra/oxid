@@ -14,7 +14,6 @@ const SystemData = struct {
     phys: *c.PhysObject,
     monster: *c.Monster,
     transform: *const c.Transform,
-    voice_laser: ?*c.VoiceLaser,
 };
 
 pub fn run(gs: *game.Session) void {
@@ -137,14 +136,14 @@ fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, att
     }
     switch (attack_type) {
         .shoot => {
-            if (self.voice_laser) |voice_laser| {
-                voice_laser.params = .{
+            p.playSound(gs, .{
+                .laser = .{
                     .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
                     .carrier_mul = 4.0,
                     .modulator_mul = 0.125,
                     .modulator_rad = 1.0,
-                };
-            }
+                },
+            });
             // spawn the bullet one quarter of a grid cell in front of the monster
             const pos = self.transform.pos;
             const dir_vec = math.getNormal(self.phys.facing);
@@ -161,6 +160,11 @@ fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, att
             });
         },
         .drop_web => {
+            p.playSound(gs, .{
+                .drop_web = .{
+                    .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
+                },
+            });
             _ = p.spawnWeb(gs, .{
                 .pos = self.transform.pos,
             });

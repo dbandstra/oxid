@@ -84,19 +84,13 @@ pub const MainState = struct {
     disable_recording: bool,
     sound_enabled: bool,
     prng: std.rand.DefaultPrng,
-    menu_sounds: MenuSounds,
+    queued_menu_sound: ?audio.SoundParams,
 };
 
 pub const GameStatic = struct {
     tileset: drawing.Tileset,
     palette: [48]u8,
     font: fonts.Font,
-};
-
-pub const MenuSounds = struct {
-    backoff: ?audio.MenuBackoffVoice.NoteParams,
-    blip: ?audio.MenuBlipVoice.NoteParams,
-    ding: ?audio.MenuDingVoice.NoteParams,
 };
 
 pub const InitParams = struct {
@@ -182,11 +176,7 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.sound_enabled = params.sound_enabled;
     self.disable_recording = params.disable_recording;
     self.prng = std.rand.DefaultPrng.init(params.random_seed);
-    self.menu_sounds = .{
-        .backoff = null,
-        .blip = null,
-        .ding = null,
-    };
+    self.queued_menu_sound = null;
 }
 
 pub fn deinit(self: *MainState) void {
@@ -238,13 +228,13 @@ pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
 fn playMenuSound(self: *MainState, sound: menus.Sound) void {
     switch (sound) {
         .backoff => {
-            self.menu_sounds.backoff = .{};
+            self.queued_menu_sound = .menu_backoff;
         },
         .blip => {
-            self.menu_sounds.blip = .{ .freq_mul = 0.95 + 0.1 * self.prng.random.float(f32) };
+            self.queued_menu_sound = .{ .menu_blip = .{ .freq_mul = 0.95 + 0.1 * self.prng.random.float(f32) } };
         },
         .ding => {
-            self.menu_sounds.ding = .{};
+            self.queued_menu_sound = .menu_ding;
         },
     }
 }
@@ -785,6 +775,12 @@ pub fn frameCleanup(self: *MainState) void {
     game.frameCleanup(gs);
 }
 
+pub fn soundEventCleanup(self: *MainState) void {
+    const gs = self.session orelse return;
+
+    game.soundEventCleanup(gs);
+}
+
 pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
     const maybe_demo_progress = switch (self.demo_state) {
         .playing => |*dp| if (dp.player.total_frames > 0)
@@ -812,11 +808,19 @@ pub fn draw(self: *MainState, draw_state: *pdraw.State) void {
 // called when audio thread is locked. this is where we communicate
 // information from the main thread to the audio thread.
 pub fn audioSync(self: *MainState, reset: bool, sample_rate: f32) void {
-    self.audio_module.sync(
-        reset,
-        self.cfg.volume,
-        sample_rate,
-        self.session,
-        &self.menu_sounds,
-    );
+    self.audio_module.volume = self.cfg.volume;
+    self.audio_module.sample_rate = sample_rate;
+
+    // sync menu sounds
+    if (self.queued_menu_sound) |params| {
+        self.audio_module.pushSound(params);
+        self.queued_menu_sound = null;
+    }
+
+    // sync game sounds
+    if (self.session) |gs| {
+        var it = gs.ecs.componentIter(c.EventPlaySound);
+        while (it.next()) |event|
+            self.audio_module.pushSound(event.params);
+    }
 }

@@ -570,7 +570,7 @@ fn doFrame(self: *Main, should_draw: bool, clear: bool, alpha: f32) void {
     if (should_draw)
         draw(self, clear, alpha);
 
-    // delete events
+    // delete all events except for EventPlaySound
     oxid.frameCleanup(&self.main_state);
 }
 
@@ -658,6 +658,9 @@ fn tick(self: *Main, refresh_rate: u64) void {
         oxid.audioSync(&self.main_state, false, @intToFloat(f32, self.audio_sample_rate));
     }
     sdl.SDL_UnlockAudioDevice(self.audio_device);
+
+    // clear out EventPlaySound
+    oxid.soundEventCleanup(&self.main_state);
 
     if (self.toggle_fullscreen) {
         toggleFullscreen(self);

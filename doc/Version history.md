@@ -1,5 +1,10 @@
 # Version history
 
+Starting with version 1.1.0, I will be incrementing the patch version (third
+digit) only if gameplay has not been changed at all (demo files remain
+compatible). If the gameplay changes, the minor version (second digit) will
+be incremented. The major version (first digit) will probably never change.
+
 ## 1.1.0 (not tagged yet)
 
 Demo recording: The game now records every game you play. It keeps the 10

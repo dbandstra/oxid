@@ -217,6 +217,10 @@ pub const EventGameOver = struct {};
 
 pub const EventMonsterDied = struct {};
 
+pub const EventPlaySound = struct {
+    params: audio.SoundParams,
+};
+
 pub const EventPlayerDied = struct {
     player_controller_id: gbe.EntityId,
 };
@@ -232,12 +236,3 @@ pub const EventTakeDamage = struct {
     self_id: gbe.EntityId,
     amount: u32,
 };
-
-pub const VoiceAccelerate = struct { params: ?audio.AccelerateVoice.NoteParams };
-pub const VoiceCoin = struct { params: ?audio.CoinVoice.NoteParams };
-pub const VoiceDropWeb = struct { params: ?audio.DropWebVoice.NoteParams };
-pub const VoiceExplosion = struct { params: ?audio.ExplosionVoice.NoteParams };
-pub const VoiceLaser = struct { params: ?audio.LaserVoice.NoteParams };
-pub const VoicePowerUp = struct { params: ?audio.PowerUpVoice.NoteParams };
-pub const VoiceSampler = struct { sample: ?audio.Sample };
-pub const VoiceWaveBegin = struct { params: ?audio.WaveBeginVoice.NoteParams };
