@@ -177,6 +177,7 @@ pub const State = struct {
 
     dispatcher: zang.Notes(MultiModule.Params).PolyphonyDispatcher(num_voices),
     voices: [num_voices]Voice,
+    impulse_frame: usize,
     next_note_id: usize,
     iq: zang.Notes(MultiModule.Params).ImpulseQueue,
 
@@ -204,6 +205,7 @@ pub const State = struct {
                 .trigger = zang.Trigger(MultiModule.Params).init(),
             };
         }
+        self.impulse_frame = 0;
         self.next_note_id = 1;
         self.iq = zang.Notes(MultiModule.Params).ImpulseQueue.init();
 
@@ -217,14 +219,19 @@ pub const State = struct {
 
     // called in the main thread while the audio thread is locked
     pub fn pushSound(self: *State, sound_params: SoundParams) void {
-        const impulse_frame: usize = 0;
-
-        self.iq.push(impulse_frame, self.next_note_id, .{
+        self.iq.push(self.impulse_frame, self.next_note_id, .{
             .sample_rate = self.sample_rate,
             .note_on = true,
             .sound_params = sound_params,
         });
         self.next_note_id +%= 1;
+
+        // if the exact same sound were to play twice on the same impulse frame, it would be twice
+        // as loud. mitigate this by starting each new sound at a slightly different impulse frame.
+        // this is basically a hack, but it's better than nothing (although it won't help much with
+        // square wave-based sounds...)
+        if (self.impulse_frame + 16 < self.out_buf.len)
+            self.impulse_frame += 16;
     }
 
     // called in the main thread while the audio thread is locked. this is called if sound is
@@ -236,6 +243,7 @@ pub const State = struct {
         for (self.voices) |*voice|
             voice.trigger.reset();
         _ = self.iq.consume();
+        self.impulse_frame = 0;
     }
 
     // called in the audio thread
@@ -259,6 +267,8 @@ pub const State = struct {
                 );
             }
         }
+
+        self.impulse_frame = 0;
 
         return self.out_buf;
     }

@@ -258,7 +258,7 @@ const _module13 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / 1.0, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / 1.0, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
@@ -298,7 +298,7 @@ const _module14 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / 0.8, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / 0.8, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
@@ -337,7 +337,7 @@ const _module15 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / 0.8, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / 0.8, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
@@ -421,7 +421,7 @@ const _module17 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / 8.0, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / 8.0, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
@@ -463,7 +463,7 @@ const _module18 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / temp_float0, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / temp_float0, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
@@ -507,7 +507,7 @@ const _module19 = struct {
             self.tracker0.reset();
             self.trigger0.reset();
         }
-        const _iap0 = self.tracker0.consume(params.sample_rate / 1.0, span.end - span.start);
+        const _iap0 = self.tracker0.consume(params.sample_rate / 1.0, span);
         var _ctr0 = self.trigger0.counter(span, _iap0);
         while (self.trigger0.next(&_ctr0)) |_result| {
             const _new_note = note_id_changed or _result.note_id_changed;
