@@ -30,7 +30,7 @@ fn conferBonus(gs: *game.Session) void {
         for (self.inbox.all()) |event| {
             switch (event.pickup_type) {
                 .power_up => {
-                    p.playSound(gs, .power_up);
+                    p.playSoundPowerUp(gs);
                     self.player.attack_level = switch (self.player.attack_level) {
                         .one => .two,
                         else => .three,
@@ -38,7 +38,7 @@ fn conferBonus(gs: *game.Session) void {
                     self.player.last_pickup = .power_up;
                 },
                 .speed_up => {
-                    p.playSound(gs, .power_up);
+                    p.playSoundPowerUp(gs);
                     self.player.speed_level = switch (self.player.speed_level) {
                         .one => .two,
                         else => .three,
@@ -46,17 +46,13 @@ fn conferBonus(gs: *game.Session) void {
                     self.player.last_pickup = .speed_up;
                 },
                 .life_up => {
-                    p.playSound(gs, .{ .sample = .extra_life });
+                    p.playSoundExtraLife(gs);
                     p.spawnEventAwardLife(gs, .{
                         .player_controller_id = self.player.player_controller_id,
                     });
                 },
                 .coin => {
-                    p.playSound(gs, .{
-                        .coin = .{
-                            .freq_mul = 0.95 + 0.1 * gs.prng.random.float(f32),
-                        },
-                    });
+                    p.playSoundCoin(gs);
                     self.player.oxygen += constants.oxygen_per_coin;
                     if (self.player.oxygen > constants.max_oxygen)
                         self.player.oxygen = constants.max_oxygen;

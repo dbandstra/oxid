@@ -38,7 +38,7 @@ pub fn run(gs: *game.Session) void {
 
         if (self.player) |self_player| {
             // player died
-            p.playSound(gs, .{ .sample = .player_death });
+            p.playSoundPlayerDeath(gs);
 
             self_player.dying_timer = constants.player_death_anim_time;
 
@@ -79,7 +79,7 @@ pub fn run(gs: *game.Session) void {
             }
         }
 
-        p.playSound(gs, .explosion);
+        p.playSoundExplosion(gs);
         _ = p.spawnExplosion(gs, .{
             .pos = self.transform.pos,
         });

@@ -14,7 +14,7 @@ pub fn run(gs: *game.Session) void {
         const event = self.inbox.one();
 
         if (event.other_id != null)
-            p.playSound(gs, .{ .sample = .monster_impact });
+            p.playSoundMonsterImpact(gs);
 
         _ = p.spawnSparks(gs, .{ .pos = self.transform.pos });
 

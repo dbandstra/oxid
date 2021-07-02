@@ -43,7 +43,7 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
                 gs.ecs.markForRemoval(self.id);
             } else {
                 if (self.player.dying_timer == constants.duration60(30)) // yeesh
-                    p.playSound(gs, .{ .sample = .player_crumble });
+                    p.playSoundPlayerCrumble(gs);
                 self.phys.speed = 0;
                 self.phys.push_dir = null;
                 self.player.line_of_fire = null;
@@ -103,14 +103,7 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
     } else return;
 
     self.player.trigger_released = false;
-    p.playSound(gs, .{
-        .laser = .{
-            .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
-            .carrier_mul = 2.0,
-            .modulator_mul = 0.5,
-            .modulator_rad = 0.5,
-        },
-    });
+    p.playSoundPlayerLaser(gs);
     // spawn the bullet one quarter of a grid cell in front of the player
     const pos = self.transform.pos;
     const dir_vec = math.getNormal(self.phys.facing);

@@ -454,12 +454,105 @@ pub const spawnEventDrawBox = event(c.EventDrawBox);
 pub const spawnEventGameInput = event(c.EventGameInput);
 pub const spawnEventGameOver = event(c.EventGameOver);
 pub const spawnEventMonsterDied = event(c.EventMonsterDied);
-pub const spawnEventPlaySound = event(c.EventPlaySound);
+const spawnEventPlaySound = event(c.EventPlaySound);
 pub const spawnEventPlayerDied = event(c.EventPlayerDied);
 pub const spawnEventRestoreOxygen = event(c.EventRestoreOxygen);
 pub const spawnEventShowMessage = event(c.EventShowMessage);
 pub const spawnEventTakeDamage = event(c.EventTakeDamage);
 
-pub fn playSound(gs: *game.Session, params: audio.SoundParams) void {
-    _ = spawnEventPlaySound(gs, .{ .params = params });
+pub fn playSoundAccelerate(gs: *game.Session, enemy_speed_level: u32) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{
+            .accelerate = .{
+                .playback_speed = switch (enemy_speed_level) {
+                    1 => 1.25,
+                    2 => 1.5,
+                    3 => 1.75,
+                    else => 2.0,
+                },
+            },
+        },
+    });
+}
+
+pub fn playSoundCoin(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{
+            .coin = .{
+                .freq_mul = 0.95 + 0.1 * gs.prng.random.float(f32),
+            },
+        },
+    });
+}
+
+pub fn playSoundDropWeb(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{
+            .drop_web = .{
+                .freq_mul = 0.2 * gs.prng.random.float(f32),
+            },
+        },
+    });
+}
+
+pub fn playSoundExplosion(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{ .params = .explosion });
+}
+
+pub fn playSoundExtraLife(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{ .params = .{ .sample = .extra_life } });
+}
+
+pub fn playSoundMonsterImpact(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{ .params = .{ .sample = .monster_impact } });
+}
+
+pub fn playSoundMonsterLaser(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{
+            .laser = .{
+                .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
+                .carrier_mul = 4.0,
+                .modulator_mul = 0.125,
+                .modulator_rad = 1.0,
+            },
+        },
+    });
+}
+
+pub fn playSoundPlayerCrumble(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{ .sample = .player_crumble },
+    });
+}
+
+pub fn playSoundPlayerDeath(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{ .sample = .player_death },
+    });
+}
+
+pub fn playSoundPlayerLaser(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .{
+            .laser = .{
+                .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
+                .carrier_mul = 2.0,
+                .modulator_mul = 0.5,
+                .modulator_rad = 0.5,
+            },
+        },
+    });
+}
+
+pub fn playSoundPowerUp(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .power_up,
+    });
+}
+
+pub fn playSoundWaveBegin(gs: *game.Session) void {
+    _ = spawnEventPlaySound(gs, .{
+        .params = .wave_begin,
+    });
 }

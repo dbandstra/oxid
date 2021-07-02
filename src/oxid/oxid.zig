@@ -809,9 +809,8 @@ pub fn audioSync(self: *MainState, new_sample_rate: ?f32) void {
         self.audio_state.sample_rate = sample_rate;
 
     // if sound is disabled, clear out any lingering state from before it was disabled
-    if (!self.sound_enabled) {
+    if (!self.sound_enabled)
         self.audio_state.reset();
-    }
 
     // push menu sounds
     if (self.queued_menu_sound) |params| {
