@@ -12,18 +12,17 @@ pub fn run(gs: *game.Session) void {
     if (gs.ecs.componentIter(c.EventPlayerDied).next() != null) {
         gc.freeze_monsters_timer = constants.monster_freeze_time;
 
-        const any_lives_left = for ([_]?gbe.EntityId{
+        const any_lives_left = for ([_]?gbe.EntityID{
             gc.player1_controller_id,
             gc.player2_controller_id,
         }) |maybe_id| {
             const id = maybe_id orelse continue;
-            const pc = gs.ecs.findComponentById(id, c.PlayerController) orelse continue;
+            const pc = gs.ecs.findComponentByID(id, c.PlayerController) orelse continue;
             if (pc.lives > 0) break true;
         } else false;
 
-        if (!any_lives_left) {
+        if (!any_lives_left)
             p.spawnEventGameOver(gs, .{});
-        }
     }
 
     // whenever a monster dies, check if enemy speed level should be bumped up

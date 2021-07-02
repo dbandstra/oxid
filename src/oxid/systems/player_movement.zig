@@ -10,7 +10,7 @@ const p = @import("../prototypes.zig");
 const getLineOfFire = @import("../functions/get_line_of_fire.zig").getLineOfFire;
 
 const SystemData = struct {
-    id: gbe.EntityId,
+    id: gbe.EntityID,
     creature: *c.Creature,
     phys: *c.PhysObject,
     player: *c.Player,
@@ -39,14 +39,11 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
         if (self.player.dying_timer > 0) {
             self.player.dying_timer -= 1;
             if (self.player.dying_timer == 0) {
-                _ = p.spawnPlayerCorpse(gs, .{
-                    .pos = self.transform.pos,
-                });
+                _ = p.spawnPlayerCorpse(gs, .{ .pos = self.transform.pos });
                 gs.ecs.markForRemoval(self.id);
             } else {
-                if (self.player.dying_timer == constants.duration60(30)) { // yeesh
+                if (self.player.dying_timer == constants.duration60(30)) // yeesh
                     p.playSound(gs, .{ .sample = .player_crumble });
-                }
                 self.phys.speed = 0;
                 self.phys.push_dir = null;
                 self.player.line_of_fire = null;
@@ -83,9 +80,8 @@ pub fn run(gs: *game.Session, context: game.FrameContext) void {
 }
 
 fn playerUpdate(gs: *game.Session, self: SystemData) void {
-    if (self.creature.invulnerability_timer == 0) {
+    if (self.creature.invulnerability_timer == 0)
         self.phys.illusory = false;
-    }
 }
 
 fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) void {
@@ -93,21 +89,17 @@ fn playerShoot(gs: *game.Session, self: SystemData, context: game.FrameContext) 
         self.player.trigger_released = true;
         return;
     }
-    if (!self.player.trigger_released) {
+    if (!self.player.trigger_released)
         return;
-    }
 
     // the player can only have a certain amount of bullets in play at a time.
     // look for a bullet slot that is either null (never been used) or a
     // non-existent entity (old bullet is gone)
     const bullet_slot = for (self.player.bullets) |*slot| {
         if (slot.*) |bullet_id| {
-            if (gs.ecs.findComponentById(bullet_id, c.Bullet) == null) {
+            if (gs.ecs.findComponentByID(bullet_id, c.Bullet) == null)
                 break slot;
-            }
-        } else {
-            break slot;
-        }
+        } else break slot;
     } else return;
 
     self.player.trigger_released = false;
@@ -152,9 +144,8 @@ fn isTouchingWeb(gs: *game.Session, self: SystemData) bool {
             self.phys.entity_bbox,
             other.transform.pos,
             other.phys.entity_bbox,
-        )) {
+        ))
             return true;
-        }
     }
     return false;
 }
@@ -166,9 +157,8 @@ fn playerMove(gs: *game.Session, self: SystemData) void {
         .three => constants.player_move_speed[2],
     };
 
-    if (isTouchingWeb(gs, self)) {
+    if (isTouchingWeb(gs, self))
         move_speed /= 2;
-    }
 
     var xmove: i32 = 0;
     var ymove: i32 = 0;

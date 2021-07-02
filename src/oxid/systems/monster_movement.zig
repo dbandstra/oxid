@@ -9,7 +9,7 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 const SystemData = struct {
-    id: gbe.EntityId,
+    id: gbe.EntityID,
     creature: *c.Creature,
     phys: *c.PhysObject,
     monster: *c.Monster,
@@ -51,9 +51,8 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
         return;
     }
 
-    if (gc.monster_count < 5) {
+    if (gc.monster_count < 5)
         self.monster.personality = .chase;
-    }
 
     const monster_values = constants.getMonsterValues(self.monster.monster_type);
     const move_speed = if (gc.enemy_speed_level < monster_values.move_speed.len)
@@ -73,10 +72,8 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
     var can_go_left = false;
     var can_go_right = false;
 
-    if (physics.inWall(self.phys, pos)) {
-        // stuck in a wall
-        return;
-    }
+    if (physics.inWall(self.phys, pos))
+        return; // stuck in a wall
 
     var i: u31 = 0;
     while (i < move_speed) : (i += 1) {
@@ -84,15 +81,13 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
         const left_pos = math.vec2Add(new_pos, left_normal);
         const right_pos = math.vec2Add(new_pos, right_normal);
 
-        if (i > 0 and physics.inWall(self.phys, new_pos)) {
+        if (i > 0 and physics.inWall(self.phys, new_pos))
             can_go_forward = false;
-        }
-        if (!physics.inWall(self.phys, left_pos)) {
+
+        if (!physics.inWall(self.phys, left_pos))
             can_go_left = true;
-        }
-        if (!physics.inWall(self.phys, right_pos)) {
+        if (!physics.inWall(self.phys, right_pos))
             can_go_right = true;
-        }
     }
 
     // if monster is in a player's line of fire, try to get out of the way
@@ -119,17 +114,15 @@ fn monsterMove(gs: *game.Session, gc: *c.GameController, self: SystemData) void 
         }
     }
 
-    if (chooseTurn(gs, self.monster.personality, pos, self.phys.facing, can_go_forward, can_go_left, can_go_right)) |dir| {
+    if (chooseTurn(gs, self.monster.personality, pos, self.phys.facing, can_go_forward, can_go_left, can_go_right)) |dir|
         self.phys.push_dir = dir;
-    }
 
     self.phys.speed = move_speed;
 }
 
 fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, attack_type: enum { shoot, drop_web }) void {
-    if (gc.freeze_monsters_timer > 0) {
+    if (gc.freeze_monsters_timer > 0)
         return;
-    }
     if (self.monster.next_attack_timer > 0) {
         self.monster.next_attack_timer -= 1;
         return;
@@ -165,9 +158,7 @@ fn monsterAttack(gs: *game.Session, gc: *c.GameController, self: SystemData, att
                     .freq_mul = 0.9 + 0.2 * gs.prng.random.float(f32),
                 },
             });
-            _ = p.spawnWeb(gs, .{
-                .pos = self.transform.pos,
-            });
+            _ = p.spawnWeb(gs, .{ .pos = self.transform.pos });
         },
     }
     self.monster.next_attack_timer = constants.duration60(gs.prng.random.intRangeLessThan(u31, 75, 400));

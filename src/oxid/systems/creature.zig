@@ -6,11 +6,9 @@ pub fn run(gs: *game.Session) void {
         creature: *c.Creature,
     });
     while (it.next()) |self| {
-        if (self.creature.invulnerability_timer > 0) {
+        if (self.creature.invulnerability_timer > 0)
             self.creature.invulnerability_timer -= 1;
-        }
-        if (self.creature.flinch_timer > 0) {
+        if (self.creature.flinch_timer > 0)
             self.creature.flinch_timer -= 1;
-        }
     }
 }

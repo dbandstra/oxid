@@ -18,15 +18,15 @@ pub const GameController = struct {
     extra_lives_spawned: u32,
     wave_message: ?[]const u8,
     wave_message_timer: u32,
-    player1_controller_id: gbe.EntityId,
-    player2_controller_id: ?gbe.EntityId,
+    player1_controller_id: gbe.EntityID,
+    player2_controller_id: ?gbe.EntityID,
     // ticker: increments by 1 every frame, and wraps around. used for making
     // things blink on the HUD
     ticker: u32,
 };
 
 pub const PlayerController = struct {
-    player_id: ?gbe.EntityId,
+    player_id: ?gbe.EntityID,
     color: constants.PlayerColor,
     lives: u32,
     score: u32,
@@ -69,7 +69,7 @@ pub const PhysObject = struct {
 
     // `owner_id`: collision will be skipped between an object and its owner.
     // e.g. a bullet is owned by the person who shot it
-    owner_id: gbe.EntityId,
+    owner_id: ?gbe.EntityID,
 
     // `flags` used with reference to `ignore_flags` (see below)
     flags: u32,
@@ -95,10 +95,10 @@ pub const Player = struct {
     pub const AttackLevel = enum { one, two, three };
     pub const SpeedLevel = enum { one, two, three };
 
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
     color: constants.PlayerColor,
     trigger_released: bool,
-    bullets: [constants.player_max_bullets]?gbe.EntityId,
+    bullets: [constants.player_max_bullets]?gbe.EntityID,
     oxygen: u32,
     oxygen_timer: u32,
     attack_level: AttackLevel,
@@ -138,7 +138,7 @@ pub const Bullet = struct {
     };
 
     bullet_type: Type,
-    inflictor_player_controller_id: ?gbe.EntityId,
+    inflictor_player_controller_id: ?gbe.EntityID,
     damage: u32,
     line_of_fire: ?math.Box,
 };
@@ -165,11 +165,11 @@ pub const RemoveTimer = struct {
 };
 
 pub const EventAwardLife = struct {
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
 };
 
 pub const EventAwardPoints = struct {
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
     points: u32,
 };
 
@@ -185,13 +185,13 @@ pub const EventCollide = struct {
         hit_by_other,
     };
 
-    self_id: gbe.EntityId,
-    other_id: gbe.EntityId, // 0 = wall
+    self_id: gbe.EntityID,
+    other_id: ?gbe.EntityID, // null = wall
     collision_type: CollisionType,
 };
 
 pub const EventConferBonus = struct {
-    recipient_id: gbe.EntityId,
+    recipient_id: gbe.EntityID,
     pickup_type: constants.PickupType,
 };
 
@@ -208,7 +208,7 @@ pub const EventDrawBox = struct {
 };
 
 pub const EventGameInput = struct {
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
     command: commands.GameCommand,
     down: bool,
 };
@@ -222,7 +222,7 @@ pub const EventPlaySound = struct {
 };
 
 pub const EventPlayerDied = struct {
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
 };
 
 pub const EventRestoreOxygen = struct {};
@@ -232,7 +232,7 @@ pub const EventShowMessage = struct {
 };
 
 pub const EventTakeDamage = struct {
-    inflictor_player_controller_id: ?gbe.EntityId,
-    self_id: gbe.EntityId,
+    inflictor_player_controller_id: ?gbe.EntityID,
+    self_id: gbe.EntityID,
     amount: u32,
 };

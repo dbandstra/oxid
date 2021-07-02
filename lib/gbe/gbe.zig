@@ -5,20 +5,12 @@ pub const max_removals_per_frame: usize = 1000;
 /// Boxed entity ID. This is wrapped in a struct for two reason:
 /// 1. Can't accidentally mix up entity ID with other int values in function
 ///    calls,
-/// 2. Identifies a field in `T` structs (in various ECS
-///    functions / iterators) to be filled in with the entity ID.
-pub const EntityId = struct {
+/// 2. Identifies a field in `T` structs (in various ECS functions /
+///    iterators) to be filled in with the entity ID.
+pub const EntityID = struct {
     id: u64,
 
-    pub const zero = EntityId{
-        .id = 0,
-    };
-
-    pub inline fn isZero(a: EntityId) bool {
-        return a.id == 0;
-    }
-
-    pub inline fn eql(a: EntityId, b: EntityId) bool {
+    pub inline fn eql(a: EntityID, b: EntityID) bool {
         return a.id == b.id;
     }
 };
@@ -55,7 +47,7 @@ pub fn ECS(comptime ComponentLists: type) type {
 
         next_entity_id: usize,
 
-        removals: [max_removals_per_frame]EntityId,
+        removals: [max_removals_per_frame]EntityID,
         num_removals: usize,
 
         components: ComponentLists,
@@ -72,67 +64,49 @@ pub fn ECS(comptime ComponentLists: type) type {
             @setEvalBranchQuota(10000);
             comptime var capacity: usize = 0;
             inline for (@typeInfo(ComponentLists).Struct.fields) |sfield| {
-                if (comptime std.mem.eql(u8, sfield.name, @typeName(T))) {
+                if (comptime std.mem.eql(u8, sfield.name, @typeName(T)))
                     capacity = sfield.field_type.capacity;
-                }
             }
             return capacity;
         }
 
-        pub fn iter(
-            self: *@This(),
-            comptime T: type,
-        ) EntityIterator(@This(), T) {
+        pub fn iter(self: *@This(), comptime T: type) EntityIterator(@This(), T) {
             return EntityIterator(@This(), T).init(self);
         }
 
-        pub fn componentIter(
-            self: *@This(),
-            comptime T: type,
-        ) ComponentIterator(T, getCapacity(T)) {
+        pub fn componentIter(self: *@This(), comptime T: type) ComponentIterator(T, getCapacity(T)) {
             const list = &@field(self.components, @typeName(T));
             return ComponentIterator(T, comptime getCapacity(T)).init(list);
         }
 
-        pub fn findById(
-            self: *@This(),
-            entity_id: EntityId,
-            comptime T: type,
-        ) ?T {
-            var entry_id: EntityId = undefined;
+        pub fn findByID(self: *@This(), entity_id: EntityID, comptime T: type) ?T {
+            var entry_id: EntityID = undefined;
             var it = self.iter(T);
-            while (it.nextWithId(&entry_id)) |entry| {
-                if (EntityId.eql(entry_id, entity_id)) {
+            while (it.nextWithID(&entry_id)) |entry| {
+                if (EntityID.eql(entry_id, entity_id))
                     return entry;
-                }
             }
             return null;
         }
 
-        pub fn findComponentById(
-            self: *@This(),
-            entity_id: EntityId,
-            comptime T: type,
-        ) ?*T {
-            var id: EntityId = undefined;
+        pub fn findComponentByID(self: *@This(), entity_id: EntityID, comptime T: type) ?*T {
+            var id: EntityID = undefined;
             var it = self.componentIter(T);
-            while (it.nextWithId(&id)) |object| {
-                if (EntityId.eql(id, entity_id)) {
+            while (it.nextWithID(&id)) |object| {
+                if (EntityID.eql(id, entity_id))
                     return object;
-                }
             }
             return null;
         }
 
-        pub fn spawn(self: *@This()) EntityId {
-            const id: EntityId = .{ .id = self.next_entity_id };
-            self.next_entity_id += 1; // TODO - reuse these?
-            return id;
+        pub fn spawn(self: *@This()) EntityID {
+            defer self.next_entity_id += 1; // TODO - reuse these?
+            return .{ .id = self.next_entity_id };
         }
 
         // this is only called in spawn functions, to clean up components of a
         // partially constructed entity, when something goes wrong
-        pub fn undoSpawn(self: *@This(), entity_id: EntityId) void {
+        pub fn undoSpawn(self: *@This(), entity_id: EntityID) void {
             self.freeEntity(entity_id);
         }
 
@@ -144,11 +118,7 @@ pub fn ECS(comptime ComponentLists: type) type {
         // ComponentStorage config, per component type. obviously, kicking out
         // old entities to make room for new ones is not always the right
         // choice)
-        pub fn addComponent(
-            self: *@This(),
-            entity_id: EntityId,
-            data: anytype,
-        ) AddComponentError!void {
+        pub fn addComponent(self: *@This(), entity_id: EntityID, data: anytype) AddComponentError!void {
             var list = &@field(self.components, @typeName(@TypeOf(data)));
             const slot_index = blk: {
                 var i: usize = 0;
@@ -169,43 +139,36 @@ pub fn ECS(comptime ComponentLists: type) type {
             list.data[slot_index] = data;
         }
 
-        pub fn markForRemoval(self: *@This(), entity_id: EntityId) void {
-            if (self.num_removals >= max_removals_per_frame) {
+        pub fn markForRemoval(self: *@This(), entity_id: EntityID) void {
+            if (self.num_removals >= max_removals_per_frame)
                 @panic("markEntityForRemoval: no removal slots available");
-            }
             self.removals[self.num_removals] = entity_id;
             self.num_removals += 1;
         }
 
         pub fn markAllForRemoval(self: *@This(), comptime T: type) void {
-            var id: EntityId = undefined;
+            var id: EntityID = undefined;
             var it = self.componentIter(T);
-            while (it.nextWithId(&id) != null) {
+            while (it.nextWithID(&id) != null)
                 self.markForRemoval(id);
-            }
         }
 
         pub fn applyRemovals(self: *@This()) void {
-            for (self.removals[0..self.num_removals]) |entity_id| {
-                self.freeEntity(entity_id);
-            }
+            for (self.removals[0..self.num_removals]) |id|
+                self.freeEntity(id);
             self.num_removals = 0;
         }
 
         // (internal) actually free all components using this entity id
-        fn freeEntity(self: *@This(), entity_id: EntityId) void {
-            if (EntityId.isZero(entity_id)) {
-                return;
-            }
+        fn freeEntity(self: *@This(), entity_id: EntityID) void {
             // FIXME - this implementation is not good. it's going through
             // every slot of every component type, for each removal.
             inline for (@typeInfo(ComponentLists).Struct.fields) |field, field_index| {
                 const list = &@field(self.components, @typeName(field.field_type.ComponentType));
 
                 for (list.id[0..list.count]) |*id| {
-                    if (id.* == entity_id.id) {
+                    if (id.* == entity_id.id)
                         id.* = 0;
-                    }
                 }
             }
         }
@@ -225,17 +188,15 @@ pub fn ComponentIterator(comptime T: type, comptime capacity: usize) type {
         }
 
         pub inline fn next(self: *@This()) ?*T {
-            return self.nextWithId(null);
+            return self.nextWithID(null);
         }
 
-        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?*T {
+        pub fn nextWithID(self: *@This(), maybe_out_id: ?*EntityID) ?*T {
             for (self.list.id[self.index..self.list.count]) |id, i| {
-                if (id == 0) {
+                if (id == 0)
                     continue;
-                }
-                if (maybe_out_id) |out_id| {
+                if (maybe_out_id) |out_id|
                     out_id.* = .{ .id = id };
-                }
                 defer self.index += i + 1;
                 return &self.list.data[self.index + i];
             }
@@ -290,7 +251,7 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
     comptime var all_fields_optional = true;
 
     inline for (@typeInfo(T).Struct.fields) |field, i| {
-        if (field.field_type == EntityId) {
+        if (field.field_type == EntityID) {
             continue;
         }
 
@@ -389,17 +350,16 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
         }
 
         pub inline fn next(self: *@This()) ?T {
-            return self.nextWithId(null);
+            return self.nextWithID(null);
         }
 
-        pub fn nextWithId(self: *@This(), maybe_out_id: ?*EntityId) ?T {
+        pub fn nextWithID(self: *@This(), maybe_out_id: ?*EntityID) ?T {
             var result: T = undefined;
 
             while (self.nextMainComponent(&result)) |entity_id| {
                 if (self.fillOtherComponents(&result, entity_id)) {
-                    if (maybe_out_id) |out_id| {
+                    if (maybe_out_id) |out_id|
                         out_id.* = .{ .id = entity_id };
-                    }
                     return result;
                 }
             }
@@ -458,14 +418,12 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
             // entry above. if the field is not optional, and a component is
             // not found, clear the result and we'll try again.
             inline for (@typeInfo(T).Struct.fields) |field, field_index| {
-                if (field.field_type == EntityId) {
+                if (field.field_type == EntityID) {
                     @field(result, field.name) = .{ .id = entity_id };
                     continue;
                 }
 
-                if (@typeInfo(field.field_type) == .Struct and
-                    field.field_type.is_inbox)
-                {
+                if (@typeInfo(field.field_type) == .Struct and field.field_type.is_inbox) {
                     const EventComponentType = field.field_type.ComponentType;
 
                     var array = &@field(result, field.name).array;
@@ -475,34 +433,29 @@ pub fn EntityIterator(comptime ECSType: type, comptime T: type) type {
                     // take the first match.
                     const ti = @typeInfo(ECSType.ComponentListsType);
                     inline for (ti.Struct.fields) |c_field, c_field_index| {
-                        if (c_field.field_type.ComponentType != EventComponentType) {
+                        if (c_field.field_type.ComponentType != EventComponentType)
                             continue;
-                        }
 
                         const list = &@field(self.ecs.components, c_field.name);
 
                         for (list.id[0..list.count]) |id, i| {
-                            if (id == 0) {
+                            if (id == 0)
                                 continue;
-                            }
                             const event = &list.data[i];
                             if (field.field_type.id_field) |id_field| {
-                                if (@field(event, id_field).id != entity_id) {
+                                if (@field(event, id_field).id != entity_id)
                                     continue;
-                                }
                             }
                             array[count] = event;
                             count += 1;
                             // if the inbox is full, silently drop events
-                            if (count == array.len) {
+                            if (count == array.len)
                                 break;
-                            }
                         }
                     }
 
-                    if (count == 0) {
+                    if (count == 0)
                         return false;
-                    }
 
                     @field(result, field.name).count = count;
                     continue;

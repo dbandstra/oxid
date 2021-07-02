@@ -5,7 +5,7 @@ const c = @import("../components.zig");
 
 pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         animation: *c.Animation,
     });
     while (it.next()) |self| {

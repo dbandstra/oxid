@@ -40,7 +40,7 @@ pub const Session = struct {
     ecs: ECS,
     prng: std.rand.DefaultPrng,
     render_move_boxes: bool,
-    game_controller_id: gbe.EntityId,
+    game_controller_id: gbe.EntityID,
 };
 
 pub fn init(gs: *Session, random_seed: u32, is_multiplayer: bool) void {

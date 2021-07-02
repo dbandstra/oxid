@@ -6,7 +6,7 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 const SystemData = struct {
-    id: gbe.EntityId,
+    id: gbe.EntityID,
     pc: *c.PlayerController,
 };
 
@@ -15,9 +15,8 @@ pub fn run(gs: *game.Session) void {
     while (it.next()) |self| {
         if (self.pc.respawn_timer > 0) {
             self.pc.respawn_timer -= 1;
-            if (self.pc.respawn_timer == 0) {
+            if (self.pc.respawn_timer == 0)
                 spawnPlayer(gs, self);
-            }
         }
     }
 }

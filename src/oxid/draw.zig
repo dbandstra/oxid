@@ -186,12 +186,12 @@ fn drawHud(
             pdraw.fill(ds, 46, 8, 16, 8);
         }
 
-        for ([_]?gbe.EntityId{
+        for ([_]?gbe.EntityID{
             gc.player1_controller_id,
             gc.player2_controller_id,
         }) |maybe_id, player_index| {
             const id = maybe_id orelse continue;
-            const pc = gs.ecs.findComponentById(id, c.PlayerController) orelse continue;
+            const pc = gs.ecs.findComponentByID(id, c.PlayerController) orelse continue;
 
             const y = @intCast(i32, player_index) * 8;
 
@@ -216,7 +216,7 @@ fn drawHud(
 
             var maybe_oxygen: ?u32 = null;
             if (pc.player_id) |player_id| {
-                if (gs.ecs.findComponentById(player_id, c.Player)) |player| {
+                if (gs.ecs.findComponentByID(player_id, c.Player)) |player| {
                     maybe_oxygen = player.oxygen;
 
                     // low oxygen warning

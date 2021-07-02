@@ -6,7 +6,7 @@ const p = @import("../prototypes.zig");
 
 pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         creature: *c.Creature,
         transform: *const c.Transform,
         monster: ?*const c.Monster,

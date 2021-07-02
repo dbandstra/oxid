@@ -11,7 +11,7 @@ pub fn inWall(phys: *c.PhysObject, pos: math.Vec2) bool {
 }
 
 const Entity = struct {
-    id: gbe.EntityId,
+    id: gbe.EntityID,
     transform: *c.Transform,
     phys: *c.PhysObject,
 };
@@ -39,9 +39,8 @@ pub fn frame(gs: *game.Session) void {
     // set each entity's `group_index` field (used for debug drawing)
     for (move_groups) |*move_group, j| {
         var member = move_group.head;
-        while (member) |m| : (member = m.next) {
+        while (member) |m| : (member = m.next)
             m.entity.phys.internal.group_index = j;
-        }
     }
 
     // resolve each move group independently
@@ -109,9 +108,8 @@ fn createMoveGroups(gs: *game.Session) []const MoveGroup {
             if (move_group.head == null) {
                 // keep track of the first empty move group so we can reuse it if we need to make
                 // a new one
-                if (first_inactive_group == null) {
+                if (first_inactive_group == null)
                     first_inactive_group = move_group;
-                }
                 continue;
             }
             if (physOverlapsMoveGroup(self.phys, move_group)) {
@@ -157,9 +155,8 @@ fn physOverlapsMoveGroup(phys: *c.PhysObject, move_group: *MoveGroup) bool {
 fn mergeMoveGroups(dest: *MoveGroup, src: *MoveGroup) void {
     if (dest.head) |dest_head| {
         var last_member = dest_head;
-        while (last_member.next) |next| {
+        while (last_member.next) |next|
             last_member = next;
-        }
         last_member.next = src.head;
     } else {
         dest.head = src.head;
@@ -217,9 +214,8 @@ fn resolveMoveGroup(gs: *game.Session, move_group: *const MoveGroup) void {
             while (member) |m| : (member = m.next) {
                 if (m.entity.phys.speed != 0 and m.progress < speed_product) {
                     if (lowest) |l| {
-                        if (m.progress < l.progress) {
+                        if (m.progress < l.progress)
                             lowest = m;
-                        }
                     } else {
                         lowest = m;
                     }
@@ -249,7 +245,7 @@ fn resolveMoveGroup(gs: *game.Session, move_group: *const MoveGroup) void {
         if (inWall(m.entity.phys, new_pos)) {
             p.spawnEventCollide(gs, .{
                 .self_id = m.entity.id,
-                .other_id = .{ .id = 0 },
+                .other_id = null,
                 .collision_type = .propelled,
             });
             hit_something = true;
@@ -265,9 +261,8 @@ fn resolveMoveGroup(gs: *game.Session, move_group: *const MoveGroup) void {
                     o.entity.phys.entity_bbox,
                 )) {
                     spawnCollisionEvents(gs, m.entity.id, o.entity.id);
-                    if (!m.entity.phys.illusory and !o.entity.phys.illusory) {
+                    if (!m.entity.phys.illusory and !o.entity.phys.illusory)
                         hit_something = true;
-                    }
                 }
             }
         }
@@ -319,7 +314,7 @@ fn resolveOverlaps(gs: *game.Session, move_group: *const MoveGroup) void {
     }
 }
 
-fn spawnCollisionEvents(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.EntityId) void {
+fn spawnCollisionEvents(gs: *game.Session, self_id: gbe.EntityID, other_id: gbe.EntityID) void {
     if (findCollisionEvent(gs, self_id, other_id)) |event_collide| {
         event_collide.collision_type = .propelled;
     } else {
@@ -341,13 +336,17 @@ fn spawnCollisionEvents(gs: *game.Session, self_id: gbe.EntityId, other_id: gbe.
 
 fn findCollisionEvent(
     gs: *game.Session,
-    self_id: gbe.EntityId,
-    other_id: gbe.EntityId,
+    self_id: gbe.EntityID,
+    other_id: gbe.EntityID,
 ) ?*c.EventCollide {
     var it = gs.ecs.componentIter(c.EventCollide);
     while (it.next()) |event| {
-        if (!gbe.EntityId.eql(event.self_id, self_id)) continue;
-        if (!gbe.EntityId.eql(event.other_id, other_id)) continue;
+        if (!gbe.EntityID.eql(event.self_id, self_id))
+            continue;
+        if (event.other_id) |event_other_id| {
+            if (!gbe.EntityID.eql(event_other_id, other_id))
+                continue;
+        }
         return event;
     }
     return null;
@@ -355,15 +354,24 @@ fn findCollisionEvent(
 
 // a and b params in this function should be commutative
 fn couldObjectsCollide(
-    a_id: gbe.EntityId,
+    a_id: gbe.EntityID,
     a_phys: *const c.PhysObject,
-    b_id: gbe.EntityId,
+    b_id: gbe.EntityID,
     b_phys: *const c.PhysObject,
 ) bool {
-    if (gbe.EntityId.eql(a_id, b_id)) return false;
-    if (gbe.EntityId.eql(a_id, b_phys.owner_id)) return false;
-    if (gbe.EntityId.eql(a_phys.owner_id, b_id)) return false;
-    if ((a_phys.flags & b_phys.ignore_flags) != 0) return false;
-    if ((a_phys.ignore_flags & b_phys.flags) != 0) return false;
+    if (gbe.EntityID.eql(a_id, b_id))
+        return false;
+    if (b_phys.owner_id) |b_owner_id| {
+        if (gbe.EntityID.eql(a_id, b_owner_id))
+            return false;
+    }
+    if (a_phys.owner_id) |a_owner_id| {
+        if (gbe.EntityID.eql(a_owner_id, b_id))
+            return false;
+    }
+    if ((a_phys.flags & b_phys.ignore_flags) != 0)
+        return false;
+    if ((a_phys.ignore_flags & b_phys.flags) != 0)
+        return false;
     return true;
 }

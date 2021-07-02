@@ -5,7 +5,7 @@ const c = @import("../components.zig");
 const p = @import("../prototypes.zig");
 
 const SystemData = struct {
-    id: gbe.EntityId,
+    id: gbe.EntityID,
     phys: *c.PhysObject,
     creature: *c.Creature,
     monster: *c.Monster,
@@ -14,19 +14,16 @@ const SystemData = struct {
 
 pub fn run(gs: *game.Session) void {
     var it = gs.ecs.iter(SystemData);
-    while (it.next()) |self| {
+    while (it.next()) |self|
         monsterCollide(gs, self);
-    }
 }
 
 fn monsterCollide(gs: *game.Session, self: SystemData) void {
     var hit_creature = false;
 
     for (self.inbox.all()) |event| {
-        if (gbe.EntityId.isZero(event.other_id))
-            continue; // hit a wall
-
-        const other = gs.ecs.findById(event.other_id, struct {
+        const other_id = event.other_id orelse continue; // hit a wall
+        const other = gs.ecs.findByID(other_id, struct {
             creature: *const c.Creature,
             phys: *const c.PhysObject,
             player: ?*const c.Player,
@@ -53,7 +50,7 @@ fn monsterCollide(gs: *game.Session, self: SystemData) void {
             }
             p.spawnEventTakeDamage(gs, .{
                 .inflictor_player_controller_id = null,
-                .self_id = event.other_id,
+                .self_id = other_id,
                 .amount = 1,
             });
         }

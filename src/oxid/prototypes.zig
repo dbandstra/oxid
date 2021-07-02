@@ -37,7 +37,7 @@ pub const bullet_bbox = blk: {
     };
 };
 
-inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.EntityId {
+inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.EntityID {
     const entity_id = gs.ecs.spawn();
     inline for (@typeInfo(@TypeOf(components)).Struct.fields) |field| {
         if (@typeInfo(field.field_type) == .Optional) {
@@ -58,9 +58,9 @@ inline fn spawnWithComponents(gs: *game.Session, components: anytype) ?gbe.Entit
 }
 
 pub fn spawnGameController(gs: *game.Session, params: struct {
-    player1_controller_id: gbe.EntityId,
-    player2_controller_id: ?gbe.EntityId,
-}) ?gbe.EntityId {
+    player1_controller_id: gbe.EntityID,
+    player2_controller_id: ?gbe.EntityID,
+}) ?gbe.EntityID {
     // note: i should be able to pass a tuple to this function instead of an explicitly defined
     // struct, but there's a zig compiler bug (the program will crash at runtime).
     // see https://github.com/ziglang/zig/issues/3915
@@ -87,7 +87,7 @@ pub fn spawnGameController(gs: *game.Session, params: struct {
 
 pub fn spawnPlayerController(gs: *game.Session, params: struct {
     color: constants.PlayerColor,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         player_controller: c.PlayerController,
     }{
@@ -102,10 +102,10 @@ pub fn spawnPlayerController(gs: *game.Session, params: struct {
 }
 
 pub fn spawnPlayer(gs: *game.Session, params: struct {
-    player_controller_id: gbe.EntityId,
+    player_controller_id: gbe.EntityID,
     color: constants.PlayerColor,
     pos: math.Vec2,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         phys_object: c.PhysObject,
@@ -122,7 +122,7 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId.zero,
+            .owner_id = null,
             .flags = c.PhysObject.FLAG_PLAYER,
             .ignore_flags = c.PhysObject.FLAG_PLAYER,
             .internal = undefined,
@@ -136,7 +136,7 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
             .player_controller_id = params.player_controller_id,
             .color = params.color,
             .trigger_released = true,
-            .bullets = [_]?gbe.EntityId{null} ** constants.player_max_bullets,
+            .bullets = [_]?gbe.EntityID{null} ** constants.player_max_bullets,
             .oxygen = constants.max_oxygen,
             .oxygen_timer = constants.ticks_per_oxygen_spent,
             .attack_level = .one,
@@ -156,7 +156,7 @@ pub fn spawnPlayer(gs: *game.Session, params: struct {
 
 pub fn spawnPlayerCorpse(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         simple_graphic: c.SimpleGraphic,
@@ -177,7 +177,7 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
     monster_type: constants.MonsterType,
     pos: math.Vec2,
     has_coin: bool,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     const monster_values = constants.getMonsterValues(params.monster_type);
 
     const can_shoot = if (monster_values.first_shooting_level) |first_level|
@@ -201,7 +201,7 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
             .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId.zero,
+            .owner_id = null,
             .flags = c.PhysObject.FLAG_MONSTER,
             .ignore_flags = 0,
             .internal = undefined,
@@ -233,7 +233,7 @@ pub fn spawnMonster(gs: *game.Session, params: struct {
 
 pub fn spawnWeb(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         phys_object: c.PhysObject,
@@ -250,7 +250,7 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
             .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId.zero,
+            .owner_id = null,
             .flags = c.PhysObject.FLAG_WEB,
             .ignore_flags = 0,
             .internal = undefined,
@@ -265,14 +265,14 @@ pub fn spawnWeb(gs: *game.Session, params: struct {
 }
 
 pub fn spawnBullet(gs: *game.Session, params: struct {
-    inflictor_player_controller_id: ?gbe.EntityId,
-    owner_id: gbe.EntityId,
+    inflictor_player_controller_id: ?gbe.EntityID,
+    owner_id: gbe.EntityID,
     pos: math.Vec2,
     facing: math.Direction,
     bullet_type: c.Bullet.Type,
     cluster_size: u32,
     friendly_fire: bool,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         phys_object: c.PhysObject,
@@ -331,7 +331,7 @@ pub fn spawnAnimation(gs: *game.Session, params: struct {
     pos: math.Vec2,
     simple_anim: graphics.SimpleAnim,
     z_index: u32,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         animation: c.Animation,
@@ -351,7 +351,7 @@ pub fn spawnAnimation(gs: *game.Session, params: struct {
 pub fn spawnPickup(gs: *game.Session, params: struct {
     pos: math.Vec2,
     pickup_type: constants.PickupType,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     const pickup_values = constants.getPickupValues(params.pickup_type);
 
     return spawnWithComponents(gs, struct {
@@ -381,7 +381,7 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
             .facing = .e,
             .speed = 0,
             .push_dir = null,
-            .owner_id = gbe.EntityId.zero,
+            .owner_id = null,
             .flags = 0,
             .ignore_flags = c.PhysObject.FLAG_BULLET | c.PhysObject.FLAG_MONSTER,
             .internal = undefined,
@@ -397,7 +397,7 @@ pub fn spawnPickup(gs: *game.Session, params: struct {
 
 pub fn spawnSparks(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         animation: c.Animation,
@@ -416,7 +416,7 @@ pub fn spawnSparks(gs: *game.Session, params: struct {
 
 pub fn spawnExplosion(gs: *game.Session, params: struct {
     pos: math.Vec2,
-}) ?gbe.EntityId {
+}) ?gbe.EntityID {
     return spawnWithComponents(gs, struct {
         transform: c.Transform,
         animation: c.Animation,

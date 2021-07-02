@@ -23,12 +23,10 @@ pub fn run(gs: *game.Session) void {
 fn think(gs: *game.Session, self: SystemData) void {
     self.gc.ticker +%= 1;
     // if all non-persistent monsters are dead, prepare next wave
-    if (self.gc.next_wave_timer == 0 and self.gc.monster_count == 0) {
+    if (self.gc.next_wave_timer == 0 and self.gc.monster_count == 0)
         self.gc.next_wave_timer = constants.next_wave_time;
-    }
-    if (self.gc.wave_message_timer > 0) {
+    if (self.gc.wave_message_timer > 0)
         self.gc.wave_message_timer -= 1;
-    }
     if (self.gc.next_wave_timer > 0) {
         self.gc.next_wave_timer -= 1;
         if (self.gc.next_wave_timer == 0) {
@@ -70,9 +68,8 @@ fn think(gs: *game.Session, self: SystemData) void {
             self.gc.next_pickup_timer = constants.pickup_spawn_time;
         }
     }
-    if (self.gc.freeze_monsters_timer > 0) {
+    if (self.gc.freeze_monsters_timer > 0)
         self.gc.freeze_monsters_timer -= 1;
-    }
 
     // spawn extra life pickup when player's score crosses certain thresholds.
     // note: in multiplayer, extra life will only spawn once per score
@@ -109,9 +106,8 @@ fn spawnWave(gs: *game.Session, gc: *c.GameController, wave: *const waves.Wave) 
                 break :blk .squid;
             break :blk .juggernaut;
         };
-        if (!constants.getMonsterValues(monster_type).persistent) {
+        if (!constants.getMonsterValues(monster_type).persistent)
             gc.monster_count += 1;
-        }
         _ = p.spawnMonster(gs, .{
             .wave_number = gc.wave_number,
             .pos = math.vec2Scale(loc, levels.subpixels_per_tile),

@@ -27,7 +27,7 @@ fn globalInput(gs: *game.Session) void {
 
 fn killAllMonsters(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         monster: *const c.Monster,
     });
     while (it.next()) |self| {
@@ -49,7 +49,7 @@ fn playerInput(gs: *game.Session) void {
     });
     while (it.next()) |self| {
         const player_id = self.pc.player_id orelse continue;
-        const player = gs.ecs.findComponentById(player_id, c.Player) orelse continue;
+        const player = gs.ecs.findComponentByID(player_id, c.Player) orelse continue;
 
         for (self.inbox.all()) |event| {
             switch (event.command) {

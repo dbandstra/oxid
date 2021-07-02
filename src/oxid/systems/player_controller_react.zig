@@ -16,9 +16,8 @@ fn handleAwardPoints(gs: *game.Session) void {
         inbox: gbe.Inbox(8, c.EventAwardPoints, "player_controller_id"),
     });
     while (it.next()) |self| {
-        for (self.inbox.all()) |event| {
+        for (self.inbox.all()) |event|
             self.pc.score += event.points;
-        }
     }
 }
 
@@ -28,24 +27,22 @@ fn handleAwardLife(gs: *game.Session) void {
         inbox: gbe.Inbox(8, c.EventAwardLife, "player_controller_id"),
     });
     while (it.next()) |self| {
-        for (self.inbox.all()) |_| {
+        for (self.inbox.all()) |_|
             self.pc.lives += 1;
-        }
     }
 }
 
 fn handlePlayerDied(gs: *game.Session) void {
     var it = gs.ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         pc: *c.PlayerController,
         inbox: gbe.Inbox(1, c.EventPlayerDied, "player_controller_id"),
     });
     while (it.next()) |self| {
         if (self.pc.lives > 0) {
             self.pc.lives -= 1;
-            if (self.pc.lives > 0) {
+            if (self.pc.lives > 0)
                 self.pc.respawn_timer = constants.player_respawn_time;
-            }
         }
     }
 }
