@@ -2,13 +2,10 @@ const std = @import("std");
 const clap = @import("zig-clap");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
-const zang = @import("zang");
 const gl = @import("gl");
 const inputs = @import("common/inputs.zig");
-const constants = @import("oxid/constants.zig");
-const audio = @import("oxid/audio.zig");
+const ticks_per_second = @import("oxid/constants.zig").ticks_per_second;
 const perf = @import("oxid/perf.zig");
-const config = @import("oxid/config.zig");
 const oxid = @import("oxid/oxid.zig");
 
 const sdl = @import("platform/sdl.zig");
@@ -340,12 +337,10 @@ fn updateFramerateScheme(self: *Main) void {
 }
 
 fn audioCallback(userdata_: ?*c_void, stream_: ?[*]u8, len_: c_int) callconv(.C) void {
-    const audio_state = @ptrCast(*audio.State, @alignCast(@alignOf(*audio.State), userdata_.?));
+    const main_state = @ptrCast(*oxid.MainState, @alignCast(@alignOf(*oxid.MainState), userdata_.?));
     const out_bytes = stream_.?[0..@intCast(usize, len_)];
 
-    const buf = audio_state.paint();
-    const vol = std.math.min(1.0, @intToFloat(f32, audio_state.volume) / 100.0);
-    zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
+    oxid.audioPaint(main_state, out_bytes);
 }
 
 fn init(hunk: *Hunk, options: Options) !*Main {
@@ -421,7 +416,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     want.channels = 1;
     want.samples = options.audio_buffer_size;
     want.callback = audioCallback;
-    want.userdata = &self.main_state.audio_state;
+    want.userdata = &self.main_state;
 
     var have: sdl.SDL_AudioSpec = undefined;
 
@@ -535,14 +530,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 fn deinit(self: *Main) void {
     std.log.notice("Shutting down.", .{});
 
-    config.write(
-        &self.main_state.hunk.low(),
-        storagekey_config,
-        self.main_state.cfg,
-    ) catch |err| {
-        std.log.err("Failed to save config: {}", .{err});
-    };
-
     sdl.SDL_PauseAudioDevice(self.audio_device, 1);
     oxid.deinit(&self.main_state);
     pdraw.Framebuffer.deinit(&self.framebuffer);
@@ -569,7 +556,7 @@ fn doFrame(self: *Main, should_draw: bool, clear: bool, alpha: f32) void {
 // this is run once per monitor frame
 fn tick(self: *Main, refresh_rate: u64) void {
     const num_frames_to_simulate = blk: {
-        self.t += constants.ticks_per_second; // gameplay update rate
+        self.t += ticks_per_second; // gameplay update rate
         var n: u32 = 0;
         while (self.t >= refresh_rate) {
             self.t -= refresh_rate;

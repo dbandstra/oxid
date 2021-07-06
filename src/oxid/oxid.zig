@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Hunk = @import("zig-hunk").Hunk;
 const HunkSide = @import("zig-hunk").HunkSide;
+const zang = @import("zang");
 const pdate = @import("root").pdate;
 const pdraw = @import("root").pdraw;
 const pstorage = @import("root").pstorage;
@@ -185,7 +186,12 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.queued_menu_sound = null;
 }
 
+// note: this function doesn't get called in the web build
 pub fn deinit(self: *MainState) void {
+    config.write(&self.hunk.low(), storagekey_config, self.cfg) catch |err| {
+        std.log.err("Failed to save config: {}", .{err});
+    };
+
     graphics.unloadTileset(&self.static.tileset);
     fonts.unload(&self.static.font);
 }
@@ -215,7 +221,7 @@ fn saveHighScores(hunk_side: *HunkSide, high_scores: [constants.num_high_scores]
     }
 }
 
-pub fn makeMenuContext(self: *const MainState) menus.MenuContext {
+fn makeMenuContext(self: *const MainState) menus.MenuContext {
     return .{
         .sound_enabled = self.sound_enabled,
         .fullscreen = self.fullscreen,
@@ -618,7 +624,7 @@ fn startPlaying(self: *MainState, storagekey: []const u8) !*const demos.Player {
     return &dp.player;
 }
 
-pub fn playDemo(self: *MainState, storagekey: []const u8) void {
+fn playDemo(self: *MainState, storagekey: []const u8) void {
     resetDemo(self);
 
     const player = startPlaying(self, storagekey) catch |err| {
@@ -853,4 +859,11 @@ pub fn audioSync(self: *MainState, new_sample_rate: ?f32) void {
         }
         game.soundEventCleanup(gs);
     }
+}
+
+// called in audio thread
+pub fn audioPaint(self: *MainState, out_bytes: []u8) void {
+    const buf = self.audio_state.paint();
+    const vol = std.math.min(1.0, @intToFloat(f32, self.audio_state.volume) / 100.0);
+    zang.mixDown(out_bytes, buf, .signed16_lsb, 1, 0, vol);
 }

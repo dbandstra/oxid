@@ -244,12 +244,6 @@ export fn onInit() bool {
     return true;
 }
 
-export fn onDestroy() void {
-    oxid.deinit(&g.main_state);
-    pdraw.deinit(&g.draw_state);
-    std.heap.page_allocator.free(main_memory);
-}
-
 export fn getAudioBufferSize() c_int {
     return audio_buffer_size;
 }
