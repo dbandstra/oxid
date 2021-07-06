@@ -207,11 +207,11 @@ pub const Key = enum {
     lctrl,
     lshift,
     lalt,
-    lgui,
+    // lgui, // meta/command key
     rctrl,
     rshift,
     ralt,
-    rgui,
+    // rgui, // meta/command key
     mode,
     audionext,
     audioprev,

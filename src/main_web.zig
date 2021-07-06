@@ -109,9 +109,6 @@ fn translateKey(keyCode: c_int, location: c_int) ?inputs.Key {
         88 => .x,
         89 => .y,
         90 => .z,
-        91 => null, // META_LEFT? what is this?
-        92 => null, // META_RIGHT? what is this?
-        93 => null, // SELECT? what is this?
         96 => .kp_0,
         97 => .kp_1,
         98 => .kp_2,
