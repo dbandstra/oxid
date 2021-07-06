@@ -44,10 +44,8 @@ fn readWav(hunk: *Hunk, filename: []const u8) !mod.Sampler.Sample {
     const contents = try passets.loadAsset(&hunk.low().allocator, &hunk.high(), filename);
 
     var fbs = std.io.fixedBufferStream(contents);
-    var reader = fbs.reader();
 
-    const Loader = wav.Loader(@TypeOf(reader), false);
-    const preloaded = try Loader.preload(&reader);
+    const preloaded = try wav.preload(fbs.reader());
 
     return mod.Sampler.Sample{
         .num_channels = preloaded.num_channels,
