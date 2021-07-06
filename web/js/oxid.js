@@ -177,7 +177,7 @@
         setCanvasScale(instance, 3);
 
         document.addEventListener('keydown', (e) => {
-            const result = instance.exports.onKeyEvent(e.keyCode, 1);
+            const result = instance.exports.onKeyEvent(e.keyCode, e.location, 1);
 
             switch (result) {
             case NOP:
@@ -201,7 +201,7 @@
             e.preventDefault();
         });
         document.addEventListener('keyup', (e) => {
-            instance.exports.onKeyEvent(e.keyCode, 0);
+            instance.exports.onKeyEvent(e.keyCode, e.location, 0);
         });
 
         canvas_element.addEventListener('fullscreenchange', (e) => {

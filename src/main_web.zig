@@ -45,14 +45,19 @@ const Main = struct {
     shift: bool,
 };
 
-fn translateKey(keyCode: c_int) ?inputs.Key {
+fn translateKey(keyCode: c_int, location: c_int) ?inputs.Key {
+    const DOM_KEY_LOCATION_STANDARD = 0;
+    const DOM_KEY_LOCATION_LEFT = 1;
+    const DOM_KEY_LOCATION_RIGHT = 2;
+    const DOM_KEY_LOCATION_NUMPAD = 3;
+
     return switch (keyCode) {
         8 => .backspace,
         9 => .tab,
         13 => .@"return",
-        16 => .lshift, // FIXME - 16 is just shift in general?
-        17 => .lctrl, // FIXME - 17 is just ctrl in general?
-        18 => .lalt, // FIXME - 18 is just alt in general?
+        16 => @as(inputs.Key, if (location == DOM_KEY_LOCATION_RIGHT) .rshift else .lshift),
+        17 => @as(inputs.Key, if (location == DOM_KEY_LOCATION_RIGHT) .rctrl else .lctrl),
+        18 => @as(inputs.Key, if (location == DOM_KEY_LOCATION_RIGHT) .ralt else .lalt),
         19 => .pause,
         20 => .capslock,
         22 => .quote,
@@ -156,12 +161,12 @@ const TOGGLE_SOUND = 2;
 const TOGGLE_FULLSCREEN = 3;
 const SET_CANVAS_SCALE = 100;
 
-export fn onKeyEvent(keycode: c_int, down: c_int) c_int {
+export fn onKeyEvent(keycode: c_int, location: c_int, down: c_int) c_int {
     // note: if this function returns a non-zero value, event.preventDefault
     // will be called on the javascript side. so we return zero for anything
     // that the game doesn't handle. this allows most default browser behaviors
     // to still work
-    const key = translateKey(keycode) orelse return 0;
+    const key = translateKey(keycode, location) orelse return 0;
     if (key == .backquote) {
         g.fast_forward = down != 0;
         return NOP;
