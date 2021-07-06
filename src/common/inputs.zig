@@ -115,8 +115,6 @@ pub const Key = enum {
     kp_9,
     kp_0,
     kp_period,
-    application,
-    power,
     kp_equals,
     f13,
     f14,
@@ -141,13 +139,8 @@ pub const Key = enum {
     copy,
     paste,
     find,
-    mute,
-    volumeup,
-    volumedown,
     kp_comma,
     kp_equalsas400,
-    alterase,
-    sysreq,
     cancel,
     clear,
     prior,
@@ -177,7 +170,6 @@ pub const Key = enum {
     kp_e,
     kp_f,
     kp_xor,
-    kp_power,
     kp_percent,
     kp_less,
     kp_greater,
@@ -207,48 +199,15 @@ pub const Key = enum {
     lctrl,
     lshift,
     lalt,
-    // lgui, // meta/command key
     rctrl,
     rshift,
     ralt,
-    // rgui, // meta/command key
-    mode,
-    audionext,
-    audioprev,
-    audiostop,
-    audioplay,
-    audiomute,
-    mediaselect,
-    www,
-    mail,
-    calculator,
-    computer,
-    ac_search,
-    ac_home,
-    ac_back,
-    ac_forward,
-    ac_stop,
-    ac_refresh,
-    ac_bookmarks,
-    brightnessdown,
-    brightnessup,
-    displayswitch,
-    kbdillumtoggle,
-    kbdillumdown,
-    kbdillumup,
-    eject,
-    sleep,
-    app1,
-    app2,
-    audiorewind,
-    audiofastforward,
 };
 
 pub const key_names = blk: {
     var array: [@typeInfo(Key).Enum.fields.len][]const u8 = undefined;
-    inline for (@typeInfo(Key).Enum.fields) |field, i| {
+    inline for (@typeInfo(Key).Enum.fields) |field, i|
         array[i] = field.name;
-    }
     break :blk array;
 };
 
