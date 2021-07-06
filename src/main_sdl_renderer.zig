@@ -69,19 +69,22 @@ const Main = struct {
     audio_sample_rate: u31,
     audio_device: sdl.SDL_AudioDeviceID,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
-    fast_forward: bool,
-    shift: u32, // whether shift key(s) are pressed
     quit: bool,
 };
 
-// since audio files are loaded at runtime, we need to make room for them in
-// the memory buffer
-const audio_assets_size = 320700;
-
-var main_memory: [@sizeOf(Main) + 200 * 1024 + audio_assets_size]u8 = undefined;
-
 pub fn main() u8 {
-    var hunk = Hunk.init(&main_memory);
+    const temp_space = 100000; // room for temporary allocations
+    const audio_assets_size = 220000; // room for audio assets
+    const total_memory_size = @sizeOf(Main) + temp_space + audio_assets_size;
+    var main_memory = std.heap.page_allocator.alloc(u8, total_memory_size) catch |err| {
+        std.log.emerg("Failed to allocate {} bytes: {}", .{ total_memory_size, err });
+        return 1;
+    };
+    defer std.heap.page_allocator.free(main_memory);
+
+    std.log.notice("Allocated {} bytes", .{total_memory_size});
+
+    var hunk = Hunk.init(main_memory);
 
     const self = init(&hunk) catch return 1; // init prints its own error
 
@@ -226,7 +229,7 @@ fn init(hunk: *Hunk) !*Main {
 
     try oxid.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
-        .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
+        .random_seed = @truncate(u32, @bitCast(u64, std.time.milliTimestamp())),
         .audio_buffer_size = have.samples,
         .audio_sample_rate = @intToFloat(f32, have.freq),
         .fullscreen = false,
@@ -242,8 +245,6 @@ fn init(hunk: *Hunk) !*Main {
     self.set_canvas_scale = null;
     self.audio_sample_rate = @intCast(u31, have.freq);
     self.audio_device = device;
-    self.fast_forward = false;
-    self.shift = 0;
     self.quit = false;
     self.saved_window_pos = null;
 
@@ -285,8 +286,8 @@ fn tick(self: *Main) void {
 
     // when fast forwarding, we'll simulate multiple frames and only draw the
     // last one
-    const num_frames = if (self.fast_forward)
-        if (self.shift != 0) @as(u32, 16) else @as(u32, 4)
+    const num_frames = if (self.main_state.fast_forward)
+        if (self.main_state.lshift or self.main_state.rshift) @as(u32, 16) else @as(u32, 4)
     else
         1;
 
@@ -297,10 +298,7 @@ fn tick(self: *Main) void {
         const should_draw = frame_index == num_frames - 1;
 
         // run simulation and create events for drawing, playing sounds, etc.
-        oxid.frame(&self.main_state, .{
-            .spawn_draw_events = should_draw,
-            .friendly_fire = self.main_state.friendly_fire,
-        });
+        oxid.frame(&self.main_state, should_draw);
 
         // draw to framebuffer (from events)
         if (should_draw) {
@@ -318,10 +316,10 @@ fn tick(self: *Main) void {
     sdl.SDL_RenderPresent(self.renderer);
 
     sdl.SDL_LockAudioDevice(self.audio_device);
-    if (self.fast_forward and self.shift != 0) {
+    if (self.main_state.fast_forward and (self.main_state.lshift or self.main_state.rshift)) {
         // 16x super fast forward
         oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 16.0);
-    } else if (self.fast_forward) {
+    } else if (self.main_state.fast_forward) {
         // 4x fast forward
         oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 4.0);
     } else {
@@ -441,32 +439,16 @@ fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
 
 fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
     switch (evt.type) {
-        sdl.SDL_KEYDOWN => {
-            if (evt.key.repeat == 0) {
-                if (translateKey(evt.key.keysym.sym)) |key| {
-                    switch (key) {
-                        .backquote => self.fast_forward = true,
-                        .f4 => perf.toggleSpam(),
-                        else => {
-                            if (key == .lshift) self.shift |= 1;
-                            if (key == .rshift) self.shift |= 2;
-                            inputEvent(self, .{ .key = key }, true);
-                        },
-                    }
-                }
-            }
+        sdl.SDL_QUIT => {
+            self.quit = true;
+        },
+        sdl.SDL_KEYDOWN => if (evt.key.repeat == 0) {
+            if (translateKey(evt.key.keysym.sym)) |key|
+                inputEvent(self, .{ .key = key }, true);
         },
         sdl.SDL_KEYUP => {
-            if (translateKey(evt.key.keysym.sym)) |key| {
-                switch (key) {
-                    .backquote => self.fast_forward = false,
-                    else => {
-                        if (key == .lshift) self.shift &= ~@as(u32, 1);
-                        if (key == .rshift) self.shift &= ~@as(u32, 2);
-                        inputEvent(self, .{ .key = key }, false);
-                    },
-                }
-            }
+            if (translateKey(evt.key.keysym.sym)) |key|
+                inputEvent(self, .{ .key = key }, false);
         },
         sdl.SDL_WINDOWEVENT => {
             if (evt.window.event == sdl.SDL_WINDOWEVENT_MOVED and !self.main_state.fullscreen) {
@@ -486,7 +468,6 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
                 }
             }
         },
-        sdl.SDL_QUIT => self.quit = true,
         else => {},
     }
 }

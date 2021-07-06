@@ -145,17 +145,17 @@ pub const Player = struct {
         if (parseVersion(build_options.version)) |oxid_ver| {
             if (parseVersion(version_string)) |demo_ver| {
                 if (oxid_ver[0] != demo_ver[0] or oxid_ver[1] != demo_ver[1]) {
-                    std.log.err("incompatible version (demo {}.{}.x, oxid {}.{}.x)", .{
+                    std.log.err("Incompatible version (demo {}.{}.x, oxid {}.{}.x)", .{
                         demo_ver[0], demo_ver[1],
                         oxid_ver[0], oxid_ver[1],
                     });
                     return error.DemoVersionMismatch;
                 }
             } else {
-                std.log.warn("could not parse demo version, skipping compatibility check", .{});
+                std.log.warn("Could not parse demo version, skipping compatibility check", .{});
             }
         } else {
-            std.log.warn("could not determine oxid version, skipping compatibility check", .{});
+            std.log.warn("Could not determine Oxid version, skipping compatibility check", .{});
         }
 
         const seed = try reader.readIntLittle(u32);

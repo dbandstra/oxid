@@ -41,8 +41,6 @@ const Main = struct {
     main_state: oxid.MainState,
     draw_state: pdraw.State,
     audio_speedup: u31,
-    fast_forward: bool,
-    shift: bool,
 };
 
 fn translateKey(keyCode: c_int, location: c_int) ?inputs.Key {
@@ -164,11 +162,6 @@ export fn onKeyEvent(keycode: c_int, location: c_int, down: c_int) c_int {
     // that the game doesn't handle. this allows most default browser behaviors
     // to still work
     const key = translateKey(keycode, location) orelse return 0;
-    if (key == .backquote) {
-        g.fast_forward = down != 0;
-        return NOP;
-    }
-    if (key == .lshift) g.shift = down != 0;
     const source: inputs.Source = .{ .key = key };
     const special = oxid.inputEvent(&g.main_state, source, down != 0) orelse return 0;
     return switch (special) {
@@ -221,8 +214,6 @@ fn init() !void {
 
     g = hunk.low().allocator.create(Main) catch unreachable;
     g.audio_speedup = 1;
-    g.fast_forward = false;
-    g.shift = false;
 
     pdraw.init(&g.draw_state, .webgl, .{
         .hunk = hunk,
@@ -270,9 +261,8 @@ export fn audioCallback(sample_rate: f32) [*]f32 {
     const vol = std.math.min(1.0, @intToFloat(f32, g.main_state.audio_state.volume) / 100.0);
 
     var i: usize = 0;
-    while (i < audio_buffer_size) : (i += 1) {
+    while (i < audio_buffer_size) : (i += 1)
         buf[i] *= vol;
-    }
 
     return buf.ptr;
 }
@@ -320,8 +310,8 @@ export fn onAnimationFrame(now: c_int) void {
 fn tick(should_draw: bool) void {
     // when fast forwarding, we'll simulate 4 frames and draw them blended
     // together. we'll also speed up the sound playback rate by 4x
-    const num_frames = if (g.fast_forward)
-        if (g.shift) @as(u31, 16) else @as(u31, 4)
+    const num_frames = if (g.main_state.fast_forward)
+        if (g.main_state.lshift or g.main_state.rshift) @as(u31, 16) else @as(u31, 4)
     else
         1;
 
@@ -329,18 +319,14 @@ fn tick(should_draw: bool) void {
     while (frame_index < num_frames) : (frame_index += 1) {
         // if we're simulating multiple frames for one draw cycle, we only
         // need to actually draw for the last one of them
-        const should_draw2 = frame_index == num_frames - 1;
+        const should_draw2 = should_draw and frame_index == num_frames - 1;
 
         // run simulation and create events for drawing, playing sounds, etc.
-        oxid.frame(&g.main_state, .{
-            .spawn_draw_events = should_draw and should_draw2,
-            .friendly_fire = g.main_state.friendly_fire,
-        });
+        oxid.frame(&g.main_state, should_draw2);
 
         // draw to framebuffer (from events)
-        if (should_draw and should_draw2) {
+        if (should_draw2)
             oxid.draw(&g.main_state, &g.draw_state);
-        }
 
         // delete events
         oxid.frameCleanup(&g.main_state);

@@ -16,6 +16,7 @@ pub usingnamespace if (std.Target.current.isWasm() or builtin.mode == .ReleaseSm
     struct {
         pub const Timer = void;
         pub fn init() void {}
+        pub fn toggleSpam() void {}
         pub fn begin(entry: Entry) void {}
         pub fn end(entry: Entry) void {}
     }

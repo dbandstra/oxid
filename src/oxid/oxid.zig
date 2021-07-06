@@ -83,6 +83,9 @@ pub const MainState = struct {
     friendly_fire: bool,
     disable_recording: bool,
     sound_enabled: bool,
+    fast_forward: bool,
+    lshift: bool,
+    rshift: bool,
     prng: std.rand.DefaultPrng,
     queued_menu_sound: ?audio.SoundParams,
 };
@@ -174,6 +177,9 @@ pub fn init(self: *MainState, ds: *pdraw.State, params: InitParams) !void {
     self.max_canvas_scale = params.max_canvas_scale;
     self.friendly_fire = true;
     self.sound_enabled = params.sound_enabled;
+    self.fast_forward = false;
+    self.lshift = false;
+    self.rshift = false;
     self.disable_recording = params.disable_recording;
     self.prng = std.rand.DefaultPrng.init(params.random_seed);
     self.queued_menu_sound = null;
@@ -248,7 +254,24 @@ pub const InputSpecial = union(enum) {
     config_updated,
 };
 
+// return null if input wasn't captured at all. in web builds, preventDefault will only be called
+// on the key event if this function returns non-null.
 pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?InputSpecial {
+    switch (source) {
+        .key => |key| switch (key) {
+            .f4 => if (down) perf.toggleSpam(),
+            .lshift => main_state.lshift = down,
+            .rshift => main_state.rshift = down,
+            .backquote => {
+                main_state.fast_forward = down;
+                // it's a compile error to return `InputSpecial.noop`. is this a compiler bug?
+                return InputSpecial{ .noop = {} };
+            },
+            else => {},
+        },
+        else => {},
+    }
+
     // menu command?
     if (down) {
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
@@ -266,9 +289,8 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 .maybe_command = maybe_menu_command,
                 .menu_context = makeMenuContext(main_state),
             })) |result| {
-                if (result.sound) |sound| {
+                if (result.sound) |sound|
                     playMenuSound(main_state, sound);
-                }
                 return applyMenuEffect(main_state, result.effect);
             }
             return null;
@@ -685,7 +707,7 @@ fn postScores(self: *MainState) void {
     finishDemoRecording(self, player1_score, player2_score);
 }
 
-pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
+pub fn frame(self: *MainState, should_draw: bool) void {
     self.menu_anim_time +%= 1;
 
     const paused = self.menu_stack.len > 0 and !self.game_over;
@@ -731,7 +753,10 @@ pub fn frame(self: *MainState, frame_context: game.FrameContext) void {
     }
 
     perf.begin(.frame);
-    game.frame(gs, frame_context, paused);
+    game.frame(gs, .{
+        .spawn_draw_events = should_draw,
+        .friendly_fire = self.friendly_fire,
+    }, paused);
     perf.end(.frame);
 
     if (!paused) {

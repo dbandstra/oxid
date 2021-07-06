@@ -129,8 +129,6 @@ const Main = struct {
     quit: bool,
     toggle_fullscreen: bool,
     set_canvas_scale: ?u31,
-    fast_forward: bool,
-    shift: u32, // whether shift key(s) are pressed
     framerate_scheme: FramerateScheme,
     t: usize,
     saved_window_pos: ?SavedWindowPos, // only set when in fullscreen mode
@@ -146,20 +144,23 @@ const Options = struct {
     disable_recording: bool,
 };
 
-// since audio files are loaded at runtime, we need to make room for them in
-// the memory buffer
-const audio_assets_size = 320700;
-
-var main_memory: [@sizeOf(Main) + 200 * 1024 + audio_assets_size]u8 = undefined;
-
 pub fn main() u8 {
-    var hunk = Hunk.init(&main_memory);
+    const temp_space = 100000; // room for temporary allocations
+    const audio_assets_size = 220000; // room for audio assets
+    const total_memory_size = @sizeOf(Main) + temp_space + audio_assets_size;
+    var main_memory = std.heap.page_allocator.alloc(u8, total_memory_size) catch |err| {
+        std.log.emerg("Failed to allocate {} bytes: {}", .{ total_memory_size, err });
+        return 1;
+    };
+    defer std.heap.page_allocator.free(main_memory);
+
+    std.log.notice("Allocated {} bytes", .{total_memory_size});
+
+    var hunk = Hunk.init(main_memory);
 
     const options = parseOptions(&hunk.low()) catch |err| {
-        if (err != error.BadArg) { // if BadArg, error was already printed
-            const stderr = std.io.getStdErr().writer();
-            stderr.print("Failed to parse command-line options: {}\n", .{err}) catch {};
-        }
+        if (err != error.BadArg) // if BadArg, error was already printed
+            std.log.err("Failed to parse command-line options: {}", .{err});
         return 1;
     } orelse {
         // --help flag was set, don't start the program
@@ -173,9 +174,8 @@ pub fn main() u8 {
 
     switch (self.framerate_scheme) {
         .fixed => |refresh_rate| {
-            while (!self.quit) {
+            while (!self.quit)
                 tick(self, refresh_rate);
-            }
         },
         .free => {
             const freq: u64 = sdl.SDL_GetPerformanceFrequency();
@@ -209,7 +209,7 @@ pub fn main() u8 {
                 if (refresh_rate == 0) {
                     // delta was >= 1 second. the computer is hitched up on
                     // something. let's just wait.
-                    std.log.notice("refresh took > 1 second, skipping", .{});
+                    std.log.notice("Refresh took > 1 second, skipping", .{});
                     continue;
                 }
 
@@ -274,7 +274,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         } else {
             const rate = try std.fmt.parseInt(usize, value, 10);
             if (rate < 1 or rate > 300) {
-                try stderr.print("Invalid refresh rate: {}\n", .{rate});
+                std.log.err("Invalid refresh rate: {}", .{rate});
                 return error.BadArg;
             }
             options.framerate_scheme = .{ .fixed = rate };
@@ -293,13 +293,11 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
 // run on startup as well as when the window is moved between displays
 fn updateFramerateScheme(self: *Main) void {
     if (self.requested_vsync) {
-        if (sdl.SDL_GL_SetSwapInterval(1) != 0) {
+        if (sdl.SDL_GL_SetSwapInterval(1) != 0)
             std.log.warn("Failed to set vsync.", .{});
-        }
     } else {
-        if (sdl.SDL_GL_SetSwapInterval(0) != 0) {
+        if (sdl.SDL_GL_SetSwapInterval(0) != 0)
             std.log.warn("Failed to disable vsync.", .{});
-        }
     }
 
     // this function can return 1 (vsync), 0 (no vsync), or -1 (adaptive
@@ -477,9 +475,8 @@ fn init(hunk: *Hunk, options: Options) !*Main {
         var i: c_int = 0;
         while (i < 2 and i < num_joysticks) : (i += 1) {
             const joystick = sdl.SDL_JoystickOpen(i);
-            if (joystick == null) {
+            if (joystick == null)
                 std.log.warn("Failed to open joystick {}", .{i + 1});
-            }
         }
     }
 
@@ -501,7 +498,7 @@ fn init(hunk: *Hunk, options: Options) !*Main {
 
     try oxid.init(&self.main_state, &self.draw_state, .{
         .hunk = hunk,
-        .random_seed = @intCast(u32, std.time.milliTimestamp() & 0xFFFFFFFF),
+        .random_seed = @truncate(u32, @bitCast(u64, std.time.milliTimestamp())),
         .audio_buffer_size = options.audio_buffer_size,
         .audio_sample_rate = @intToFloat(f32, have.freq),
         .fullscreen = false,
@@ -524,8 +521,6 @@ fn init(hunk: *Hunk, options: Options) !*Main {
     self.quit = false;
     self.toggle_fullscreen = false;
     self.set_canvas_scale = null;
-    self.fast_forward = false;
-    self.shift = 0;
     self.t = 0.0;
     self.saved_window_pos = null;
 
@@ -561,10 +556,7 @@ fn deinit(self: *Main) void {
 // simulate a frame, and draw it if requested
 fn doFrame(self: *Main, should_draw: bool, clear: bool, alpha: f32) void {
     // run simulation and create events for drawing, playing sounds, etc.
-    oxid.frame(&self.main_state, .{
-        .spawn_draw_events = should_draw,
-        .friendly_fire = self.main_state.friendly_fire,
-    });
+    oxid.frame(&self.main_state, should_draw);
 
     // draw to framebuffer (from events)
     if (should_draw)
@@ -596,16 +588,15 @@ fn tick(self: *Main, refresh_rate: u64) void {
         var evt: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&evt) != 0) {
             handleSDLEvent(self, evt);
-            if (self.quit) {
+            if (self.quit)
                 return;
-            }
         }
 
         // if we're simulating multiple frames for one draw cycle, we only
         // draw the last one of them.
         const should_draw = i == num_frames_to_simulate - 1;
 
-        if (self.fast_forward and self.shift != 0) {
+        if (self.main_state.fast_forward and (self.main_state.lshift or self.main_state.rshift)) {
             // 16x speed (super fast forward)
             // simulate 16 frames, but only draw every 4th one
             var frame_index: u32 = 0;
@@ -617,7 +608,7 @@ fn tick(self: *Main, refresh_rate: u64) void {
                     1.0 / @intToFloat(f32, (frame_index >> 2) + 1),
                 );
             }
-        } else if (self.fast_forward) {
+        } else if (self.main_state.fast_forward) {
             // 4x speed (fast forward)
             var frame_index: u32 = 0;
             while (frame_index < 4) : (frame_index += 1) {
@@ -648,10 +639,10 @@ fn tick(self: *Main, refresh_rate: u64) void {
     // if the audio thread is currently doing a mix, this will wait until it's
     // finished.
     sdl.SDL_LockAudioDevice(self.audio_device);
-    if (self.fast_forward and self.shift != 0) {
+    if (self.main_state.fast_forward and (self.main_state.lshift or self.main_state.rshift)) {
         // 16x super fast forward
         oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 16.0);
-    } else if (self.fast_forward) {
+    } else if (self.main_state.fast_forward) {
         // 4x fast forward
         oxid.audioSync(&self.main_state, @intToFloat(f32, self.audio_sample_rate) / 4.0);
     } else {
@@ -778,32 +769,16 @@ fn inputEvent(self: *Main, source: inputs.Source, down: bool) void {
 
 fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
     switch (evt.type) {
-        sdl.SDL_KEYDOWN => {
-            if (evt.key.repeat == 0) {
-                if (translateKey(evt.key.keysym.sym)) |key| {
-                    switch (key) {
-                        .backquote => self.fast_forward = true,
-                        .f4 => perf.toggleSpam(),
-                        else => {
-                            if (key == .lshift) self.shift |= 1;
-                            if (key == .rshift) self.shift |= 2;
-                            inputEvent(self, .{ .key = key }, true);
-                        },
-                    }
-                }
-            }
+        sdl.SDL_QUIT => {
+            self.quit = true;
+        },
+        sdl.SDL_KEYDOWN => if (evt.key.repeat == 0) {
+            if (translateKey(evt.key.keysym.sym)) |key|
+                inputEvent(self, .{ .key = key }, true);
         },
         sdl.SDL_KEYUP => {
-            if (translateKey(evt.key.keysym.sym)) |key| {
-                switch (key) {
-                    .backquote => self.fast_forward = false,
-                    else => {
-                        if (key == .lshift) self.shift &= ~@as(u32, 1);
-                        if (key == .rshift) self.shift &= ~@as(u32, 2);
-                        inputEvent(self, .{ .key = key }, false);
-                    },
-                }
-            }
+            if (translateKey(evt.key.keysym.sym)) |key|
+                inputEvent(self, .{ .key = key }, false);
         },
         sdl.SDL_JOYAXISMOTION => {
             const threshold = 16384;
@@ -850,7 +825,6 @@ fn handleSDLEvent(self: *Main, evt: sdl.SDL_Event) void {
                 }
             }
         },
-        sdl.SDL_QUIT => self.quit = true,
         else => {},
     }
 }
