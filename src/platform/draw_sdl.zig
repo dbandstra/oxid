@@ -12,11 +12,13 @@ pub const Texture = struct {
 pub const State = struct {
     renderer: *SDL_Renderer,
     color: drawing.Color,
+    alpha: u8,
 };
 
 pub fn init(ds: *State, renderer: *SDL_Renderer) void {
     ds.renderer = renderer;
     ds.color = .{ .r = 0xff, .g = 0xff, .b = 0xff };
+    ds.alpha = 0xff;
 }
 
 pub fn createTexture(ds: *State, w: u31, h: u31, pixels: []const u8) !Texture {
@@ -45,7 +47,12 @@ pub fn destroyTexture(texture: Texture) void {
 
 pub fn setColor(ds: *State, color: drawing.Color) void {
     ds.color = color;
-    _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, 0xff);
+    _ = SDL_SetRenderDrawColor(ds.renderer, color.g, color.g, color.b, ds.alpha);
+}
+
+pub fn setAlpha(ds: *State, alpha: u8) void {
+    ds.alpha = alpha;
+    _ = SDL_SetRenderDrawColor(ds.renderer, ds.color.g, ds.color.g, ds.color.b, alpha);
 }
 
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {
@@ -68,6 +75,7 @@ pub fn tile(
         return;
 
     _ = SDL_SetTextureColorMod(tileset.texture.texture, ds.color.r, ds.color.g, ds.color.b);
+    _ = SDL_SetTextureAlphaMod(tileset.texture.texture, ds.alpha);
     _ = SDL_RenderCopyEx(
         ds.renderer,
         tileset.texture.texture,

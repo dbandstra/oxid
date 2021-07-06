@@ -139,17 +139,23 @@ fn ortho(left: f32, right: f32, bottom: f32, top: f32) [16]f32 {
 }
 
 pub fn setColor(ds: *State, rgb: drawing.Color) void {
-    const color: Color = .{
-        .r = @intToFloat(f32, rgb.r) / 255.0,
-        .g = @intToFloat(f32, rgb.g) / 255.0,
-        .b = @intToFloat(f32, rgb.b) / 255.0,
-        .a = 1.0,
-    };
-    if (color.r == ds.color.r and color.g == ds.color.g and
-        color.b == ds.color.b and color.a == ds.color.a)
+    const r = @intToFloat(f32, rgb.r) / 255.0;
+    const g = @intToFloat(f32, rgb.g) / 255.0;
+    const b = @intToFloat(f32, rgb.b) / 255.0;
+    if (r == ds.color.r and g == ds.color.g and b == ds.color.b)
         return;
     flush(ds);
-    ds.color = color;
+    ds.color.r = r;
+    ds.color.g = g;
+    ds.color.b = b;
+}
+
+pub fn setAlpha(ds: *State, alpha: u8) void {
+    const a = @intToFloat(f32, alpha) / 255.0;
+    if (a == ds.color.a)
+        return;
+    flush(ds);
+    ds.color.a = a;
 }
 
 pub fn fill(ds: *State, x: i32, y: i32, w: i32, h: i32) void {

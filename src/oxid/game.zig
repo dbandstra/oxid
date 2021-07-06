@@ -66,6 +66,7 @@ pub fn init(gs: *Session, random_seed: u32, is_multiplayer: bool) void {
 pub const FrameContext = struct {
     spawn_draw_events: bool,
     friendly_fire: bool,
+    fast_forward: bool,
 };
 
 fn runSystem(gs: *Session, context: FrameContext, comptime name: []const u8) void {

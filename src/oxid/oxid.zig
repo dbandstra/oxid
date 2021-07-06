@@ -762,6 +762,7 @@ pub fn frame(self: *MainState, should_draw: bool) void {
     game.frame(gs, .{
         .spawn_draw_events = should_draw,
         .friendly_fire = self.friendly_fire,
+        .fast_forward = self.fast_forward,
     }, paused);
     perf.end(.frame);
 

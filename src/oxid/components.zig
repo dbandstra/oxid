@@ -200,6 +200,7 @@ pub const EventDraw = struct {
     graphic: graphics.Graphic,
     transform: drawing.Transform,
     z_index: u32,
+    alpha: u8,
 };
 
 pub const EventDrawBox = struct {

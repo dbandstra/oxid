@@ -7,11 +7,11 @@ const p = @import("../prototypes.zig");
 const util = @import("../util.zig");
 const graphics = @import("../graphics.zig");
 
-pub fn run(gs: *game.Session) void {
+pub fn run(gs: *game.Session, ctx: game.FrameContext) void {
     drawSimpleGraphics(gs);
     drawAnimations(gs);
-    drawPlayers(gs);
-    drawMonsters(gs);
+    drawPlayers(gs, ctx);
+    drawMonsters(gs, ctx);
     drawWebs(gs);
 }
 
@@ -33,6 +33,7 @@ fn drawSimpleGraphics(gs: *game.Session) void {
             else
                 .identity,
             .z_index = self.simple_graphic.z_index,
+            .alpha = 255,
         });
     }
 }
@@ -49,11 +50,12 @@ fn drawAnimations(gs: *game.Session) void {
             .graphic = anim.frames[self.animation.frame_index],
             .transform = .identity,
             .z_index = self.animation.z_index,
+            .alpha = 255,
         });
     }
 }
 
-fn drawPlayers(gs: *game.Session) void {
+fn drawPlayers(gs: *game.Session, ctx: game.FrameContext) void {
     var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
@@ -87,11 +89,18 @@ fn drawPlayers(gs: *game.Session) void {
                 .graphic = graphic,
                 .transform = .identity,
                 .z_index = constants.z_index_player,
+                .alpha = 255,
             });
             continue;
         }
-        if (invulnerabilityBlink(self.creature.invulnerability_timer))
-            continue;
+        var alpha: u8 = 255;
+        if (self.creature.invulnerability_timer > 0) {
+            if (ctx.fast_forward) {
+                alpha = 100;
+            } else if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
+                continue;
+            }
+        }
         const pos = self.transform.pos;
         const facing = self.phys.facing;
         p.spawnEventDraw(gs, .{
@@ -102,11 +111,12 @@ fn drawPlayers(gs: *game.Session) void {
             }),
             .transform = util.getDirTransform(facing),
             .z_index = constants.z_index_player,
+            .alpha = alpha,
         });
     }
 }
 
-fn drawMonsters(gs: *game.Session) void {
+fn drawMonsters(gs: *game.Session, ctx: game.FrameContext) void {
     var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
@@ -123,11 +133,18 @@ fn drawMonsters(gs: *game.Session) void {
                     .spawn2,
                 .transform = .identity,
                 .z_index = constants.z_index_enemy,
+                .alpha = 255,
             });
             continue;
         }
-        if (invulnerabilityBlink(self.creature.invulnerability_timer))
-            continue;
+        var alpha: u8 = 255;
+        if (self.creature.invulnerability_timer > 0) {
+            if (ctx.fast_forward) {
+                alpha = 100;
+            } else if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
+                continue;
+            }
+        }
         const pos = self.transform.pos;
         const facing = self.phys.facing;
         p.spawnEventDraw(gs, .{
@@ -141,6 +158,7 @@ fn drawMonsters(gs: *game.Session) void {
             },
             .transform = util.getDirTransform(facing),
             .z_index = constants.z_index_enemy,
+            .alpha = alpha,
         });
     }
 }
@@ -157,6 +175,7 @@ fn drawWebs(gs: *game.Session) void {
             .graphic = if (self.creature.flinch_timer > 0) .web2 else .web1,
             .transform = .identity,
             .z_index = constants.z_index_web,
+            .alpha = 255,
         });
     }
 }

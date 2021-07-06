@@ -100,6 +100,7 @@ fn drawEntities(
     defer perf.end(.draw_entities);
 
     for (sorted_drawables) |drawable| {
+        pdraw.setAlpha(ds, drawable.alpha);
         pdraw.tile(
             ds,
             static.tileset,
@@ -109,6 +110,8 @@ fn drawEntities(
             drawable.transform,
         );
     }
+
+    pdraw.setAlpha(ds, 0xff);
 }
 
 fn drawBoxes(ds: *pdraw.State, gs: *game.Session) void {
