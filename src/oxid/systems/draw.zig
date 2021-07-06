@@ -10,9 +10,7 @@ const graphics = @import("../graphics.zig");
 pub fn run(gs: *game.Session, ctx: game.FrameContext) void {
     drawSimpleGraphics(gs);
     drawAnimations(gs);
-    drawPlayers(gs, ctx);
-    drawMonsters(gs, ctx);
-    drawWebs(gs);
+    drawCreatures(gs, ctx);
 }
 
 fn drawSimpleGraphics(gs: *game.Session) void {
@@ -55,44 +53,16 @@ fn drawAnimations(gs: *game.Session) void {
     }
 }
 
-fn drawPlayers(gs: *game.Session, ctx: game.FrameContext) void {
+fn drawCreatures(gs: *game.Session, ctx: game.FrameContext) void {
     var it = gs.ecs.iter(struct {
         transform: *const c.Transform,
         phys: *const c.PhysObject,
         creature: *const c.Creature,
-        player: *const c.Player,
+        player: ?*const c.Player,
+        monster: ?*const c.Monster,
+        web: ?*const c.Web,
     });
     while (it.next()) |self| {
-        if (self.player.dying_timer > 0) {
-            const graphic: graphics.Graphic = blk: {
-                if (self.player.dying_timer > constants.duration60(30)) {
-                    if (self.player.oxygen == 0) {
-                        switch (self.player.color) {
-                            .yellow => break :blk .man1_choke,
-                            .green => break :blk .man2_choke,
-                        }
-                    }
-                    if (alternation(u32, self.player.dying_timer, constants.duration60(2))) {
-                        break :blk .man_dying1;
-                    } else {
-                        break :blk .man_dying2;
-                    }
-                }
-                if (self.player.dying_timer > constants.duration60(20))
-                    break :blk .man_dying3;
-                if (self.player.dying_timer > constants.duration60(10))
-                    break :blk .man_dying4;
-                break :blk .man_dying5;
-            };
-            p.spawnEventDraw(gs, .{
-                .pos = self.transform.pos,
-                .graphic = graphic,
-                .transform = .identity,
-                .z_index = constants.z_index_player,
-                .alpha = 255,
-            });
-            continue;
-        }
         var alpha: u8 = 255;
         if (self.creature.invulnerability_timer > 0) {
             if (ctx.fast_forward) {
@@ -101,93 +71,113 @@ fn drawPlayers(gs: *game.Session, ctx: game.FrameContext) void {
                 continue;
             }
         }
-        const pos = self.transform.pos;
-        const facing = self.phys.facing;
+        if (self.player) |player|
+            drawPlayer(gs, self.transform.pos, self.phys.facing, player, alpha);
+        if (self.monster) |monster|
+            drawMonster(gs, self.transform.pos, self.phys.facing, monster, alpha);
+        if (self.web) |web|
+            drawWeb(gs, self.transform.pos, self.creature, alpha);
+    }
+}
+
+fn drawPlayer(
+    gs: *game.Session,
+    pos: math.Vec2,
+    facing: math.Direction,
+    player: *const c.Player,
+    alpha: u8,
+) void {
+    if (player.dying_timer > 0) {
+        const graphic: graphics.Graphic = blk: {
+            if (player.dying_timer > constants.duration60(30)) {
+                if (player.oxygen == 0) {
+                    switch (player.color) {
+                        .yellow => break :blk .man1_choke,
+                        .green => break :blk .man2_choke,
+                    }
+                }
+                if (alternation(u32, player.dying_timer, constants.duration60(2))) {
+                    break :blk .man_dying1;
+                } else {
+                    break :blk .man_dying2;
+                }
+            }
+            if (player.dying_timer > constants.duration60(20))
+                break :blk .man_dying3;
+            if (player.dying_timer > constants.duration60(10))
+                break :blk .man_dying4;
+            break :blk .man_dying5;
+        };
         p.spawnEventDraw(gs, .{
             .pos = pos,
-            .graphic = walkFrame(pos, facing, switch (self.player.color) {
-                .yellow => .{ .man1_walk1, .man1_walk2 },
-                .green => .{ .man2_walk1, .man2_walk2 },
-            }),
-            .transform = util.getDirTransform(facing),
+            .graphic = graphic,
+            .transform = .identity,
             .z_index = constants.z_index_player,
             .alpha = alpha,
         });
+        return;
     }
+    p.spawnEventDraw(gs, .{
+        .pos = pos,
+        .graphic = walkFrame(pos, facing, switch (player.color) {
+            .yellow => .{ .man1_walk1, .man1_walk2 },
+            .green => .{ .man2_walk1, .man2_walk2 },
+        }),
+        .transform = util.getDirTransform(facing),
+        .z_index = constants.z_index_player,
+        .alpha = alpha,
+    });
 }
 
-fn drawMonsters(gs: *game.Session, ctx: game.FrameContext) void {
-    var it = gs.ecs.iter(struct {
-        transform: *const c.Transform,
-        phys: *const c.PhysObject,
-        creature: *const c.Creature,
-        monster: *const c.Monster,
-    });
-    while (it.next()) |self| {
-        if (self.monster.spawning_timer > 0) {
-            p.spawnEventDraw(gs, .{
-                .pos = self.transform.pos,
-                .graphic = if (alternation(u32, self.monster.spawning_timer, constants.duration60(8)))
-                    .spawn1
-                else
-                    .spawn2,
-                .transform = .identity,
-                .z_index = constants.z_index_enemy,
-                .alpha = 255,
-            });
-            continue;
-        }
-        var alpha: u8 = 255;
-        if (self.creature.invulnerability_timer > 0) {
-            if (ctx.fast_forward) {
-                alpha = 100;
-            } else if (alternation(u32, self.creature.invulnerability_timer, constants.duration60(2))) {
-                continue;
-            }
-        }
-        const pos = self.transform.pos;
-        const facing = self.phys.facing;
+fn drawMonster(
+    gs: *game.Session,
+    pos: math.Vec2,
+    facing: math.Direction,
+    monster: *const c.Monster,
+    alpha: u8,
+) void {
+    if (monster.spawning_timer > 0) {
         p.spawnEventDraw(gs, .{
             .pos = pos,
-            .graphic = switch (self.monster.monster_type) {
-                .spider => walkFrame(pos, facing, .{ .spider1, .spider2 }),
-                .knight => walkFrame(pos, facing, .{ .knight1, .knight2 }),
-                .fast_bug => walkFrame(pos, facing, .{ .fast_bug1, .fast_bug2 }),
-                .squid => walkFrame(pos, facing, .{ .squid1, .squid2 }),
-                .juggernaut => .juggernaut,
-            },
-            .transform = util.getDirTransform(facing),
+            .graphic = if (alternation(u32, monster.spawning_timer, constants.duration60(8)))
+                .spawn1
+            else
+                .spawn2,
+            .transform = .identity,
             .z_index = constants.z_index_enemy,
             .alpha = alpha,
         });
+        return;
     }
+    p.spawnEventDraw(gs, .{
+        .pos = pos,
+        .graphic = switch (monster.monster_type) {
+            .spider => walkFrame(pos, facing, .{ .spider1, .spider2 }),
+            .knight => walkFrame(pos, facing, .{ .knight1, .knight2 }),
+            .fast_bug => walkFrame(pos, facing, .{ .fast_bug1, .fast_bug2 }),
+            .squid => walkFrame(pos, facing, .{ .squid1, .squid2 }),
+            .juggernaut => .juggernaut,
+        },
+        .transform = util.getDirTransform(facing),
+        .z_index = constants.z_index_enemy,
+        .alpha = alpha,
+    });
 }
 
-fn drawWebs(gs: *game.Session) void {
-    var it = gs.ecs.iter(struct {
-        transform: *const c.Transform,
-        creature: *const c.Creature,
-        web: *const c.Web,
+fn drawWeb(gs: *game.Session, pos: math.Vec2, creature: *const c.Creature, alpha: u8) void {
+    p.spawnEventDraw(gs, .{
+        .pos = pos,
+        .graphic = if (creature.flinch_timer > 0) .web2 else .web1,
+        .transform = .identity,
+        .z_index = constants.z_index_web,
+        .alpha = alpha,
     });
-    while (it.next()) |self| {
-        p.spawnEventDraw(gs, .{
-            .pos = self.transform.pos,
-            .graphic = if (self.creature.flinch_timer > 0) .web2 else .web1,
-            .transform = .identity,
-            .z_index = constants.z_index_web,
-            .alpha = 255,
-        });
-    }
 }
 
 fn alternation(comptime T: type, variable: T, half_period: T) bool {
     if (half_period == 0)
         return false;
     return @mod(@divFloor(variable, half_period), 2) == 0;
-}
-
-fn invulnerabilityBlink(timer: u32) bool {
-    return timer > 0 and alternation(u32, timer, constants.duration60(2));
 }
 
 fn walkFrame(pos: math.Vec2, facing: math.Direction, frames: [2]graphics.Graphic) graphics.Graphic {
