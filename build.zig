@@ -1,65 +1,100 @@
-const builtin = @import("builtin");
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) !void {
-    const version = try getVersion(b);
+    // Get the version
+    const version = blk: {
+        const argv = &[_][]const u8{ "git", "describe", "--tags" };
+        var code: u8 = undefined;
+        const stdout = b.execAllowFail(argv, &code, .Ignore) catch |err| {
+            if (err == error.ExitCodeFailure)
+                break :blk ""; // no tags yet - shouldn't cause the build to fail
+            return err;
+        };
+        break :blk std.mem.trim(u8, stdout, " \n\r");
+    };
 
-    const t = b.addTest("test.zig");
-    t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
+    // Unit tests
+    {
+        const t = b.addTest("test.zig");
+        t.addPackagePath("zig-hunk", "lib/zig-hunk/hunk.zig");
 
-    const zangc = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
-    zangc.setBuildMode(b.standardReleaseOptions());
-    zangc.setOutputDir("zig-cache");
-    zangc.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
-    const compile_zangscript = zangc.run();
-    compile_zangscript.addArgs(&[_][]const u8{
-        "-o",
-        "src/oxid/audio/generated.zig",
-        "src/oxid/audio/script.txt",
-    });
+        b.step("test", "Run all tests").dependOn(&t.step);
+    }
 
-    const main = b.addExecutable("oxid", "src/main_sdl_opengl.zig");
-    //main.step.dependOn(&compile_zangscript.step);
-    main.setBuildMode(b.standardReleaseOptions());
-    main.setOutputDir("zig-cache");
-    main.linkSystemLibrary("SDL2");
-    main.linkSystemLibrary("c");
-    try addCommonRequirements(b, main);
-    main.addBuildOption([]const u8, "version", version);
-    main.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
-    main.addPackagePath("gl", "lib/gl.zig");
+    //const zangc = b.addExecutable("zangc", "lib/zang/tools/zangc.zig");
+    //zangc.setBuildMode(b.standardReleaseOptions());
+    //zangc.setOutputDir("zig-cache");
+    //zangc.addPackagePath("zangscript", "lib/zang/src/zangscript.zig");
+    //const compile_zangscript = zangc.run();
+    //compile_zangscript.addArgs(&.{
+    //    "-o",
+    //    "src/oxid/audio/generated.zig",
+    //    "src/oxid/audio/script.txt",
+    //});
 
-    const main_alt = b.addExecutable("oxid", "src/main_sdl_renderer.zig");
-    //main_alt.step.dependOn(&compile_zangscript.step);
-    main_alt.setBuildMode(b.standardReleaseOptions());
-    main_alt.setOutputDir("zig-cache");
-    main_alt.linkSystemLibrary("SDL2");
-    main_alt.linkSystemLibrary("c");
-    try addCommonRequirements(b, main_alt);
-    main_alt.addBuildOption([]const u8, "version", version);
+    // SDL + OpenGL frontend
+    {
+        const exe = b.addExecutable("oxid_sdl_opengl", "src/main_sdl_opengl.zig");
+        //exe.step.dependOn(&compile_zangscript.step);
+        exe.setBuildMode(b.standardReleaseOptions());
+        exe.install();
+        exe.linkLibC();
+        exe.linkSystemLibrary("SDL2");
+        try addCommonRequirements(b, exe);
+        exe.addBuildOption([]const u8, "version", version);
+        exe.addPackagePath("zig-clap", "lib/zig-clap/clap.zig");
+        exe.addPackagePath("gl", "lib/gl.zig");
 
-    const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
-    //wasm.step.dependOn(&compile_zangscript.step);
-    wasm.setBuildMode(b.standardReleaseOptions());
-    wasm.setOutputDir("zig-cache");
-    wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });
-    try addCommonRequirements(b, wasm);
-    wasm.addBuildOption([]const u8, "version", version);
-    wasm.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
+        b.step("sdl_opengl", "Build with SDL+OpenGL").dependOn(&exe.install_step.?.step);
 
-    const verifydemo = b.addExecutable("verifydemo", "src/verifydemo.zig");
-    verifydemo.setBuildMode(b.standardReleaseOptions());
-    verifydemo.setOutputDir("zig-cache");
-    // FIXME we should only require gbe, not zang etc.
-    try addCommonRequirements(b, verifydemo);
-    verifydemo.addBuildOption([]const u8, "version", version);
+        const play = exe.run();
+        play.step.dependOn(&exe.install_step.?.step);
+        if (b.args) |args|
+            play.addArgs(args);
 
-    b.step("test", "Run all tests").dependOn(&t.step);
-    b.step("play", "Play the game").dependOn(&main.run().step);
-    b.step("sdl_renderer", "Build with SDL_Renderer").dependOn(&main_alt.step);
-    b.step("wasm", "Build WASM binary").dependOn(&wasm.step);
-    b.step("verifydemo", "Build verifydemo utility").dependOn(&verifydemo.step);
-    b.default_step.dependOn(&main.step);
+        b.step("play", "Play the game").dependOn(&play.step);
+    }
+
+    // SDL_Renderer frontend
+    {
+        const exe = b.addExecutable("oxid_sdl_renderer", "src/main_sdl_renderer.zig");
+        //exe.step.dependOn(&compile_zangscript.step);
+        exe.setBuildMode(b.standardReleaseOptions());
+        exe.install();
+        exe.linkLibC(); // what's the difference between this and linkSystemLibrary("c")?
+        exe.linkSystemLibrary("SDL2");
+        try addCommonRequirements(b, exe);
+        exe.addBuildOption([]const u8, "version", version);
+
+        b.step("sdl_renderer", "Build with SDL_Renderer").dependOn(&exe.install_step.?.step);
+    }
+
+    // WebAssembly frontend
+    {
+        const lib = b.addSharedLibrary("oxid", "src/main_web.zig", .unversioned);
+        //lib.step.dependOn(&compile_zangscript.step);
+        lib.setBuildMode(b.standardReleaseOptions());
+        lib.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
+        lib.install();
+        try addCommonRequirements(b, lib);
+        lib.addBuildOption([]const u8, "version", version);
+        lib.addPackagePath("zig-webgl", "lib/zig-webgl/generated/webgl.zig");
+
+        b.step("wasm", "Build WebAssembly binary").dependOn(&lib.install_step.?.step);
+    }
+
+    // Command-line demo verification tool
+    {
+        const exe = b.addExecutable("verifydemo", "src/verifydemo.zig");
+        exe.setBuildMode(b.standardReleaseOptions());
+        exe.install();
+        try addCommonRequirements(b, exe);
+        exe.addBuildOption([]const u8, "version", version);
+
+        b.step("verifydemo", "Build verifydemo utility").dependOn(&exe.install_step.?.step);
+    }
+
+    // Default step is top-level install (builds and installs everything).
 }
 
 fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !void {
@@ -69,20 +104,6 @@ fn addCommonRequirements(b: *std.build.Builder, o: *std.build.LibExeObjStep) !vo
     o.addPackagePath("zig-pcx", "lib/zig-pcx/pcx.zig");
     o.addPackagePath("zig-wav", "lib/zig-wav/wav.zig");
     o.addPackagePath("gbe", "lib/gbe/gbe.zig");
-    const assets_path = try std.fs.path.join(b.allocator, &[_][]const u8{
-        b.build_root,
-        "assets",
-    });
+    const assets_path = try std.fs.path.join(b.allocator, &.{ b.build_root, "assets" });
     o.addBuildOption([]const u8, "assets_path", assets_path);
-}
-
-fn getVersion(b: *std.build.Builder) ![]const u8 {
-    const argv = &[_][]const u8{ "git", "describe", "--tags" };
-    var code: u8 = undefined;
-    const stdout = b.execAllowFail(argv, &code, .Ignore) catch |err| {
-        if (err == error.ExitCodeFailure)
-            return ""; // no tags yet - shouldn't cause the build to fail
-        return err;
-    };
-    return std.mem.trim(u8, stdout, " \n\r");
 }
