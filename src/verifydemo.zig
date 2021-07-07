@@ -17,11 +17,17 @@ pub fn main() u8 {
 
     const filename = std.mem.spanZ(std.os.argv[1]);
 
-    var player = demos.Player.open(filename) catch |err| {
+    const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
+        stderr.print("Failed to open file: {}\n", .{err}) catch {};
+        return 1;
+    };
+    defer file.close();
+    const reader = file.reader();
+
+    var player = demos.Player.start(reader) catch |err| {
         stderr.print("Failed to open player: {}\n", .{err}) catch {};
         return 1;
     };
-    defer player.close();
 
     var gs: game.Session = undefined; // TODO allocate on heap?
 
@@ -38,6 +44,7 @@ pub fn main() u8 {
         const frame_context: game.FrameContext = .{
             .spawn_draw_events = false,
             .friendly_fire = true,
+            .fast_forward = false,
         };
 
         while (player.getNextEvent()) |event| {
@@ -64,7 +71,7 @@ pub fn main() u8 {
                     });
                 },
             }
-            player.readNextInput() catch |err| {
+            player.readNextInput(reader) catch |err| {
                 stderr.print("Error reading from demo file: {}\n", .{err}) catch {};
                 return 1;
             };
@@ -90,7 +97,7 @@ pub fn main() u8 {
         stderr.print("GameController is missing on frame {}\n", .{player.frame_index}) catch {};
         return 1;
     };
-    const pc = gs.ecs.findComponentById(gc.player1_controller_id, c.PlayerController) orelse {
+    const pc = gs.ecs.findComponentByID(gc.player1_controller_id, c.PlayerController) orelse {
         stderr.print("PlayerController missing on frame {}\n", .{player.frame_index}) catch {};
         return 1;
     };
