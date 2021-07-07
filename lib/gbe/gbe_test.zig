@@ -5,7 +5,7 @@ const Creature = struct { hit_points: u32 };
 const Monster = struct { chasing: bool };
 const Player = struct { attack_level: u32 };
 const Transform = struct { x: i32, y: i32 };
-const EventDie = struct { self_id: gbe.EntityId, num: usize };
+const EventDie = struct { self_id: gbe.EntityID, num: usize };
 
 const MockECS = gbe.ECS(struct {
     Creature: gbe.ComponentList(Creature, 50),
@@ -27,7 +27,7 @@ fn initECS(ecs: *MockECS) !void {
         try ecs.addComponent(entity_id, Creature{ .hit_points = 8 });
         try ecs.addComponent(entity_id, Monster{ .chasing = true });
     }
-    var player_ids: [8]gbe.EntityId = undefined;
+    var player_ids: [8]gbe.EntityID = undefined;
     i = 0;
     while (i < 8) : (i += 1) {
         const entity_id = ecs.spawn();
@@ -88,7 +88,7 @@ test "EntityIterator test with optionals and id field" {
     try initECS(&ecs);
 
     var it = ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         monster: ?*Monster,
         player: ?*Player,
         creature: *Creature,
@@ -114,7 +114,7 @@ test "EntityIterator test with inbox" {
     try initECS(&ecs);
 
     var it = ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, "self_id"),
     });
@@ -133,7 +133,7 @@ test "EntityIterator test with inbox with null id_field" {
     try initECS(&ecs);
 
     var it = ecs.iter(struct {
-        id: gbe.EntityId,
+        id: gbe.EntityID,
         player: *Player,
         inbox: gbe.Inbox(10, EventDie, null),
     });
@@ -167,7 +167,7 @@ test "EntityIterator test with inbox with null id_field" {
 //    try ecs.addComponent(ecs.spawn(), Empty {});
 //
 //    var it = ecs.iter(struct {
-//        id: gbe.EntityId,
+//        id: gbe.EntityID,
 //        not_empty: *NotEmpty,
 //        inbox: gbe.Inbox(10, Empty, null),
 //    });
