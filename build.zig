@@ -19,7 +19,7 @@ pub fn build(b: *std.build.Builder) !void {
     });
 
     const main = b.addExecutable("oxid", "src/main_sdl_opengl.zig");
-    main.step.dependOn(&compile_zangscript.step);
+    //main.step.dependOn(&compile_zangscript.step);
     main.setBuildMode(b.standardReleaseOptions());
     main.setOutputDir("zig-cache");
     main.linkSystemLibrary("SDL2");
@@ -30,7 +30,7 @@ pub fn build(b: *std.build.Builder) !void {
     main.addPackagePath("gl", "lib/gl.zig");
 
     const main_alt = b.addExecutable("oxid", "src/main_sdl_renderer.zig");
-    main_alt.step.dependOn(&compile_zangscript.step);
+    //main_alt.step.dependOn(&compile_zangscript.step);
     main_alt.setBuildMode(b.standardReleaseOptions());
     main_alt.setOutputDir("zig-cache");
     main_alt.linkSystemLibrary("SDL2");
@@ -39,7 +39,7 @@ pub fn build(b: *std.build.Builder) !void {
     main_alt.addBuildOption([]const u8, "version", version);
 
     const wasm = b.addStaticLibrary("oxid", "src/main_web.zig");
-    wasm.step.dependOn(&compile_zangscript.step);
+    //wasm.step.dependOn(&compile_zangscript.step);
     wasm.setBuildMode(b.standardReleaseOptions());
     wasm.setOutputDir("zig-cache");
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding, .abi = .none });

@@ -49,7 +49,7 @@ pub const DirectionChoices = struct {
         for (self.scores) |maybe_score, i| {
             const score = maybe_score orelse continue;
             if (best_dir == null or score < best_score) {
-                best_dir = @intToEnum(math.Direction, @intCast(@TagType(math.Direction), i));
+                best_dir = @intToEnum(math.Direction, @intCast(std.meta.Tag(math.Direction), i));
                 best_score = score;
             }
         }
@@ -70,7 +70,7 @@ pub const DirectionChoices = struct {
             for (self.scores) |maybe_score, i| {
                 const score = maybe_score orelse continue;
                 if (r < score) {
-                    return @intToEnum(math.Direction, @intCast(@TagType(math.Direction), i));
+                    return @intToEnum(math.Direction, @intCast(std.meta.Tag(math.Direction), i));
                 } else {
                     r -= score;
                 }

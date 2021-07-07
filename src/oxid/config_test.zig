@@ -92,12 +92,12 @@ test "config.read" {
 
     var stream = std.io.fixedBufferStream(fixture_json);
     const cfg = try config.readFromStream(stream.reader(), fixture_json.len, &hunk.low());
-    std.testing.expect(std.meta.eql(getFixtureConfig(), cfg));
+    try std.testing.expect(std.meta.eql(getFixtureConfig(), cfg));
 }
 
 test "config.write" {
     var buffer: [4000]u8 = undefined;
     var stream = std.io.fixedBufferStream(&buffer);
     try config.writeToStream(stream.writer(), getFixtureConfig());
-    std.testing.expectEqualSlices(u8, fixture_json, stream.getWritten());
+    try std.testing.expectEqualSlices(u8, fixture_json, stream.getWritten());
 }

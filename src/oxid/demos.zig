@@ -200,7 +200,7 @@ pub const Player = struct {
             const command_index = byte0 >> 3;
             if (command_index >= @typeInfo(commands.GameCommand).Enum.fields.len)
                 return error.InvalidDemo;
-            const i = @intCast(@TagType(commands.GameCommand), command_index);
+            const i = @intCast(std.meta.Tag(commands.GameCommand), command_index);
             const command = @intToEnum(commands.GameCommand, i);
 
             player.next = .{

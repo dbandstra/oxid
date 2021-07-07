@@ -238,7 +238,7 @@ fn parseOptions(hunk_side: *HunkSide) !?Options {
         clap.parseParam("--nodemo                Don't record games") catch unreachable,
     };
 
-    var args = try clap.parse(clap.Help, &params, allocator, null);
+    var args = try clap.parse(clap.Help, &params, .{ .allocator = allocator });
     defer args.deinit();
 
     const stderr = std.io.getStdErr().writer();
