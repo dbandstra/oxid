@@ -112,8 +112,8 @@ test "boxesOverlap" {
         .mins = vec2(0, 0),
         .maxs = vec2(15, 15),
     };
-    std.testing.expect(!boxesOverlap(vec2(0, 0), box, vec2(16, 0), box));
-    std.testing.expect(boxesOverlap(vec2(0, 0), box, vec2(15, 0), box));
-    std.testing.expect(!boxesOverlap(vec2(0, 0), box, vec2(-16, 0), box));
-    std.testing.expect(boxesOverlap(vec2(0, 0), box, vec2(-15, 0), box));
+    try std.testing.expect(!boxesOverlap(vec2(0, 0), box, vec2(16, 0), box));
+    try std.testing.expect(boxesOverlap(vec2(0, 0), box, vec2(15, 0), box));
+    try std.testing.expect(!boxesOverlap(vec2(0, 0), box, vec2(-16, 0), box));
+    try std.testing.expect(boxesOverlap(vec2(0, 0), box, vec2(-15, 0), box));
 }

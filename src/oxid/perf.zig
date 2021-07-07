@@ -1,4 +1,3 @@
-const std = @import("std");
 const builtin = @import("builtin");
 
 pub const Entry = enum {
@@ -12,7 +11,7 @@ pub const Entry = enum {
     whole_draw,
 };
 
-pub usingnamespace if (std.Target.current.isWasm() or builtin.mode == .ReleaseSmall)
+pub usingnamespace if (builtin.target.isWasm() or builtin.mode == .ReleaseSmall)
     struct {
         pub const Timer = void;
         pub fn init() void {}

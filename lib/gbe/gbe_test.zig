@@ -57,15 +57,15 @@ test "EntityIterator basic test" {
     var i: usize = 0;
     while (i < 16) : (i += 1) {
         const entry = it.next().?;
-        std.testing.expect(entry.transform.x == 0);
-        std.testing.expect(entry.transform.y == 0);
+        try std.testing.expect(entry.transform.x == 0);
+        try std.testing.expect(entry.transform.y == 0);
         if (i < 8) {
-            std.testing.expect(entry.creature.hit_points == 8);
+            try std.testing.expect(entry.creature.hit_points == 8);
         } else {
-            std.testing.expect(entry.creature.hit_points == 16);
+            try std.testing.expect(entry.creature.hit_points == 16);
         }
     }
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator only players" {
@@ -78,9 +78,9 @@ test "EntityIterator only players" {
     var i: usize = 0;
     while (i < 8) : (i += 1) {
         const entry = it.next().?;
-        std.testing.expect(entry.player.attack_level == 0);
+        try std.testing.expect(entry.player.attack_level == 0);
     }
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator test with optionals and id field" {
@@ -97,16 +97,16 @@ test "EntityIterator test with optionals and id field" {
     var i: usize = 0;
     while (i < 16) : (i += 1) {
         const entry = it.next().?;
-        std.testing.expect(entry.id.id == i + 1);
+        try std.testing.expect(entry.id.id == i + 1);
         if (i < 8) {
-            std.testing.expect(entry.monster != null);
-            std.testing.expect(entry.player == null);
+            try std.testing.expect(entry.monster != null);
+            try std.testing.expect(entry.player == null);
         } else {
-            std.testing.expect(entry.monster == null);
-            std.testing.expect(entry.player != null);
+            try std.testing.expect(entry.monster == null);
+            try std.testing.expect(entry.player != null);
         }
     }
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator test with inbox" {
@@ -121,11 +121,11 @@ test "EntityIterator test with inbox" {
     var i: usize = 0;
     while (i < 2) : (i += 1) {
         var entry = it.next().?;
-        std.testing.expect(entry.inbox.all().len == 1);
-        std.testing.expect(entry.inbox.all()[0].num == i);
-        std.testing.expect(entry.inbox.one().num == i);
+        try std.testing.expect(entry.inbox.all().len == 1);
+        try std.testing.expect(entry.inbox.all()[0].num == i);
+        try std.testing.expect(entry.inbox.one().num == i);
     }
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator test with inbox with null id_field" {
@@ -141,13 +141,13 @@ test "EntityIterator test with inbox with null id_field" {
     while (i < 8) : (i += 1) {
         var entry = it.next().?;
         const all = entry.inbox.all();
-        std.testing.expect(all.len == 2);
+        try std.testing.expect(all.len == 2);
         var j: usize = 0;
         while (j < 2) : (j += 1) {
-            std.testing.expect(all[j].num == j);
+            try std.testing.expect(all[j].num == j);
         }
     }
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 // TODO blocked on https://github.com/ziglang/zig/issues/4539
@@ -172,12 +172,12 @@ test "EntityIterator test with inbox with null id_field" {
 //        inbox: gbe.Inbox(10, Empty, null),
 //    });
 //    var entry = it.next().?;
-//    std.testing.expect(entry.not_empty.field == 0);
-//    std.testing.expect(entry.inbox.all().len == 3);
+//    try std.testing.expect(entry.not_empty.field == 0);
+//    try std.testing.expect(entry.inbox.all().len == 3);
 //    entry = it.next().?;
-//    std.testing.expect(entry.not_empty.field == 1);
-//    std.testing.expect(entry.inbox.all().len == 3);
-//    std.testing.expect(it.next() == null);
+//    try std.testing.expect(entry.not_empty.field == 1);
+//    try std.testing.expect(entry.inbox.all().len == 3);
+//    try std.testing.expect(it.next() == null);
 //}
 
 test "EntityIterator where \"main\" component type is zero-sized" {
@@ -208,10 +208,10 @@ test "EntityIterator where \"main\" component type is zero-sized" {
     i = 0;
     while (i < 2) : (i += 1) {
         const entry = it.next().?;
-        std.testing.expect(entry.not_empty.field == i);
+        try std.testing.expect(entry.not_empty.field == i);
     }
 
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator with an optional zero-size component" {
@@ -238,14 +238,14 @@ test "EntityIterator with an optional zero-size component" {
     });
 
     var entry = it.next().?;
-    std.testing.expect(entry.not_empty.field == 1);
-    std.testing.expect(entry.empty != null);
+    try std.testing.expect(entry.not_empty.field == 1);
+    try std.testing.expect(entry.empty != null);
 
     entry = it.next().?;
-    std.testing.expect(entry.not_empty.field == 2);
-    std.testing.expect(entry.empty == null);
+    try std.testing.expect(entry.not_empty.field == 2);
+    try std.testing.expect(entry.empty == null);
 
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "EntityIterator with a 0-size component" {
@@ -273,9 +273,9 @@ test "EntityIterator with a 0-size component" {
     });
 
     const entry = it.next().?;
-    std.testing.expect(entry.not_empty.field == 1);
+    try std.testing.expect(entry.not_empty.field == 1);
 
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "ComponentIterator with a non-empty struct component" {
@@ -289,9 +289,9 @@ test "ComponentIterator with a non-empty struct component" {
     try ecs.addComponent(ecs.spawn(), NonEmpty{ .field = 2 });
 
     var it = ecs.componentIter(NonEmpty);
-    std.testing.expect(it.next().?.field == 1);
-    std.testing.expect(it.next().?.field == 2);
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next().?.field == 1);
+    try std.testing.expect(it.next().?.field == 2);
+    try std.testing.expect(it.next() == null);
 }
 
 test "ComponentIterator with a non-struct component" {
@@ -304,9 +304,9 @@ test "ComponentIterator with a non-struct component" {
     try ecs.addComponent(ecs.spawn(), @as(f32, 2.0));
 
     var it = ecs.componentIter(f32);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "ComponentIterator with an empty struct component" {
@@ -320,9 +320,9 @@ test "ComponentIterator with an empty struct component" {
     try ecs.addComponent(ecs.spawn(), Empty{});
 
     var it = ecs.componentIter(Empty);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() == null);
 }
 
 test "ComponentIterator with a 0-size non-struct component" {
@@ -335,7 +335,7 @@ test "ComponentIterator with a 0-size non-struct component" {
     try ecs.addComponent(ecs.spawn(), @as(u0, 0));
 
     var it = ecs.componentIter(u0);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() != null);
-    std.testing.expect(it.next() == null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() != null);
+    try std.testing.expect(it.next() == null);
 }

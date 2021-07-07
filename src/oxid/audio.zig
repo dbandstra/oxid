@@ -192,7 +192,7 @@ pub const State = struct {
         errdefer hunk.freeToLowMark(mark);
 
         for (self.loaded_samples) |*loaded_sample, i| {
-            const sample = @intToEnum(Sample, @intCast(@TagType(Sample), i));
+            const sample = @intToEnum(Sample, @intCast(std.meta.Tag(Sample), i));
             loaded_sample.* = try readWav(hunk, getSampleFilename(sample));
         }
 

@@ -26,10 +26,10 @@ test "box_in_wall" {
         .maxs = math.vec2(s - 1, s - 1),
     };
 
-    std.testing.expect(!levels.boxInWall(level, math.vec2(1 * s, 1 * s), bbox));
+    try std.testing.expect(!levels.boxInWall(level, math.vec2(1 * s, 1 * s), bbox));
 
-    std.testing.expect(levels.boxInWall(level, math.vec2(1 * s - 1, 1 * s), bbox));
-    std.testing.expect(levels.boxInWall(level, math.vec2(1 * s + 1, 1 * s), bbox));
-    std.testing.expect(levels.boxInWall(level, math.vec2(1 * s, 1 * s - 1), bbox));
-    std.testing.expect(levels.boxInWall(level, math.vec2(1 * s, 1 * s + 1), bbox));
+    try std.testing.expect(levels.boxInWall(level, math.vec2(1 * s - 1, 1 * s), bbox));
+    try std.testing.expect(levels.boxInWall(level, math.vec2(1 * s + 1, 1 * s), bbox));
+    try std.testing.expect(levels.boxInWall(level, math.vec2(1 * s, 1 * s - 1), bbox));
+    try std.testing.expect(levels.boxInWall(level, math.vec2(1 * s, 1 * s + 1), bbox));
 }

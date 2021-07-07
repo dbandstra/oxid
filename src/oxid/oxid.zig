@@ -283,7 +283,7 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
         const maybe_menu_command = for (main_state.cfg.menu_bindings) |maybe_source, i| {
             const s = maybe_source orelse continue;
             if (!inputs.Source.eql(s, source)) continue;
-            break @intToEnum(commands.MenuCommand, @intCast(@TagType(commands.MenuCommand), i));
+            break @intToEnum(commands.MenuCommand, @intCast(std.meta.Tag(commands.MenuCommand), i));
         } else null;
 
         // if menu is open, input goes to it
@@ -333,7 +333,7 @@ pub fn inputEvent(main_state: *MainState, source: inputs.Source, down: bool) ?In
                 else => continue,
             };
 
-            const command = @intToEnum(commands.GameCommand, @intCast(@TagType(commands.GameCommand), i));
+            const command = @intToEnum(commands.GameCommand, @intCast(std.meta.Tag(commands.GameCommand), i));
             p.spawnEventGameInput(gs, .{
                 .player_controller_id = player_controller_id,
                 .command = command,
@@ -576,7 +576,7 @@ fn startRecording(self: *MainState, seed: u32, is_multiplayer: bool) !void {
 
     try dr.recorder.start(dr.object.writer(), seed, is_multiplayer);
 
-    std.log.notice("Recording to {}", .{dr.storagekey});
+    std.log.notice("Recording to {s}", .{dr.storagekey});
 }
 
 // called when "start new game" is selected in the menu. if a game is already

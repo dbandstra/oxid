@@ -91,8 +91,8 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
         .Object => |map| {
             var it = map.iterator();
             while (it.next()) |kv| {
-                if (std.mem.eql(u8, kv.key, "volume")) {
-                    switch (kv.value) {
+                if (std.mem.eql(u8, kv.key_ptr.*, "volume")) {
+                    switch (kv.value_ptr.*) {
                         .Integer => |v| {
                             cfg.volume = @intCast(u32, std.math.min(100, std.math.max(0, v)));
                         },
@@ -100,14 +100,14 @@ pub fn readFromStream(r: anytype, size: usize, hunk_side: *HunkSide) !Config {
                             std.log.warn("Value of \"volume\" must be an integer", .{});
                         },
                     }
-                } else if (std.mem.eql(u8, kv.key, "menu_bindings")) {
-                    readBindings(commands.MenuCommand, &cfg.menu_bindings, kv.value);
-                } else if (std.mem.eql(u8, kv.key, "game_bindings")) {
-                    readBindings(commands.GameCommand, &cfg.game_bindings[0], kv.value);
-                } else if (std.mem.eql(u8, kv.key, "game_bindings2")) {
-                    readBindings(commands.GameCommand, &cfg.game_bindings[1], kv.value);
+                } else if (std.mem.eql(u8, kv.key_ptr.*, "menu_bindings")) {
+                    readBindings(commands.MenuCommand, &cfg.menu_bindings, kv.value_ptr.*);
+                } else if (std.mem.eql(u8, kv.key_ptr.*, "game_bindings")) {
+                    readBindings(commands.GameCommand, &cfg.game_bindings[0], kv.value_ptr.*);
+                } else if (std.mem.eql(u8, kv.key_ptr.*, "game_bindings2")) {
+                    readBindings(commands.GameCommand, &cfg.game_bindings[1], kv.value_ptr.*);
                 } else {
-                    std.log.warn("Unrecognized config field: '{s}'", .{kv.key});
+                    std.log.warn("Unrecognized config field: '{s}'", .{kv.key_ptr.*});
                 }
             }
         },
@@ -133,9 +133,9 @@ fn readBindings(
         .Object => |map| {
             var it = map.iterator();
             while (it.next()) |kv| {
-                const command = parseCommand(CommandType, kv.key) orelse continue;
-                const source = parseInputSource(kv.value) catch {
-                    std.log.warn("Error parsing input source for command '{s}'", .{kv.key});
+                const command = parseCommand(CommandType, kv.key_ptr.*) orelse continue;
+                const source = parseInputSource(kv.value_ptr.*) catch {
+                    std.log.warn("Error parsing input source for command '{s}'", .{kv.key_ptr.*});
                     continue;
                 };
                 bindings.*[@enumToInt(command)] = source;
@@ -269,7 +269,7 @@ fn writeBindings(
     // don't bother with backslash escaping strings because we know none of
     // the possible values have characters that would need escaping
     for (bindings) |maybe_source, i| {
-        const command = @intToEnum(CommandType, @intCast(@TagType(CommandType), i));
+        const command = @intToEnum(CommandType, @intCast(std.meta.Tag(CommandType), i));
         try w.print("        \"{s}\": ", .{@tagName(command)});
         if (maybe_source) |source| {
             switch (source) {

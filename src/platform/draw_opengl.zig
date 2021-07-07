@@ -1,7 +1,7 @@
 // pdraw implementation backed by GL. supports OpenGL 2.1 (GLSL v120),
 // OpenGL 3.0 (GLSL v130), and WebGL 1.
 
-usingnamespace if (std.Target.current.isWasm())
+usingnamespace if (@import("builtin").target.isWasm())
     @import("zig-webgl")
 else
     @import("gl").namespace;
